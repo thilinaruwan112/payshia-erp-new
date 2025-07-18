@@ -1,21 +1,20 @@
-# **App Name**: SimpleSales
+# **App Name**: BranchBrain
 
 ## Core Features:
 
-- Dashboard Overview: Dashboard providing a snapshot of current sales, inventory levels, and key metrics.
-- Product Management: Allows users to input, edit, and categorize product information, including names, descriptions, SKUs, and pricing.
-- Collection Management: Ability to create and manage product collections (grouping products by category).
-- Sales Tracking: Capture and manage sales transactions, including customer information, products sold, quantities, and payment details.
-- Inventory Forecasting: Predict optimal reorder points based on sales velocity using AI. The system will use a tool to incorporate seasonal sales variations in its calculations.
-- Inventory List: Provides a searchable inventory list, with current stock levels, to track and manage physical inventory.
-- Reporting: Generate reports on sales trends, inventory levels, and other metrics for business insights.
+- Inventory Overview: Dashboard providing an overview of real-time stock levels and locations.
+- Product Catalog: Product catalog to manage details and variants.
+- Stock Management: Stock management: handling stock-in, stock-out, returns, and adjustments across locations.
+- Order Processing: UI for processing orders from multiple channels, managing shipments and tracking.
+- Role-Based Access: User roles include admin, manager and sales agent, each with specified levels of access.
+- AI-Powered Logistics Assistant: Tool to find a suitable vendor or shipping company for specific order requirements, powered by a LLM and external API lookups.
 
 ## Style Guidelines:
 
-- Primary color: Deep Blue (#34495E) for a professional and trustworthy feel.
-- Background color: Light Gray (#ECF0F1) for a clean, modern backdrop.
-- Accent color: Soft Green (#2ECC71) to highlight important actions and key data points, signaling growth and positive trends.
-- Body and headline font: 'Inter', sans-serif, for a clean, readable interface.
-- Use minimalist line icons to represent products, categories, and actions.
-- A clean, card-based layout will provide quick access and clear presentation.
-- Subtle transitions and animations for feedback on user actions (e.g., adding a product).
+- Primary color: Navy blue (#3B5998) to convey trust and stability.
+- Background color: Light gray (#F0F2F5), providing a clean, professional backdrop.
+- Accent color: Teal (#008080) to highlight key actions and information.
+- Body and headline font: 'Inter' sans-serif for a clean, modern user interface.
+- Simple, geometric icons to illustrate various inventory and order statuses.
+- Grid-based layout for structured, scalable information presentation across devices.
+- Subtle transitions and loading animations to provide feedback on interactions.
