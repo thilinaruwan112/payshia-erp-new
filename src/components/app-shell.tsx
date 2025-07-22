@@ -105,6 +105,7 @@ const navItems = [
     icon: TrendingUp,
     subItems: [
       { href: '/sales/invoices', label: 'Invoices' },
+      { href: '/sales/wholesale-invoices', label: 'Wholesale Invoices' },
       { href: '/sales/receipts', label: 'Receipts' },
     ],
   },
