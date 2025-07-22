@@ -63,13 +63,22 @@ export default function FixedAssetsPage() {
 
   const depreciationDetails = useMemo(() => {
     if (!selectedAsset) return { amount: 0, method: 'N/A' };
-    // Simplified depreciation calculation for demonstration
+    
     const usefulLifeYears = selectedAsset.assetType === 'Buildings' ? 40 : (selectedAsset.assetType === 'Vehicles' || selectedAsset.assetType === 'Machinery' ? 5 : 3);
-    const monthlyDepreciation = selectedAsset.purchaseCost / usefulLifeYears / 12;
+    const bookValue = selectedAsset.purchaseCost - selectedAsset.accumulatedDepreciation;
+    let monthlyDepreciation = 0;
+
+    if (selectedAsset.depreciationMethod === 'Straight-Line') {
+      monthlyDepreciation = selectedAsset.purchaseCost / usefulLifeYears / 12;
+    } else if (selectedAsset.depreciationMethod === 'Double Declining Balance') {
+      // (2 / Useful Life) * Book Value at Beginning of Period
+      const yearlyDepreciation = (2 / usefulLifeYears) * bookValue;
+      monthlyDepreciation = yearlyDepreciation / 12;
+    }
 
     return {
         amount: monthlyDepreciation,
-        method: 'Straight-Line'
+        method: selectedAsset.depreciationMethod || 'N/A'
     };
   }, [selectedAsset]);
 

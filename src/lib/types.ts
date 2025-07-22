@@ -163,4 +163,5 @@ export type FixedAsset = {
     purchaseCost: number;
     accumulatedDepreciation: number;
     status: 'In Use' | 'Under Maintenance' | 'Disposed';
+    depreciationMethod: 'Straight-Line' | 'Double Declining Balance';
 };

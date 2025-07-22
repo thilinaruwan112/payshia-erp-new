@@ -10,6 +10,7 @@ export const fixedAssets: FixedAsset[] = [
         purchaseCost: 35000.00,
         accumulatedDepreciation: 7000.00,
         status: 'In Use',
+        depreciationMethod: 'Straight-Line',
     },
     {
         id: 'asset-002',
@@ -19,6 +20,7 @@ export const fixedAssets: FixedAsset[] = [
         purchaseCost: 250000.00,
         accumulatedDepreciation: 25000.00,
         status: 'In Use',
+        depreciationMethod: 'Straight-Line',
     },
     {
         id: 'asset-003',
@@ -28,6 +30,7 @@ export const fixedAssets: FixedAsset[] = [
         purchaseCost: 2500.00,
         accumulatedDepreciation: 500.00,
         status: 'In Use',
+        depreciationMethod: 'Double Declining Balance',
     },
     {
         id: 'asset-004',
@@ -37,6 +40,7 @@ export const fixedAssets: FixedAsset[] = [
         purchaseCost: 18000.00,
         accumulatedDepreciation: 7200.00,
         status: 'Under Maintenance',
+        depreciationMethod: 'Straight-Line',
     },
     {
         id: 'asset-005',
@@ -46,5 +50,6 @@ export const fixedAssets: FixedAsset[] = [
         purchaseCost: 800.00,
         accumulatedDepreciation: 800.00,
         status: 'Disposed',
+        depreciationMethod: 'Straight-Line',
     },
 ];

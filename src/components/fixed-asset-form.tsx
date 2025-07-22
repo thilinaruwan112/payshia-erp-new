@@ -45,6 +45,7 @@ const fixedAssetFormSchema = z.object({
   purchaseDate: z.date({ required_error: "A date is required." }),
   purchaseCost: z.coerce.number().min(0.01, "Cost must be greater than zero."),
   status: z.enum(["In Use", "Under Maintenance", "Disposed"]),
+  depreciationMethod: z.enum(["Straight-Line", "Double Declining Balance"]),
 });
 
 type FixedAssetFormValues = z.infer<typeof fixedAssetFormSchema>;
@@ -63,6 +64,7 @@ export function FixedAssetForm({ asset }: FixedAssetFormProps) {
     purchaseDate: asset ? new Date(asset.purchaseDate) : new Date(),
     purchaseCost: asset?.purchaseCost || 0,
     status: asset?.status || "In Use",
+    depreciationMethod: asset?.depreciationMethod || "Straight-Line",
   };
 
   const form = useForm<FixedAssetFormValues>({
@@ -203,6 +205,27 @@ export function FixedAssetForm({ asset }: FixedAssetFormProps) {
                                     <SelectItem value="In Use">In Use</SelectItem>
                                     <SelectItem value="Under Maintenance">Under Maintenance</SelectItem>
                                     <SelectItem value="Disposed">Disposed</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="depreciationMethod"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Depreciation Method</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a method" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Straight-Line">Straight-Line</SelectItem>
+                                    <SelectItem value="Double Declining Balance">Double Declining Balance</SelectItem>
                                 </SelectContent>
                             </Select>
                             <FormMessage />
