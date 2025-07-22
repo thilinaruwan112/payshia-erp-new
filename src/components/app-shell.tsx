@@ -31,6 +31,7 @@ import {
   CalendarDays,
   Clock,
   Check,
+  FileDigit,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -98,6 +99,14 @@ const navItems = [
     href: '/orders',
     label: 'Orders',
     icon: ShoppingCart,
+  },
+  {
+    label: 'Sales',
+    icon: TrendingUp,
+    subItems: [
+      { href: '/sales/invoices', label: 'Invoices' },
+      { href: '/sales/receipts', label: 'Receipts' },
+    ],
   },
   {
     href: '/suppliers',
