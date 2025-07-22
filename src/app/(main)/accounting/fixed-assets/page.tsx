@@ -1,4 +1,6 @@
 
+'use client';
+
 import {
   Card,
   CardContent,
@@ -28,6 +30,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { FixedAsset } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 const getStatusColor = (status: FixedAsset['status']) => {
   switch (status) {
@@ -43,6 +46,15 @@ const getStatusColor = (status: FixedAsset['status']) => {
 };
 
 export default function FixedAssetsPage() {
+  const { toast } = useToast();
+
+  const handleRunDepreciation = (asset: FixedAsset) => {
+    toast({
+      title: 'Depreciation Process Simulated',
+      description: `Journal entries for ${asset.name} have been posted.`,
+    });
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -110,7 +122,9 @@ export default function FixedAssetsPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Run Depreciation</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleRunDepreciation(asset)}>
+                          Run Depreciation
+                        </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">
                           Dispose Asset
                         </DropdownMenuItem>
