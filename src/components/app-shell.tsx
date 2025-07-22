@@ -35,6 +35,7 @@ import {
   Gem,
   MessageSquare,
   Mail,
+  HelpCircle,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -167,6 +168,11 @@ const navItems = [
     href: '/logistics',
     label: 'AI Logistics',
     icon: BotMessageSquare,
+  },
+  {
+    href: '/help',
+    label: 'How to Use',
+    icon: HelpCircle,
   },
   {
     href: '/pos-system',
