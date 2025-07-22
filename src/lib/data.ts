@@ -1,4 +1,5 @@
 
+
 import { collections } from '@/lib/mock-data/collections';
 import { goodsReceivedNotes } from '@/lib/mock-data/grn';
 import { inventory } from '@/lib/mock-data/inventory';
@@ -15,6 +16,7 @@ import { journalEntries } from '@/lib/mock-data/journal-entries';
 import { expenses } from '@/lib/mock-data/expenses';
 import { payments } from '@/lib/mock-data/payments';
 import { fixedAssets } from '@/lib/mock-data/fixed-assets';
+import { invoices } from '@/lib/mock-data/invoices';
 
 
 export * from '@/lib/types';
@@ -36,4 +38,5 @@ export {
     expenses,
     payments,
     fixedAssets,
+    invoices,
 }

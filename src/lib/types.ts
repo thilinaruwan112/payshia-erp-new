@@ -167,3 +167,22 @@ export type FixedAsset = {
     status: 'In Use' | 'Under Maintenance' | 'Disposed';
     depreciationMethod: 'Straight-Line' | 'Double Declining Balance';
 };
+
+export type InvoiceItem = {
+  sku: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+};
+
+export type Invoice = {
+  id: string;
+  orderId?: string;
+  customerName: string;
+  date: string;
+  dueDate: string;
+  status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+  total: number;
+  items: InvoiceItem[];
+};
