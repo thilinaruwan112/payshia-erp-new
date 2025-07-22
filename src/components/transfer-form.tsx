@@ -95,14 +95,12 @@ export function TransferForm({ locations, products }: TransferFormProps) {
   
   const watchedItems = form.watch("items");
 
-  const transferTotalValue = React.useMemo(() => {
-    return watchedItems.reduce((total, item) => {
-        const product = products.find(p => p.variants.some(v => v.sku === item.sku));
-        const costPrice = product?.costPrice || 0;
-        const quantity = Number(item.quantity) || 0;
-        return total + (costPrice * quantity);
+  const transferTotalValue = watchedItems.reduce((total, item) => {
+    const product = products.find(p => p.variants.some(v => v.sku === item.sku));
+    const costPrice = product?.costPrice || 0;
+    const quantity = Number(item.quantity) || 0;
+    return total + (costPrice * quantity);
     }, 0);
-  }, [watchedItems, products]);
 
 
   function onSubmit(data: TransferFormValues) {
