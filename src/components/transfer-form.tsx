@@ -317,4 +317,3 @@ export function TransferForm({ locations, products }: TransferFormProps) {
     </Form>
   );
 }
-
