@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { ReactNode } from 'react';
+import React, { type ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -27,6 +27,9 @@ import {
   LayoutGrid,
   Calculator,
   PlusCircle,
+  MapPin,
+  CalendarDays,
+  Clock,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -56,9 +59,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import React from 'react';
 import { ThemeToggle } from './theme-toggle';
 import { CalculatorModal } from './calculator-modal';
+import { format } from 'date-fns';
 
 const user = {
   name: 'Admin User',
@@ -143,6 +146,34 @@ const navItems = [
     isExternal: true,
   },
 ];
+
+function DateTimeLocation() {
+    const [currentTime, setCurrentTime] = useState(new Date());
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    return (
+        <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground sm:mr-auto">
+             <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                <span>Downtown Store</span>
+            </div>
+             <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4" />
+                <span>{format(currentTime, 'PPP')}</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span>{format(currentTime, 'p')}</span>
+            </div>
+        </div>
+    )
+}
 
 function QuickAccessMenu() {
     return (
@@ -336,9 +367,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
           <div className="flex items-center gap-4">
             <SidebarTrigger className="md:hidden" />
-            <div className="hidden md:block">
-                <Brand />
-            </div>
+            <DateTimeLocation />
           </div>
           <div className="flex items-center gap-2">
             <CalculatorModal>
