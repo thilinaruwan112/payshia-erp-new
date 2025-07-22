@@ -75,7 +75,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
       title: customer ? 'Customer Updated' : 'Customer Created',
       description: `The customer "${data.name}" has been saved.`,
     });
-    router.push('/customers');
+    router.push('/crm/customers');
   }
 
   const pageTitle = customer ? `Edit Customer: ${customer.name}` : 'Create Customer';

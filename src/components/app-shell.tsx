@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { type ReactNode, useState, useEffect } from 'react';
@@ -33,6 +32,7 @@ import {
   Check,
   FileDigit,
   Contact,
+  Gem,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -110,9 +110,12 @@ const navItems = [
     ],
   },
   {
-    href: '/customers',
-    label: 'Customers',
+    label: 'CRM',
     icon: Contact,
+    subItems: [
+        { href: '/crm/customers', label: 'Customers' },
+        { href: '/crm/loyalty-schema', label: 'Loyalty Schema' },
+    ],
   },
   {
     href: '/suppliers',

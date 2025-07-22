@@ -83,7 +83,7 @@ export default function CustomersPage() {
           </p>
         </div>
         <Button asChild className="w-full sm:w-auto">
-          <Link href="/customers/new">
+          <Link href="/crm/customers/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Customer
           </Link>
@@ -163,7 +163,7 @@ export default function CustomersPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem asChild>
-                          <Link href={`/customers/${customer.id}/edit`}>
+                          <Link href={`/crm/customers/${customer.id}/edit`}>
                             Edit
                           </Link>
                         </DropdownMenuItem>
