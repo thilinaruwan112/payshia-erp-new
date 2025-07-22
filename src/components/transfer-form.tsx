@@ -32,11 +32,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Location, Product } from "@/lib/types";
 import { CalendarIcon, Trash2 } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import React from "react";
 
 const transferFormSchema = z.object({
   date: z.date({
@@ -91,6 +92,18 @@ export function TransferForm({ locations, products }: TransferFormProps) {
     control: form.control,
     name: "items",
   });
+  
+  const watchedItems = form.watch("items");
+
+  const transferTotalValue = React.useMemo(() => {
+    return watchedItems.reduce((total, item) => {
+        const product = products.find(p => p.variants.some(v => v.sku === item.sku));
+        const costPrice = product?.costPrice || 0;
+        const quantity = item.quantity || 0;
+        return total + (costPrice * quantity);
+    }, 0);
+  }, [watchedItems, products]);
+
 
   function onSubmit(data: TransferFormValues) {
     console.log(data);
@@ -217,61 +230,83 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[60%]">Product</TableHead>
-                            <TableHead className="w-[30%]">Quantity</TableHead>
+                            <TableHead className="w-[40%]">Product</TableHead>
+                            <TableHead>Cost Price</TableHead>
+                            <TableHead>Selling Price</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead className="text-right">Total Value</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                         {fields.map((field, index) => (
-                           <TableRow key={field.id}>
-                                <TableCell>
-                                    <FormField
-                                        control={form.control}
-                                        name={`items.${index}.sku`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                         {fields.map((field, index) => {
+                            const selectedSku = watchedItems[index]?.sku;
+                            const product = products.find(p => p.variants.some(v => v.sku === selectedSku));
+                            const costPrice = product?.costPrice || 0;
+                            const sellingPrice = product?.price || 0;
+                            const quantity = watchedItems[index]?.quantity || 0;
+                            const totalValue = costPrice * quantity;
+
+                            return (
+                               <TableRow key={field.id}>
+                                    <TableCell>
+                                        <FormField
+                                            control={form.control}
+                                            name={`items.${index}.sku`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select a product" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {allSkus.map(sku => (
+                                                                <SelectItem key={sku.value} value={sku.value}>{sku.label}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="font-mono">${costPrice.toFixed(2)}</TableCell>
+                                    <TableCell className="font-mono">${sellingPrice.toFixed(2)}</TableCell>
+                                    <TableCell>
+                                        <FormField
+                                            control={form.control}
+                                            name={`items.${index}.quantity`}
+                                            render={({ field }) => (
+                                                <FormItem>
                                                     <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select a product" />
-                                                        </SelectTrigger>
+                                                        <Input type="number" placeholder="1" {...field} />
                                                     </FormControl>
-                                                    <SelectContent>
-                                                        {allSkus.map(sku => (
-                                                            <SelectItem key={sku.value} value={sku.value}>{sku.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono">${totalValue.toFixed(2)}</TableCell>
+                                    <TableCell>
+                                        {fields.length > 1 && (
+                                            <Button variant="ghost" size="icon" onClick={() => remove(index)}>
+                                                <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                            </Button>
                                         )}
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    <FormField
-                                        control={form.control}
-                                        name={`items.${index}.quantity`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormControl>
-                                                    <Input type="number" placeholder="1" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </TableCell>
-                                <TableCell>
-                                    {fields.length > 1 && (
-                                        <Button variant="ghost" size="icon" onClick={() => remove(index)}>
-                                            <Trash2 className="h-4 w-4 text-muted-foreground" />
-                                        </Button>
-                                    )}
-                                </TableCell>
-                           </TableRow>
-                        ))}
+                                    </TableCell>
+                               </TableRow>
+                            )
+                         })}
                     </TableBody>
+                     <TableFooter>
+                        <TableRow>
+                            <TableCell colSpan={4} className="text-right font-bold">Total Transfer Value</TableCell>
+                            <TableCell className="text-right font-bold font-mono">${transferTotalValue.toFixed(2)}</TableCell>
+                            <TableCell></TableCell>
+                        </TableRow>
+                    </TableFooter>
                 </Table>
                 <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', quantity: 1 })} className="mt-4">
                     Add another item
