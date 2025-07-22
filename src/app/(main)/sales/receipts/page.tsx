@@ -38,7 +38,7 @@ export default function ReceiptsPage() {
           </p>
         </div>
         <Button asChild className="w-full sm:w-auto">
-          <Link href="#">
+          <Link href="/sales/receipts/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Receipt
           </Link>
