@@ -57,7 +57,7 @@ import { ThemeToggle } from './theme-toggle';
 
 const user = {
   name: 'Admin User',
-  email: 'admin@branchbrain.com',
+  email: 'admin@payshia.com',
   role: 'Admin',
   avatar: 'https://placehold.co/100x100.png',
 };
@@ -172,7 +172,7 @@ function Brand() {
   return (
     <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg">
       <Truck className="h-6 w-6 text-primary" />
-      <span>BranchBrain</span>
+      <span>Payshia ERP</span>
     </Link>
   );
 }

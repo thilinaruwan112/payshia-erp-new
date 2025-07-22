@@ -1,4 +1,4 @@
-# BranchBrain ERP
+# Payshia ERP
 
 This is a Next.js-based ERP system for managing sales channels, locations, inventory, and orders.
 

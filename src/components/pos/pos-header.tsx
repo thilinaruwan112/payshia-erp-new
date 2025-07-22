@@ -76,7 +76,7 @@ export function PosHeader({
   return (
     <header className="p-4 border-b border-border flex flex-wrap items-center gap-4 sticky top-0 bg-background z-10">
       <Link href="/" className="text-xl font-bold mr-4 order-1">
-        BranchBrain
+        Payshia ERP
       </Link>
       <DateTimeLocation />
       <div className="relative flex-1 w-full sm:w-auto sm:flex-grow-[2] order-3 sm:order-3">

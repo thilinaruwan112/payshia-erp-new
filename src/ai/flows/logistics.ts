@@ -19,7 +19,7 @@ const logisticsFlow = ai.defineFlow(
   },
   async (query) => {
     const prompt = `
-      You are a logistics assistant for an ERP system called BranchBrain.
+      You are a logistics assistant for an ERP system called Payshia ERP.
       Given the following order requirements, suggest a suitable shipping vendor and explain why.
       Be concise and helpful. Format your response as clean HTML.
 

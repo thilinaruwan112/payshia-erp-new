@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'BranchBrain POS',
+  title: 'Payshia POS',
   description: 'Point of Sale System',
 };
 

@@ -4,7 +4,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata: Metadata = {
-  title: 'BranchBrain',
+  title: 'Payshia ERP',
   description: 'A scalable and modular web-based ERP system.',
 };
 
