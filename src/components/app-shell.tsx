@@ -65,8 +65,7 @@ import {
 import { ThemeToggle } from './theme-toggle';
 import { CalculatorModal } from './calculator-modal';
 import { format } from 'date-fns';
-import { locations } from '@/lib/data';
-import type { Location } from '@/lib/types';
+import { useLocation } from '@/components/location-provider';
 
 const user = {
   name: 'Admin User',
@@ -154,7 +153,7 @@ const navItems = [
 
 function DateTimeLocation() {
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [currentLocation, setCurrentLocation] = useState<Location>(locations[1]);
+    const { currentLocation, setCurrentLocation, availableLocations } = useLocation();
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -176,8 +175,8 @@ function DateTimeLocation() {
                 <DropdownMenuContent>
                     <DropdownMenuLabel>Change Location</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuRadioGroup value={currentLocation.id} onValueChange={(id) => setCurrentLocation(locations.find(l => l.id === id)!)}>
-                        {locations.map(location => (
+                    <DropdownMenuRadioGroup value={currentLocation.id} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.id === id)!)}>
+                        {availableLocations.map(location => (
                              <DropdownMenuRadioItem key={location.id} value={location.id}>
                                 {location.name}
                             </DropdownMenuRadioItem>
@@ -418,5 +417,3 @@ export function AppShell({ children }: { children: ReactNode }) {
     </>
   );
 }
-
-    

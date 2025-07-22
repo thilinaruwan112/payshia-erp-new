@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/app-shell';
+import { LocationProvider } from '@/components/location-provider';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function MainAppLayout({
@@ -8,7 +9,9 @@ export default function MainAppLayout({
 }>) {
   return (
     <SidebarProvider>
-      <AppShell>{children}</AppShell>
+      <LocationProvider>
+        <AppShell>{children}</AppShell>
+      </LocationProvider>
     </SidebarProvider>
   );
 }

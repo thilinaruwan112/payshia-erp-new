@@ -1,4 +1,5 @@
 
+'use client';
 
 import {
   Card,
@@ -20,31 +21,48 @@ import { Button } from '@/components/ui/button';
 import {
   Boxes,
   Package,
-  ArrowDownToDot,
   AlertTriangle,
   PlusCircle,
   Warehouse,
   TerminalSquare,
   TrendingUp,
 } from 'lucide-react';
-import { inventory, locations, products } from '@/lib/data';
+import { inventory, locations, products, orders } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { SalesChart } from '@/components/sales-chart';
 import { StockChart } from '@/components/stock-chart';
+import { useLocation } from '@/components/location-provider';
+import { useMemo } from 'react';
 
 export default function Dashboard() {
-  const lowStockItems = inventory.filter(
-    (item) => item.stock <= item.reorderLevel
-  ).length;
-  const totalStock = inventory.reduce((acc, item) => acc + item.stock, 0);
-  const totalSKUs = products.flatMap((p) => p.variants).length;
+  const { currentLocation } = useLocation();
+
+  const locationInventory = useMemo(() => {
+    return inventory.filter(item => item.locationId === currentLocation.id);
+  }, [currentLocation]);
+
+  const dashboardStats = useMemo(() => {
+    const lowStockItems = locationInventory.filter(
+      (item) => item.stock > 0 && item.stock <= item.reorderLevel
+    ).length;
+    const totalStock = locationInventory.reduce((acc, item) => acc + item.stock, 0);
+
+    const productIdsInLocation = new Set(locationInventory.map(i => i.productId));
+    const skusInLocation = products.filter(p => productIdsInLocation.has(p.id))
+                                   .flatMap(p => p.variants)
+                                   .filter(v => locationInventory.some(i => i.sku === v.sku));
+
+    const totalSKUs = skusInLocation.length;
+
+    return { lowStockItems, totalStock, totalSKUs };
+  }, [locationInventory]);
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard for <span className="text-primary">{currentLocation.name}</span></h1>
           <p className="text-muted-foreground">
             Your business overview at a glance.
           </p>
@@ -65,8 +83,8 @@ export default function Dashboard() {
             <Boxes className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalStock.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Units across all locations</p>
+            <div className="text-2xl font-bold">{dashboardStats.totalStock.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Units in {currentLocation.name}</p>
           </CardContent>
         </Card>
         <Card>
@@ -75,8 +93,8 @@ export default function Dashboard() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalSKUs}</div>
-            <p className="text-xs text-muted-foreground">Unique product variants</p>
+            <div className="text-2xl font-bold">{dashboardStats.totalSKUs}</div>
+            <p className="text-xs text-muted-foreground">Unique variants in {currentLocation.name}</p>
           </CardContent>
         </Card>
         <Card>
@@ -86,7 +104,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{locations.length}</div>
-            <p className="text-xs text-muted-foreground">Warehouses and stores</p>
+            <p className="text-xs text-muted-foreground">Total warehouses and stores</p>
           </CardContent>
         </Card>
         <Card>
@@ -95,8 +113,8 @@ export default function Dashboard() {
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{lowStockItems}</div>
-            <p className="text-xs text-muted-foreground">Items needing reorder</p>
+            <div className="text-2xl font-bold">{dashboardStats.lowStockItems}</div>
+            <p className="text-xs text-muted-foreground">Items needing reorder in {currentLocation.name}</p>
           </CardContent>
         </Card>
       </div>
@@ -143,19 +161,19 @@ export default function Dashboard() {
         <Card>
             <CardHeader>
                 <CardTitle>Top Products by Stock</CardTitle>
-                <CardDescription>Your most stocked products.</CardDescription>
+                <CardDescription>Your most stocked products in {currentLocation.name}.</CardDescription>
             </CardHeader>
             <CardContent>
-                <StockChart />
+                <StockChart locationId={currentLocation.id} />
             </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Stock Levels by Location</CardTitle>
+          <CardTitle>Stock Levels</CardTitle>
           <CardDescription>
-            A detailed view of your product inventory across all locations.
+            A detailed view of your product inventory in {currentLocation.name}.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -164,30 +182,25 @@ export default function Dashboard() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>
-                  <TableHead className="hidden sm:table-cell">SKU</TableHead>
-                  {locations.map((loc) => (
-                    <TableHead key={loc.id} className="text-center hidden md:table-cell">
-                      {loc.name}
-                    </TableHead>
-                  ))}
+                  <TableHead>SKU</TableHead>
+                  <TableHead className="text-center">Stock</TableHead>
                   <TableHead className="text-center">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {products.flatMap((product) =>
                   product.variants.map((variant) => {
-                    const inventoryItems = inventory.filter(
+                    const inventoryItem = locationInventory.find(
                       (item) => item.sku === variant.sku
                     );
-                    const totalVariantStock = inventoryItems.reduce(
-                      (sum, item) => sum + item.stock,
-                      0
-                    );
-                    const reorderLevel = inventoryItems[0]?.reorderLevel ?? 0;
+                    
+                    if (!inventoryItem) return null; // Don't show products not in this location
+
+                    const { stock, reorderLevel } = inventoryItem;
                     const status =
-                      totalVariantStock === 0
+                      stock === 0
                         ? 'out-of-stock'
-                        : totalVariantStock <= reorderLevel
+                        : stock <= reorderLevel
                         ? 'low-stock'
                         : 'in-stock';
 
@@ -200,19 +213,9 @@ export default function Dashboard() {
                               {[variant.color, variant.size].filter(Boolean).join(' / ')}
                             </div>
                           )}
-                           <div className="sm:hidden text-xs text-muted-foreground">{variant.sku}</div>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">{variant.sku}</TableCell>
-                        {locations.map((loc) => {
-                          const item = inventoryItems.find(
-                            (i) => i.locationId === loc.id
-                          );
-                          return (
-                            <TableCell key={loc.id} className="text-center hidden md:table-cell">
-                              {item?.stock ?? 0}
-                            </TableCell>
-                          );
-                        })}
+                        <TableCell>{variant.sku}</TableCell>
+                        <TableCell className="text-center">{stock}</TableCell>
                         <TableCell className="text-center">
                           <Badge
                             variant={
@@ -233,6 +236,13 @@ export default function Dashboard() {
                       </TableRow>
                     );
                   })
+                ).filter(Boolean)}
+                 {locationInventory.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                            No inventory data for this location.
+                        </TableCell>
+                    </TableRow>
                 )}
               </TableBody>
             </Table>
