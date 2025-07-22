@@ -65,7 +65,7 @@ export default function FixedAssetsPage() {
           </p>
         </div>
         <Button asChild className="w-full sm:w-auto">
-          <Link href="#">
+          <Link href="/accounting/fixed-assets/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Asset
           </Link>
