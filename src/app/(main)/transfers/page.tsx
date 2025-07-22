@@ -77,6 +77,7 @@ export default function StockTransfersPage() {
                 <TableHead className="hidden sm:table-cell">Status</TableHead>
                 <TableHead className="hidden md:table-cell">Date</TableHead>
                 <TableHead className="hidden sm:table-cell text-right">Items</TableHead>
+                <TableHead className="text-right">Value</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -95,6 +96,7 @@ export default function StockTransfersPage() {
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{new Date(transfer.date).toLocaleDateString()}</TableCell>
                   <TableCell className="hidden sm:table-cell text-right">{transfer.itemCount}</TableCell>
+                  <TableCell className="text-right font-mono">${transfer.totalValue.toFixed(2)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

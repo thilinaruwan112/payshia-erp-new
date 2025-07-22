@@ -93,6 +93,8 @@ export type StockTransfer = {
     date: string;
     status: 'Pending' | 'In Transit' | 'Completed';
     itemCount: number;
+    items: { sku: string, quantity: number }[];
+    totalValue: number;
 }
 
 export type Plan = {
