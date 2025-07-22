@@ -211,3 +211,14 @@ export type SmsCampaign = {
     recipientCount: number;
     content: string;
 };
+
+export type EmailCampaign = {
+    id: string;
+    name: string;
+    subject: string;
+    targetAudience: 'All' | 'Silver' | 'Gold' | 'Platinum' | 'Custom';
+    status: 'Draft' | 'Sent';
+    sentDate?: string;
+    recipientCount: number;
+    content: string; // HTML content
+};

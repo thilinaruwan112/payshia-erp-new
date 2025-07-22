@@ -19,6 +19,7 @@ import { fixedAssets } from '@/lib/mock-data/fixed-assets';
 import { invoices } from '@/lib/mock-data/invoices';
 import { receipts } from '@/lib/mock-data/receipts';
 import { smsCampaigns } from '@/lib/mock-data/sms-campaigns';
+import { emailCampaigns } from '@/lib/mock-data/email-campaigns';
 
 
 export * from '@/lib/types';
@@ -43,4 +44,5 @@ export {
     invoices,
     receipts,
     smsCampaigns,
+    emailCampaigns,
 }

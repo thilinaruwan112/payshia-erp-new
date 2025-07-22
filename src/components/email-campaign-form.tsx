@@ -33,40 +33,41 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { Textarea } from "./ui/textarea";
 
-const smsCampaignFormSchema = z.object({
+const emailCampaignFormSchema = z.object({
   name: z.string().min(3, "Campaign name is required."),
+  subject: z.string().min(3, "Subject line is required."),
   targetAudience: z.enum(["All", "Silver", "Gold", "Platinum", "Custom"]),
-  content: z.string().min(10, "Message content is required.").max(160, "Message must be 160 characters or less."),
+  content: z.string().min(20, "Email content is required."),
 });
 
-type SmsCampaignFormValues = z.infer<typeof smsCampaignFormSchema>;
+type EmailCampaignFormValues = z.infer<typeof emailCampaignFormSchema>;
 
-export function SmsCampaignForm() {
+export function EmailCampaignForm() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const defaultValues: Partial<SmsCampaignFormValues> = {
+  const defaultValues: Partial<EmailCampaignFormValues> = {
     name: "",
+    subject: "",
     targetAudience: "All",
     content: "",
   };
 
-  const form = useForm<SmsCampaignFormValues>({
-    resolver: zodResolver(smsCampaignFormSchema),
+  const form = useForm<EmailCampaignFormValues>({
+    resolver: zodResolver(emailCampaignFormSchema),
     defaultValues,
     mode: "onChange",
   });
 
-  const messageContent = form.watch('content');
-  const characterCount = messageContent.length;
+  const emailContent = form.watch('content');
 
-  function onSubmit(data: SmsCampaignFormValues) {
+  function onSubmit(data: EmailCampaignFormValues) {
     console.log(data);
     toast({
       title: "Campaign Sent!",
-      description: `Your campaign "${data.name}" has been sent.`,
+      description: `Your email campaign "${data.name}" has been sent.`,
     });
-    router.push('/crm/sms-campaigns');
+    router.push('/crm/email-campaigns');
   }
 
   return (
@@ -74,8 +75,8 @@ export function SmsCampaignForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-                 <h1 className="text-3xl font-bold tracking-tight text-nowrap">New SMS Campaign</h1>
-                 <p className="text-muted-foreground">Craft and send a new SMS to your customers.</p>
+                 <h1 className="text-3xl font-bold tracking-tight text-nowrap">New Email Campaign</h1>
+                 <p className="text-muted-foreground">Craft and send a new email to your customers.</p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
@@ -97,7 +98,7 @@ export function SmsCampaignForm() {
                                 <FormItem>
                                 <FormLabel>Campaign Name</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="e.g. Summer Sale" {...field} />
+                                    <Input placeholder="e.g. End of Year Sale" {...field} />
                                 </FormControl>
                                 <FormDescription>An internal name for this campaign.</FormDescription>
                                 <FormMessage />
@@ -105,6 +106,20 @@ export function SmsCampaignForm() {
                             )}
                         />
                         <FormField
+                            control={form.control}
+                            name="subject"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Subject Line</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="e.g. Don't miss these deals!" {...field} />
+                                </FormControl>
+                                <FormDescription>The subject of the email.</FormDescription>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
                             control={form.control}
                             name="targetAudience"
                             render={({ field }) => (
@@ -135,20 +150,15 @@ export function SmsCampaignForm() {
                                 name="content"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>Message Content</FormLabel>
+                                    <FormLabel>Email Body</FormLabel>
                                     <FormControl>
                                         <Textarea
-                                            placeholder="Write your SMS message here..."
-                                            className="resize-y min-h-[120px]"
+                                            placeholder="Write your email content here. HTML is supported."
+                                            className="resize-y min-h-[250px]"
                                             {...field}
                                         />
                                     </FormControl>
-                                    <div className="flex justify-between items-center">
-                                        <FormMessage />
-                                        <div className="text-xs text-muted-foreground">
-                                            {characterCount} / 160
-                                        </div>
-                                    </div>
+                                    <FormMessage />
                                     </FormItem>
                                 )}
                             />
@@ -160,20 +170,17 @@ export function SmsCampaignForm() {
             <div>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Phone Preview</CardTitle>
-                        <CardDescription>This is how your message will look on a mobile device.</CardDescription>
+                        <CardTitle>Email Preview</CardTitle>
+                        <CardDescription>This is a rough preview of your email.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="w-full max-w-[280px] mx-auto bg-slate-900 rounded-[40px] border-[10px] border-slate-700 shadow-2xl overflow-hidden">
-                            <div className="h-[500px] bg-slate-100 dark:bg-slate-800 p-4">
-                                <div className="space-y-4">
-                                    <div className="flex justify-end">
-                                        <div className="bg-blue-500 text-white p-3 rounded-2xl rounded-br-none max-w-[80%] break-words">
-                                            <p className="text-sm">
-                                                {messageContent || "Your message will appear here..."}
-                                            </p>
-                                        </div>
-                                    </div>
+                        <div className="w-full border rounded-lg overflow-hidden">
+                            <div className="p-4 bg-muted text-sm text-muted-foreground">
+                                <p>To: [Customer Name]</p>
+                                <p>From: Payshia ERP &lt;no-reply@payshia.com&gt;</p>
+                            </div>
+                            <div className="p-4">
+                                <div className="prose prose-sm dark:prose-invert" dangerouslySetInnerHTML={{ __html: emailContent || "<p>Your email content will appear here...</p>" }}>
                                 </div>
                             </div>
                         </div>

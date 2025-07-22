@@ -34,6 +34,7 @@ import {
   Contact,
   Gem,
   MessageSquare,
+  Mail,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -118,7 +119,8 @@ const navItems = [
     subItems: [
         { href: '/crm/customers', label: 'Customers' },
         { href: '/crm/loyalty-schema', label: 'Loyalty Schema' },
-        { href: '/crm/sms-campaigns', label: 'SMS Campaigns' },
+        { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
+        { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
     ],
   },
   {
@@ -383,6 +385,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                               className="w-full justify-start text-muted-foreground"
                               isActive={pathname === subItem.href}
                             >
+                              {subItem.icon && <subItem.icon className="mr-2 h-4 w-4" />}
                               {subItem.label}
                                {subItem.href.includes('ai') && (
                                 <Badge
