@@ -31,7 +31,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { FixedAsset } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +60,18 @@ export default function FixedAssetsPage() {
   const { toast } = useToast();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<FixedAsset | null>(null);
+
+  const depreciationDetails = useMemo(() => {
+    if (!selectedAsset) return { amount: 0, method: 'N/A' };
+    // Simplified depreciation calculation for demonstration
+    const usefulLifeYears = selectedAsset.assetType === 'Buildings' ? 40 : (selectedAsset.assetType === 'Vehicles' || selectedAsset.assetType === 'Machinery' ? 5 : 3);
+    const monthlyDepreciation = selectedAsset.purchaseCost / usefulLifeYears / 12;
+
+    return {
+        amount: monthlyDepreciation,
+        method: 'Straight-Line'
+    };
+  }, [selectedAsset]);
 
   const handleRunDepreciation = () => {
     if (!selectedAsset) return;
@@ -168,6 +180,10 @@ export default function FixedAssetsPage() {
               This will post a journal entry to record depreciation for{' '}
               <span className="font-bold text-foreground">{selectedAsset?.name}</span>.
               This action cannot be undone.
+              <div className="mt-4 space-y-1 text-sm text-muted-foreground bg-muted p-3 rounded-md border">
+                <p><strong>Method:</strong> {depreciationDetails.method}</p>
+                <p><strong>Amount:</strong> <span className="font-mono">${depreciationDetails.amount.toFixed(2)}</span> (for the current month)</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
