@@ -56,7 +56,7 @@ export default function Dashboard() {
     const totalSKUs = skusInLocation.length;
 
     return { lowStockItems, totalStock, totalSKUs };
-  }, [locationInventory]);
+  }, [locationInventory, products]);
 
   return (
     <div className="flex flex-col gap-6">
