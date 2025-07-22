@@ -47,6 +47,9 @@ export type User = {
   role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer';
   avatar: string;
   loyaltyPoints?: number;
+  email?: string;
+  phone?: string;
+  address?: string;
 };
 
 export type Collection = {

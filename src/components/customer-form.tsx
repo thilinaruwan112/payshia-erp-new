@@ -25,11 +25,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import type { User } from '@/lib/types';
 import { Star } from 'lucide-react';
+import { Textarea } from './ui/textarea';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'Customer name is required.'),
   email: z.string().email('Invalid email address.').optional().or(z.literal('')),
   phone: z.string().optional(),
+  address: z.string().optional(),
+  loyaltyPoints: z.coerce.number().min(0, "Points must be non-negative.").optional(),
 });
 
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
@@ -38,14 +41,23 @@ interface CustomerFormProps {
   customer?: User;
 }
 
+const getLoyaltyTier = (points: number) => {
+  if (points >= 500) return 'Platinum';
+  if (points >= 250) return 'Gold';
+  if (points >= 100) return 'Silver';
+  return 'Bronze';
+};
+
 export function CustomerForm({ customer }: CustomerFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
   const defaultValues: Partial<CustomerFormValues> = {
     name: customer?.name || '',
-    // Assuming customers might not have email or phone, so we need to handle that.
-    // The user type does not currently have email/phone, so I'll add them as optional.
+    email: customer?.email || '',
+    phone: customer?.phone || '',
+    address: customer?.address || '',
+    loyaltyPoints: customer?.loyaltyPoints || 0,
   };
 
   const form = useForm<CustomerFormValues>({
@@ -53,6 +65,9 @@ export function CustomerForm({ customer }: CustomerFormProps) {
     defaultValues,
     mode: 'onChange',
   });
+
+  const watchedPoints = form.watch('loyaltyPoints') || 0;
+  const currentTier = getLoyaltyTier(watchedPoints);
 
   function onSubmit(data: CustomerFormValues) {
     console.log(data);
@@ -63,7 +78,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
     router.push('/customers');
   }
 
-  const pageTitle = customer ? 'Edit Customer' : 'Create Customer';
+  const pageTitle = customer ? `Edit Customer: ${customer.name}` : 'Create Customer';
   const pageDescription = customer
     ? 'Update the details for this customer.'
     : 'Add a new customer to your system.';
@@ -92,11 +107,11 @@ export function CustomerForm({ customer }: CustomerFormProps) {
             </Button>
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            <div className="lg:col-span-2 space-y-8">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Customer Information</CardTitle>
+                    <CardTitle>Contact Information</CardTitle>
                     <CardDescription>
                       Enter the basic contact details for the customer.
                     </CardDescription>
@@ -120,7 +135,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email (Optional)</FormLabel>
+                          <FormLabel>Email</FormLabel>
                           <FormControl>
                             <Input
                               type="email"
@@ -137,7 +152,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Phone (Optional)</FormLabel>
+                          <FormLabel>Phone</FormLabel>
                           <FormControl>
                             <Input placeholder="e.g. 123-456-7890" {...field} />
                           </FormControl>
@@ -147,25 +162,63 @@ export function CustomerForm({ customer }: CustomerFormProps) {
                     />
                   </CardContent>
                 </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Address</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                         <FormField
+                            control={form.control}
+                            name="address"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormControl>
+                                    <Textarea
+                                        placeholder="123 Main St, Anytown, USA"
+                                        className="resize-none"
+                                        rows={4}
+                                        {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
             </div>
-            {customer && (
-                 <div>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Loyalty Program</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-center gap-2">
-                                <Star className="w-8 h-8 text-yellow-400" />
-                                <div>
-                                    <p className="text-muted-foreground">Current Balance</p>
-                                    <p className="text-2xl font-bold">{customer.loyaltyPoints || 0} Points</p>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+            <div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Loyalty Program</CardTitle>
+                        <CardDescription>
+                          Manage the customer's loyalty points and tier.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="loyaltyPoints"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Loyalty Points</FormLabel>
+                                <FormControl>
+                                    <Input type="number" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-muted-foreground">Current Tier</p>
+                          <p className="text-lg font-bold flex items-center gap-2">
+                             <Star className="w-5 h-5 text-yellow-400" />
+                            {currentTier}
+                          </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
       </form>
     </Form>
