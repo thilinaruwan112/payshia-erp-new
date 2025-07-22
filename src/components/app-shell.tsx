@@ -45,6 +45,7 @@ import {
   SidebarMenuButton,
   SidebarInset,
   useSidebar,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -68,6 +69,7 @@ import { ThemeToggle } from './theme-toggle';
 import { CalculatorModal } from './calculator-modal';
 import { format } from 'date-fns';
 import { useLocation } from '@/components/location-provider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 const user = {
   name: 'Admin User',
@@ -170,9 +172,55 @@ const navItems = [
   },
 ];
 
+function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
+    const { currentLocation, setCurrentLocation, availableLocations } = useLocation();
+
+    if (isMobile) {
+        return (
+            <div className="md:hidden p-2">
+                 <Select value={currentLocation.id} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.id === id)!)}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                         {availableLocations.map(location => (
+                             <SelectItem key={location.id} value={location.id}>
+                                {location.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        )
+    }
+
+    return (
+         <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                 <Button variant="outline" className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    <span>{currentLocation.name}</span>
+                    <ChevronDown className="h-3 w-3" />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                <DropdownMenuLabel>Change Location</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup value={currentLocation.id} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.id === id)!)}>
+                    {availableLocations.map(location => (
+                         <DropdownMenuRadioItem key={location.id} value={location.id}>
+                            {location.name}
+                        </DropdownMenuRadioItem>
+                    ))}
+                </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+}
+
+
 function DateTimeLocation() {
     const [currentTime, setCurrentTime] = useState(new Date());
-    const { currentLocation, setCurrentLocation, availableLocations } = useLocation();
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -183,26 +231,7 @@ function DateTimeLocation() {
 
     return (
         <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground sm:mr-auto">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                     <Button variant="outline" className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <span>{currentLocation.name}</span>
-                        <ChevronDown className="h-3 w-3" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuLabel>Change Location</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuRadioGroup value={currentLocation.id} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.id === id)!)}>
-                        {availableLocations.map(location => (
-                             <DropdownMenuRadioItem key={location.id} value={location.id}>
-                                {location.name}
-                            </DropdownMenuRadioItem>
-                        ))}
-                    </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-            </DropdownMenu>
+           <LocationSwitcher />
 
              <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4" />
@@ -323,6 +352,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SidebarHeader>
           <Brand />
         </SidebarHeader>
+         <LocationSwitcher isMobile={true} />
+         <SidebarSeparator />
         <SidebarContent className="p-4">
           <SidebarMenu>
             {navItems.map((item, index) =>
@@ -405,7 +436,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="flex flex-col">
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
           <div className="flex items-center gap-4">
             <SidebarTrigger className="md:hidden" />
             <DateTimeLocation />
