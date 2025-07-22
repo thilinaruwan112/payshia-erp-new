@@ -301,11 +301,14 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
-        <footer className="border-t p-4 text-center text-xs text-muted-foreground">
-            Powered by{' '}
-            <a href="https://payshia.com" target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline">
-                Payshia Software Solutions
-            </a>
+        <footer className="flex items-center justify-between border-t p-4 px-6 text-xs text-muted-foreground">
+            <span>&copy; {new Date().getFullYear()} Payshia ERP. All rights reserved.</span>
+            <span>
+              Powered by{' '}
+              <a href="https://payshia.com" target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline">
+                  Payshia Software Solutions
+              </a>
+            </span>
         </footer>
       </SidebarInset>
     </>
