@@ -17,6 +17,7 @@ import { expenses } from '@/lib/mock-data/expenses';
 import { payments } from '@/lib/mock-data/payments';
 import { fixedAssets } from '@/lib/mock-data/fixed-assets';
 import { invoices } from '@/lib/mock-data/invoices';
+import { receipts } from '@/lib/mock-data/receipts';
 
 
 export * from '@/lib/types';
@@ -39,4 +40,5 @@ export {
     payments,
     fixedAssets,
     invoices,
+    receipts,
 }

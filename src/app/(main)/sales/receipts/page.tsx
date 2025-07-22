@@ -6,9 +6,26 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { receipts } from '@/lib/data';
 import Link from 'next/link';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 
 export default function ReceiptsPage() {
   return (
@@ -17,7 +34,7 @@ export default function ReceiptsPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Payment Receipts</h1>
           <p className="text-muted-foreground">
-            Manage your payment receipts.
+            Manage your customer payment receipts.
           </p>
         </div>
         <Button asChild className="w-full sm:w-auto">
@@ -36,10 +53,50 @@ export default function ReceiptsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-12 text-muted-foreground">
-            <p>No receipts yet.</p>
-            <p className="text-sm">Create your first receipt to get started.</p>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Receipt #</TableHead>
+                <TableHead>Customer</TableHead>
+                <TableHead className="hidden sm:table-cell">Invoice #</TableHead>
+                <TableHead className="hidden md:table-cell">Date</TableHead>
+                <TableHead className="hidden md:table-cell">Method</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {receipts.map((receipt) => (
+                <TableRow key={receipt.id}>
+                  <TableCell className="font-medium">{receipt.id}</TableCell>
+                  <TableCell>{receipt.customerName}</TableCell>
+                  <TableCell className="hidden sm:table-cell">{receipt.invoiceId}</TableCell>
+                  <TableCell className="hidden md:table-cell">{new Date(receipt.date).toLocaleDateString()}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                     <Badge variant="secondary">{receipt.paymentMethod}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right font-mono">${receipt.amount.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="icon" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Toggle menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem>Print Receipt</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
     </div>

@@ -188,3 +188,12 @@ export type Invoice = {
   discount: number;
   items: InvoiceItem[];
 };
+
+export type PaymentReceipt = {
+  id: string;
+  invoiceId: string;
+  customerName: string;
+  date: string;
+  amount: number;
+  paymentMethod: 'Cash' | 'Card' | 'Bank Transfer';
+};
