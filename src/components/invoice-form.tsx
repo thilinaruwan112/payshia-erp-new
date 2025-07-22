@@ -39,8 +39,10 @@ import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
 import React from "react";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
 const invoiceFormSchema = z.object({
+  invoiceType: z.enum(["Retail", "Wholesale"]),
   customerId: z.string().min(1, "Customer is required."),
   orderId: z.string().optional(),
   invoiceDate: z.date({ required_error: "Invoice date is required." }),
@@ -72,10 +74,12 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
   const allSkus = products.flatMap(p => p.variants.map(v => ({
       label: `${p.name} (${v.sku})`,
       value: v.sku,
-      price: p.price,
+      sellingPrice: p.price,
+      wholesalePrice: p.wholesalePrice || p.price
   })));
   
   const defaultValues: Partial<InvoiceFormValues> = {
+    invoiceType: "Retail",
     invoiceDate: new Date(),
     dueDate: addDays(new Date(), 30),
     status: 'Draft',
@@ -99,6 +103,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
   const watchedItems = form.watch("items");
   const customerId = form.watch("customerId");
   const billDiscount = form.watch("discount") || 0;
+  const invoiceType = form.watch("invoiceType");
 
   const availableOrders = React.useMemo(() => {
     if (!customerId) return [];
@@ -111,11 +116,12 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
     const order = orders.find(o => o.id === orderId);
     if (order) {
         const newItems = order.items.map(item => {
-            const product = products.find(p => p.variants.some(v => v.sku === item.sku));
+            const product = allSkus.find(s => s.value === item.sku);
+            const price = invoiceType === 'Wholesale' ? product?.wholesalePrice : product?.sellingPrice;
             return {
                 sku: item.sku,
                 quantity: item.quantity,
-                unitPrice: product?.price || 0,
+                unitPrice: price || 0,
                 discount: 0,
             }
         });
@@ -154,7 +160,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
                  <h1 className="text-3xl font-bold tracking-tight text-nowrap">New Invoice</h1>
-                 <p className="text-muted-foreground">Create a new invoice for a customer.</p>
+                 <p className="text-muted-foreground">Create a new retail or wholesale invoice for a customer.</p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
@@ -168,6 +174,41 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                     <CardTitle>Invoice Details</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                        control={form.control}
+                        name="invoiceType"
+                        render={({ field }) => (
+                          <FormItem className="space-y-3">
+                            <FormLabel>Invoice Type</FormLabel>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="flex items-center space-x-4"
+                              >
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="Retail" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    Retail
+                                  </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="Wholesale" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    Wholesale
+                                  </FormLabel>
+                                </FormItem>
+                              </RadioGroup>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    <div></div>
                     <FormField
                         control={form.control}
                         name="customerId"
@@ -337,7 +378,8 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                                                         onValueChange={(value) => {
                                                             field.onChange(value);
                                                             const selected = allSkus.find(s => s.value === value);
-                                                            form.setValue(`items.${index}.unitPrice`, selected?.price || 0);
+                                                            const price = invoiceType === 'Wholesale' ? selected?.wholesalePrice : selected?.sellingPrice;
+                                                            form.setValue(`items.${index}.unitPrice`, price || 0);
                                                         }}
                                                         defaultValue={field.value}
                                                     >
