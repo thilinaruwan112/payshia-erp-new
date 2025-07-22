@@ -30,6 +30,7 @@ import {
   MapPin,
   CalendarDays,
   Clock,
+  Check,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -51,6 +52,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -62,6 +65,8 @@ import {
 import { ThemeToggle } from './theme-toggle';
 import { CalculatorModal } from './calculator-modal';
 import { format } from 'date-fns';
+import { locations } from '@/lib/data';
+import type { Location } from '@/lib/types';
 
 const user = {
   name: 'Admin User',
@@ -149,6 +154,7 @@ const navItems = [
 
 function DateTimeLocation() {
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [currentLocation, setCurrentLocation] = useState<Location>(locations[1]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -159,10 +165,27 @@ function DateTimeLocation() {
 
     return (
         <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground sm:mr-auto">
-             <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>Downtown Store</span>
-            </div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                     <Button variant="ghost" className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>{currentLocation.name}</span>
+                        <ChevronDown className="h-3 w-3" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuLabel>Change Location</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuRadioGroup value={currentLocation.id} onValueChange={(id) => setCurrentLocation(locations.find(l => l.id === id)!)}>
+                        {locations.map(location => (
+                             <DropdownMenuRadioItem key={location.id} value={location.id}>
+                                {location.name}
+                            </DropdownMenuRadioItem>
+                        ))}
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
+
              <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4" />
                 <span>{format(currentTime, 'PPP')}</span>
@@ -395,3 +418,5 @@ export function AppShell({ children }: { children: ReactNode }) {
     </>
   );
 }
+
+    
