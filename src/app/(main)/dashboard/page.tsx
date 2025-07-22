@@ -25,10 +25,13 @@ import {
   PlusCircle,
   Warehouse,
   TerminalSquare,
+  TrendingUp,
 } from 'lucide-react';
 import { inventory, locations, products } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { SalesChart } from '@/components/sales-chart';
+import { StockChart } from '@/components/stock-chart';
 
 export default function Dashboard() {
   const lowStockItems = inventory.filter(
@@ -41,19 +44,17 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Inventory Overview</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Real-time stock levels across all your locations.
+            Your business overview at a glance.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          <Button variant="outline" className="w-full sm:w-auto">
-            <ArrowDownToDot className="mr-2 h-4 w-4" />
-            Stock In
-          </Button>
-          <Button className="w-full sm:w-auto">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            New Product
+           <Button asChild className="w-full sm:w-auto">
+            <Link href="/products/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Product
+            </Link>
           </Button>
         </div>
       </div>
@@ -100,25 +101,61 @@ export default function Dashboard() {
         </Card>
       </div>
 
-       <Link href="/pos-system" target="_blank" rel="noopener noreferrer">
-        <Card className="hover:border-primary transition-colors cursor-pointer">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Point of Sale (POS)</CardTitle>
-            <TerminalSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              Click here to launch the POS terminal for in-person sales.
-            </p>
-          </CardContent>
+       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+         <Link href="/pos-system" target="_blank" rel="noopener noreferrer">
+            <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Point of Sale (POS)</CardTitle>
+                <TerminalSquare className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">
+                  Click here to launch the POS terminal for in-person sales.
+                </p>
+              </CardContent>
+            </Card>
+        </Link>
+         <Link href="/inventory/forecast">
+            <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">AI Inventory Forecasting</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">
+                  Predict future stock needs and optimize inventory levels with AI.
+                </p>
+              </CardContent>
+            </Card>
+        </Link>
+       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Sales Overview</CardTitle>
+                <CardDescription>A summary of your recent sales.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <SalesChart />
+            </CardContent>
         </Card>
-       </Link>
+        <Card>
+            <CardHeader>
+                <CardTitle>Top Products by Stock</CardTitle>
+                <CardDescription>Your most stocked products.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <StockChart />
+            </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Stock Levels</CardTitle>
+          <CardTitle>Stock Levels by Location</CardTitle>
           <CardDescription>
-            A detailed view of your product inventory.
+            A detailed view of your product inventory across all locations.
           </CardDescription>
         </CardHeader>
         <CardContent>

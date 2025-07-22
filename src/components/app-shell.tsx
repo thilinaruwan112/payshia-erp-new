@@ -23,6 +23,7 @@ import {
   Receipt,
   FileText,
   Wallet,
+  TrendingUp,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -74,11 +75,12 @@ const navItems = [
     icon: BarChart3,
   },
   {
-    label: 'Products',
+    label: 'Inventory',
     icon: Package,
     subItems: [
       { href: '/products', label: 'All Products' },
       { href: '/products/collections', label: 'Collections' },
+      { href: '/inventory/forecast', label: 'AI Forecast' },
     ],
   },
   {
@@ -204,7 +206,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SidebarHeader>
           <Brand />
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="p-4">
           <SidebarMenu>
             {navItems.map((item, index) =>
               item.subItems ? (
@@ -232,6 +234,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                               isActive={pathname === subItem.href}
                             >
                               {subItem.label}
+                               {subItem.href.includes('ai') && (
+                                <Badge
+                                  variant="destructive"
+                                  className="ml-auto bg-accent text-accent-foreground animate-pulse"
+                                >
+                                  AI
+                                </Badge>
+                              )}
                             </SidebarMenuButton>
                           </Link>
                         </li>
