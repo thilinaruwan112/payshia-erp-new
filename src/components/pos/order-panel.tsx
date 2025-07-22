@@ -18,6 +18,7 @@ import {
   ChefHat,
   Notebook,
   PlusSquare,
+  Star,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -205,14 +206,20 @@ export function OrderPanel({
       </header>
 
       <div className='p-4 border-b border-border'>
-        <div className='flex items-center gap-3'>
-            <Avatar className='h-12 w-12'>
-                <AvatarImage src={customer.avatar} alt={customer.name} data-ai-hint="profile picture" />
-                <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div>
-                <p className='font-semibold'>{customer.name}</p>
-                <p className='text-xs text-muted-foreground'>{customer.role}</p>
+        <div className='flex items-center justify-between'>
+            <div className='flex items-center gap-3'>
+                <Avatar className='h-12 w-12'>
+                    <AvatarImage src={customer.avatar} alt={customer.name} data-ai-hint="profile picture" />
+                    <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <p className='font-semibold'>{customer.name}</p>
+                    <p className='text-xs text-muted-foreground'>{customer.role}</p>
+                </div>
+            </div>
+            <div className='flex items-center gap-1.5 text-yellow-500'>
+                <Star className='h-5 w-5' />
+                <span className='font-bold text-lg'>{customer.loyaltyPoints || 0}</span>
             </div>
         </div>
       </div>

@@ -46,6 +46,7 @@ export type User = {
   name: string;
   role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer';
   avatar: string;
+  loyaltyPoints?: number;
 };
 
 export type Collection = {

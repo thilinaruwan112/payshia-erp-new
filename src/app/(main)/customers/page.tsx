@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Star } from 'lucide-react';
 import { users, orders } from '@/lib/data';
 import Link from 'next/link';
 import {
@@ -52,7 +52,7 @@ export default function CustomersPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
           <p className="text-muted-foreground">
-            Manage your customer database.
+            Manage your customer database and loyalty program.
           </p>
         </div>
         <Button asChild className="w-full sm:w-auto">
@@ -77,6 +77,9 @@ export default function CustomersPage() {
                 <TableHead>Customer</TableHead>
                 <TableHead className="hidden sm:table-cell">
                   Total Orders
+                </TableHead>
+                <TableHead className="hidden md:table-cell">
+                  Loyalty Points
                 </TableHead>
                 <TableHead className="hidden md:table-cell">
                   Total Spent
@@ -110,6 +113,12 @@ export default function CustomersPage() {
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-center">
                     <Badge variant="secondary">{customer.orderCount}</Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <div className="flex items-center justify-start gap-1">
+                      <Star className="w-4 h-4 text-yellow-400" />
+                      <span className="font-medium">{customer.loyaltyPoints || 0}</span>
+                    </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell font-mono">
                     ${customer.totalSpent.toFixed(2)}

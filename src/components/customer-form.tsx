@@ -24,6 +24,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import type { User } from '@/lib/types';
+import { Star } from 'lucide-react';
 
 const customerFormSchema = z.object({
   name: z.string().min(3, 'Customer name is required.'),
@@ -91,60 +92,81 @@ export function CustomerForm({ customer }: CustomerFormProps) {
             </Button>
           </div>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer Information</CardTitle>
-            <CardDescription>
-              Enter the basic contact details for the customer.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Customer Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. John Doe" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email (Optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="e.g. john.doe@example.com"
-                      {...field}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Customer Information</CardTitle>
+                    <CardDescription>
+                      Enter the basic contact details for the customer.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Customer Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. John Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Phone (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. 123-456-7890" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email (Optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="email"
+                              placeholder="e.g. john.doe@example.com"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Phone (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g. 123-456-7890" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+            </div>
+            {customer && (
+                 <div>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Loyalty Program</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center gap-2">
+                                <Star className="w-8 h-8 text-yellow-400" />
+                                <div>
+                                    <p className="text-muted-foreground">Current Balance</p>
+                                    <p className="text-2xl font-bold">{customer.loyaltyPoints || 0} Points</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
+        </div>
       </form>
     </Form>
   );
