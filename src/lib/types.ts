@@ -154,3 +154,13 @@ export type Payment = {
     paymentAccountId: number;
     paymentAccountName: string;
 };
+
+export type FixedAsset = {
+    id: string;
+    name: string;
+    assetType: string;
+    purchaseDate: string;
+    purchaseCost: number;
+    accumulatedDepreciation: number;
+    status: 'In Use' | 'Under Maintenance' | 'Disposed';
+};

@@ -14,6 +14,7 @@ import { chartOfAccounts } from '@/lib/mock-data/chart-of-accounts';
 import { journalEntries } from '@/lib/mock-data/journal-entries';
 import { expenses } from '@/lib/mock-data/expenses';
 import { payments } from '@/lib/mock-data/payments';
+import { fixedAssets } from '@/lib/mock-data/fixed-assets';
 
 
 export * from '@/lib/types';
@@ -34,4 +35,5 @@ export {
     journalEntries,
     expenses,
     payments,
+    fixedAssets,
 }

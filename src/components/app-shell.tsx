@@ -136,6 +136,7 @@ const navItems = [
       { href: '/accounting/expenses', label: 'Expenses' },
       { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts' },
       { href: '/accounting/journal-entries', label: 'Journal Entries' },
+      { href: '/accounting/fixed-assets', label: 'Fixed Assets' },
     ],
   },
   {
