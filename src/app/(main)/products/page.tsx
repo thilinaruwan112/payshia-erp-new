@@ -29,6 +29,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { checkPlanLimit } from '@/lib/plan-limits';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 export default async function ProductsPage() {
   const { hasAccess, limit, usage, name } = await checkPlanLimit('products');
@@ -91,6 +92,8 @@ export default async function ProductsPage() {
                 const totalStock = inventory
                   .filter((item) => item.productId === product.id)
                   .reduce((sum, item) => sum + item.stock, 0);
+                
+                const status = totalStock > 20 ? 'in-stock' : totalStock > 0 ? 'low-stock' : 'out-of-stock';
 
                 return (
                   <TableRow key={product.id}>
@@ -109,8 +112,12 @@ export default async function ProductsPage() {
                       <div className="text-sm text-muted-foreground lg:hidden">{product.category}</div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                       <Badge variant={totalStock > 0 ? (totalStock > 20 ? "outline" : "secondary") : "destructive"} className={totalStock > 0 ? (totalStock > 20 ? 'text-accent-foreground border-accent' : '') : ''}>
-                        {totalStock > 20 ? 'In Stock' : totalStock > 0 ? 'Low Stock' : 'Out of Stock'}
+                       <Badge variant={'secondary'} className={cn(
+                          status === 'in-stock' && 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200',
+                          status === 'low-stock' && 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200',
+                          status === 'out-of-stock' && 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+                       )}>
+                        {status.replace('-', ' ')}
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{totalStock} in stock</TableCell>
