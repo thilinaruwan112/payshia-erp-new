@@ -11,6 +11,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -28,12 +29,13 @@ import type { Collection, Product } from "@/lib/types";
 import { ProductPickerDialog } from "./product-picker-dialog";
 import React from "react";
 import Image from "next/image";
-import { X } from "lucide-react";
+import { X, UploadCloud } from "lucide-react";
 
 const collectionFormSchema = z.object({
   title: z.string().min(3, {
     message: "Collection title must be at least 3 characters.",
   }),
+  coverImage: z.string().optional(),
   products: z.array(z.string()).optional(),
 });
 
@@ -47,14 +49,13 @@ export function CollectionForm({ collection }: CollectionFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   
-  // For the prototype, we'll just use a few products.
-  // In a real app, this would come from the collection data.
   const [selectedProducts, setSelectedProducts] = React.useState<Product[]>(
     collection ? products.slice(0, collection.productCount) : []
   );
 
   const defaultValues: Partial<CollectionFormValues> = {
     title: collection?.title || "",
+    coverImage: collection?.coverImage || "",
     products: selectedProducts.map(p => p.id),
   };
 
@@ -105,7 +106,8 @@ export function CollectionForm({ collection }: CollectionFormProps) {
             </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          <div className="lg:col-span-2 space-y-8">
             <Card>
                 <CardHeader>
                     <CardTitle>Collection Details</CardTitle>
@@ -126,7 +128,6 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                     />
                 </CardContent>
             </Card>
-
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
@@ -139,7 +140,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                 </CardHeader>
                 <CardContent>
                     {selectedProducts.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                            {selectedProducts.map(product => (
                              <div key={product.id} className="relative group">
                                 <Image
@@ -163,12 +164,55 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                            ))}
                         </div>
                     ) : (
-                        <div className="text-center text-muted-foreground py-12">
+                        <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
                             <p>No products in this collection yet.</p>
                         </div>
                     )}
                 </CardContent>
             </Card>
+          </div>
+          <div className="space-y-8">
+             <Card>
+                <CardHeader>
+                  <CardTitle>Cover Image</CardTitle>
+                  <CardDescription>
+                    This will be displayed on the collection page.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center gap-4">
+                  {form.watch('coverImage') ? (
+                    <div className="relative">
+                       <Image
+                        src={form.watch('coverImage') as string}
+                        alt="Cover image preview"
+                        width={200}
+                        height={200}
+                        className="rounded-lg object-cover aspect-video"
+                        data-ai-hint="collection cover photo"
+                      />
+                       <Button 
+                          variant="destructive" 
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6"
+                          onClick={() => form.setValue('coverImage', '')}
+                      >
+                          <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="w-full border-2 border-dashed border-muted rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
+                      <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                      <p className="mt-4 text-sm text-muted-foreground">
+                        No image uploaded
+                      </p>
+                    </div>
+                  )}
+                  <Button variant="outline" type="button" className="w-full">
+                    Upload Image
+                  </Button>
+                </CardContent>
+              </Card>
+          </div>
         </div>
       </form>
     </Form>

@@ -56,6 +56,7 @@ export type Collection = {
   id: string;
   title: string;
   productCount: number;
+  coverImage?: string;
 };
 
 export type Supplier = {

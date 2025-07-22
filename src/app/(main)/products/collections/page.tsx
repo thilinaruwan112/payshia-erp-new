@@ -25,6 +25,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import Image from 'next/image';
 
 export default function CollectionsPage() {
   return (
@@ -55,6 +56,7 @@ export default function CollectionsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[100px] hidden sm:table-cell">Image</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead className="text-right">Product Count</TableHead>
                 <TableHead>
@@ -65,6 +67,16 @@ export default function CollectionsPage() {
             <TableBody>
               {collections.map((collection) => (
                 <TableRow key={collection.id}>
+                  <TableCell className="hidden sm:table-cell">
+                     <Image
+                        alt={collection.title}
+                        className="aspect-square rounded-md object-cover"
+                        height="64"
+                        src={collection.coverImage || `https://placehold.co/64x64.png`}
+                        width="64"
+                        data-ai-hint="collection photo"
+                      />
+                  </TableCell>
                   <TableCell className="font-medium">{collection.title}</TableCell>
                   <TableCell className="text-right">
                     {collection.productCount}
