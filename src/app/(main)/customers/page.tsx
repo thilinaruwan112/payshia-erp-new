@@ -27,6 +27,31 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import type { User } from '@/lib/types';
+
+const getLoyaltyTier = (points: number) => {
+  if (points >= 500) return 'Platinum';
+  if (points >= 250) return 'Gold';
+  if (points >= 100) return 'Silver';
+  return 'Bronze';
+};
+
+type LoyaltyTier = ReturnType<typeof getLoyaltyTier>;
+
+const getTierColor = (tier: LoyaltyTier) => {
+  switch (tier) {
+    case 'Platinum':
+      return 'bg-purple-200 text-purple-800 border-purple-300 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700';
+    case 'Gold':
+      return 'bg-yellow-200 text-yellow-800 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-700';
+    case 'Silver':
+      return 'bg-slate-200 text-slate-800 border-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600';
+    default: // Bronze
+      return 'bg-orange-200 text-orange-800 border-orange-300 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-700';
+  }
+};
+
 
 export default function CustomersPage() {
   const customers = users.filter((user) => user.role === 'Customer');
@@ -39,10 +64,12 @@ export default function CustomersPage() {
       (acc, order) => acc + order.total,
       0
     );
+    const loyaltyTier = getLoyaltyTier(customer.loyaltyPoints || 0);
     return {
       ...customer,
       orderCount: customerOrders.length,
       totalSpent,
+      loyaltyTier,
     };
   });
 
@@ -79,7 +106,7 @@ export default function CustomersPage() {
                   Total Orders
                 </TableHead>
                 <TableHead className="hidden md:table-cell">
-                  Loyalty Points
+                  Loyalty Tier
                 </TableHead>
                 <TableHead className="hidden md:table-cell">
                   Total Spent
@@ -105,9 +132,11 @@ export default function CustomersPage() {
                       </Avatar>
                       <div>
                         <p className="font-medium">{customer.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {customer.role}
-                        </p>
+                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                          <span>{customer.role}</span>
+                           <span className="text-xs">&bull;</span>
+                           <span className={cn("font-semibold", getTierColor(customer.loyaltyTier).split(' ')[1])}>{customer.loyaltyTier}</span>
+                        </div>
                       </div>
                     </div>
                   </TableCell>
@@ -115,10 +144,10 @@ export default function CustomersPage() {
                     <Badge variant="secondary">{customer.orderCount}</Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    <div className="flex items-center justify-start gap-1">
-                      <Star className="w-4 h-4 text-yellow-400" />
-                      <span className="font-medium">{customer.loyaltyPoints || 0}</span>
-                    </div>
+                     <Badge variant="outline" className={cn('font-semibold', getTierColor(customer.loyaltyTier))}>
+                        <Star className="mr-1.5 h-3.5 w-3.5" />
+                        {customer.loyaltyTier}
+                    </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell font-mono">
                     ${customer.totalSpent.toFixed(2)}
