@@ -166,7 +166,7 @@ function DateTimeLocation() {
         <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground sm:mr-auto">
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                     <Button variant="ghost" className="flex items-center gap-2">
+                     <Button variant="outline" className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
                         <span>{currentLocation.name}</span>
                         <ChevronDown className="h-3 w-3" />
