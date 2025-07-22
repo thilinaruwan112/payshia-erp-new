@@ -10,8 +10,9 @@ export const invoices: Invoice[] = [
     dueDate: '2023-11-25',
     status: 'Paid',
     total: 49.98,
+    discount: 0,
     items: [
-      { sku: 'TS-BLK-M', productName: 'Classic T-Shirt', quantity: 2, unitPrice: 24.99, total: 49.98 },
+      { sku: 'TS-BLK-M', productName: 'Classic T-Shirt', quantity: 2, unitPrice: 24.99, total: 49.98, discount: 0 },
     ],
   },
   {
@@ -22,9 +23,10 @@ export const invoices: Invoice[] = [
     dueDate: '2023-11-28',
     status: 'Sent',
     total: 124.98,
+    discount: 0,
     items: [
-        { sku: 'MO-WL-01', productName: 'Wireless Mouse', quantity: 2, unitPrice: 49.99, total: 99.98 },
-        { sku: 'TS-WHT-M', productName: 'Classic T-Shirt', quantity: 1, unitPrice: 24.99, total: 24.99 },
+        { sku: 'MO-WL-01', productName: 'Wireless Mouse', quantity: 2, unitPrice: 49.99, total: 99.98, discount: 0 },
+        { sku: 'TS-WHT-M', productName: 'Classic T-Shirt', quantity: 1, unitPrice: 24.99, total: 24.99, discount: 0 },
     ],
   },
    {
@@ -35,8 +37,9 @@ export const invoices: Invoice[] = [
     dueDate: '2023-11-15',
     status: 'Overdue',
     total: 750.00,
+    discount: 0,
     items: [
-        { sku: 'WL-LTH-BRN', productName: 'Leather Wallet', quantity: 10, unitPrice: 75.00, total: 750.00 },
+        { sku: 'WL-LTH-BRN', productName: 'Leather Wallet', quantity: 10, unitPrice: 75.00, total: 750.00, discount: 0 },
     ],
   },
 ];

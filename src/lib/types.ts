@@ -173,6 +173,7 @@ export type InvoiceItem = {
   productName: string;
   quantity: number;
   unitPrice: number;
+  discount?: number;
   total: number;
 };
 
@@ -184,5 +185,6 @@ export type Invoice = {
   dueDate: string;
   status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
   total: number;
+  discount: number;
   items: InvoiceItem[];
 };

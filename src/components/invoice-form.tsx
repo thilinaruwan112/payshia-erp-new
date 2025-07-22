@@ -51,8 +51,10 @@ const invoiceFormSchema = z.object({
       sku: z.string().min(1, "Product is required."),
       quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
       unitPrice: z.coerce.number().min(0, "Unit price must be positive."),
+      discount: z.coerce.number().min(0, "Discount must be positive.").optional(),
     })
   ).min(1, "At least one item is required."),
+  discount: z.coerce.number().min(0).optional(),
 });
 
 type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
@@ -78,8 +80,9 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
     dueDate: addDays(new Date(), 30),
     status: 'Draft',
     items: [
-        { sku: '', quantity: 1, unitPrice: 0 },
+        { sku: '', quantity: 1, unitPrice: 0, discount: 0 },
     ],
+    discount: 0,
   };
 
   const form = useForm<InvoiceFormValues>({
@@ -95,6 +98,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
   
   const watchedItems = form.watch("items");
   const customerId = form.watch("customerId");
+  const billDiscount = form.watch("discount") || 0;
 
   const availableOrders = React.useMemo(() => {
     if (!customerId) return [];
@@ -112,6 +116,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                 sku: item.sku,
                 quantity: item.quantity,
                 unitPrice: product?.price || 0,
+                discount: 0,
             }
         });
         form.setValue('orderId', order.id);
@@ -124,8 +129,15 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
     const unitPrice = Number(item.unitPrice) || 0;
     return total + (quantity * unitPrice);
   }, 0);
-  const tax = subtotal * 0.08; // 8% tax
-  const total = subtotal + tax;
+
+  const itemDiscounts = watchedItems.reduce((total, item) => {
+      const quantity = Number(item.quantity) || 0;
+      const discount = Number(item.discount) || 0;
+      return total + (quantity * discount);
+  }, 0)
+
+  const tax = (subtotal - itemDiscounts) * 0.08; // 8% tax
+  const total = subtotal - itemDiscounts - billDiscount + tax;
 
   function onSubmit(data: InvoiceFormValues) {
     console.log(data);
@@ -297,9 +309,10 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[40%]">Product</TableHead>
-                            <TableHead>Quantity</TableHead>
+                            <TableHead className="w-[30%]">Product</TableHead>
+                            <TableHead>Qty</TableHead>
                             <TableHead>Unit Price</TableHead>
+                            <TableHead>Discount</TableHead>
                             <TableHead className="text-right">Total</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
@@ -309,7 +322,8 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                             const selectedSku = allSkus.find(s => s.value === watchedItems[index]?.sku);
                             const unitPrice = watchedItems[index]?.unitPrice || 0;
                             const quantity = watchedItems[index]?.quantity || 0;
-                            const total = unitPrice * quantity;
+                            const discount = watchedItems[index]?.discount || 0;
+                            const total = (unitPrice - discount) * quantity;
 
                             return (
                                 <TableRow key={field.id}>
@@ -371,6 +385,20 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                                             )}
                                         />
                                     </TableCell>
+                                    <TableCell>
+                                        <FormField
+                                            control={form.control}
+                                            name={`items.${index}.discount`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <Input type="number" {...field} startIcon="$" />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </TableCell>
                                     <TableCell className="text-right font-mono">${total.toFixed(2)}</TableCell>
                                     <TableCell>
                                         {fields.length > 1 && (
@@ -384,21 +412,40 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                          })}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', quantity: 1, unitPrice: 0 })} className="mt-4">
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', quantity: 1, unitPrice: 0, discount: 0 })} className="mt-4">
                     Add another item
                 </Button>
             </CardContent>
             <CardFooter className="flex justify-end">
-                <div className="w-full max-w-xs space-y-2">
+                <div className="w-full max-w-sm space-y-2">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
                         <span className="font-mono">${subtotal.toFixed(2)}</span>
+                    </div>
+                     <div className="flex justify-between text-destructive">
+                        <span>Item Discounts</span>
+                        <span className="font-mono">-${itemDiscounts.toFixed(2)}</span>
+                    </div>
+                     <div className="flex justify-between text-destructive">
+                        <span className="flex-1 mr-4">Bill Discount</span>
+                         <FormField
+                            control={form.control}
+                            name={`discount`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
                      <div className="flex justify-between">
                         <span>Tax (8%)</span>
                         <span className="font-mono">${tax.toFixed(2)}</span>
                     </div>
-                     <div className="flex justify-between font-bold text-lg">
+                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total</span>
                         <span className="font-mono">${total.toFixed(2)}</span>
                     </div>
