@@ -99,7 +99,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
     return watchedItems.reduce((total, item) => {
         const product = products.find(p => p.variants.some(v => v.sku === item.sku));
         const costPrice = product?.costPrice || 0;
-        const quantity = item.quantity || 0;
+        const quantity = Number(item.quantity) || 0;
         return total + (costPrice * quantity);
     }, 0);
   }, [watchedItems, products]);
@@ -317,3 +317,4 @@ export function TransferForm({ locations, products }: TransferFormProps) {
     </Form>
   );
 }
+
