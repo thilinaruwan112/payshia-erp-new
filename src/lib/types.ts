@@ -201,3 +201,13 @@ export type PaymentReceipt = {
   amount: number;
   paymentMethod: 'Cash' | 'Card' | 'Bank Transfer';
 };
+
+export type SmsCampaign = {
+    id: string;
+    name: string;
+    targetAudience: 'All' | 'Silver' | 'Gold' | 'Platinum' | 'Custom';
+    status: 'Draft' | 'Sent';
+    sentDate?: string;
+    recipientCount: number;
+    content: string;
+};

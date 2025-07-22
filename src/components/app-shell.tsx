@@ -33,6 +33,7 @@ import {
   FileDigit,
   Contact,
   Gem,
+  MessageSquare,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -117,6 +118,7 @@ const navItems = [
     subItems: [
         { href: '/crm/customers', label: 'Customers' },
         { href: '/crm/loyalty-schema', label: 'Loyalty Schema' },
+        { href: '/crm/sms-campaigns', label: 'SMS Campaigns' },
     ],
   },
   {
