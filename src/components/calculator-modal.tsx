@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,17 +15,20 @@ import { Input } from '@/components/ui/input';
 export function CalculatorModal({ children }: { children: React.ReactNode }) {
   const [input, setInput] = useState('');
   const [result, setResult] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleButtonClick = (value: string) => {
-    if (result) {
+    if (result && !['+', '-', '*', '/'].includes(value)) {
+        setInput(value);
         setResult('');
+        return;
     }
 
     if (value === '=') {
       if (input === '') return;
       try {
         // Using a function constructor for safe evaluation of math expressions.
-        const calculatedResult = new Function('return ' + input.replace(/[^0-9%^* /()\-+.]/g, ''))();
+        const calculatedResult = new Function('return ' + input.replace(/[^0-9%^* /().\-+]/g, ''))();
         setResult(String(calculatedResult));
         setInput(String(calculatedResult));
       } catch (error) {
@@ -44,7 +47,7 @@ export function CalculatorModal({ children }: { children: React.ReactNode }) {
         }
     } else {
         if (result) {
-            setInput(value);
+            setInput(result + value);
             setResult('');
         } else {
             setInput(input + value);
@@ -52,17 +55,38 @@ export function CalculatorModal({ children }: { children: React.ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
 
-  const buttons = [
-    '7', '8', '9', '/',
-    '4', '5', '6', '*',
-    '1', '2', '3', '-',
-    '0', '.', '=', '+',
-  ];
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const { key } = event;
+      if (/[0-9]/.test(key)) {
+        handleButtonClick(key);
+      } else if (['+', '-', '*', '/'].includes(key)) {
+        handleButtonClick(key);
+      } else if (key === '.') {
+        handleButtonClick('.');
+      } else if (key === 'Enter' || key === '=') {
+        event.preventDefault();
+        handleButtonClick('=');
+      } else if (key === 'Backspace') {
+        handleButtonClick('<-');
+      } else if (key.toLowerCase() === 'c') {
+        handleButtonClick('C');
+      } else if (key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, input, result]);
 
 
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-xs">
         <DialogHeader>
