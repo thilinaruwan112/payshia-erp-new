@@ -30,6 +30,7 @@ import {
   Users,
   AlertTriangle,
   ArrowUp,
+  Star,
 } from 'lucide-react';
 import {
   Bar,
@@ -105,6 +106,11 @@ export default function ReportsPage() {
       return acc;
     }, [] as { name: string; totalSpent: number; orderCount: number }[])
     .sort((a, b) => b.totalSpent - a.totalSpent)
+    .slice(0, 5);
+
+  const topLoyaltyCustomers = users
+    .filter((u) => u.role === 'Customer' && u.loyaltyPoints)
+    .sort((a, b) => (b.loyaltyPoints || 0) - (a.loyaltyPoints || 0))
     .slice(0, 5);
     
   return (
@@ -281,7 +287,7 @@ export default function ReportsPage() {
         </TabsContent>
         
         <TabsContent value="customers" className="mt-6">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader>
                         <CardTitle>New Customers</CardTitle>
@@ -319,6 +325,33 @@ export default function ReportsPage() {
                                     <TableRow key={customer.name}>
                                         <TableCell>{customer.name}</TableCell>
                                         <TableCell className="text-right">${customer.totalSpent.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Top Customers by Loyalty</CardTitle>
+                        <CardDescription>Your most engaged customers.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Customer</TableHead>
+                                    <TableHead className="text-right">Loyalty Points</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {topLoyaltyCustomers.map(customer => (
+                                    <TableRow key={customer.id}>
+                                        <TableCell>{customer.name}</TableCell>
+                                        <TableCell className="text-right flex items-center justify-end gap-1">
+                                            <Star className="w-4 h-4 text-yellow-400" />
+                                            <span className="font-medium">{customer.loyaltyPoints || 0}</span>
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
