@@ -32,6 +32,7 @@ import {
   Clock,
   Check,
   FileDigit,
+  Contact,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -107,6 +108,11 @@ const navItems = [
       { href: '/sales/invoices', label: 'Invoices' },
       { href: '/sales/receipts', label: 'Receipts' },
     ],
+  },
+  {
+    href: '/customers',
+    label: 'Customers',
+    icon: Contact,
   },
   {
     href: '/suppliers',
