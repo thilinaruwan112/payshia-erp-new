@@ -24,6 +24,9 @@ import {
   FileText,
   Wallet,
   TrendingUp,
+  LayoutGrid,
+  Calculator,
+  PlusCircle,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -55,6 +58,7 @@ import {
 } from '@/components/ui/collapsible';
 import React from 'react';
 import { ThemeToggle } from './theme-toggle';
+import { CalculatorModal } from './calculator-modal';
 
 const user = {
   name: 'Admin User',
@@ -139,6 +143,47 @@ const navItems = [
     isExternal: true,
   },
 ];
+
+function QuickAccessMenu() {
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                    <LayoutGrid />
+                    <span className="sr-only">Quick Access</span>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Quick Access</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href="/products/new">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        <span>New Product</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/purchasing/purchase-orders/new">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        <span>New Purchase Order</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/accounting/expenses/new">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        <span>New Expense</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/accounting/journal-entries/new">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        <span>New Journal Entry</span>
+                    </Link>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+}
 
 function UserMenu() {
   return (
@@ -296,6 +341,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <CalculatorModal>
+              <Button variant="ghost" size="icon">
+                <Calculator />
+                <span className="sr-only">Calculator</span>
+              </Button>
+            </CalculatorModal>
+            <QuickAccessMenu />
             <ThemeToggle />
             <UserMenu />
           </div>
