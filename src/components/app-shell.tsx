@@ -38,7 +38,7 @@ import {
   Mail,
   HelpCircle,
   SwatchBook,
-  PenRuler,
+  PencilRuler,
   ShoppingBag,
 } from 'lucide-react';
 import {
@@ -104,11 +104,11 @@ const navItems = [
       { href: '/products/collections', label: 'Collections' },
       {
         label: 'Attributes',
-        icon: PenRuler,
+        icon: PencilRuler,
         subItems: [
             { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
             { href: '/products/colors', label: 'Colors', icon: SwatchBook },
-            { href: '/products/sizes', label: 'Sizes', icon: PenRuler },
+            { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
         ]
       }
     ],
