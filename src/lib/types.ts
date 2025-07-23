@@ -1,5 +1,6 @@
 
 
+
 export type Product = {
   id: string;
   name: string;
@@ -11,10 +12,12 @@ export type Product = {
     size?: string;
   }[];
   price: number;
+  status: 'active' | 'draft';
   stockUnit?: 'Nos' | 'KG' | 'Gram' | 'Litre' | 'ml';
   costPrice?: number;
   minPrice?: number;
   wholesalePrice?: number;
+  product_image_url?: string;
 };
 
 export type Location = {
