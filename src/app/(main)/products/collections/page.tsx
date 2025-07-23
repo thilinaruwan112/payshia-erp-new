@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { type Collection } from '@/lib/data';
+import type { Collection } from '@/lib/data';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -44,8 +44,20 @@ export default function CollectionsPage() {
         if (!response.ok) {
           throw new Error('Failed to fetch collections');
         }
-        const data = await response.json();
-        setCollections(data);
+        const data: Collection[] = await response.json();
+        
+        const counts = await Promise.all(data.map(async (collection) => {
+            const countResponse = await fetch(`https://server-erp.payshia.com/collection-products/count/${collection.id}`);
+            if (!countResponse.ok) {
+                console.error(`Failed to fetch count for collection ${collection.id}`);
+                return { ...collection, productCount: 0 };
+            }
+            const countData = await countResponse.json();
+            return { ...collection, productCount: Number(countData.product_count) };
+        }));
+
+        setCollections(counts);
+
       } catch (error) {
         console.error(error);
       } finally {
@@ -86,6 +98,7 @@ export default function CollectionsPage() {
                 <TableHead className="w-[100px] hidden sm:table-cell">Image</TableHead>
                 <TableHead>Title</TableHead>
                 <TableHead className="hidden md:table-cell">Description</TableHead>
+                <TableHead className="hidden sm:table-cell">Product Count</TableHead>
                 <TableHead className="hidden sm:table-cell">Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -106,6 +119,9 @@ export default function CollectionsPage() {
                             <Skeleton className="h-4 w-64" />
                         </TableCell>
                         <TableCell className="hidden sm:table-cell">
+                            <Skeleton className="h-4 w-12" />
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
                              <Skeleton className="h-6 w-20 rounded-full" />
                         </TableCell>
                         <TableCell className="text-right">
@@ -121,13 +137,14 @@ export default function CollectionsPage() {
                             alt={collection.title}
                             className="aspect-square rounded-md object-cover"
                             height="64"
-                            src={`https://placehold.co/64x64.png`}
+                            src={collection.cover_image_url || `https://placehold.co/64x64.png`}
                             width="64"
                             data-ai-hint="collection photo"
                         />
                     </TableCell>
                     <TableCell className="font-medium">{collection.title}</TableCell>
                     <TableCell className="hidden md:table-cell truncate max-w-sm">{collection.description}</TableCell>
+                    <TableCell className="hidden sm:table-cell text-center">{collection.productCount}</TableCell>
                     <TableCell className="hidden sm:table-cell">
                         <Badge variant={collection.status === 'active' ? 'default' : 'secondary'} className={cn(
                             collection.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : ''

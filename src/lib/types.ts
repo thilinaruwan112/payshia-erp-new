@@ -58,9 +58,10 @@ export type Collection = {
   title: string;
   description?: string;
   cover_image_url?: string;
-  status?: 'active' | 'draft';
+  status: 'active' | 'draft';
   productCount?: number;
-  coverImage?: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export type Supplier = {
