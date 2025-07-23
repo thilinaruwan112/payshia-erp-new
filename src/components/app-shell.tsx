@@ -247,14 +247,25 @@ function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
 
 
 function DateTimeLocation() {
-    const [currentTime, setCurrentTime] = useState(new Date());
+    const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
     useEffect(() => {
+        setCurrentTime(new Date());
         const timer = setInterval(() => {
             setCurrentTime(new Date());
         }, 1000);
         return () => clearInterval(timer);
     }, []);
+
+    if (!currentTime) {
+      return (
+        <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground sm:mr-auto">
+          <LocationSwitcher />
+          <div className="h-5 w-24 bg-muted rounded-md animate-pulse" />
+          <div className="h-5 w-20 bg-muted rounded-md animate-pulse" />
+        </div>
+      );
+    }
 
     return (
         <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground sm:mr-auto">
