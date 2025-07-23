@@ -56,7 +56,10 @@ export type User = {
 export type Collection = {
   id: string;
   title: string;
-  productCount: number;
+  description?: string;
+  cover_image_url?: string;
+  status?: 'active' | 'draft';
+  productCount?: number;
   coverImage?: string;
 };
 

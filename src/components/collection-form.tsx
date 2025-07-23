@@ -29,13 +29,17 @@ import type { Collection, Product } from "@/lib/types";
 import { ProductPickerDialog } from "./product-picker-dialog";
 import React from "react";
 import Image from "next/image";
-import { X, UploadCloud } from "lucide-react";
+import { X, UploadCloud, Loader2 } from "lucide-react";
+import { Textarea } from "./ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 const collectionFormSchema = z.object({
   title: z.string().min(3, {
     message: "Collection title must be at least 3 characters.",
   }),
-  coverImage: z.string().optional(),
+  description: z.string().optional(),
+  cover_image_url: z.string().optional(),
+  status: z.enum(["active", "draft"]),
   products: z.array(z.string()).optional(),
 });
 
@@ -48,6 +52,7 @@ interface CollectionFormProps {
 export function CollectionForm({ collection }: CollectionFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = React.useState(false);
   
   const [selectedProducts, setSelectedProducts] = React.useState<Product[]>(
     collection ? products.slice(0, collection.productCount) : []
@@ -55,7 +60,9 @@ export function CollectionForm({ collection }: CollectionFormProps) {
 
   const defaultValues: Partial<CollectionFormValues> = {
     title: collection?.title || "",
-    coverImage: collection?.coverImage || "",
+    description: collection?.description || "",
+    cover_image_url: collection?.cover_image_url || "",
+    status: collection?.status || "active",
     products: selectedProducts.map(p => p.id),
   };
 
@@ -67,13 +74,46 @@ export function CollectionForm({ collection }: CollectionFormProps) {
 
   const { setValue } = form;
 
-  function onSubmit(data: CollectionFormValues) {
-    console.log(data);
-    toast({
-      title: collection ? "Collection Updated" : "Collection Created",
-      description: `The collection "${data.title}" has been saved.`,
-    });
-    router.push('/products/collections');
+  async function onSubmit(data: CollectionFormValues) {
+    setIsLoading(true);
+    const payload = {
+      title: data.title,
+      description: data.description,
+      cover_image_url: data.cover_image_url,
+      status: data.status,
+    };
+    
+    try {
+        const response = await fetch('https://server-erp.payshia.com/collections', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Something went wrong');
+        }
+
+        toast({
+            title: collection ? "Collection Updated" : "Collection Created",
+            description: `The collection "${data.title}" has been saved.`,
+        });
+        router.push('/products/collections');
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: "destructive",
+            title: "Failed to save collection",
+            description: errorMessage,
+        });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   const handleProductsSelected = (newProducts: Product[]) => {
@@ -101,8 +141,11 @@ export function CollectionForm({ collection }: CollectionFormProps) {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h1 className="text-3xl font-bold tracking-tight text-nowrap">{pageTitle}</h1>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
-                <Button type="submit" className="w-full">Save Collection</Button>
+                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isLoading}>Cancel</Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {isLoading ? 'Saving...' : 'Save Collection'}
+                </Button>
             </div>
         </div>
 
@@ -112,7 +155,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                 <CardHeader>
                     <CardTitle>Collection Details</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                     <FormField
                         control={form.control}
                         name="title"
@@ -121,6 +164,19 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                             <FormLabel>Collection Title</FormLabel>
                             <FormControl>
                                 <Input placeholder="e.g. Summer Collection" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="A short description for the collection." {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
@@ -174,16 +230,43 @@ export function CollectionForm({ collection }: CollectionFormProps) {
           <div className="space-y-8">
              <Card>
                 <CardHeader>
+                  <CardTitle>Status</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                            <FormItem>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Select a status" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="active">Active</SelectItem>
+                                    <SelectItem value="draft">Draft</SelectItem>
+                                </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </CardContent>
+              </Card>
+             <Card>
+                <CardHeader>
                   <CardTitle>Cover Image</CardTitle>
                   <CardDescription>
                     This will be displayed on the collection page.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center gap-4">
-                  {form.watch('coverImage') ? (
+                  {form.watch('cover_image_url') ? (
                     <div className="relative">
                        <Image
-                        src={form.watch('coverImage') as string}
+                        src={form.watch('cover_image_url') as string}
                         alt="Cover image preview"
                         width={200}
                         height={200}
@@ -194,7 +277,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                           variant="destructive" 
                           size="icon"
                           className="absolute top-1 right-1 h-6 w-6"
-                          onClick={() => form.setValue('coverImage', '')}
+                          onClick={() => form.setValue('cover_image_url', '')}
                       >
                           <X className="h-4 w-4" />
                       </Button>
