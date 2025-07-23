@@ -97,7 +97,7 @@ const navItems = [
     icon: BarChart3,
   },
   {
-    label: 'Products',
+    label: 'Master',
     icon: Package,
     subItems: [
       { href: '/products', label: 'All Products' },
