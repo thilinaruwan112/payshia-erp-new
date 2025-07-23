@@ -102,15 +102,9 @@ const navItems = [
     subItems: [
       { href: '/products', label: 'All Products' },
       { href: '/products/collections', label: 'Collections' },
-      {
-        label: 'Attributes',
-        icon: PencilRuler,
-        subItems: [
-            { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
-            { href: '/products/colors', label: 'Colors', icon: SwatchBook },
-            { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
-        ]
-      }
+      { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
+      { href: '/products/colors', label: 'Colors', icon: SwatchBook },
+      { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
     ],
   },
   {
