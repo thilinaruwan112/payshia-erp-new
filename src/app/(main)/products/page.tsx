@@ -20,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, PlusCircle, Star, Trash2 } from 'lucide-react';
-import type { Product } from '@/lib/data';
+import type { Product } from '@/lib/types';
 import { inventory } from '@/lib/data';
 import {
   DropdownMenu,
@@ -229,7 +229,9 @@ export default function ProductsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
+                             <DropdownMenuItem asChild>
+                              <Link href={`/products/${product.id}`}>Edit</Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem>Duplicate</DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-destructive"

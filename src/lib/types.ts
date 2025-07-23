@@ -1,26 +1,33 @@
 
 
-
-
-
+export type ProductVariant = {
+  id?: string;
+  sku: string;
+  color?: string;
+  size?: string;
+  color_id?: string;
+  size_id?: string;
+};
 
 export type Product = {
   id: string;
   name: string;
+  description?: string;
   category: string;
-  brandId?: string;
-  variants: {
-    sku: string;
-    color?: string;
-    size?: string;
-  }[];
-  price: number;
+  category_id?: string;
+  brand_id?: string;
+  variants: ProductVariant[];
+  price: number | string;
   status: 'active' | 'draft';
-  stockUnit?: 'Nos' | 'KG' | 'Gram' | 'Litre' | 'ml';
-  costPrice?: number;
-  minPrice?: number;
-  wholesalePrice?: number;
+  stock_unit?: string;
+  cost_price?: number | string;
+  min_price?: number | string;
+  wholesale_price?: number | string;
   product_image_url?: string;
+  print_name?: string;
+  sinhala_name?: string;
+  tamilName?: string;
+  displayName?: string;
 };
 
 export type Location = {

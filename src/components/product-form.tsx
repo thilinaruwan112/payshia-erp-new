@@ -31,11 +31,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { collections, products } from "@/lib/data";
-import { Trash2, UploadCloud } from "lucide-react";
+import { collections } from "@/lib/data";
+import { Trash2, UploadCloud, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
+import type { Product } from "@/lib/types";
 
 type Category = {
   id: string;
@@ -57,6 +58,13 @@ type Size = {
     value: string;
 }
 
+const variantSchema = z.object({
+  id: z.string().optional(),
+  sku: z.string().min(1, { message: "SKU is required." }),
+  colorId: z.string().optional(),
+  sizeId: z.string().optional(),
+});
+
 const productFormSchema = z.object({
   name: z.string().min(3, {
     message: "Product name must be at least 3 characters.",
@@ -76,33 +84,17 @@ const productFormSchema = z.object({
   wholesalePrice: z.coerce.number().optional(),
   price2: z.coerce.number().optional(),
   foreignPrice: z.coerce.number().optional(),
-  variants: z.array(
-    z.object({
-      sku: z.string().min(1, { message: "SKU is required." }),
-      colorId: z.string().optional(),
-      sizeId: z.string().optional(),
-    })
-  ).min(1, { message: "At least one variant is required." }),
+  variants: z.array(variantSchema).min(1, { message: "At least one variant is required." }),
   collections: z.array(z.string()).optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
-const defaultValues: Partial<ProductFormValues> = {
-  name: "",
-  printName: "",
-  tamilName: "",
-  sinhalaName: "",
-  displayName: "",
-  description: "",
-  stockUnit: "Nos",
-  status: "active",
-  sellingPrice: 0,
-  variants: [{ sku: "", colorId: "", sizeId: "" }],
-  collections: [],
-};
+interface ProductFormProps {
+  product?: Product;
+}
 
-export function ProductForm() {
+export function ProductForm({ product }: ProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -110,6 +102,30 @@ export function ProductForm() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
   const [sizes, setSizes] = useState<Size[]>([]);
+  const [variantsToDelete, setVariantsToDelete] = useState<string[]>([]);
+
+  const defaultValues: Partial<ProductFormValues> = {
+    name: product?.name || "",
+    printName: product?.print_name || "",
+    tamilName: product?.tamilName || "",
+    sinhalaName: product?.sinhala_name || "",
+    displayName: product?.displayName || "",
+    description: product?.description || "",
+    stockUnit: product?.stock_unit || "Nos",
+    status: product?.status || "active",
+    categoryId: product?.category_id || "",
+    brandId: product?.brand_id || "",
+    sellingPrice: product?.price ? parseFloat(String(product.price)) : 0,
+    costPrice: product?.cost_price ? parseFloat(String(product.cost_price)) : 0,
+    minPrice: product?.min_price ? parseFloat(String(product.min_price)) : 0,
+    wholesalePrice: product?.wholesale_price ? parseFloat(String(product.wholesale_price)) : 0,
+    variants: product?.variants?.map(v => ({
+        id: v.id,
+        sku: v.sku,
+        colorId: v.color_id,
+        sizeId: v.size_id
+    })) || [{ sku: "", colorId: "", sizeId: "" }],
+  };
 
   useEffect(() => {
     async function fetchData(url: string, setData: Function, type: string) {
@@ -146,6 +162,14 @@ export function ProductForm() {
     control: form.control,
   });
 
+  const handleRemoveVariant = (index: number) => {
+    const variantId = fields[index].id;
+    if (variantId) {
+      setVariantsToDelete(prev => [...prev, variantId]);
+    }
+    remove(index);
+  }
+
   async function onSubmit(data: ProductFormValues) {
     setIsLoading(true);
 
@@ -166,17 +190,22 @@ export function ProductForm() {
       print_name: data.printName,
       brand_id: data.brandId ? parseInt(data.brandId, 10) : undefined,
       variants: data.variants.map(v => ({
+        id: v.id,
         sku: v.sku,
         color: colors.find(c => c.id === v.colorId)?.name,
         size: sizes.find(s => s.id === v.sizeId)?.value,
         color_id: v.colorId ? parseInt(v.colorId, 10) : undefined,
         size_id: v.sizeId ? parseInt(v.sizeId, 10) : undefined,
       })),
+      delete_variants: variantsToDelete,
     };
+    
+    const url = product ? `https://server-erp.payshia.com/products/${product.id}` : 'https://server-erp.payshia.com/products';
+    const method = product ? 'PUT' : 'POST';
 
     try {
-      const response = await fetch('https://server-erp.payshia.com/products', {
-        method: 'POST',
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -190,15 +219,16 @@ export function ProductForm() {
       }
 
       toast({
-        title: "Product Created",
-        description: result.message || "The new product has been saved successfully.",
+        title: product ? "Product Updated" : "Product Created",
+        description: result.message || "The product has been saved successfully.",
       });
       router.push('/products');
+      router.refresh();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({
         variant: "destructive",
-        title: "Failed to Create Product",
+        title: product ? "Failed to Update Product" : "Failed to Create Product",
         description: errorMessage,
       });
     } finally {
@@ -206,15 +236,18 @@ export function ProductForm() {
     }
   }
 
+  const pageTitle = product ? `Edit Product: ${product.name}` : 'Create Product';
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <h1 className="text-3xl font-bold tracking-tight text-nowrap">Create Product</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-nowrap">{pageTitle}</h1>
             <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isLoading}>Cancel</Button>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Saving...' : 'Save Product'}
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {product ? "Save Changes" : "Save Product"}
                 </Button>
             </div>
         </div>
@@ -507,7 +540,7 @@ export function ProductForm() {
                                     )}
                                 />
                                {fields.length > 1 && (
-                                <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => remove(index)}>
+                                <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveVariant(index)}>
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Remove variant</span>
                                 </Button>
@@ -661,5 +694,3 @@ export function ProductForm() {
     </Form>
   );
 }
-
-    
