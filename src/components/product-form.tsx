@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,6 +35,7 @@ import { collections, products, brands } from "@/lib/data";
 import { Trash2, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import React from "react";
 
 const productFormSchema = z.object({
   name: z.string().min(3, {
@@ -85,6 +85,8 @@ const defaultValues: Partial<ProductFormValues> = {
 export function ProductForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = React.useState(false);
+
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues,
@@ -98,13 +100,59 @@ export function ProductForm() {
   
   const existingCategories = [...new Set(products.map(p => p.category))];
 
-  function onSubmit(data: ProductFormValues) {
-    console.log(data);
-    toast({
-      title: "Product Created",
-      description: "The new product has been saved successfully.",
-    });
-    router.push('/products');
+  async function onSubmit(data: ProductFormValues) {
+    setIsLoading(true);
+
+    const apiPayload = {
+      name: data.name,
+      description: data.description,
+      category: data.category,
+      price: data.sellingPrice,
+      cost_price: data.costPrice,
+      min_price: data.minPrice,
+      wholesale_price: data.wholesalePrice,
+      stock_unit: data.stockUnit,
+      status: data.status,
+      sinhala_name: data.sinhalaName,
+      print_name: data.printName,
+      brand_id: data.brandId ? parseInt(data.brandId, 10) : undefined,
+      variants: data.variants.map(v => ({
+        sku: v.sku,
+        color: v.color,
+        size: v.size,
+      })),
+    };
+
+    try {
+      const response = await fetch('https://server-erp.payshia.com/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiPayload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Something went wrong');
+      }
+
+      toast({
+        title: "Product Created",
+        description: result.message || "The new product has been saved successfully.",
+      });
+      router.push('/products');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast({
+        variant: "destructive",
+        title: "Failed to Create Product",
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -113,8 +161,10 @@ export function ProductForm() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <h1 className="text-3xl font-bold tracking-tight text-nowrap">Create Product</h1>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
-                <Button type="submit" className="w-full">Save Product</Button>
+                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isLoading}>Cancel</Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Saving...' : 'Save Product'}
+                </Button>
             </div>
         </div>
 
@@ -266,7 +316,7 @@ export function ProductForm() {
                                 <FormItem>
                                     <FormLabel>Selling Price</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="$" />
+                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -279,7 +329,7 @@ export function ProductForm() {
                                 <FormItem>
                                     <FormLabel>Cost</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="$" />
+                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -292,7 +342,7 @@ export function ProductForm() {
                                 <FormItem>
                                     <FormLabel>Minimum Price</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="$" />
+                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -305,7 +355,7 @@ export function ProductForm() {
                                 <FormItem>
                                     <FormLabel>Wholesale Price</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="$" />
+                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -318,7 +368,7 @@ export function ProductForm() {
                                 <FormItem>
                                     <FormLabel>Price 2</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="$" />
+                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -331,7 +381,7 @@ export function ProductForm() {
                                 <FormItem>
                                     <FormLabel>Foreign Price</FormLabel>
                                     <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="$" />
+                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -542,3 +592,5 @@ export function ProductForm() {
     </Form>
   );
 }
+
+    
