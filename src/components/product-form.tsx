@@ -47,6 +47,16 @@ type Brand = {
   name: string;
 };
 
+type Color = {
+  id: string;
+  name: string;
+};
+
+type Size = {
+    id: string;
+    value: string;
+}
+
 const productFormSchema = z.object({
   name: z.string().min(3, {
     message: "Product name must be at least 3 characters.",
@@ -69,8 +79,8 @@ const productFormSchema = z.object({
   variants: z.array(
     z.object({
       sku: z.string().min(1, { message: "SKU is required." }),
-      color: z.string().optional(),
-      size: z.string().optional(),
+      colorId: z.string().optional(),
+      sizeId: z.string().optional(),
     })
   ).min(1, { message: "At least one variant is required." }),
   collections: z.array(z.string()).optional(),
@@ -88,7 +98,7 @@ const defaultValues: Partial<ProductFormValues> = {
   stockUnit: "Nos",
   status: "active",
   sellingPrice: 0,
-  variants: [{ sku: "", color: "", size: "" }],
+  variants: [{ sku: "", colorId: "", sizeId: "" }],
   collections: [],
 };
 
@@ -98,47 +108,31 @@ export function ProductForm() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [colors, setColors] = useState<Color[]>([]);
+  const [sizes, setSizes] = useState<Size[]>([]);
 
   useEffect(() => {
-    async function fetchCategories() {
-      try {
-        const response = await fetch('https://server-erp.payshia.com/categories');
+    async function fetchData(url: string, setData: Function, type: string) {
+       try {
+        const response = await fetch(url);
         if (!response.ok) {
-          throw new Error('Failed to fetch categories');
+          throw new Error(`Failed to fetch ${type}`);
         }
         const data = await response.json();
-        setCategories(data);
+        setData(data);
       } catch (error) {
         console.error(error);
         toast({
           variant: "destructive",
-          title: "Failed to load categories",
-          description: "Could not fetch categories from the server.",
+          title: `Failed to load ${type}`,
+          description: `Could not fetch ${type} from the server.`,
         });
       }
     }
-    fetchCategories();
-  }, [toast]);
-  
-  useEffect(() => {
-    async function fetchBrands() {
-      try {
-        const response = await fetch('https://server-erp.payshia.com/brands');
-        if (!response.ok) {
-          throw new Error('Failed to fetch brands');
-        }
-        const data = await response.json();
-        setBrands(data);
-      } catch (error) {
-        console.error(error);
-        toast({
-          variant: "destructive",
-          title: "Failed to load brands",
-          description: "Could not fetch brands from the server.",
-        });
-      }
-    }
-    fetchBrands();
+    fetchData('https://server-erp.payshia.com/categories', setCategories, 'categories');
+    fetchData('https://server-erp.payshia.com/brands', setBrands, 'brands');
+    fetchData('https://server-erp.payshia.com/colors', setColors, 'colors');
+    fetchData('https://server-erp.payshia.com/sizes', setSizes, 'sizes');
   }, [toast]);
 
   const form = useForm<ProductFormValues>({
@@ -173,8 +167,10 @@ export function ProductForm() {
       brand_id: data.brandId ? parseInt(data.brandId, 10) : undefined,
       variants: data.variants.map(v => ({
         sku: v.sku,
-        color: v.color,
-        size: v.size,
+        color: colors.find(c => c.id === v.colorId)?.name,
+        size: sizes.find(s => s.id === v.sizeId)?.value,
+        color_id: v.colorId ? parseInt(v.colorId, 10) : undefined,
+        size_id: v.sizeId ? parseInt(v.sizeId, 10) : undefined,
       })),
     };
 
@@ -468,27 +464,45 @@ export function ProductForm() {
                                 />
                                 <FormField
                                     control={form.control}
-                                    name={`variants.${index}.color`}
+                                    name={`variants.${index}.colorId`}
                                     render={({ field }) => (
                                         <FormItem>
-                                        <FormLabel>Color</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Black" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
+                                            <FormLabel>Color</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                <SelectValue placeholder="Select a color" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {colors.map(color => (
+                                                    <SelectItem key={color.id} value={color.id}>{color.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                            </Select>
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
                                 <FormField
                                     control={form.control}
-                                    name={`variants.${index}.size`}
+                                    name={`variants.${index}.sizeId`}
                                     render={({ field }) => (
                                         <FormItem>
-                                        <FormLabel>Size</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="S" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
+                                            <FormLabel>Size</FormLabel>
+                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                <SelectValue placeholder="Select a size" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {sizes.map(size => (
+                                                    <SelectItem key={size.id} value={size.id}>{size.value}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                            </Select>
+                                            <FormMessage />
                                         </FormItem>
                                     )}
                                 />
@@ -504,7 +518,7 @@ export function ProductForm() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => append({ sku: "", color: "", size: "" })}
+                            onClick={() => append({ sku: "", colorId: "", sizeId: "" })}
                         >
                             Add another variant
                         </Button>
@@ -647,3 +661,5 @@ export function ProductForm() {
     </Form>
   );
 }
+
+    
