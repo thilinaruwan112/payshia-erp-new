@@ -40,6 +40,8 @@ import {
   SwatchBook,
   PencilRuler,
   ShoppingBag,
+  Boxes,
+  Archive,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -100,8 +102,8 @@ const navItems = [
     label: 'Master',
     icon: Package,
     subItems: [
-      { href: '/products', label: 'All Products' },
-      { href: '/products/collections', label: 'Collections' },
+      { href: '/products', label: 'All Products', icon: Boxes },
+      { href: '/products/collections', label: 'Collections', icon: Archive },
       { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
       { href: '/products/colors', label: 'Colors', icon: SwatchBook },
       { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
