@@ -1,6 +1,7 @@
 
 
 
+
 export type Product = {
   id: string;
   name: string;
@@ -235,6 +236,7 @@ export type EmailCampaign = {
 export type Brand = {
   id: string;
   name: string;
+  description?: string;
 };
 
 export type Color = {
