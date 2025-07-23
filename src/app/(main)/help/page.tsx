@@ -114,9 +114,11 @@ export default function HelpPage() {
                     <span>{feature.title}</span>
                 </div>
             </AccordionTrigger>
-            <AccordionContent className="text-base text-muted-foreground pl-14 prose prose-sm dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: feature.description }}
-             />
+            <AccordionContent>
+                <div className="text-base text-muted-foreground pl-14 prose prose-sm dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: feature.description }}
+                />
+            </AccordionContent>
           </AccordionItem>
          ))}
       </Accordion>
