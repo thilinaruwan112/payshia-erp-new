@@ -121,7 +121,7 @@ export default function CollectionsPage() {
                             alt={collection.title}
                             className="aspect-square rounded-md object-cover"
                             height="64"
-                            src={collection.cover_image_url || `https://placehold.co/64x64.png`}
+                            src={`https://placehold.co/64x64.png`}
                             width="64"
                             data-ai-hint="collection photo"
                         />
