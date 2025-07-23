@@ -22,8 +22,6 @@ import { smsCampaigns } from '@/lib/mock-data/sms-campaigns';
 import { emailCampaigns } from '@/lib/mock-data/email-campaigns';
 import { brands } from './mock-data/brands';
 import { colors } from './mock-data/colors';
-import { sizes } from './mock-data/sizes';
-
 
 export * from '@/lib/types';
 
@@ -50,5 +48,4 @@ export {
     emailCampaigns,
     brands,
     colors,
-    sizes,
 }

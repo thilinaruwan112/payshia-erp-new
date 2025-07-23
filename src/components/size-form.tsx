@@ -23,10 +23,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Size } from "@/lib/types";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const sizeFormSchema = z.object({
-  name: z.string().min(1, "Size name is required."),
-  abbreviation: z.string().min(1, "Abbreviation is required."),
+  value: z.string().min(1, "Size value is required."),
 });
 
 type SizeFormValues = z.infer<typeof sizeFormSchema>;
@@ -38,10 +39,10 @@ interface SizeFormProps {
 export function SizeForm({ size }: SizeFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   const defaultValues: Partial<SizeFormValues> = {
-    name: size?.name || "",
-    abbreviation: size?.abbreviation || "",
+    value: size?.value || "",
   };
 
   const form = useForm<SizeFormValues>({
@@ -50,16 +51,42 @@ export function SizeForm({ size }: SizeFormProps) {
     mode: "onChange",
   });
 
-  function onSubmit(data: SizeFormValues) {
-    console.log(data);
-    toast({
-      title: size ? "Size Updated" : "Size Created",
-      description: `The size "${data.name}" has been saved.`,
-    });
-    router.push('/products/sizes');
+  async function onSubmit(data: SizeFormValues) {
+    setIsLoading(true);
+    try {
+      const response = await fetch('https://server-erp.payshia.com/sizes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Something went wrong');
+      }
+
+      toast({
+        title: size ? "Size Updated" : "Size Created",
+        description: `The size "${data.value}" has been saved.`,
+      });
+      router.push('/products/sizes');
+      router.refresh();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast({
+        variant: "destructive",
+        title: "Failed to save size",
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
-  const pageTitle = size ? `Edit Size: ${size.name}` : 'Create Size';
+  const pageTitle = size ? `Edit Size: ${size.value}` : 'Create Size';
   const pageDescription = size
     ? 'Update the size details.'
     : 'Add a new size to your system.';
@@ -80,10 +107,12 @@ export function SizeForm({ size }: SizeFormProps) {
               type="button"
               onClick={() => router.back()}
               className="w-full"
+              disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Size
             </Button>
           </div>
@@ -92,28 +121,15 @@ export function SizeForm({ size }: SizeFormProps) {
           <CardHeader>
             <CardTitle>Size Information</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardContent>
             <FormField
               control={form.control}
-              name="name"
+              name="value"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Size Name</FormLabel>
+                  <FormLabel>Size Value</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Small" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="abbreviation"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Abbreviation</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g. S" {...field} />
+                    <Input placeholder="e.g. S, M, L, 32, 10.5" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

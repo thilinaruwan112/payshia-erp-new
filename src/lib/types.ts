@@ -3,6 +3,7 @@
 
 
 
+
 export type Product = {
   id: string;
   name: string;
@@ -247,6 +248,5 @@ export type Color = {
 
 export type Size = {
     id: string;
-    name: string;
-    abbreviation: string;
+    value: string;
 }

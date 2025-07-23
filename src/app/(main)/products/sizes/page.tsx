@@ -1,4 +1,6 @@
 
+'use client';
+
 import {
   Card,
   CardContent,
@@ -16,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { sizes } from '@/lib/data';
+import type { Size } from '@/lib/types';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -25,9 +27,39 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
+import { useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SizesPage() {
+  const [sizes, setSizes] = useState<Size[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchSizes() {
+      setIsLoading(true);
+      try {
+        const response = await fetch('https://server-erp.payshia.com/sizes');
+        if (!response.ok) {
+          throw new Error('Failed to fetch sizes');
+        }
+        const data = await response.json();
+        setSizes(data);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Failed to load sizes',
+          description: 'Could not fetch sizes from the server.',
+        });
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchSizes();
+  }, [toast]);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -56,39 +88,50 @@ export default function SizesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Size Name</TableHead>
-                <TableHead>Abbreviation</TableHead>
+                <TableHead>Size Value</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sizes.map((size) => (
-                <TableRow key={size.id}>
-                  <TableCell className="font-medium">{size.name}</TableCell>
-                  <TableCell><Badge variant="outline">{size.abbreviation}</Badge></TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem asChild>
-                           <Link href={`/products/sizes/${size.id}`}>Edit</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                sizes.map((size) => (
+                  <TableRow key={size.id}>
+                    <TableCell className="font-medium">{size.value}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/products/sizes/${size.id}`}>Edit</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
