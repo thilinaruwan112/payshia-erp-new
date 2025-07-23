@@ -13,13 +13,14 @@ export default function EditColorPage({ params }: { params: { id: string } }) {
   const [color, setColor] = useState<Color | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { id } = params;
 
   useEffect(() => {
     async function fetchColor() {
-      if (!params.id) return;
+      if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/colors/${params.id}`);
+        const response = await fetch(`https://server-erp.payshia.com/colors/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();
@@ -39,7 +40,7 @@ export default function EditColorPage({ params }: { params: { id: string } }) {
       }
     }
     fetchColor();
-  }, [params.id, toast]);
+  }, [id, toast]);
 
   if (isLoading) {
     return (

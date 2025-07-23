@@ -7,18 +7,20 @@ import { type Brand } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export default function EditBrandPage({ params }: { params: { id: string } }) {
   const [brand, setBrand] = useState<Brand | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { id } = params;
 
   useEffect(() => {
     async function fetchBrand() {
-      if (!params.id) return;
+      if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/brands/${params.id}`);
+        const response = await fetch(`https://server-erp.payshia.com/brands/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();
@@ -38,7 +40,7 @@ export default function EditBrandPage({ params }: { params: { id: string } }) {
       }
     }
     fetchBrand();
-  }, [params.id, toast]);
+  }, [id, toast]);
 
   if (isLoading) {
     return (
