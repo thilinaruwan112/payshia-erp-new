@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import type { Collection } from '@/lib/data';
 import Link from 'next/link';
 import {
@@ -32,10 +32,15 @@ import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CollectionsPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     async function fetchCollections() {
@@ -67,7 +72,38 @@ export default function CollectionsPage() {
     fetchCollections();
   }, []);
 
+  const handleDelete = async () => {
+    if (!selectedCollection) return;
+
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/collections/${selectedCollection.id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete collection');
+        }
+        setCollections(collections.filter(c => c.id !== selectedCollection.id));
+        toast({
+            title: 'Collection Deleted',
+            description: `The collection "${selectedCollection.title}" has been deleted.`,
+        });
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: 'destructive',
+            title: 'Failed to delete collection',
+            description: errorMessage,
+        });
+    } finally {
+        setIsConfirmOpen(false);
+        setSelectedCollection(null);
+    }
+  };
+
+
   return (
+    <>
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -165,8 +201,15 @@ export default function CollectionsPage() {
                             <DropdownMenuItem asChild>
                             <Link href={`/products/collections/${collection.id}`}>Edit</Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                            Delete
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onSelect={() => {
+                                  setSelectedCollection(collection);
+                                  setIsConfirmOpen(true);
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                         </DropdownMenu>
@@ -179,5 +222,24 @@ export default function CollectionsPage() {
         </CardContent>
       </Card>
     </div>
+
+    <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the collection {' '}
+              <span className="font-bold text-foreground">{selectedCollection?.title}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedCollection(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

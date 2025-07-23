@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Star } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Star, Trash2 } from 'lucide-react';
 import type { Product } from '@/lib/data';
 import { inventory } from '@/lib/data';
 import {
@@ -36,46 +36,81 @@ import { cn } from '@/lib/utils';
 import React, { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [planDetails, setPlanDetails] = useState({ hasAccess: true, limit: Infinity, usage: 0, name: '...' });
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      try {
-        const [productsResponse, limitResponse] = await Promise.all([
-           fetch('https://server-erp.payshia.com/products'),
-           checkPlanLimit('products')
-        ]);
-        
-        if (!productsResponse.ok) {
-          throw new Error('Failed to fetch products');
-        }
-        
-        const data: Product[] = await productsResponse.json();
-        const parsedData = data.map(p => ({...p, price: parseFloat(p.price as any)}));
-        setProducts(parsedData);
-        setPlanDetails(limitResponse);
-
-      } catch (error) {
-         toast({
-          variant: "destructive",
-          title: "Failed to load products",
-          description: "Could not fetch products from the server.",
-        });
-        console.error(error);
-      } finally {
-        setIsLoading(false);
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    try {
+      const [productsResponse, limitResponse] = await Promise.all([
+         fetch('https://server-erp.payshia.com/products'),
+         checkPlanLimit('products')
+      ]);
+      
+      if (!productsResponse.ok) {
+        throw new Error('Failed to fetch products');
       }
+      
+      const data: Product[] = await productsResponse.json();
+      const parsedData = data.map(p => ({...p, price: parseFloat(p.price as any)}));
+      setProducts(parsedData);
+      setPlanDetails(limitResponse);
+
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Failed to load products",
+        description: "Could not fetch products from the server.",
+      });
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
-    fetchData();
+  }
+
+  useEffect(() => {
+    fetchProducts();
   }, [toast]);
 
+  const handleDelete = async () => {
+    if (!selectedProduct) return;
+
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/products/${selectedProduct.id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete product');
+        }
+        setProducts(products.filter(p => p.id !== selectedProduct.id));
+        toast({
+            title: 'Product Deleted',
+            description: `The product "${selectedProduct.name}" has been deleted.`,
+        });
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: 'destructive',
+            title: 'Failed to delete product',
+            description: errorMessage,
+        });
+    } finally {
+        setIsConfirmOpen(false);
+        setSelectedProduct(null);
+    }
+  };
+
+
   return (
+    <>
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -165,7 +200,7 @@ export default function ProductsPage() {
                           alt={product.name}
                           className="aspect-square rounded-md object-cover"
                           height="64"
-                          src={`https://placehold.co/64x64.png`}
+                          src={product.product_image_url || 'https://placehold.co/64x64.png'}
                           width="64"
                           data-ai-hint="product photo"
                         />
@@ -195,7 +230,14 @@ export default function ProductsPage() {
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem>Edit</DropdownMenuItem>
                             <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onSelect={() => {
+                                  setSelectedProduct(product);
+                                  setIsConfirmOpen(true);
+                              }}
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -210,5 +252,23 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
     </div>
+    <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the product {' '}
+              <span className="font-bold text-foreground">{selectedProduct?.name}</span>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedProduct(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
