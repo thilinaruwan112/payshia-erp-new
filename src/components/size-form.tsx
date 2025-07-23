@@ -53,9 +53,11 @@ export function SizeForm({ size }: SizeFormProps) {
 
   async function onSubmit(data: SizeFormValues) {
     setIsLoading(true);
+    const url = size ? `https://server-erp.payshia.com/sizes/${size.id}` : 'https://server-erp.payshia.com/sizes';
+    const method = size ? 'PUT' : 'POST';
     try {
-      const response = await fetch('https://server-erp.payshia.com/sizes', {
-        method: 'POST',
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -113,7 +115,7 @@ export function SizeForm({ size }: SizeFormProps) {
             </Button>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Size
+              {size ? "Save Changes" : "Save Size"}
             </Button>
           </div>
         </div>

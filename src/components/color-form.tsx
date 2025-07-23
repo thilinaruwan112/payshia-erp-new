@@ -53,9 +53,12 @@ export function ColorForm({ color }: ColorFormProps) {
 
   async function onSubmit(data: ColorFormValues) {
     setIsLoading(true);
+    const url = color ? `https://server-erp.payshia.com/colors/${color.id}` : 'https://server-erp.payshia.com/colors';
+    const method = color ? 'PUT' : 'POST';
+
     try {
-      const response = await fetch('https://server-erp.payshia.com/colors', {
-        method: 'POST',
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -113,7 +116,7 @@ export function ColorForm({ color }: ColorFormProps) {
             </Button>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Color
+              {color ? "Save Changes" : "Save Color"}
             </Button>
           </div>
         </div>

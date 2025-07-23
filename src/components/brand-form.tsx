@@ -57,9 +57,12 @@ export function BrandForm({ brand }: BrandFormProps) {
 
   async function onSubmit(data: BrandFormValues) {
     setIsLoading(true);
+    const url = brand ? `https://server-erp.payshia.com/brands/${brand.id}` : 'https://server-erp.payshia.com/brands';
+    const method = brand ? 'PUT' : 'POST';
+
     try {
-      const response = await fetch('https://server-erp.payshia.com/brands', {
-        method: 'POST',
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -117,7 +120,7 @@ export function BrandForm({ brand }: BrandFormProps) {
             </Button>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Brand
+              {brand ? "Save Changes" : "Save Brand"}
             </Button>
           </div>
         </div>
