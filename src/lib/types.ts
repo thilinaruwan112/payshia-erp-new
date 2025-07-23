@@ -5,8 +5,8 @@ export type ProductVariant = {
   sku: string;
   color?: string;
   size?: string;
-  color_id?: string;
-  size_id?: string;
+  color_id?: string | null;
+  size_id?: string | null;
 };
 
 export type Product = {

@@ -122,8 +122,8 @@ export function ProductForm({ product }: ProductFormProps) {
     variants: product?.variants?.map(v => ({
         id: v.id,
         sku: v.sku,
-        colorId: v.color_id,
-        sizeId: v.size_id
+        colorId: v.color_id ?? undefined,
+        sizeId: v.size_id ?? undefined,
     })) || [{ sku: "", colorId: "", sizeId: "" }],
   };
 
