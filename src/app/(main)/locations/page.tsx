@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -109,7 +110,9 @@ export default async function LocationsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/locations/${location.id}`}>Edit</Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">
                           Delete
                         </DropdownMenuItem>

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { collections, products } from "@/lib/data";
+import { collections, products, brands } from "@/lib/data";
 import { Trash2, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -48,6 +49,7 @@ const productFormSchema = z.object({
   stockUnit: z.string().optional(),
   status: z.enum(["active", "draft"]),
   category: z.string().min(1, { message: "Please select a category." }),
+  brandId: z.string().optional(),
   sellingPrice: z.coerce.number().min(0, { message: "Selling Price must be a positive number." }),
   costPrice: z.coerce.number().optional(),
   minPrice: z.coerce.number().optional(),
@@ -458,6 +460,28 @@ export function ProductForm() {
                                     <FormDescription>
                                         You can manage categories in your product settings.
                                     </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="brandId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Brand</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="Select a brand" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {brands.map(brand => (
+                                            <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
                                     <FormMessage />
                                 </FormItem>
                             )}

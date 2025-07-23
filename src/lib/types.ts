@@ -4,6 +4,7 @@ export type Product = {
   id: string;
   name: string;
   category: string;
+  brandId?: string;
   variants: {
     sku: string;
     color?: string;
@@ -223,3 +224,20 @@ export type EmailCampaign = {
     recipientCount: number;
     content: string; // HTML content
 };
+
+export type Brand = {
+  id: string;
+  name: string;
+};
+
+export type Color = {
+    id: string;
+    name: string;
+    hexCode: string;
+}
+
+export type Size = {
+    id: string;
+    name: string;
+    abbreviation: string;
+}

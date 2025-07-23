@@ -20,6 +20,9 @@ import { invoices } from '@/lib/mock-data/invoices';
 import { receipts } from '@/lib/mock-data/receipts';
 import { smsCampaigns } from '@/lib/mock-data/sms-campaigns';
 import { emailCampaigns } from '@/lib/mock-data/email-campaigns';
+import { brands } from './mock-data/brands';
+import { colors } from './mock-data/colors';
+import { sizes } from './mock-data/sizes';
 
 
 export * from '@/lib/types';
@@ -45,4 +48,7 @@ export {
     receipts,
     smsCampaigns,
     emailCampaigns,
+    brands,
+    colors,
+    sizes,
 }

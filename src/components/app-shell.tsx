@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { type ReactNode, useState, useEffect } from 'react';
@@ -36,6 +37,9 @@ import {
   MessageSquare,
   Mail,
   HelpCircle,
+  SwatchBook,
+  PenRuler,
+  ShoppingBag,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -93,13 +97,26 @@ const navItems = [
     icon: BarChart3,
   },
   {
-    label: 'Inventory',
+    label: 'Products',
     icon: Package,
     subItems: [
       { href: '/products', label: 'All Products' },
       { href: '/products/collections', label: 'Collections' },
-      { href: '/inventory/forecast', label: 'AI Forecast' },
+      {
+        label: 'Attributes',
+        icon: PenRuler,
+        subItems: [
+            { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
+            { href: '/products/colors', label: 'Colors', icon: SwatchBook },
+            { href: '/products/sizes', label: 'Sizes', icon: PenRuler },
+        ]
+      }
     ],
+  },
+  {
+    href: '/inventory/forecast',
+    label: 'AI Forecast',
+    icon: TrendingUp,
   },
   {
     href: '/orders',
@@ -335,15 +352,67 @@ function Brand() {
   );
 }
 
-const isPathActive = (pathname: string, href?: string, subItems?: { href: string }[]) => {
+const isPathActive = (pathname: string, href?: string, subItems?: any[]) => {
   if (!href && subItems) {
-    return subItems.some(item => pathname.startsWith(item.href));
+    return subItems.some(item => isPathActive(pathname, item.href, item.subItems));
   }
   if (!href) return false;
   // Exact match for dashboard, startsWith for others
   if (href === '/dashboard') return pathname === href;
   return pathname.startsWith(href);
 }
+
+const NavMenu = ({ items, pathname, handleLinkClick }: { items: any[], pathname: string, handleLinkClick: any }) => {
+    return (
+        <SidebarMenu>
+            {items.map((item, index) =>
+              item.subItems ? (
+                <Collapsible key={index} defaultOpen={isPathActive(pathname, item.href, item.subItems)}>
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        className="justify-start w-full group"
+                        variant="ghost"
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        <span>{item.label}</span>
+                        <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 ease-in-out group-data-[state=open]:rotate-180" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                  </SidebarMenuItem>
+                  <CollapsibleContent>
+                    <ul className="pl-7 py-1 ml-1 border-l">
+                      <NavMenu items={item.subItems} pathname={pathname} handleLinkClick={handleLinkClick} />
+                    </ul>
+                  </CollapsibleContent>
+                </Collapsible>
+              ) : (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isPathActive(pathname, item.href)}
+                    className="justify-start"
+                  >
+                    <Link href={item.href!} onClick={(e) => handleLinkClick(item.isExternal, e)} target={item.isExternal ? "_blank" : "_self"} rel={item.isExternal ? "noopener noreferrer" : ""}>
+                      {item.icon && <item.icon className="mr-2 h-4 w-4" />}
+                      <span>{item.label}</span>
+                      {item.label === 'AI Logistics' && (
+                        <Badge
+                          variant="destructive"
+                          className="ml-auto bg-accent text-accent-foreground animate-pulse"
+                        >
+                          New
+                        </Badge>
+                      )}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            )}
+        </SidebarMenu>
+    );
+};
+
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -365,73 +434,7 @@ export function AppShell({ children }: { children: ReactNode }) {
          <LocationSwitcher isMobile={true} />
          <SidebarSeparator />
         <SidebarContent className="p-4">
-          <SidebarMenu>
-            {navItems.map((item, index) =>
-              item.subItems ? (
-                <Collapsible key={index} defaultOpen={isPathActive(pathname, item.href, item.subItems)}>
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton
-                        className="justify-start w-full group"
-                        variant="ghost"
-                      >
-                        <item.icon className="mr-2 h-4 w-4" />
-                        <span>{item.label}</span>
-                        <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform duration-200 ease-in-out group-data-[state=open]:rotate-180" />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                  </SidebarMenuItem>
-                  <CollapsibleContent>
-                    <ul className="pl-7 py-1 ml-1 border-l">
-                      {item.subItems.map((subItem) => (
-                        <li key={subItem.href}>
-                           <Link href={subItem.href} onClick={(e) => handleLinkClick(false, e)}>
-                            <SidebarMenuButton
-                              variant="ghost"
-                              className="w-full justify-start text-muted-foreground"
-                              isActive={pathname === subItem.href}
-                            >
-                              {subItem.icon && <subItem.icon className="mr-2 h-4 w-4" />}
-                              {subItem.label}
-                               {subItem.href.includes('ai') && (
-                                <Badge
-                                  variant="destructive"
-                                  className="ml-auto bg-accent text-accent-foreground animate-pulse"
-                                >
-                                  AI
-                                </Badge>
-                              )}
-                            </SidebarMenuButton>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </CollapsibleContent>
-                </Collapsible>
-              ) : (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isPathActive(pathname, item.href)}
-                    className="justify-start"
-                  >
-                    <Link href={item.href!} onClick={(e) => handleLinkClick(item.isExternal, e)} target={item.isExternal ? "_blank" : "_self"} rel={item.isExternal ? "noopener noreferrer" : ""}>
-                      <item.icon className="mr-2 h-4 w-4" />
-                      <span>{item.label}</span>
-                      {item.label === 'AI Logistics' && (
-                        <Badge
-                          variant="destructive"
-                          className="ml-auto bg-accent text-accent-foreground animate-pulse"
-                        >
-                          New
-                        </Badge>
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )
-            )}
-          </SidebarMenu>
+          <NavMenu items={navItems} pathname={pathname} handleLinkClick={handleLinkClick} />
         </SidebarContent>
         <SidebarFooter>
           <div className="flex items-center gap-2">
