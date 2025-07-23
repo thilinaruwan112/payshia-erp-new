@@ -2,6 +2,7 @@
 
 
 
+
 export type Product = {
   id: string;
   name: string;
@@ -242,7 +243,6 @@ export type Brand = {
 export type Color = {
     id: string;
     name: string;
-    hexCode: string;
 }
 
 export type Size = {

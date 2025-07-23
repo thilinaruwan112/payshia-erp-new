@@ -1,4 +1,6 @@
 
+'use client';
+
 import {
   Card,
   CardContent,
@@ -16,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { colors } from '@/lib/data';
+import type { Color } from '@/lib/types';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -25,8 +27,39 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ColorsPage() {
+  const [colors, setColors] = useState<Color[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchColors() {
+      setIsLoading(true);
+      try {
+        const response = await fetch('https://server-erp.payshia.com/colors');
+        if (!response.ok) {
+          throw new Error('Failed to fetch colors');
+        }
+        const data = await response.json();
+        setColors(data);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Failed to load colors',
+          description: 'Could not fetch colors from the server.',
+        });
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchColors();
+  }, [toast]);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -55,43 +88,50 @@ export default function ColorsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Preview</TableHead>
                 <TableHead>Color Name</TableHead>
-                <TableHead>Hex Code</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {colors.map((color) => (
-                <TableRow key={color.id}>
-                  <TableCell>
-                    <div className="w-6 h-6 rounded-full border" style={{ backgroundColor: color.hexCode }} />
-                  </TableCell>
-                  <TableCell className="font-medium">{color.name}</TableCell>
-                  <TableCell className="font-mono">{color.hexCode}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/products/colors/${color.id}`}>Edit</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-8 w-8 rounded-md" />
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                colors.map((color) => (
+                  <TableRow key={color.id}>
+                    <TableCell className="font-medium">{color.name}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/products/colors/${color.id}`}>Edit</Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

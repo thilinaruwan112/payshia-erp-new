@@ -7,7 +7,6 @@ import * as z from "zod";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -24,10 +23,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Color } from "@/lib/types";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
 
 const colorFormSchema = z.object({
   name: z.string().min(2, "Color name must be at least 2 characters."),
-  hexCode: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex code (e.g. #RRGGBB)."),
 });
 
 type ColorFormValues = z.infer<typeof colorFormSchema>;
@@ -39,10 +39,10 @@ interface ColorFormProps {
 export function ColorForm({ color }: ColorFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   const defaultValues: Partial<ColorFormValues> = {
     name: color?.name || "",
-    hexCode: color?.hexCode || "#000000",
   };
 
   const form = useForm<ColorFormValues>({
@@ -50,16 +50,40 @@ export function ColorForm({ color }: ColorFormProps) {
     defaultValues,
     mode: "onChange",
   });
-  
-  const watchedHexCode = form.watch("hexCode");
 
-  function onSubmit(data: ColorFormValues) {
-    console.log(data);
-    toast({
-      title: color ? "Color Updated" : "Color Created",
-      description: `The color "${data.name}" has been saved.`,
-    });
-    router.push('/products/colors');
+  async function onSubmit(data: ColorFormValues) {
+    setIsLoading(true);
+    try {
+      const response = await fetch('https://server-erp.payshia.com/colors', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Something went wrong');
+      }
+
+      toast({
+        title: color ? "Color Updated" : "Color Created",
+        description: `The color "${data.name}" has been saved.`,
+      });
+      router.push('/products/colors');
+      router.refresh();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast({
+        variant: "destructive",
+        title: "Failed to save color",
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const pageTitle = color ? `Edit Color: ${color.name}` : 'Create Color';
@@ -83,10 +107,12 @@ export function ColorForm({ color }: ColorFormProps) {
               type="button"
               onClick={() => router.back()}
               className="w-full"
+              disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Color
             </Button>
           </div>
@@ -95,7 +121,7 @@ export function ColorForm({ color }: ColorFormProps) {
           <CardHeader>
             <CardTitle>Color Information</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+          <CardContent>
             <FormField
               control={form.control}
               name="name"
@@ -105,21 +131,6 @@ export function ColorForm({ color }: ColorFormProps) {
                   <FormControl>
                     <Input placeholder="e.g. Midnight Black" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="hexCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Hex Code</FormLabel>
-                  <div className="flex items-center gap-2">
-                    <Input placeholder="#000000" {...field} />
-                    <div className="w-10 h-10 rounded-md border" style={{ backgroundColor: watchedHexCode }} />
-                  </div>
-                  <FormDescription>Include the leading # symbol.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
