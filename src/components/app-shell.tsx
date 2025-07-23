@@ -364,8 +364,10 @@ const isPathActive = (pathname: string, href?: string, subItems?: any[]) => {
     return subItems.some(item => isPathActive(pathname, item.href, item.subItems));
   }
   if (!href) return false;
-  // Exact match for dashboard, startsWith for others
-  if (href === '/dashboard') return pathname === href;
+  // Exact match for dashboard and products, startsWith for others
+  if (href === '/dashboard' || href === '/products') {
+    return pathname === href;
+  }
   return pathname.startsWith(href);
 }
 
