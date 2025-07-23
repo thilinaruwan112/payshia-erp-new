@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { products } from "@/lib/data";
 import type { Collection, Product } from "@/lib/types";
 import { ProductPickerDialog } from "./product-picker-dialog";
 import React from "react";
@@ -54,9 +53,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
   
-  const [selectedProducts, setSelectedProducts] = React.useState<Product[]>(
-    collection ? products.slice(0, collection.productCount) : []
-  );
+  const [selectedProducts, setSelectedProducts] = React.useState<Product[]>([]);
 
   const defaultValues: Partial<CollectionFormValues> = {
     title: collection?.title || "",
@@ -76,7 +73,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
 
   async function onSubmit(data: CollectionFormValues) {
     setIsLoading(true);
-    const payload = {
+    const collectionPayload = {
       title: data.title,
       description: data.description,
       cover_image_url: data.cover_image_url,
@@ -89,13 +86,32 @@ export function CollectionForm({ collection }: CollectionFormProps) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify(collectionPayload),
         });
 
         const result = await response.json();
 
         if (!response.ok) {
             throw new Error(result.message || 'Something went wrong');
+        }
+
+        const newCollectionId = result.id;
+
+        if (data.products && data.products.length > 0) {
+            for (const productId of data.products) {
+                const collectionProductPayload = {
+                    collection_id: newCollectionId,
+                    product_id: parseInt(productId, 10),
+                };
+
+                await fetch('https://server-erp.payshia.com/collection-products', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(collectionProductPayload),
+                });
+            }
         }
 
         toast({
