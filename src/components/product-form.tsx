@@ -35,7 +35,12 @@ import { collections, products, brands } from "@/lib/data";
 import { Trash2, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useState, useEffect } from "react";
+
+type Category = {
+  id: string;
+  name: string;
+};
 
 const productFormSchema = z.object({
   name: z.string().min(3, {
@@ -48,7 +53,7 @@ const productFormSchema = z.object({
   description: z.string().optional(),
   stockUnit: z.string().optional(),
   status: z.enum(["active", "draft"]),
-  category: z.string().min(1, { message: "Please select a category." }),
+  categoryId: z.string().min(1, { message: "Please select a category." }),
   brandId: z.string().optional(),
   sellingPrice: z.coerce.number().min(0, { message: "Selling Price must be a positive number." }),
   costPrice: z.coerce.number().optional(),
@@ -86,6 +91,28 @@ export function ProductForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const response = await fetch('https://server-erp.payshia.com/categories');
+        if (!response.ok) {
+          throw new Error('Failed to fetch categories');
+        }
+        const data = await response.json();
+        setCategories(data);
+      } catch (error) {
+        console.error(error);
+        toast({
+          variant: "destructive",
+          title: "Failed to load categories",
+          description: "Could not fetch categories from the server.",
+        });
+      }
+    }
+    fetchCategories();
+  }, [toast]);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
@@ -97,16 +124,17 @@ export function ProductForm() {
     name: "variants",
     control: form.control,
   });
-  
-  const existingCategories = [...new Set(products.map(p => p.category))];
 
   async function onSubmit(data: ProductFormValues) {
     setIsLoading(true);
 
+    const selectedCategory = categories.find(c => c.id === data.categoryId);
+
     const apiPayload = {
       name: data.name,
       description: data.description,
-      category: data.category,
+      category: selectedCategory?.name,
+      category_id: parseInt(data.categoryId, 10),
       price: data.sellingPrice,
       cost_price: data.costPrice,
       min_price: data.minPrice,
@@ -491,7 +519,7 @@ export function ProductForm() {
                     <CardContent className="space-y-4">
                         <FormField
                             control={form.control}
-                            name="category"
+                            name="categoryId"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Category</FormLabel>
@@ -502,13 +530,13 @@ export function ProductForm() {
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        {existingCategories.map(cat => (
-                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        {categories.map(cat => (
+                                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                     </Select>
                                     <FormDescription>
-                                        You can manage categories in your product settings.
+                                        Categories are fetched from your server.
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem>
@@ -592,5 +620,3 @@ export function ProductForm() {
     </Form>
   );
 }
-
-    
