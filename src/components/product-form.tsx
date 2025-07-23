@@ -31,13 +31,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { collections, products, brands } from "@/lib/data";
+import { collections, products } from "@/lib/data";
 import { Trash2, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 
 type Category = {
+  id: string;
+  name: string;
+};
+
+type Brand = {
   id: string;
   name: string;
 };
@@ -92,6 +97,7 @@ export function ProductForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
 
   useEffect(() => {
     async function fetchCategories() {
@@ -112,6 +118,27 @@ export function ProductForm() {
       }
     }
     fetchCategories();
+  }, [toast]);
+  
+  useEffect(() => {
+    async function fetchBrands() {
+      try {
+        const response = await fetch('https://server-erp.payshia.com/brands');
+        if (!response.ok) {
+          throw new Error('Failed to fetch brands');
+        }
+        const data = await response.json();
+        setBrands(data);
+      } catch (error) {
+        console.error(error);
+        toast({
+          variant: "destructive",
+          title: "Failed to load brands",
+          description: "Could not fetch brands from the server.",
+        });
+      }
+    }
+    fetchBrands();
   }, [toast]);
 
   const form = useForm<ProductFormValues>({
