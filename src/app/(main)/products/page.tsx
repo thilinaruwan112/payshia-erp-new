@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import {
@@ -200,7 +201,7 @@ export default function ProductsPage() {
                           alt={product.name}
                           className="aspect-square rounded-md object-cover"
                           height="64"
-                          src={product.product_image_url || 'https://placehold.co/64x64.png'}
+                          src={'https://placehold.co/64x64.png'}
                           width="64"
                           data-ai-hint="product photo"
                         />
