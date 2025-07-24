@@ -540,7 +540,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                     )}
                                 />
                                {fields.length > 1 && (
-                                <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveVariant(index)}>
+                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveVariant(index)}>
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Remove variant</span>
                                 </Button>
