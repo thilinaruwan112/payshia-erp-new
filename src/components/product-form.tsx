@@ -164,11 +164,14 @@ export function ProductForm({ product }: ProductFormProps) {
   const handleRemoveVariant = async (index: number) => {
     const variantId = fields[index].id;
 
+    // If the variant doesn't have an ID, it's a new one that hasn't been saved yet.
+    // Just remove it from the form state.
     if (!variantId) {
         remove(index);
         return;
     }
 
+    // If it has an ID, it exists on the server, so we need to make an API call.
     try {
         const response = await fetch(`https://server-erp.payshia.com/product-variants/${variantId}`, {
             method: 'DELETE',
@@ -179,10 +182,11 @@ export function ProductForm({ product }: ProductFormProps) {
             throw new Error(errorData.message || 'Failed to delete variant');
         }
 
+        // Only remove from the UI after successful deletion from the server.
         remove(index);
         toast({
             title: 'Variant Deleted',
-            description: 'The variant has been removed from the server.',
+            description: 'The variant has been successfully removed.',
         });
 
     } catch (error) {
