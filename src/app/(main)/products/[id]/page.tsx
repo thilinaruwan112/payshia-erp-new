@@ -1,4 +1,3 @@
-
 'use client'
 
 import { ProductForm } from '@/components/product-form';
@@ -13,14 +12,13 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { id } = params;
 
   useEffect(() => {
     async function fetchProduct() {
-      if (!id) return;
+      if (!params.id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products/${id}`);
+        const response = await fetch(`https://server-erp.payshia.com/products/${params.id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();
@@ -44,7 +42,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       }
     }
     fetchProduct();
-  }, [id, toast]);
+  }, [params.id, toast]);
 
   if (isLoading) {
     return (
