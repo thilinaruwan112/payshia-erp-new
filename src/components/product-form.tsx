@@ -667,54 +667,6 @@ export function ProductForm({ product }: ProductFormProps) {
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="collections"
-                            render={() => (
-                                <FormItem>
-                                    <div className="mb-4">
-                                        <FormLabel>Collections</FormLabel>
-                                        <FormDescription>
-                                            Add this product to a collection.
-                                        </FormDescription>
-                                    </div>
-                                    {collections.map((item) => (
-                                        <FormField
-                                        key={item.id}
-                                        control={form.control}
-                                        name="collections"
-                                        render={({ field }) => {
-                                            return (
-                                            <FormItem
-                                                key={item.id}
-                                                className="flex flex-row items-start space-x-3 space-y-0"
-                                            >
-                                                <FormControl>
-                                                <Checkbox
-                                                    checked={field.value?.includes(item.id)}
-                                                    onCheckedChange={(checked) => {
-                                                    return checked
-                                                        ? field.onChange([...(field.value || []), item.id])
-                                                        : field.onChange(
-                                                            field.value?.filter(
-                                                            (value) => value !== item.id
-                                                            )
-                                                        )
-                                                    }}
-                                                />
-                                                </FormControl>
-                                                <FormLabel className="font-normal">
-                                                {item.title}
-                                                </FormLabel>
-                                            </FormItem>
-                                            )
-                                        }}
-                                        />
-                                    ))}
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                            />
                     </CardContent>
                 </Card>
             </div>
