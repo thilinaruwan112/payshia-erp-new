@@ -106,9 +106,9 @@ export function ProductForm({ product }: ProductFormProps) {
   const defaultValues: Partial<ProductFormValues> = {
     name: product?.name || "",
     printName: product?.print_name || "",
-    tamilName: product?.tamilName || "",
+    tamilName: product?.tamil_name || "",
     sinhalaName: product?.sinhala_name || "",
-    displayName: product?.displayName || "",
+    displayName: product?.display_name || "",
     description: product?.description || "",
     stockUnit: product?.stock_unit || "Nos",
     status: product?.status || "active",
@@ -723,5 +723,3 @@ export function ProductForm({ product }: ProductFormProps) {
     </Form>
   );
 }
-
-    

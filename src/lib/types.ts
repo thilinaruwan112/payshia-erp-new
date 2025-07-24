@@ -26,8 +26,8 @@ export type Product = {
   product_image_url?: string;
   print_name?: string;
   sinhala_name?: string;
-  tamilName?: string;
-  displayName?: string;
+  tamil_name?: string;
+  display_name?: string;
 };
 
 export type Location = {
