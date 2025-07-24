@@ -5,15 +5,15 @@ import { ProductForm } from '@/components/product-form';
 import { useToast } from '@/hooks/use-toast';
 import { type Product } from '@/lib/types';
 import { notFound } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { id } = params;
+  const { id } = use(params);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -28,7 +28,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
           throw new Error('Failed to fetch product data');
         }
         const data = await response.json();
-        setProduct(data);
+        setProduct({ ...data.product, variants: data.variants });
       } catch (error) {
         toast({
           variant: 'destructive',
