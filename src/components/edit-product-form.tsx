@@ -23,7 +23,7 @@ export function EditProductForm({ id }: EditProductFormProps) {
       if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products/${id}`);
+        const response = await fetch(`https://server-erp.payshia.com/products/details/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();
@@ -33,6 +33,7 @@ export function EditProductForm({ id }: EditProductFormProps) {
         const data = await response.json();
         setProduct({ ...data.product, variants: data.variants });
       } catch (error) {
+        console.error(error);
         toast({
           variant: 'destructive',
           title: 'Failed to load product',
