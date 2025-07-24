@@ -295,7 +295,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                   {form.watch('cover_image_url') ? (
                     <div className="relative">
                        <Image
-                        src={form.watch('cover_image_url') as string}
+                        src="https://placehold.co/200x200.png"
                         alt="Cover image preview"
                         width={200}
                         height={200}
