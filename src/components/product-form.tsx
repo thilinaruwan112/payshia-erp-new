@@ -31,12 +31,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { collections } from "@/lib/data";
 import { Trash2, UploadCloud, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import type { Product } from "@/lib/types";
+import type { Product, Collection } from "@/lib/types";
 
 type Category = {
   id: string;
@@ -102,6 +101,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
   const [sizes, setSizes] = useState<Size[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
 
   const defaultValues: Partial<ProductFormValues> = {
     name: product?.name || "",
@@ -148,6 +148,7 @@ export function ProductForm({ product }: ProductFormProps) {
     fetchData('https://server-erp.payshia.com/brands', setBrands, 'brands');
     fetchData('https://server-erp.payshia.com/colors', setColors, 'colors');
     fetchData('https://server-erp.payshia.com/sizes', setSizes, 'sizes');
+    fetchData('https://server-erp.payshia.com/collections', setCollections, 'collections');
   }, [toast]);
 
   const form = useForm<ProductFormValues>({
@@ -722,3 +723,5 @@ export function ProductForm({ product }: ProductFormProps) {
     </Form>
   );
 }
+
+    
