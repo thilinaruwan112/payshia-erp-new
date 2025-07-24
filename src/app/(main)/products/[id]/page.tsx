@@ -28,7 +28,11 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
           throw new Error('Failed to fetch product data');
         }
         const data = await response.json();
-        setProduct(data);
+        const combinedProductData = {
+          ...data.product,
+          variants: data.variants,
+        };
+        setProduct(combinedProductData);
       } catch (error) {
         toast({
           variant: 'destructive',
