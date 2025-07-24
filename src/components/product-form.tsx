@@ -102,7 +102,6 @@ export function ProductForm({ product }: ProductFormProps) {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
   const [sizes, setSizes] = useState<Size[]>([]);
-  const [variantsToDelete, setVariantsToDelete] = useState<string[]>([]);
 
   const defaultValues: Partial<ProductFormValues> = {
     name: product?.name || "",
@@ -162,13 +161,42 @@ export function ProductForm({ product }: ProductFormProps) {
     control: form.control,
   });
 
-  const handleRemoveVariant = (index: number) => {
+  const handleRemoveVariant = async (index: number) => {
     const variantId = fields[index].id;
-    if (variantId) {
-      setVariantsToDelete(prev => [...prev, variantId]);
+
+    // If it's a new variant not yet saved, just remove it from the form
+    if (!variantId) {
+        remove(index);
+        return;
     }
-    remove(index);
-  }
+
+    // If it's an existing variant, call the API to delete it
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/product-variants/${variantId}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete variant');
+        }
+
+        // On successful deletion from DB, remove from form state
+        remove(index);
+        toast({
+            title: 'Variant Deleted',
+            description: 'The variant has been removed.',
+        });
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: 'destructive',
+            title: 'Error Deleting Variant',
+            description: errorMessage,
+        });
+    }
+  };
 
   async function onSubmit(data: ProductFormValues) {
     setIsLoading(true);
@@ -197,7 +225,6 @@ export function ProductForm({ product }: ProductFormProps) {
         color_id: v.colorId ? parseInt(v.colorId, 10) : undefined,
         size_id: v.sizeId ? parseInt(v.sizeId, 10) : undefined,
       })),
-      delete_variants: variantsToDelete,
     };
     
     const url = product ? `https://server-erp.payshia.com/products/${product.id}` : 'https://server-erp.payshia.com/products';
@@ -540,7 +567,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                     )}
                                 />
                                {fields.length > 1 && (
-                                <Button variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveVariant(index)}>
+                                <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveVariant(index)}>
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Remove variant</span>
                                 </Button>
