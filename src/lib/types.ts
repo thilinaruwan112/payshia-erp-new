@@ -75,6 +75,7 @@ export type Collection = {
   productCount?: number;
   created_at: string;
   updated_at: string;
+  products?: Product[];
 };
 
 export type Supplier = {
