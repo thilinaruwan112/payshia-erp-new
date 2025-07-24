@@ -162,10 +162,10 @@ export function ProductForm({ product }: ProductFormProps) {
   });
 
   const handleRemoveVariant = async (index: number) => {
-    const variantId = fields[index].id;
-
-    // If the variant doesn't have an ID, it's a new one that hasn't been saved yet.
-    // Just remove it from the form state.
+    const variantId = form.getValues(`variants.${index}.id`);
+    
+    // If the variant doesn't have an ID, it's new and only exists in the UI.
+    // Just remove it from the form state without an API call.
     if (!variantId) {
         remove(index);
         return;
