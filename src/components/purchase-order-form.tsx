@@ -41,6 +41,7 @@ import { addDays, format } from "date-fns";
 import React, { useEffect, useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { useLocation } from "./location-provider";
+import { Switch } from "./ui/switch";
 
 const purchaseOrderItemSchema = z.object({
       product_id: z.string().min(1, "Product is required."),
@@ -58,6 +59,8 @@ const purchaseOrderFormSchema = z.object({
   status: z.enum(["Draft", "Sent", "Cancelled"]),
   items: z.array(purchaseOrderItemSchema).min(1, "At least one item is required."),
   notes: z.string().optional(),
+  taxType: z.string().min(1, "Tax type is required."),
+  isActive: z.boolean().default(true),
 });
 
 type PurchaseOrderFormValues = z.infer<typeof purchaseOrderFormSchema>;
@@ -82,6 +85,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
         { product_id: '', quantity: 1, unit_cost: 0 },
     ],
     notes: '',
+    taxType: 'VAT',
+    isActive: true,
   };
 
   const form = useForm<PurchaseOrderFormValues>({
@@ -157,11 +162,11 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
       location_id: parseInt(currentLocation.location_id, 10),
       supplier_id: parseInt(data.supplierId, 10),
       currency: "LKR",
-      tax_type: "VAT",
+      tax_type: data.taxType,
       sub_total: total,
       created_by: "admin",
       created_at: format(data.date, 'yyyy-MM-dd HH:mm:ss'),
-      is_active: 1,
+      is_active: data.isActive ? 1 : 0,
       po_status: poStatusMap[data.status],
       remarks: data.notes || '',
       company_id: 1,
@@ -244,7 +249,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
             <CardHeader>
                 <CardTitle>PO Details</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <FormField
                     control={form.control}
                     name="supplierId"
@@ -329,6 +334,28 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                         </FormItem>
                     )}
                 />
+                 <FormField
+                    control={form.control}
+                    name="taxType"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col justify-end">
+                            <FormLabel>Tax Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Select a tax type" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="VAT">VAT</SelectItem>
+                                <SelectItem value="GST">GST</SelectItem>
+                                <SelectItem value="No Tax">No Tax</SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
                 <FormField
                     control={form.control}
                     name="status"
@@ -351,6 +378,23 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                         </FormItem>
                     )}
                 />
+                <FormField
+                    control={form.control}
+                    name="isActive"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col justify-end">
+                            <FormLabel>Active</FormLabel>
+                             <div className="h-10 flex items-center">
+                                <FormControl>
+                                    <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </div>
+                        </FormItem>
+                    )}
+                    />
             </CardContent>
         </Card>
 
@@ -497,5 +541,3 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     </Form>
   );
 }
-
-    
