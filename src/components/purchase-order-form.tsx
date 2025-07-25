@@ -49,7 +49,7 @@ const purchaseOrderItemSchema = z.object({
       order_rate: z.coerce.number().min(0, "Cost must be a positive number."),
       // These fields are needed for the payload
       order_unit: z.string().optional(),
-      product_variant_id: z.string().optional(),
+      product_variant_id: z.coerce.number().optional(),
       is_active: z.literal(1).default(1),
 });
 
@@ -73,7 +73,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currentLocation } = useLocation();
-  const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   
@@ -94,7 +94,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     mode: "onChange",
   });
 
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "items",
   });
@@ -103,35 +103,37 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const supplierId = form.watch("supplierId");
 
   useEffect(() => {
-    async function fetchProductsBySupplier(supplierId: string) {
+    async function fetchAllProducts() {
         setIsLoadingProducts(true);
-        setAvailableProducts([]);
-        replace([{ product_id: '', quantity: 1, order_rate: 0 }]);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/products/filter/by-supplier?supplier_id=${supplierId}`);
+            const response = await fetch(`https://server-erp.payshia.com/products`);
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to fetch products for supplier');
+                throw new Error(errorData.message || 'Failed to fetch products');
             }
-            const data = await response.json();
-            setAvailableProducts(data);
+            const data: Product[] = await response.json();
+            // Ensure variants is an array
+            const productsWithVariants = data.map(p => ({...p, variants: Array.isArray(p.variants) ? p.variants : []}));
+            setAllProducts(productsWithVariants);
         } catch (error) {
             console.error(error);
             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: `Could not fetch products for the selected supplier: ${errorMessage}`,
+                description: `Could not fetch products: ${errorMessage}`,
             });
         } finally {
             setIsLoadingProducts(false);
         }
     }
-
-    if (supplierId) {
-        fetchProductsBySupplier(supplierId);
-    }
-  }, [supplierId, replace, toast]);
+    fetchAllProducts();
+  }, [toast]);
+  
+  const availableProducts = React.useMemo(() => {
+      if (!supplierId || !allProducts.length) return [];
+      return allProducts.filter(p => p.supplier?.split(',').map(s => s.trim()).includes(supplierId));
+  }, [supplierId, allProducts]);
 
 
   const subTotal = watchedItems.reduce((total, item) => {
@@ -169,13 +171,18 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
       delivery_date: format(data.delivery_date, 'yyyy-MM-dd'),
       is_active: data.is_active ? 1 : 0,
       items: data.items.map(item => {
-        const product = availableProducts.find(p => p.id === item.product_id);
-        const variant = (product?.variants && product.variants.length > 0) ? product.variants[0] : undefined;
+        const product = allProducts.find(p => p.id === item.product_id);
+        const variant = (product?.variants && product.variants.length > 0) ? product.variants[0] : null;
+        if (!variant) {
+            throw new Error(`Variant not found for product ID ${item.product_id}. Cannot create PO.`);
+        }
         return {
-            ...item,
             product_id: parseInt(item.product_id, 10),
-            product_variant_id: variant?.id ? parseInt(variant.id, 10) : undefined,
+            product_variant_id: parseInt(variant.id as string, 10),
+            quantity: item.quantity,
             order_unit: product?.stock_unit || 'Nos',
+            order_rate: item.order_rate,
+            is_active: 1
         }
       }),
     };
@@ -187,11 +194,23 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
             body: JSON.stringify(poPayload),
         });
 
-        const result = await response.json();
-
         if (!response.ok) {
-            throw new Error(result.message || 'Failed to create purchase order.');
+            // Try to parse JSON error, but fall back to text if it's HTML
+            const errorText = await response.text();
+            let errorMessage = 'Failed to create purchase order.';
+            try {
+                const errorData = JSON.parse(errorText);
+                errorMessage = errorData.message || errorData.error || errorMessage;
+            } catch(e) {
+                // If parsing fails, it's likely an HTML error page.
+                // We can't show the whole page, so show a generic error.
+                console.error("Non-JSON API Error Response:", errorText);
+                errorMessage = 'The server returned an unexpected error.';
+            }
+            throw new Error(errorMessage);
         }
+        
+        const result = await response.json();
         
         toast({
             title: "Purchase Order Created",
@@ -503,3 +522,5 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     </Form>
   );
 }
+
+    
