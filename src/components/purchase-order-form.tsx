@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, PurchaseOrderItem, Supplier } from "@/lib/types";
+import type { Product, PurchaseOrderItem, Supplier, ProductVariant } from "@/lib/types";
 import { CalendarIcon, Trash2, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -74,6 +74,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const { toast } = useToast();
   const { currentLocation } = useLocation();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [allVariants, setAllVariants] = useState<ProductVariant[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   
@@ -106,20 +107,32 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     async function fetchAllProducts() {
       setIsLoadingProducts(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products`);
-        if (!response.ok) {
-          const errorData = await response.json();
+        const [productsResponse, variantsResponse] = await Promise.all([
+          fetch(`https://server-erp.payshia.com/products`),
+          fetch(`https://server-erp.payshia.com/product-variants`)
+        ]);
+
+        if (!productsResponse.ok) {
+          const errorData = await productsResponse.json();
           throw new Error(errorData.message || 'Failed to fetch products');
         }
-        const data: Product[] = await response.json();
-        setAllProducts(data);
+         if (!variantsResponse.ok) {
+          const errorData = await variantsResponse.json();
+          throw new Error(errorData.message || 'Failed to fetch product variants');
+        }
+
+        const productsData: Product[] = await productsResponse.json();
+        const variantsData: ProductVariant[] = await variantsResponse.json();
+        setAllProducts(productsData);
+        setAllVariants(variantsData);
+
       } catch (error) {
         console.error(error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: `Could not fetch products: ${errorMessage}`,
+          description: `Could not fetch product data: ${errorMessage}`,
         });
       } finally {
         setIsLoadingProducts(false);
@@ -171,13 +184,14 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
       is_active: data.is_active ? 1 : 0,
       items: data.items.map(item => {
         const product = allProducts.find(p => p.id === item.product_id);
-        const variant = (product?.variants && product.variants.length > 0) ? product.variants[0] : null;
+        const variant = allVariants.find(v => v.product_id === item.product_id);
+        
         if (!variant || !variant.id) {
-            console.warn(`Variant not found for product ID ${item.product_id}. Using a fallback. Please check product data.`);
+            throw new Error(`Variant not found for product ID ${item.product_id}. Cannot create PO.`);
         }
         return {
             product_id: parseInt(item.product_id, 10),
-            product_variant_id: variant?.id ? parseInt(variant.id, 10) : 0, // Fallback to 0 if no variant ID
+            product_variant_id: parseInt(variant.id, 10),
             quantity: item.quantity,
             order_unit: product?.stock_unit || 'Nos',
             order_rate: item.order_rate,
@@ -518,5 +532,3 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     </Form>
   );
 }
-
-    

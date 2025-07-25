@@ -7,6 +7,7 @@ export type ProductVariant = {
   size?: string;
   color_id?: string | null;
   size_id?: string | null;
+  product_id?: string;
   barcode?: string | null;
 };
 
@@ -123,7 +124,7 @@ export type PurchaseOrderItem = {
     quantity: number;
     order_rate: number;
     order_unit?: string;
-    product_variant_id?: string;
+    product_variant_id?: number;
     is_active?: number;
 };
 
