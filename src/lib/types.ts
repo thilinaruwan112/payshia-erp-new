@@ -80,13 +80,16 @@ export type Collection = {
 };
 
 export type Supplier = {
-    id: string;
-    name: string;
-    contactPerson: string;
-    email: string;
-    phone: string;
-    address: string;
-}
+  supplier_id: string;
+  supplier_name: string;
+  contact_person: string;
+  email: string;
+  telephone: string;
+  street_name: string;
+  city: string;
+  zip_code: string;
+  fax: string;
+};
 
 export type PurchaseOrder = {
     id: string;

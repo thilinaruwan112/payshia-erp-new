@@ -24,13 +24,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Supplier } from "@/lib/types";
 import { Textarea } from "./ui/textarea";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
 const supplierFormSchema = z.object({
-  name: z.string().min(3, "Supplier name is required."),
-  contactPerson: z.string().min(3, "Contact person is required."),
+  supplier_name: z.string().min(3, "Supplier name is required."),
+  contact_person: z.string().min(3, "Contact person is required."),
   email: z.string().email("Invalid email address."),
-  phone: z.string().min(10, "Phone number is required."),
-  address: z.string().min(10, "Address is required."),
+  telephone: z.string().min(10, "Phone number is required."),
+  street_name: z.string().optional(),
+  city: z.string().optional(),
+  zip_code: z.string().optional(),
+  fax: z.string().optional(),
 });
 
 type SupplierFormValues = z.infer<typeof supplierFormSchema>;
@@ -42,13 +47,18 @@ interface SupplierFormProps {
 export function SupplierForm({ supplier }: SupplierFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
   
   const defaultValues: Partial<SupplierFormValues> = {
-    name: supplier?.name || "",
-    contactPerson: supplier?.contactPerson || "",
+    supplier_name: supplier?.supplier_name || "",
+    contact_person: supplier?.contact_person || "",
     email: supplier?.email || "",
-    phone: supplier?.phone || "",
-    address: supplier?.address || "",
+    telephone: supplier?.telephone || "",
+    street_name: supplier?.street_name || "",
+    city: supplier?.city || "",
+    zip_code: supplier?.zip_code || "",
+    fax: supplier?.fax || "",
   };
 
   const form = useForm<SupplierFormValues>({
@@ -57,13 +67,43 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
     mode: "onChange",
   });
 
-  function onSubmit(data: SupplierFormValues) {
-    console.log(data);
-    toast({
-      title: supplier ? "Supplier Updated" : "Supplier Created",
-      description: `The supplier "${data.name}" has been saved.`,
-    });
-    router.push('/suppliers');
+  async function onSubmit(data: SupplierFormValues) {
+    setIsLoading(true);
+
+    const address = [data.street_name, data.city, data.zip_code].filter(Boolean).join(', ');
+    const url = supplier ? `https://server-erp.payshia.com/suppliers/${supplier.supplier_id}` : 'https://server-erp.payshia.com/suppliers';
+    const method = supplier ? 'PUT' : 'POST';
+    
+    try {
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Something went wrong');
+      }
+
+      toast({
+        title: supplier ? "Supplier Updated" : "Supplier Created",
+        description: `The supplier "${data.supplier_name}" has been saved.`,
+      });
+      router.push('/suppliers');
+      router.refresh(); // Refresh the page to show the new data
+    } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+       toast({
+        variant: "destructive",
+        title: "Failed to save supplier",
+        description: errorMessage,
+      });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   const pageTitle = supplier ? 'Edit Supplier' : 'Create Supplier';
@@ -78,8 +118,11 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
                  <p className="text-muted-foreground">{pageDescription}</p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
-                <Button type="submit" className="w-full">Save Supplier</Button>
+                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isLoading}>Cancel</Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {supplier ? 'Save Changes' : 'Save Supplier'}
+                </Button>
             </div>
         </div>
 
@@ -90,7 +133,7 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                     control={form.control}
-                    name="name"
+                    name="supplier_name"
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Supplier Name</FormLabel>
@@ -103,7 +146,7 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
                 />
                 <FormField
                     control={form.control}
-                    name="contactPerson"
+                    name="contact_person"
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Contact Person</FormLabel>
@@ -129,7 +172,7 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
                 />
                 <FormField
                     control={form.control}
-                    name="phone"
+                    name="telephone"
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Phone Number</FormLabel>
@@ -140,25 +183,58 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
                         </FormItem>
                     )}
                 />
-                <div className="md:col-span-2">
-                    <FormField
-                        control={form.control}
-                        name="address"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Address</FormLabel>
-                            <FormControl>
-                                <Textarea
-                                    placeholder="Enter the full address of the supplier"
-                                    className="resize-none"
-                                    {...field}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </div>
+                <FormField
+                    control={form.control}
+                    name="street_name"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Street</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. 123 Textile Ave" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. Industry City" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="zip_code"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Zip Code</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. 10001" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="fax"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Fax</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. 123-456-7891" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
             </CardContent>
         </Card>
       </form>
