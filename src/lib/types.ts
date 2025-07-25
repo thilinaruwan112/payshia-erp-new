@@ -1,7 +1,7 @@
 
 
 export type ProductVariant = {
-  id?: string;
+  id: string;
   sku: string;
   color?: string;
   size?: string;
@@ -109,13 +109,19 @@ export type Supplier = {
 
 export type PurchaseOrder = {
     id: string;
-    supplierId: string;
-    supplierName: string;
-    date: string;
-    delivery_date: string;
-    status: 'pending' | 'approved' | 'rejected' | 'cancelled';
-    total: number;
-    itemCount: number;
+    po_number: string;
+    location_id: string;
+    supplier_id: string;
+    currency: string;
+    tax_type: string;
+    sub_total: string;
+    created_by: string;
+    created_at: string;
+    is_active: string;
+    po_status: string;
+    remarks: string;
+    company_id: string;
+    items?: PurchaseOrderItem[];
 }
 
 export type PurchaseOrderItem = {
@@ -124,7 +130,7 @@ export type PurchaseOrderItem = {
     quantity: number;
     order_rate: number;
     order_unit?: string;
-    product_variant_id?: number;
+    product_variant_id: string;
     is_active?: number;
 };
 
