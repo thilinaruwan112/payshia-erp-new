@@ -44,12 +44,12 @@ import { useLocation } from "./location-provider";
 import { Switch } from "./ui/switch";
 
 const purchaseOrderItemSchema = z.object({
-      product_id: z.string().min(1, "Product is required."),
-      quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
-      order_rate: z.coerce.number().min(0, "Cost must be a positive number."),
-      order_unit: z.string().optional(),
-      product_variant_id: z.coerce.number().optional(),
-      is_active: z.literal(1).default(1),
+  product_id: z.string().min(1, "Product is required."),
+  quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
+  order_rate: z.coerce.number().min(0, "Cost must be a positive number."),
+  order_unit: z.string().optional(),
+  product_variant_id: z.string().min(1, "Variant is required."),
+  is_active: z.literal(1).default(1),
 });
 
 const purchaseOrderFormSchema = z.object({
@@ -85,7 +85,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     delivery_date: addDays(new Date(), 14),
     po_status: 'pending',
     items: [
-        { product_id: '', quantity: 1, order_rate: 0 },
+        { product_id: '', product_variant_id: '', quantity: 1, order_rate: 0 },
     ],
     remarks: '',
     tax_type: 'VAT',
@@ -132,8 +132,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
         setAvailableProducts([]);
       } finally {
         setIsLoadingProducts(false);
-         // Add a default item row after fetching
-        append({ product_id: '', quantity: 1, order_rate: 0 });
+        append({ product_id: '', product_variant_id: '', quantity: 1, order_rate: 0 });
       }
     }
     fetchProductsBySupplier(supplierId);
@@ -162,36 +161,28 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
 
     const poPayload = {
       location_id: parseInt(currentLocation.location_id, 10),
-      company_id: 1, // Assuming a static company_id
+      company_id: 1, 
       supplier_id: parseInt(data.supplierId, 10),
       total_amount: totalAmount,
-      currency: "LKR", // Assuming LKR currency
+      currency: "LKR", 
       tax_type: data.tax_type,
       sub_total: subTotal,
-      created_by: "admin", // This should be dynamic in a real app
+      created_by: "admin", 
       po_status: data.po_status,
       remarks: data.remarks,
       delivery_date: format(data.delivery_date, 'yyyy-MM-dd'),
       is_active: data.is_active ? 1 : 0,
       items: data.items.map(item => {
         const productData = availableProducts.find(p => p.product.id === item.product_id);
-        const variant = (productData?.variants && productData.variants.length > 0) ? productData.variants[0] : null;
+        const variant = productData?.variants.find(v => v.id === item.product_variant_id);
         
-        if (!variant || !variant.id) {
-             console.warn(`Variant details missing for product ID ${item.product_id}. Using a placeholder. Please check product data.`);
-             // This fallback might fail if the DB does not have a variant with ID 0 or a similar placeholder
-             return {
-                product_id: parseInt(item.product_id, 10),
-                product_variant_id: 0, // Fallback, might cause issues
-                quantity: item.quantity,
-                order_unit: productData?.product.stock_unit || 'Nos',
-                order_rate: item.order_rate,
-                is_active: 1
-            };
+        if (!variant) {
+          throw new Error(`Variant details missing for product ID ${item.product_id}. Cannot create PO.`);
         }
+
         return {
             product_id: parseInt(item.product_id, 10),
-            product_variant_id: parseInt(variant.id, 10),
+            product_variant_id: parseInt(item.product_variant_id, 10),
             quantity: item.quantity,
             order_unit: productData?.product.stock_unit || 'Nos',
             order_rate: item.order_rate,
@@ -382,7 +373,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[40%]">Product</TableHead>
+                            <TableHead className="w-[30%]">Product</TableHead>
+                             <TableHead className="w-[20%]">Variant</TableHead>
                             <TableHead>Quantity</TableHead>
                             <TableHead>Unit Cost</TableHead>
                             <TableHead className="text-right">Total</TableHead>
@@ -392,7 +384,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                     <TableBody>
                          {isLoadingProducts ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="text-center h-24">
+                                <TableCell colSpan={6} className="text-center h-24">
                                     <Loader2 className="h-6 w-6 animate-spin inline-block mr-2" />
                                     Loading products...
                                 </TableCell>
@@ -402,6 +394,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                 const cost = watchedItems[index]?.order_rate || 0;
                                 const quantity = watchedItems[index]?.quantity || 0;
                                 const total = cost * quantity;
+                                const selectedProductId = watchedItems[index]?.product_id;
+                                const productVariants = availableProducts.find(p => p.product.id === selectedProductId)?.variants || [];
 
                                 return (
                                     <TableRow key={field.id}>
@@ -416,6 +410,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                                                 field.onChange(value);
                                                                 const selected = availableProducts.find(p => p.product.id === value);
                                                                 form.setValue(`items.${index}.order_rate`, parseFloat(selected?.product.cost_price as string) || 0);
+                                                                form.setValue(`items.${index}.product_variant_id`, ''); // Reset variant
                                                             }}
                                                             defaultValue={field.value}
                                                             disabled={!supplierId || availableProducts.length === 0}
@@ -428,6 +423,35 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                                             <SelectContent>
                                                                 {availableProducts.map(p => (
                                                                     <SelectItem key={p.product.id} value={p.product.id}>{p.product.name}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <FormField
+                                                control={form.control}
+                                                name={`items.${index}.product_variant_id`}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <Select
+                                                            onValueChange={field.onChange}
+                                                            defaultValue={field.value}
+                                                            disabled={!selectedProductId}
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Select a variant" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {productVariants.map(v => (
+                                                                    <SelectItem key={v.id} value={v.id}>
+                                                                        {[v.sku, v.color, v.size].filter(Boolean).join(' - ')}
+                                                                    </SelectItem>
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
@@ -478,7 +502,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                          )}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', quantity: 1, order_rate: 0 })} className="mt-4" disabled={!supplierId}>
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', product_variant_id: '', quantity: 1, order_rate: 0 })} className="mt-4" disabled={!supplierId}>
                     Add another item
                 </Button>
             </CardContent>
@@ -522,3 +546,4 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     </Form>
   );
 }
+
