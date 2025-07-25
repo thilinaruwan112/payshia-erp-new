@@ -35,7 +35,7 @@ import { Trash2, UploadCloud, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import type { Product, Collection, Supplier } from "@/lib/types";
+import type { Product, Supplier } from "@/lib/types";
 
 type Category = {
   id: string;
@@ -215,7 +215,7 @@ export function ProductForm({ product }: ProductFormProps) {
     setIsLoading(true);
 
     const selectedCategory = categories.find(c => c.id === data.categoryId);
-    const supplierNames = data.supplier?.map(id => suppliers.find(s => s.supplier_id === id)?.supplier_name).filter(Boolean).join(', ');
+    const supplierIdsString = data.supplier?.join(', ');
 
     const apiPayload = {
       name: data.name,
@@ -231,7 +231,7 @@ export function ProductForm({ product }: ProductFormProps) {
       sinhala_name: data.sinhalaName,
       print_name: data.printName,
       brand_id: data.brandId ? parseInt(data.brandId, 10) : undefined,
-      supplier: supplierNames,
+      supplier: supplierIdsString,
       variants: data.variants.map(v => ({
         id: v.id,
         sku: v.sku,
