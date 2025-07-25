@@ -47,7 +47,6 @@ const purchaseOrderItemSchema = z.object({
       product_id: z.string().min(1, "Product is required."),
       quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
       order_rate: z.coerce.number().min(0, "Cost must be a positive number."),
-      // These fields are needed for the payload
       order_unit: z.string().optional(),
       product_variant_id: z.coerce.number().optional(),
       is_active: z.literal(1).default(1),
@@ -69,14 +68,18 @@ interface PurchaseOrderFormProps {
     suppliers: Supplier[];
 }
 
+interface ProductWithVariants {
+    product: Product;
+    variants: ProductVariant[];
+}
+
 export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currentLocation } = useLocation();
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [allVariants, setAllVariants] = useState<ProductVariant[]>([]);
+  const [availableProducts, setAvailableProducts] = useState<ProductWithVariants[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   
   const defaultValues: Partial<PurchaseOrderFormValues> = {
     delivery_date: addDays(new Date(), 14),
@@ -95,7 +98,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     mode: "onChange",
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "items",
   });
@@ -104,49 +107,38 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const supplierId = form.watch("supplierId");
 
    useEffect(() => {
-    async function fetchAllProducts() {
+    async function fetchProductsBySupplier(supplierId: string) {
+      if (!supplierId) {
+        setAvailableProducts([]);
+        return;
+      }
       setIsLoadingProducts(true);
+      replace([]); // Clear items when supplier changes
       try {
-        const [productsResponse, variantsResponse] = await Promise.all([
-          fetch(`https://server-erp.payshia.com/products`),
-          fetch(`https://server-erp.payshia.com/product-variants`)
-        ]);
-
-        if (!productsResponse.ok) {
-          const errorData = await productsResponse.json();
-          throw new Error(errorData.message || 'Failed to fetch products');
+        const response = await fetch(`https://server-erp.payshia.com/products/filter/by-supplier?supplier_id=${supplierId}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch products for this supplier');
         }
-         if (!variantsResponse.ok) {
-          const errorData = await variantsResponse.json();
-          throw new Error(errorData.message || 'Failed to fetch product variants');
-        }
-
-        const productsData: Product[] = await productsResponse.json();
-        const variantsData: ProductVariant[] = await variantsResponse.json();
-        setAllProducts(productsData);
-        setAllVariants(variantsData);
-
+        const data = await response.json();
+        setAvailableProducts(data.products || []);
       } catch (error) {
-        console.error(error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: `Could not fetch product data: ${errorMessage}`,
+          title: 'Error fetching products',
+          description: errorMessage,
         });
+        setAvailableProducts([]);
       } finally {
         setIsLoadingProducts(false);
+         // Add a default item row after fetching
+        append({ product_id: '', quantity: 1, order_rate: 0 });
       }
     }
-    fetchAllProducts();
-  }, [toast]);
+    fetchProductsBySupplier(supplierId);
+  }, [supplierId, toast, replace, append]);
   
-  const availableProducts = React.useMemo(() => {
-    if (!supplierId || !allProducts.length) return [];
-    // Ensure product.supplier is treated as a string before splitting
-    return allProducts.filter(p => String(p.supplier).split(',').map(s => s.trim()).includes(supplierId));
-  }, [supplierId, allProducts]);
-
 
   const subTotal = watchedItems.reduce((total, item) => {
     const quantity = Number(item.quantity) || 0;
@@ -154,7 +146,6 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     return total + (quantity * cost);
   }, 0);
   
-  // Assuming tax is 15% for calculation, can be adjusted
   const taxAmount = subTotal * 0.15;
   const totalAmount = subTotal + taxAmount;
 
@@ -183,17 +174,26 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
       delivery_date: format(data.delivery_date, 'yyyy-MM-dd'),
       is_active: data.is_active ? 1 : 0,
       items: data.items.map(item => {
-        const product = allProducts.find(p => p.id === item.product_id);
-        const variant = allVariants.find(v => v.product_id === item.product_id);
+        const productData = availableProducts.find(p => p.product.id === item.product_id);
+        const variant = (productData?.variants && productData.variants.length > 0) ? productData.variants[0] : null;
         
         if (!variant || !variant.id) {
-            throw new Error(`Variant not found for product ID ${item.product_id}. Cannot create PO.`);
+             console.warn(`Variant details missing for product ID ${item.product_id}. Using a placeholder. Please check product data.`);
+             // This fallback might fail if the DB does not have a variant with ID 0 or a similar placeholder
+             return {
+                product_id: parseInt(item.product_id, 10),
+                product_variant_id: 0, // Fallback, might cause issues
+                quantity: item.quantity,
+                order_unit: productData?.product.stock_unit || 'Nos',
+                order_rate: item.order_rate,
+                is_active: 1
+            };
         }
         return {
             product_id: parseInt(item.product_id, 10),
             product_variant_id: parseInt(variant.id, 10),
             quantity: item.quantity,
-            order_unit: product?.stock_unit || 'Nos',
+            order_unit: productData?.product.stock_unit || 'Nos',
             order_rate: item.order_rate,
             is_active: 1
         }
@@ -207,20 +207,10 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
             body: JSON.stringify(poPayload),
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            let errorMessage = 'Failed to create purchase order.';
-            try {
-                const errorData = JSON.parse(errorText);
-                errorMessage = errorData.message || errorData.error || errorMessage;
-            } catch(e) {
-                console.error("Non-JSON API Error Response:", errorText);
-                errorMessage = 'The server returned an unexpected error.';
-            }
-            throw new Error(errorMessage);
-        }
-        
         const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || result.message || 'Failed to create purchase order.');
+        }
         
         toast({
             title: "Purchase Order Created",
@@ -424,8 +414,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                                         <Select
                                                             onValueChange={(value) => {
                                                                 field.onChange(value);
-                                                                const selected = availableProducts.find(p => p.id === value);
-                                                                form.setValue(`items.${index}.order_rate`, parseFloat(selected?.cost_price as string) || 0);
+                                                                const selected = availableProducts.find(p => p.product.id === value);
+                                                                form.setValue(`items.${index}.order_rate`, parseFloat(selected?.product.cost_price as string) || 0);
                                                             }}
                                                             defaultValue={field.value}
                                                             disabled={!supplierId || availableProducts.length === 0}
@@ -436,8 +426,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                {availableProducts.map(product => (
-                                                                    <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
+                                                                {availableProducts.map(p => (
+                                                                    <SelectItem key={p.product.id} value={p.product.id}>{p.product.name}</SelectItem>
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
