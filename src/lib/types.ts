@@ -7,6 +7,7 @@ export type ProductVariant = {
   size?: string;
   color_id?: string | null;
   size_id?: string | null;
+  barcode?: string | null;
 };
 
 export type Product = {
@@ -23,6 +24,8 @@ export type Product = {
   cost_price?: number | string;
   min_price?: number | string;
   wholesale_price?: number | string;
+  price2?: number;
+  foreignPrice?: number;
   product_image_url?: string;
   print_name?: string;
   sinhala_name?: string;
@@ -33,10 +36,21 @@ export type Product = {
 };
 
 export type Location = {
-  id: string;
-  name: string;
-  type: 'Warehouse' | 'Store';
-  salesChannels: ('E-commerce' | 'Retail' | 'Wholesale' | 'POS')[];
+  location_id: string;
+  location_code: string;
+  location_name: string;
+  is_active: string;
+  created_at: string;
+  created_by: string;
+  logo_path: string | null;
+  address_line1: string;
+  address_line2: string | null;
+  city: string;
+  phone_1: string;
+  phone_2: string | null;
+  pos_status: string;
+  pos_token: string;
+  location_type: 'Retail' | 'Warehouse' | string;
 };
 
 export type InventoryItem = {
