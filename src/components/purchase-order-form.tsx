@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, Supplier } from "@/lib/types";
+import type { Product, PurchaseOrderItem, Supplier } from "@/lib/types";
 import { CalendarIcon, Trash2, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -40,19 +40,23 @@ import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
 import React, { useEffect, useState } from "react";
 import { Textarea } from "./ui/textarea";
+import { useLocation } from "./location-provider";
+
+const purchaseOrderItemSchema = z.object({
+      product_id: z.string().min(1, "Product is required."),
+      quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
+      unit_cost: z.coerce.number().min(0, "Cost must be a positive number."),
+      // These are not in the form but part of the type, so we make them optional
+      purchase_order_id: z.string().optional(),
+      total_cost: z.coerce.number().optional(),
+});
 
 const purchaseOrderFormSchema = z.object({
   supplierId: z.string().min(1, "Supplier is required."),
   date: z.date({ required_error: "PO date is required." }),
   expectedDelivery: z.date({ required_error: "Expected delivery date is required." }),
   status: z.enum(["Draft", "Sent", "Cancelled"]),
-  items: z.array(
-    z.object({
-      sku: z.string().min(1, "Product is required."),
-      quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
-      cost: z.coerce.number().min(0, "Cost must be a positive number."),
-    })
-  ).min(1, "At least one item is required."),
+  items: z.array(purchaseOrderItemSchema).min(1, "At least one item is required."),
   notes: z.string().optional(),
 });
 
@@ -65,7 +69,9 @@ interface PurchaseOrderFormProps {
 export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { currentLocation } = useLocation();
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   
   const defaultValues: Partial<PurchaseOrderFormValues> = {
@@ -73,7 +79,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     expectedDelivery: addDays(new Date(), 14),
     status: 'Draft',
     items: [
-        { sku: '', quantity: 1, cost: 0 },
+        { product_id: '', quantity: 1, unit_cost: 0 },
     ],
     notes: '',
   };
@@ -96,21 +102,22 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     async function fetchProductsBySupplier(supplierId: string) {
         setIsLoadingProducts(true);
         setAvailableProducts([]);
-        // Reset items when supplier changes
-        replace([{ sku: '', quantity: 1, cost: 0 }]);
+        replace([{ product_id: '', quantity: 1, unit_cost: 0 }]);
         try {
             const response = await fetch(`https://server-erp.payshia.com/products/filter/by-supplier?supplier_id=${supplierId}`);
             if (!response.ok) {
-                throw new Error('Failed to fetch products for supplier');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to fetch products for supplier');
             }
             const data = await response.json();
             setAvailableProducts(data);
         } catch (error) {
             console.error(error);
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not fetch products for the selected supplier.',
+                description: `Could not fetch products for the selected supplier: ${errorMessage}`,
             });
         } finally {
             setIsLoadingProducts(false);
@@ -122,27 +129,100 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     }
   }, [supplierId, replace, toast]);
 
-  const allSkus = React.useMemo(() => {
-    return availableProducts.flatMap(p => (p.variants || [{ sku: p.id, color: null, size: null }]).map(v => ({
-        label: `${p.name} ${v.size || v.color ? `(${[v.color, v.size].filter(Boolean).join('/')})` : ''}`,
-        value: v.sku,
-        costPrice: p.cost_price ? parseFloat(p.cost_price as string) : 0,
-    })))
-  }, [availableProducts]);
 
   const total = watchedItems.reduce((total, item) => {
     const quantity = Number(item.quantity) || 0;
-    const cost = Number(item.cost) || 0;
+    const cost = Number(item.unit_cost) || 0;
     return total + (quantity * cost);
   }, 0);
 
-  function onSubmit(data: PurchaseOrderFormValues) {
-    console.log(data);
-    toast({
-      title: "Purchase Order Created",
-      description: `The PO for supplier has been saved as a draft.`,
-    });
-    router.push('/purchasing/purchase-orders');
+  async function onSubmit(data: PurchaseOrderFormValues) {
+    if (!currentLocation) {
+        toast({
+            variant: "destructive",
+            title: "No Location Selected",
+            description: "Please select a business location before creating a PO.",
+        });
+        return;
+    }
+    setIsLoading(true);
+
+    const poStatusMap = {
+        Draft: 0,
+        Sent: 1,
+        Cancelled: 2
+    };
+
+    const poPayload = {
+      location_id: parseInt(currentLocation.location_id, 10),
+      supplier_id: parseInt(data.supplierId, 10),
+      currency: "LKR",
+      tax_type: "VAT",
+      sub_total: total,
+      created_by: "admin",
+      created_at: format(data.date, 'yyyy-MM-dd HH:mm:ss'),
+      is_active: 1,
+      po_status: poStatusMap[data.status],
+      remarks: data.notes || '',
+      company_id: 1, // Assuming a static company ID
+    };
+
+    try {
+        const poResponse = await fetch('https://server-erp.payshia.com/purchase-orders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(poPayload),
+        });
+
+        const poResult = await poResponse.json();
+
+        if (!poResponse.ok) {
+            throw new Error(poResult.message || 'Failed to create purchase order shell.');
+        }
+
+        const purchaseOrderId = poResult.id;
+
+        // Step 2: Create each purchase order item
+        for (const item of data.items) {
+            const itemPayload = {
+                purchase_order_id: purchaseOrderId,
+                product_id: parseInt(item.product_id, 10),
+                quantity: item.quantity,
+                unit_cost: item.unit_cost,
+                total_cost: item.quantity * item.unit_cost
+            };
+            
+            const itemResponse = await fetch('https://server-erp.payshia.com/purchase-order-items', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify(itemPayload),
+            });
+
+             if (!itemResponse.ok) {
+                const itemError = await itemResponse.json();
+                // Attempt to communicate a more specific error if possible
+                const productName = availableProducts.find(p => p.id === item.product_id)?.name || `product ID ${item.product_id}`;
+                throw new Error(`Failed to add item "${productName}" to PO. Reason: ${itemError.message || 'Unknown error'}`);
+            }
+        }
+        
+        toast({
+            title: "Purchase Order Created",
+            description: `PO #${poResult.po_number} has been created successfully.`,
+        });
+        router.push('/purchasing/purchase-orders');
+        router.refresh();
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: "destructive",
+            title: "Failed to create Purchase Order",
+            description: errorMessage,
+        });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -154,8 +234,11 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                  <p className="text-muted-foreground">Create a new PO to send to a supplier.</p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
-                <Button type="submit" className="w-full">Save Purchase Order</Button>
+                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isLoading}>Cancel</Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Purchase Order
+                </Button>
             </div>
         </div>
 
@@ -300,8 +383,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                             </TableRow>
                          ) : (
                             fields.map((field, index) => {
-                                const selectedSku = allSkus.find(s => s.value === watchedItems[index]?.sku);
-                                const cost = watchedItems[index]?.cost || 0;
+                                const selectedProduct = availableProducts.find(p => p.id === watchedItems[index]?.product_id);
+                                const cost = watchedItems[index]?.unit_cost || 0;
                                 const quantity = watchedItems[index]?.quantity || 0;
                                 const total = cost * quantity;
 
@@ -310,14 +393,14 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                         <TableCell>
                                             <FormField
                                                 control={form.control}
-                                                name={`items.${index}.sku`}
+                                                name={`items.${index}.product_id`}
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <Select
                                                             onValueChange={(value) => {
                                                                 field.onChange(value);
-                                                                const selected = allSkus.find(s => s.value === value);
-                                                                form.setValue(`items.${index}.cost`, selected?.costPrice as number || 0);
+                                                                const selected = availableProducts.find(p => p.id === value);
+                                                                form.setValue(`items.${index}.unit_cost`, parseFloat(selected?.cost_price as string) || 0);
                                                             }}
                                                             defaultValue={field.value}
                                                             disabled={!supplierId || availableProducts.length === 0}
@@ -328,8 +411,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                {allSkus.map(sku => (
-                                                                    <SelectItem key={sku.value} value={sku.value}>{sku.label}</SelectItem>
+                                                                {availableProducts.map(product => (
+                                                                    <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
@@ -355,18 +438,18 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                         <TableCell>
                                             <FormField
                                                 control={form.control}
-                                                name={`items.${index}.cost`}
+                                                name={`items.${index}.unit_cost`}
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormControl>
-                                                            <Input type="number" {...field} startIcon="$" />
+                                                            <Input type="number" {...field} startIcon="Rs" />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
                                         </TableCell>
-                                        <TableCell className="text-right font-mono">${total.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-mono">Rs{total.toFixed(2)}</TableCell>
                                         <TableCell>
                                             {fields.length > 1 && (
                                                 <Button variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -380,7 +463,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                          )}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', quantity: 1, cost: 0 })} className="mt-4" disabled={!supplierId}>
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', quantity: 1, unit_cost: 0 })} className="mt-4" disabled={!supplierId}>
                     Add another item
                 </Button>
             </CardContent>
@@ -388,7 +471,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                  <div className="w-full max-w-sm space-y-2">
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total</span>
-                        <span className="font-mono">${total.toFixed(2)}</span>
+                        <span className="font-mono">Rs{total.toFixed(2)}</span>
                     </div>
                 </div>
                 <div className="w-full">

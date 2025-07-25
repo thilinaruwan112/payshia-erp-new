@@ -117,6 +117,14 @@ export type PurchaseOrder = {
     itemCount: number;
 }
 
+export type PurchaseOrderItem = {
+    purchase_order_id?: string;
+    product_id: string;
+    quantity: number;
+    unit_cost: number;
+    total_cost: number;
+};
+
 export type GoodsReceivedNote = {
     id: string;
     poId: string;
