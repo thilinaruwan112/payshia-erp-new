@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -26,6 +27,7 @@ import {
   Warehouse,
   TerminalSquare,
   TrendingUp,
+  Loader2,
 } from 'lucide-react';
 import { inventory, locations, products, orders } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -36,10 +38,11 @@ import { useLocation } from '@/components/location-provider';
 import { useMemo } from 'react';
 
 export default function Dashboard() {
-  const { currentLocation } = useLocation();
+  const { currentLocation, isLoading } = useLocation();
 
   const locationInventory = useMemo(() => {
-    return inventory.filter(item => item.locationId === currentLocation.id);
+    if (!currentLocation) return [];
+    return inventory.filter(item => item.locationId === currentLocation.location_id);
   }, [currentLocation]);
 
   const dashboardStats = useMemo(() => {
@@ -57,12 +60,41 @@ export default function Dashboard() {
 
     return { lowStockItems, totalStock, totalSKUs };
   }, [locationInventory, products]);
+  
+  if (isLoading) {
+    return (
+        <div className="flex h-full flex-1 items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
+
+  if (!currentLocation) {
+     return (
+        <div className="flex h-full flex-1 items-center justify-center">
+            <Card className="text-center">
+                <CardHeader>
+                    <CardTitle>No Location Found</CardTitle>
+                    <CardDescription>Please add a location to view the dashboard.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button asChild>
+                        <Link href="/locations/new">
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Create Location
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard for <span className="text-primary">{currentLocation.name}</span></h1>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard for <span className="text-primary">{currentLocation.location_name}</span></h1>
           <p className="text-muted-foreground">
             Your business overview at a glance.
           </p>
@@ -84,7 +116,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{dashboardStats.totalStock.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">Units in {currentLocation.name}</p>
+            <p className="text-xs text-muted-foreground">Units in {currentLocation.location_name}</p>
           </CardContent>
         </Card>
         <Card>
@@ -94,7 +126,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{dashboardStats.totalSKUs}</div>
-            <p className="text-xs text-muted-foreground">Unique variants in {currentLocation.name}</p>
+            <p className="text-xs text-muted-foreground">Unique variants in {currentLocation.location_name}</p>
           </CardContent>
         </Card>
         <Card>
@@ -114,7 +146,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{dashboardStats.lowStockItems}</div>
-            <p className="text-xs text-muted-foreground">Items needing reorder in {currentLocation.name}</p>
+            <p className="text-xs text-muted-foreground">Items needing reorder in {currentLocation.location_name}</p>
           </CardContent>
         </Card>
       </div>
@@ -161,10 +193,10 @@ export default function Dashboard() {
         <Card>
             <CardHeader>
                 <CardTitle>Top Products by Stock</CardTitle>
-                <CardDescription>Your most stocked products in {currentLocation.name}.</CardDescription>
+                <CardDescription>Your most stocked products in {currentLocation.location_name}.</CardDescription>
             </CardHeader>
             <CardContent>
-                <StockChart locationId={currentLocation.id} />
+                <StockChart locationId={currentLocation.location_id} />
             </CardContent>
         </Card>
       </div>
