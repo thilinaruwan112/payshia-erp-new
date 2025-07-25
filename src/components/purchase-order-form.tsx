@@ -164,7 +164,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
       is_active: 1,
       po_status: poStatusMap[data.status],
       remarks: data.notes || '',
-      company_id: 1, // Assuming a static company ID
+      company_id: 1,
     };
 
     try {
@@ -182,7 +182,6 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
 
         const purchaseOrderId = poResult.id;
 
-        // Step 2: Create each purchase order item
         for (const item of data.items) {
             const itemPayload = {
                 purchase_order_id: purchaseOrderId,
@@ -200,7 +199,6 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
 
              if (!itemResponse.ok) {
                 const itemError = await itemResponse.json();
-                // Attempt to communicate a more specific error if possible
                 const productName = availableProducts.find(p => p.id === item.product_id)?.name || `product ID ${item.product_id}`;
                 throw new Error(`Failed to add item "${productName}" to PO. Reason: ${itemError.message || 'Unknown error'}`);
             }
@@ -273,7 +271,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                     control={form.control}
                     name="date"
                     render={({ field }) => (
-                        <FormItem className="flex flex-col">
+                        <FormItem className="flex flex-col justify-end">
                         <FormLabel>PO Date</FormLabel>
                         <Popover>
                             <PopoverTrigger asChild>
@@ -304,7 +302,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                     control={form.control}
                     name="expectedDelivery"
                     render={({ field }) => (
-                        <FormItem className="flex flex-col">
+                        <FormItem className="flex flex-col justify-end">
                         <FormLabel>Expected Delivery</FormLabel>
                         <Popover>
                             <PopoverTrigger asChild>
@@ -499,3 +497,5 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     </Form>
   );
 }
+
+    
