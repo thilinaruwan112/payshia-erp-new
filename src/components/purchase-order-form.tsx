@@ -249,8 +249,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
             <CardHeader>
                 <CardTitle>PO Details</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <FormField
+            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                 <FormField
                     control={form.control}
                     name="supplierId"
                     render={({ field }) => (
