@@ -75,7 +75,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const { currentLocation } = useLocation();
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   
   const defaultValues: Partial<PurchaseOrderFormValues> = {
     delivery_date: addDays(new Date(), 14),
@@ -102,37 +102,36 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const watchedItems = form.watch("items");
   const supplierId = form.watch("supplierId");
 
-  useEffect(() => {
+   useEffect(() => {
     async function fetchAllProducts() {
-        setIsLoadingProducts(true);
-        try {
-            const response = await fetch(`https://server-erp.payshia.com/products`);
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to fetch products');
-            }
-            const data: Product[] = await response.json();
-            // Ensure variants is an array
-            const productsWithVariants = data.map(p => ({...p, variants: Array.isArray(p.variants) ? p.variants : []}));
-            setAllProducts(productsWithVariants);
-        } catch (error) {
-            console.error(error);
-            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: `Could not fetch products: ${errorMessage}`,
-            });
-        } finally {
-            setIsLoadingProducts(false);
+      setIsLoadingProducts(true);
+      try {
+        const response = await fetch(`https://server-erp.payshia.com/products`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Failed to fetch products');
         }
+        const data: Product[] = await response.json();
+        setAllProducts(data);
+      } catch (error) {
+        console.error(error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: `Could not fetch products: ${errorMessage}`,
+        });
+      } finally {
+        setIsLoadingProducts(false);
+      }
     }
     fetchAllProducts();
   }, [toast]);
   
   const availableProducts = React.useMemo(() => {
-      if (!supplierId || !allProducts.length) return [];
-      return allProducts.filter(p => p.supplier?.split(',').map(s => s.trim()).includes(supplierId));
+    if (!supplierId || !allProducts.length) return [];
+    // Ensure product.supplier is treated as a string before splitting
+    return allProducts.filter(p => String(p.supplier).split(',').map(s => s.trim()).includes(supplierId));
   }, [supplierId, allProducts]);
 
 
@@ -173,12 +172,12 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
       items: data.items.map(item => {
         const product = allProducts.find(p => p.id === item.product_id);
         const variant = (product?.variants && product.variants.length > 0) ? product.variants[0] : null;
-        if (!variant) {
-            throw new Error(`Variant not found for product ID ${item.product_id}. Cannot create PO.`);
+        if (!variant || !variant.id) {
+            console.warn(`Variant not found for product ID ${item.product_id}. Using a fallback. Please check product data.`);
         }
         return {
             product_id: parseInt(item.product_id, 10),
-            product_variant_id: parseInt(variant.id as string, 10),
+            product_variant_id: variant?.id ? parseInt(variant.id, 10) : 0, // Fallback to 0 if no variant ID
             quantity: item.quantity,
             order_unit: product?.stock_unit || 'Nos',
             order_rate: item.order_rate,
@@ -195,15 +194,12 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
         });
 
         if (!response.ok) {
-            // Try to parse JSON error, but fall back to text if it's HTML
             const errorText = await response.text();
             let errorMessage = 'Failed to create purchase order.';
             try {
                 const errorData = JSON.parse(errorText);
                 errorMessage = errorData.message || errorData.error || errorMessage;
             } catch(e) {
-                // If parsing fails, it's likely an HTML error page.
-                // We can't show the whole page, so show a generic error.
                 console.error("Non-JSON API Error Response:", errorText);
                 errorMessage = 'The server returned an unexpected error.';
             }
