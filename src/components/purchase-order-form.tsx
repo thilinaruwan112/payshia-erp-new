@@ -46,21 +46,21 @@ import { Switch } from "./ui/switch";
 const purchaseOrderItemSchema = z.object({
       product_id: z.string().min(1, "Product is required."),
       quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
-      unit_cost: z.coerce.number().min(0, "Cost must be a positive number."),
-      // These are not in the form but part of the type, so we make them optional
-      purchase_order_id: z.string().optional(),
-      total_cost: z.coerce.number().optional(),
+      order_rate: z.coerce.number().min(0, "Cost must be a positive number."),
+      // These fields are needed for the payload
+      order_unit: z.string().optional(),
+      product_variant_id: z.string().optional(),
+      is_active: z.literal(1).default(1),
 });
 
 const purchaseOrderFormSchema = z.object({
   supplierId: z.string().min(1, "Supplier is required."),
-  date: z.date({ required_error: "PO date is required." }),
-  expectedDelivery: z.date({ required_error: "Expected delivery date is required." }),
-  status: z.enum(["Draft", "Sent", "Cancelled"]),
+  delivery_date: z.date({ required_error: "Expected delivery date is required." }),
+  po_status: z.enum(["pending", "approved", "rejected"]),
   items: z.array(purchaseOrderItemSchema).min(1, "At least one item is required."),
-  notes: z.string().optional(),
-  taxType: z.string().min(1, "Tax type is required."),
-  isActive: z.boolean().default(true),
+  remarks: z.string().optional(),
+  tax_type: z.string().min(1, "Tax type is required."),
+  is_active: z.boolean().default(true),
 });
 
 type PurchaseOrderFormValues = z.infer<typeof purchaseOrderFormSchema>;
@@ -78,15 +78,14 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   
   const defaultValues: Partial<PurchaseOrderFormValues> = {
-    date: new Date(),
-    expectedDelivery: addDays(new Date(), 14),
-    status: 'Draft',
+    delivery_date: addDays(new Date(), 14),
+    po_status: 'pending',
     items: [
-        { product_id: '', quantity: 1, unit_cost: 0 },
+        { product_id: '', quantity: 1, order_rate: 0 },
     ],
-    notes: '',
-    taxType: 'VAT',
-    isActive: true,
+    remarks: '',
+    tax_type: 'VAT',
+    is_active: true,
   };
 
   const form = useForm<PurchaseOrderFormValues>({
@@ -107,7 +106,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     async function fetchProductsBySupplier(supplierId: string) {
         setIsLoadingProducts(true);
         setAvailableProducts([]);
-        replace([{ product_id: '', quantity: 1, unit_cost: 0 }]);
+        replace([{ product_id: '', quantity: 1, order_rate: 0 }]);
         try {
             const response = await fetch(`https://server-erp.payshia.com/products/filter/by-supplier?supplier_id=${supplierId}`);
             if (!response.ok) {
@@ -135,11 +134,15 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   }, [supplierId, replace, toast]);
 
 
-  const total = watchedItems.reduce((total, item) => {
+  const subTotal = watchedItems.reduce((total, item) => {
     const quantity = Number(item.quantity) || 0;
-    const cost = Number(item.unit_cost) || 0;
+    const cost = Number(item.order_rate) || 0;
     return total + (quantity * cost);
   }, 0);
+  
+  // Assuming tax is 15% for calculation, can be adjusted
+  const taxAmount = subTotal * 0.15;
+  const totalAmount = subTotal + taxAmount;
 
   async function onSubmit(data: PurchaseOrderFormValues) {
     if (!currentLocation) {
@@ -152,66 +155,47 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     }
     setIsLoading(true);
 
-    const poStatusMap = {
-        Draft: 0,
-        Sent: 1,
-        Cancelled: 2
-    };
-
     const poPayload = {
       location_id: parseInt(currentLocation.location_id, 10),
+      company_id: 1, // Assuming a static company_id
       supplier_id: parseInt(data.supplierId, 10),
-      currency: "LKR",
-      tax_type: data.taxType,
-      sub_total: total,
-      created_by: "admin",
-      created_at: format(data.date, 'yyyy-MM-dd HH:mm:ss'),
-      is_active: data.isActive ? 1 : 0,
-      po_status: poStatusMap[data.status],
-      remarks: data.notes || '',
-      company_id: 1,
+      total_amount: totalAmount,
+      currency: "LKR", // Assuming LKR currency
+      tax_type: data.tax_type,
+      sub_total: subTotal,
+      created_by: "admin", // This should be dynamic in a real app
+      po_status: data.po_status,
+      remarks: data.remarks,
+      delivery_date: format(data.delivery_date, 'yyyy-MM-dd'),
+      is_active: data.is_active ? 1 : 0,
+      items: data.items.map(item => {
+        const product = availableProducts.find(p => p.id === item.product_id);
+        const variant = product?.variants[0]; // Assuming one variant for now
+        return {
+            ...item,
+            product_id: parseInt(item.product_id, 10),
+            product_variant_id: variant?.id ? parseInt(variant.id, 10) : undefined, // This is a guess
+            order_unit: product?.stock_unit || 'Nos',
+        }
+      }),
     };
 
     try {
-        const poResponse = await fetch('https://server-erp.payshia.com/purchase-orders', {
+        const response = await fetch('https://server-erp.payshia.com/purchase-orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(poPayload),
         });
 
-        const poResult = await poResponse.json();
+        const result = await response.json();
 
-        if (!poResponse.ok) {
-            throw new Error(poResult.message || 'Failed to create purchase order shell.');
-        }
-
-        const purchaseOrderId = poResult.id;
-
-        for (const item of data.items) {
-            const itemPayload = {
-                purchase_order_id: purchaseOrderId,
-                product_id: parseInt(item.product_id, 10),
-                quantity: item.quantity,
-                unit_cost: item.unit_cost,
-                total_cost: item.quantity * item.unit_cost
-            };
-            
-            const itemResponse = await fetch('https://server-erp.payshia.com/purchase-order-items', {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify(itemPayload),
-            });
-
-             if (!itemResponse.ok) {
-                const itemError = await itemResponse.json();
-                const productName = availableProducts.find(p => p.id === item.product_id)?.name || `product ID ${item.product_id}`;
-                throw new Error(`Failed to add item "${productName}" to PO. Reason: ${itemError.message || 'Unknown error'}`);
-            }
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to create purchase order.');
         }
         
         toast({
             title: "Purchase Order Created",
-            description: `PO #${poResult.po_number} has been created successfully.`,
+            description: `PO #${result.po_number} has been created successfully.`,
         });
         router.push('/purchasing/purchase-orders');
         router.refresh();
@@ -272,40 +256,9 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                         </FormItem>
                     )}
                 />
-                 <FormField
-                    control={form.control}
-                    name="date"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col justify-end">
-                        <FormLabel>PO Date</FormLabel>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                variant={"outline"}
-                                className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                                >
-                                {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                            </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                initialFocus
-                            />
-                            </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
                 <FormField
                     control={form.control}
-                    name="expectedDelivery"
+                    name="delivery_date"
                     render={({ field }) => (
                         <FormItem className="flex flex-col justify-end">
                         <FormLabel>Expected Delivery</FormLabel>
@@ -336,7 +289,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                 />
                  <FormField
                     control={form.control}
-                    name="taxType"
+                    name="tax_type"
                     render={({ field }) => (
                         <FormItem className="flex flex-col justify-end">
                             <FormLabel>Tax Type</FormLabel>
@@ -347,6 +300,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
+                                <SelectItem value="inclusive">Inclusive</SelectItem>
+                                <SelectItem value="exclusive">Exclusive</SelectItem>
                                 <SelectItem value="VAT">VAT</SelectItem>
                                 <SelectItem value="GST">GST</SelectItem>
                                 <SelectItem value="No Tax">No Tax</SelectItem>
@@ -358,7 +313,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                 />
                 <FormField
                     control={form.control}
-                    name="status"
+                    name="po_status"
                     render={({ field }) => (
                         <FormItem className="flex flex-col justify-end">
                             <FormLabel>Status</FormLabel>
@@ -369,9 +324,9 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="Draft">Draft</SelectItem>
-                                <SelectItem value="Sent">Sent</SelectItem>
-                                <SelectItem value="Cancelled">Cancelled</SelectItem>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="approved">Approved</SelectItem>
+                                <SelectItem value="rejected">Rejected</SelectItem>
                             </SelectContent>
                             </Select>
                             <FormMessage />
@@ -380,7 +335,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                 />
                 <FormField
                     control={form.control}
-                    name="isActive"
+                    name="is_active"
                     render={({ field }) => (
                         <FormItem className="flex flex-col justify-end">
                             <FormLabel>Active</FormLabel>
@@ -425,8 +380,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                             </TableRow>
                          ) : (
                             fields.map((field, index) => {
-                                const selectedProduct = availableProducts.find(p => p.id === watchedItems[index]?.product_id);
-                                const cost = watchedItems[index]?.unit_cost || 0;
+                                const cost = watchedItems[index]?.order_rate || 0;
                                 const quantity = watchedItems[index]?.quantity || 0;
                                 const total = cost * quantity;
 
@@ -442,7 +396,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                                             onValueChange={(value) => {
                                                                 field.onChange(value);
                                                                 const selected = availableProducts.find(p => p.id === value);
-                                                                form.setValue(`items.${index}.unit_cost`, parseFloat(selected?.cost_price as string) || 0);
+                                                                form.setValue(`items.${index}.order_rate`, parseFloat(selected?.cost_price as string) || 0);
                                                             }}
                                                             defaultValue={field.value}
                                                             disabled={!supplierId || availableProducts.length === 0}
@@ -480,7 +434,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                         <TableCell>
                                             <FormField
                                                 control={form.control}
-                                                name={`items.${index}.unit_cost`}
+                                                name={`items.${index}.order_rate`}
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormControl>
@@ -505,21 +459,29 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                          )}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', quantity: 1, unit_cost: 0 })} className="mt-4" disabled={!supplierId}>
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', quantity: 1, order_rate: 0 })} className="mt-4" disabled={!supplierId}>
                     Add another item
                 </Button>
             </CardContent>
             <CardFooter className="flex flex-col items-end gap-4">
                  <div className="w-full max-w-sm space-y-2">
+                    <div className="flex justify-between">
+                        <span>Subtotal</span>
+                        <span className="font-mono">Rs{subTotal.toFixed(2)}</span>
+                    </div>
+                     <div className="flex justify-between">
+                        <span>Tax (15%)</span>
+                        <span className="font-mono">Rs{taxAmount.toFixed(2)}</span>
+                    </div>
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total</span>
-                        <span className="font-mono">Rs{total.toFixed(2)}</span>
+                        <span className="font-mono">Rs{totalAmount.toFixed(2)}</span>
                     </div>
                 </div>
                 <div className="w-full">
                     <FormField
                         control={form.control}
-                        name="notes"
+                        name="remarks"
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel>Notes (Optional)</FormLabel>

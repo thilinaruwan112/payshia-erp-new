@@ -111,8 +111,8 @@ export type PurchaseOrder = {
     supplierId: string;
     supplierName: string;
     date: string;
-    expectedDelivery: string;
-    status: 'Draft' | 'Sent' | 'Partial' | 'Received' | 'Cancelled';
+    delivery_date: string;
+    status: 'pending' | 'approved' | 'rejected' | 'cancelled';
     total: number;
     itemCount: number;
 }
@@ -121,8 +121,10 @@ export type PurchaseOrderItem = {
     purchase_order_id?: string;
     product_id: string;
     quantity: number;
-    unit_cost: number;
-    total_cost: number;
+    order_rate: number;
+    order_unit?: string;
+    product_variant_id?: string;
+    is_active?: number;
 };
 
 export type GoodsReceivedNote = {
