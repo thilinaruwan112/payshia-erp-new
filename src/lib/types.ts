@@ -132,6 +132,10 @@ export type PurchaseOrderItem = {
     order_unit?: string;
     product_variant_id: string;
     is_active?: number;
+    // Fields for display purposes
+    product_name?: string;
+    variant_sku?: string;
+    total_cost?: number;
 };
 
 export type GoodsReceivedNote = {

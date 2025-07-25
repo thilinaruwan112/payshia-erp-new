@@ -182,7 +182,9 @@ export default function PurchaseOrdersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/purchasing/purchase-orders/${po.id}`}>View Details</Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem>Create GRN</DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem asChild>
