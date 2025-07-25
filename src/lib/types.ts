@@ -73,7 +73,6 @@ export type Collection = {
   description?: string;
   cover_image_url?: string;
   status: 'active' | 'draft';
-  productCount?: number;
   created_at: string;
   updated_at: string;
   products?: Product[];
@@ -89,6 +88,7 @@ export type Supplier = {
   city: string;
   zip_code: string;
   fax: string;
+  opening_balance: string;
 };
 
 export type PurchaseOrder = {

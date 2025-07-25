@@ -23,7 +23,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Supplier } from "@/lib/types";
-import { Textarea } from "./ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
@@ -36,6 +35,7 @@ const supplierFormSchema = z.object({
   city: z.string().optional(),
   zip_code: z.string().optional(),
   fax: z.string().optional(),
+  opening_balance: z.coerce.number().optional(),
 });
 
 type SupplierFormValues = z.infer<typeof supplierFormSchema>;
@@ -59,6 +59,7 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
     city: supplier?.city || "",
     zip_code: supplier?.zip_code || "",
     fax: supplier?.fax || "",
+    opening_balance: supplier?.opening_balance ? parseFloat(supplier.opening_balance) : 0,
   };
 
   const form = useForm<SupplierFormValues>({
@@ -70,7 +71,6 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
   async function onSubmit(data: SupplierFormValues) {
     setIsLoading(true);
 
-    const address = [data.street_name, data.city, data.zip_code].filter(Boolean).join(', ');
     const url = supplier ? `https://server-erp.payshia.com/suppliers/${supplier.supplier_id}` : 'https://server-erp.payshia.com/suppliers';
     const method = supplier ? 'PUT' : 'POST';
     
@@ -80,7 +80,7 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({...data, is_active: 1, created_by: 'admin' }),
       });
 
       if (!response.ok) {
@@ -106,7 +106,7 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
     }
   }
 
-  const pageTitle = supplier ? 'Edit Supplier' : 'Create Supplier';
+  const pageTitle = supplier ? `Edit Supplier: ${supplier.supplier_name}` : 'Create Supplier';
   const pageDescription = supplier ? 'Update the details of this supplier.' : 'Add a new supplier to your system.';
 
   return (
@@ -183,46 +183,7 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
                         </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="street_name"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Street</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g. 123 Textile Ave" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>City</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g. Industry City" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="zip_code"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Zip Code</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g. 10001" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
+                 <FormField
                     control={form.control}
                     name="fax"
                     render={({ field }) => (
@@ -235,6 +196,60 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
                         </FormItem>
                     )}
                 />
+                 <FormField
+                    control={form.control}
+                    name="opening_balance"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Opening Balance</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="0.00" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+                     <FormField
+                        control={form.control}
+                        name="street_name"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Street</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g. 123 Textile Ave" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>City</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g. Industry City" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="zip_code"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Zip Code</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g. 10001" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
             </CardContent>
         </Card>
       </form>
