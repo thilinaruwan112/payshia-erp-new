@@ -1,6 +1,6 @@
 
 import { PurchaseOrderForm } from '@/components/purchase-order-form';
-import type { Supplier, Product } from '@/lib/types';
+import type { Supplier } from '@/lib/types';
 
 async function getSuppliers(): Promise<Supplier[]> {
     try {
@@ -15,21 +15,7 @@ async function getSuppliers(): Promise<Supplier[]> {
     }
 }
 
-async function getProducts(): Promise<Product[]> {
-    try {
-        const response = await fetch('https://server-erp.payshia.com/products');
-        if (!response.ok) {
-            return [];
-        }
-        return response.json();
-    } catch (error) {
-        console.error('Failed to fetch products:', error);
-        return [];
-    }
-}
-
-
 export default async function NewPurchaseOrderPage() {
-  const [suppliers, products] = await Promise.all([getSuppliers(), getProducts()]);
-  return <PurchaseOrderForm suppliers={suppliers} products={products} />;
+  const suppliers = await getSuppliers();
+  return <PurchaseOrderForm suppliers={suppliers} />;
 }

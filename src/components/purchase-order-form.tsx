@@ -32,13 +32,13 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Product, Supplier } from "@/lib/types";
-import { CalendarIcon, Trash2 } from "lucide-react";
+import { CalendarIcon, Trash2, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Textarea } from "./ui/textarea";
 
 const purchaseOrderFormSchema = z.object({
@@ -60,18 +60,13 @@ type PurchaseOrderFormValues = z.infer<typeof purchaseOrderFormSchema>;
 
 interface PurchaseOrderFormProps {
     suppliers: Supplier[];
-    products: Product[];
 }
 
-export function PurchaseOrderForm({ suppliers, products }: PurchaseOrderFormProps) {
+export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-
-  const allSkus = products.flatMap(p => (p.variants || []).map(v => ({
-      label: `${p.name} (${v.sku})`,
-      value: v.sku,
-      costPrice: p.cost_price || 0,
-  })));
+  const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   
   const defaultValues: Partial<PurchaseOrderFormValues> = {
     date: new Date(),
@@ -89,12 +84,51 @@ export function PurchaseOrderForm({ suppliers, products }: PurchaseOrderFormProp
     mode: "onChange",
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "items",
   });
   
   const watchedItems = form.watch("items");
+  const supplierId = form.watch("supplierId");
+
+  useEffect(() => {
+    async function fetchProductsBySupplier(supplierId: string) {
+        setIsLoadingProducts(true);
+        setAvailableProducts([]);
+        // Reset items when supplier changes
+        replace([{ sku: '', quantity: 1, cost: 0 }]);
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/products/filter/by-supplier?supplier_id=${supplierId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch products for supplier');
+            }
+            const data = await response.json();
+            setAvailableProducts(data);
+        } catch (error) {
+            console.error(error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not fetch products for the selected supplier.',
+            });
+        } finally {
+            setIsLoadingProducts(false);
+        }
+    }
+
+    if (supplierId) {
+        fetchProductsBySupplier(supplierId);
+    }
+  }, [supplierId, replace, toast]);
+
+  const allSkus = React.useMemo(() => {
+    return availableProducts.flatMap(p => (p.variants || [{ sku: p.id, color: null, size: null }]).map(v => ({
+        label: `${p.name} ${v.size || v.color ? `(${[v.color, v.size].filter(Boolean).join('/')})` : ''}`,
+        value: v.sku,
+        costPrice: p.cost_price ? parseFloat(p.cost_price as string) : 0,
+    })))
+  }, [availableProducts]);
 
   const total = watchedItems.reduce((total, item) => {
     const quantity = Number(item.quantity) || 0;
@@ -257,86 +291,96 @@ export function PurchaseOrderForm({ suppliers, products }: PurchaseOrderFormProp
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                         {fields.map((field, index) => {
-                            const selectedSku = allSkus.find(s => s.value === watchedItems[index]?.sku);
-                            const cost = watchedItems[index]?.cost || 0;
-                            const quantity = watchedItems[index]?.quantity || 0;
-                            const total = cost * quantity;
+                         {isLoadingProducts ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="text-center h-24">
+                                    <Loader2 className="h-6 w-6 animate-spin inline-block mr-2" />
+                                    Loading products...
+                                </TableCell>
+                            </TableRow>
+                         ) : (
+                            fields.map((field, index) => {
+                                const selectedSku = allSkus.find(s => s.value === watchedItems[index]?.sku);
+                                const cost = watchedItems[index]?.cost || 0;
+                                const quantity = watchedItems[index]?.quantity || 0;
+                                const total = cost * quantity;
 
-                            return (
-                                <TableRow key={field.id}>
-                                    <TableCell>
-                                        <FormField
-                                            control={form.control}
-                                            name={`items.${index}.sku`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <Select
-                                                        onValueChange={(value) => {
-                                                            field.onChange(value);
-                                                            const selected = allSkus.find(s => s.value === value);
-                                                            form.setValue(`items.${index}.cost`, selected?.costPrice as number || 0);
-                                                        }}
-                                                        defaultValue={field.value}
-                                                    >
+                                return (
+                                    <TableRow key={field.id}>
+                                        <TableCell>
+                                            <FormField
+                                                control={form.control}
+                                                name={`items.${index}.sku`}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <Select
+                                                            onValueChange={(value) => {
+                                                                field.onChange(value);
+                                                                const selected = allSkus.find(s => s.value === value);
+                                                                form.setValue(`items.${index}.cost`, selected?.costPrice as number || 0);
+                                                            }}
+                                                            defaultValue={field.value}
+                                                            disabled={!supplierId || availableProducts.length === 0}
+                                                        >
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Select a product" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {allSkus.map(sku => (
+                                                                    <SelectItem key={sku.value} value={sku.value}>{sku.label}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <FormField
+                                                control={form.control}
+                                                name={`items.${index}.quantity`}
+                                                render={({ field }) => (
+                                                    <FormItem>
                                                         <FormControl>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select a product" />
-                                                            </SelectTrigger>
+                                                            <Input type="number" placeholder="1" {...field} />
                                                         </FormControl>
-                                                        <SelectContent>
-                                                            {allSkus.map(sku => (
-                                                                <SelectItem key={sku.value} value={sku.value}>{sku.label}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <FormField
+                                                control={form.control}
+                                                name={`items.${index}.cost`}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormControl>
+                                                            <Input type="number" {...field} startIcon="$" />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="text-right font-mono">${total.toFixed(2)}</TableCell>
+                                        <TableCell>
+                                            {fields.length > 1 && (
+                                                <Button variant="ghost" size="icon" onClick={() => remove(index)}>
+                                                    <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                                </Button>
                                             )}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <FormField
-                                            control={form.control}
-                                            name={`items.${index}.quantity`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <Input type="number" placeholder="1" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <FormField
-                                            control={form.control}
-                                            name={`items.${index}.cost`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <Input type="number" {...field} startIcon="$" />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono">${total.toFixed(2)}</TableCell>
-                                    <TableCell>
-                                        {fields.length > 1 && (
-                                            <Button variant="ghost" size="icon" onClick={() => remove(index)}>
-                                                <Trash2 className="h-4 w-4 text-muted-foreground" />
-                                            </Button>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            )
-                         })}
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })
+                         )}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', quantity: 1, cost: 0 })} className="mt-4">
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', quantity: 1, cost: 0 })} className="mt-4" disabled={!supplierId}>
                     Add another item
                 </Button>
             </CardContent>
