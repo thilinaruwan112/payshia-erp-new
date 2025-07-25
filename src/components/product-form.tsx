@@ -103,30 +103,6 @@ export function ProductForm({ product }: ProductFormProps) {
   const [sizes, setSizes] = useState<Size[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
-  const defaultValues: Partial<ProductFormValues> = {
-    name: product?.name || "",
-    printName: product?.print_name || "",
-    tamilName: product?.tamil_name || "",
-    sinhalaName: product?.sinhala_name || "",
-    displayName: product?.display_name || "",
-    description: product?.description || "",
-    stockUnit: product?.stock_unit || "Nos",
-    status: product?.status || "active",
-    categoryId: product?.category_id || "",
-    brandId: product?.brand_id || "",
-    sellingPrice: product?.price ? parseFloat(String(product.price)) : 0,
-    costPrice: product?.cost_price ? parseFloat(String(product.cost_price)) : 0,
-    minPrice: product?.min_price ? parseFloat(String(product.min_price)) : 0,
-    wholesalePrice: product?.wholesale_price ? parseFloat(String(product.wholesale_price)) : 0,
-    variants: product?.variants?.map(v => ({
-        id: v.id,
-        sku: v.sku,
-        colorId: v.color_id ?? undefined,
-        sizeId: v.size_id ?? undefined,
-    })) || [{ sku: "", colorId: "", sizeId: "" }],
-    supplier: product?.supplier?.split(',').map(s => s.trim()) || [],
-  };
-
   useEffect(() => {
     async function fetchData(url: string, setData: Function, type: string) {
        try {
@@ -151,12 +127,50 @@ export function ProductForm({ product }: ProductFormProps) {
     fetchData('https://server-erp.payshia.com/sizes', setSizes, 'sizes');
     fetchData('https://server-erp.payshia.com/suppliers', setSuppliers, 'suppliers');
   }, [toast]);
+  
+  const defaultValues: Partial<ProductFormValues> = {
+    name: product?.name || "",
+    printName: product?.print_name || "",
+    tamilName: product?.tamil_name || "",
+    sinhalaName: product?.sinhala_name || "",
+    displayName: product?.display_name || "",
+    description: product?.description || "",
+    stockUnit: product?.stock_unit || "Nos",
+    status: product?.status || "active",
+    categoryId: product?.category_id || "",
+    brandId: product?.brand_id || "",
+    sellingPrice: product?.price ? parseFloat(String(product.price)) : 0,
+    costPrice: product?.cost_price ? parseFloat(String(product.cost_price)) : 0,
+    minPrice: product?.min_price ? parseFloat(String(product.min_price)) : 0,
+    wholesalePrice: product?.wholesale_price ? parseFloat(String(product.wholesale_price)) : 0,
+    variants: product?.variants?.map(v => ({
+        id: v.id,
+        sku: v.sku,
+        colorId: v.color_id ?? undefined,
+        sizeId: v.size_id ?? undefined,
+    })) || [{ sku: "", colorId: "", sizeId: "" }],
+    supplier: product?.supplier?.split(',').map(sName => {
+        const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
+        return foundSupplier ? foundSupplier.supplier_id : '';
+    }).filter(Boolean) || [],
+  };
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues,
     mode: "onChange",
   });
+  
+  // When suppliers data loads, we need to re-evaluate the default values for the supplier field
+  useEffect(() => {
+    if (product?.supplier && suppliers.length > 0) {
+        const supplierIds = product.supplier.split(',').map(sName => {
+            const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
+            return foundSupplier ? foundSupplier.supplier_id : null;
+        }).filter(Boolean) as string[];
+        form.setValue('supplier', supplierIds);
+    }
+  }, [product, suppliers, form.setValue, form]);
 
   const { fields, append, remove } = useFieldArray({
     name: "variants",
@@ -201,6 +215,7 @@ export function ProductForm({ product }: ProductFormProps) {
     setIsLoading(true);
 
     const selectedCategory = categories.find(c => c.id === data.categoryId);
+    const supplierNames = data.supplier?.map(id => suppliers.find(s => s.supplier_id === id)?.supplier_name).filter(Boolean).join(', ');
 
     const apiPayload = {
       name: data.name,
@@ -216,7 +231,7 @@ export function ProductForm({ product }: ProductFormProps) {
       sinhala_name: data.sinhalaName,
       print_name: data.printName,
       brand_id: data.brandId ? parseInt(data.brandId, 10) : undefined,
-      supplier: data.supplier?.join(', '),
+      supplier: supplierNames,
       variants: data.variants.map(v => ({
         id: v.id,
         sku: v.sku,
@@ -692,13 +707,13 @@ export function ProductForm({ product }: ProductFormProps) {
                                                     >
                                                         <FormControl>
                                                         <Checkbox
-                                                            checked={field.value?.includes(supplier.supplier_name)}
+                                                            checked={field.value?.includes(supplier.supplier_id)}
                                                             onCheckedChange={(checked) => {
                                                             return checked
-                                                                ? field.onChange([...(field.value || []), supplier.supplier_name])
+                                                                ? field.onChange([...(field.value || []), supplier.supplier_id])
                                                                 : field.onChange(
                                                                     field.value?.filter(
-                                                                    (value) => value !== supplier.supplier_name
+                                                                    (value) => value !== supplier.supplier_id
                                                                     )
                                                                 )
                                                             }}
