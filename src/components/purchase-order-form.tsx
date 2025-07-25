@@ -170,11 +170,11 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
       is_active: data.is_active ? 1 : 0,
       items: data.items.map(item => {
         const product = availableProducts.find(p => p.id === item.product_id);
-        const variant = product?.variants[0]; // Assuming one variant for now
+        const variant = (product?.variants && product.variants.length > 0) ? product.variants[0] : undefined;
         return {
             ...item,
             product_id: parseInt(item.product_id, 10),
-            product_variant_id: variant?.id ? parseInt(variant.id, 10) : undefined, // This is a guess
+            product_variant_id: variant?.id ? parseInt(variant.id, 10) : undefined,
             order_unit: product?.stock_unit || 'Nos',
         }
       }),

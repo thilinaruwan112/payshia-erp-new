@@ -17,7 +17,7 @@ export type Product = {
   category: string;
   category_id?: string;
   brand_id?: string;
-  variants: ProductVariant[];
+  variants?: ProductVariant[];
   price: number | string;
   status: 'active' | 'draft';
   stock_unit?: string;
