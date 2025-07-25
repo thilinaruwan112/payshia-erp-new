@@ -134,7 +134,7 @@ export function PurchaseOrderForm({ suppliers, products }: PurchaseOrderFormProp
                     control={form.control}
                     name="supplierId"
                     render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="flex flex-col justify-end">
                             <FormLabel>Supplier</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
@@ -218,7 +218,7 @@ export function PurchaseOrderForm({ suppliers, products }: PurchaseOrderFormProp
                     control={form.control}
                     name="status"
                     render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="flex flex-col justify-end">
                             <FormLabel>Status</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
