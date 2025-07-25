@@ -67,10 +67,10 @@ export function PurchaseOrderForm({ suppliers, products }: PurchaseOrderFormProp
   const router = useRouter();
   const { toast } = useToast();
 
-  const allSkus = products.flatMap(p => p.variants.map(v => ({
+  const allSkus = products.flatMap(p => (p.variants || []).map(v => ({
       label: `${p.name} (${v.sku})`,
       value: v.sku,
-      costPrice: p.costPrice || 0,
+      costPrice: p.cost_price || 0,
   })));
   
   const defaultValues: Partial<PurchaseOrderFormValues> = {
@@ -144,7 +144,7 @@ export function PurchaseOrderForm({ suppliers, products }: PurchaseOrderFormProp
                                 </FormControl>
                                 <SelectContent>
                                     {suppliers.map(s => (
-                                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                        <SelectItem key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
