@@ -26,8 +26,9 @@ export type Product = {
   product_image_url?: string;
   print_name?: string;
   sinhala_name?: string;
-  tamil_name?: string;
-  display_name?: string;
+  tamil_name?: string | null;
+  display_name?: string | null;
+  collectionProductId?: string; // Used for collection product association
 };
 
 export type Location = {

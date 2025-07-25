@@ -102,24 +102,16 @@ export function CollectionForm({ collection }: CollectionFormProps) {
 
         // Sync products
         const initialProductIds = new Set(collection?.products?.map(p => p.id) || []);
-        const currentProductIds = new Set(data.products || []);
+        const currentProducts = selectedProducts;
         
-        const productsToAdd = (data.products || []).filter(id => !initialProductIds.has(id));
-        const productsToRemove = (collection?.products || []).filter(p => !currentProductIds.has(p.id));
+        // Add only newly added products (those without a collectionProductId)
+        const productsToAdd = currentProducts.filter(p => !p.collectionProductId);
 
-        for (const productId of productsToAdd) {
+        for (const productToAdd of productsToAdd) {
             await fetch('https://server-erp.payshia.com/collection-products', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ collection_id: collectionId, product_id: parseInt(productId, 10) }),
-            });
-        }
-
-        for (const productToRemove of productsToRemove) {
-             await fetch('https://server-erp.payshia.com/collection-products', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ collection_id: collectionId, product_id: parseInt(productToRemove.id, 10) }),
+                body: JSON.stringify({ collection_id: collectionId, product_id: parseInt(productToAdd.id, 10) }),
             });
         }
 
@@ -153,10 +145,44 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     setValue('products', updatedProducts.map(p => p.id), { shouldValidate: true });
   }
 
-  const removeProduct = (productId: string) => {
-    const updatedProducts = selectedProducts.filter(p => p.id !== productId);
-    setSelectedProducts(updatedProducts);
-    setValue('products', updatedProducts.map(p => p.id), { shouldValidate: true });
+  const removeProduct = async (productToRemove: Product) => {
+    // If product is not saved yet (no collectionProductId), just remove from UI state
+    if (!productToRemove.collectionProductId) {
+       const updatedProducts = selectedProducts.filter(p => p.id !== productToRemove.id);
+       setSelectedProducts(updatedProducts);
+       setValue('products', updatedProducts.map(p => p.id), { shouldValidate: true });
+       return;
+    }
+
+    // If it's a saved product, call the API to delete the association
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/collection-products/${productToRemove.collectionProductId}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to remove product from collection');
+        }
+
+        // On successful deletion, update the UI state
+        const updatedProducts = selectedProducts.filter(p => p.id !== productToRemove.id);
+        setSelectedProducts(updatedProducts);
+        setValue('products', updatedProducts.map(p => p.id), { shouldValidate: true });
+        
+        toast({
+            title: 'Product Removed',
+            description: `"${productToRemove.name}" has been removed from the collection.`,
+        });
+
+    } catch (error) {
+         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+         toast({
+            variant: 'destructive',
+            title: 'Error Removing Product',
+            description: errorMessage,
+        });
+    }
   }
 
   const pageTitle = collection ? `Edit Collection: ${collection.title}` : 'Create Collection';
@@ -240,7 +266,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                                     variant="destructive" 
                                     size="icon"
                                     className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => removeProduct(product.id)}
+                                    onClick={() => removeProduct(product)}
                                 >
                                     <X className="h-4 w-4" />
                                 </Button>

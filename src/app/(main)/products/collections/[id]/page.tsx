@@ -7,6 +7,13 @@ interface CollectionData extends Collection {
   products: Product[];
 }
 
+// This interface is to properly type the response from the association table
+interface CollectionProductLink {
+    id: string; // This is the collection_product_id
+    collection_id: string;
+    product_id: string;
+}
+
 async function getCollection(id: string): Promise<CollectionData | null> {
     try {
         const [collectionResponse, collectionProductsResponse] = await Promise.all([
@@ -27,8 +34,8 @@ async function getCollection(id: string): Promise<CollectionData | null> {
             return { ...collectionData, products: [] };
         }
 
-        const collectionProducts: { product_id: string }[] = await collectionProductsResponse.json();
-        const productIds = collectionProducts.map(p => p.product_id);
+        const collectionProductLinks: CollectionProductLink[] = await collectionProductsResponse.json();
+        const productIds = collectionProductLinks.map(p => p.product_id);
 
         if (productIds.length === 0) {
             return { ...collectionData, products: [] };
@@ -41,7 +48,16 @@ async function getCollection(id: string): Promise<CollectionData | null> {
         }
         const allProducts: Product[] = await allProductsResponse.json();
         
-        const productsInCollection = allProducts.filter(p => productIds.includes(p.id));
+        // Map products and add the collectionProductId
+        const productsInCollection = allProducts
+            .filter(p => productIds.includes(p.id))
+            .map(p => {
+                const link = collectionProductLinks.find(l => l.product_id === p.id);
+                return {
+                    ...p,
+                    collectionProductId: link?.id, // Add the association ID
+                };
+            });
 
         return { ...collectionData, products: productsInCollection };
 
