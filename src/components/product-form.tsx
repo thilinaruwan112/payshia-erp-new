@@ -35,7 +35,7 @@ import { Trash2, UploadCloud, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import type { Product, Collection } from "@/lib/types";
+import type { Product, Collection, Supplier } from "@/lib/types";
 
 type Category = {
   id: string;
@@ -84,7 +84,7 @@ const productFormSchema = z.object({
   price2: z.coerce.number().optional(),
   foreignPrice: z.coerce.number().optional(),
   variants: z.array(variantSchema).min(1, { message: "At least one variant is required." }),
-  collections: z.array(z.string()).optional(),
+  supplier: z.array(z.string()).optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -101,7 +101,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
   const [sizes, setSizes] = useState<Size[]>([]);
-  const [collections, setCollections] = useState<Collection[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   const defaultValues: Partial<ProductFormValues> = {
     name: product?.name || "",
@@ -124,6 +124,7 @@ export function ProductForm({ product }: ProductFormProps) {
         colorId: v.color_id ?? undefined,
         sizeId: v.size_id ?? undefined,
     })) || [{ sku: "", colorId: "", sizeId: "" }],
+    supplier: product?.supplier?.split(',').map(s => s.trim()) || [],
   };
 
   useEffect(() => {
@@ -148,7 +149,7 @@ export function ProductForm({ product }: ProductFormProps) {
     fetchData('https://server-erp.payshia.com/brands', setBrands, 'brands');
     fetchData('https://server-erp.payshia.com/colors', setColors, 'colors');
     fetchData('https://server-erp.payshia.com/sizes', setSizes, 'sizes');
-    fetchData('https://server-erp.payshia.com/collections', setCollections, 'collections');
+    fetchData('https://server-erp.payshia.com/suppliers', setSuppliers, 'suppliers');
   }, [toast]);
 
   const form = useForm<ProductFormValues>({
@@ -165,14 +166,11 @@ export function ProductForm({ product }: ProductFormProps) {
   const handleRemoveVariant = async (index: number) => {
     const variantId = form.getValues(`variants.${index}.id`);
     
-    // If the variant doesn't have an ID, it's new and only exists in the UI.
-    // Just remove it from the form state without an API call.
     if (!variantId) {
         remove(index);
         return;
     }
 
-    // If it has an ID, it exists on the server, so we need to make an API call.
     try {
         const response = await fetch(`https://server-erp.payshia.com/product-variants/${variantId}`, {
             method: 'DELETE',
@@ -182,8 +180,7 @@ export function ProductForm({ product }: ProductFormProps) {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Failed to delete variant');
         }
-
-        // Only remove from the UI after successful deletion from the server.
+        
         remove(index);
         toast({
             title: 'Variant Deleted',
@@ -219,6 +216,7 @@ export function ProductForm({ product }: ProductFormProps) {
       sinhala_name: data.sinhalaName,
       print_name: data.printName,
       brand_id: data.brandId ? parseInt(data.brandId, 10) : undefined,
+      supplier: data.supplier?.join(', '),
       variants: data.variants.map(v => ({
         id: v.id,
         sku: v.sku,
@@ -663,6 +661,58 @@ export function ProductForm({ product }: ProductFormProps) {
                                         ))}
                                     </SelectContent>
                                     </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Suppliers</CardTitle>
+                        <CardDescription>Select the suppliers for this product.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <FormField
+                            control={form.control}
+                            name="supplier"
+                            render={() => (
+                                <FormItem>
+                                    <div className="space-y-2">
+                                        {suppliers.map((supplier) => (
+                                            <FormField
+                                                key={supplier.supplier_id}
+                                                control={form.control}
+                                                name="supplier"
+                                                render={({ field }) => {
+                                                    return (
+                                                    <FormItem
+                                                        key={supplier.supplier_id}
+                                                        className="flex flex-row items-start space-x-3 space-y-0"
+                                                    >
+                                                        <FormControl>
+                                                        <Checkbox
+                                                            checked={field.value?.includes(supplier.supplier_name)}
+                                                            onCheckedChange={(checked) => {
+                                                            return checked
+                                                                ? field.onChange([...(field.value || []), supplier.supplier_name])
+                                                                : field.onChange(
+                                                                    field.value?.filter(
+                                                                    (value) => value !== supplier.supplier_name
+                                                                    )
+                                                                )
+                                                            }}
+                                                        />
+                                                        </FormControl>
+                                                        <FormLabel className="font-normal">
+                                                            {supplier.supplier_name}
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                    )
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
                                     <FormMessage />
                                 </FormItem>
                             )}

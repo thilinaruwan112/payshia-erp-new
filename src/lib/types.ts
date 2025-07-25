@@ -29,6 +29,7 @@ export type Product = {
   tamil_name?: string | null;
   display_name?: string | null;
   collectionProductId?: string; // Used for collection product association
+  supplier?: string;
 };
 
 export type Location = {
