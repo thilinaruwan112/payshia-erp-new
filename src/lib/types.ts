@@ -11,6 +11,8 @@ export type GrnItem = {
     sku: string;
     productName: string;
     receivable: number;
+    unitRate: number;
+    productVariantId: string;
     batches: GrnBatch[];
 }
 

@@ -40,8 +40,17 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
-import { Textarea } from "./ui/textarea";
-import { Label } from "./ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 
 const grnBatchSchema = z.object({
     batchNumber: z.string().min(1, "Batch number is required."),
@@ -54,6 +63,8 @@ const grnItemSchema = z.object({
   sku: z.string(),
   productName: z.string(),
   receivable: z.number(),
+  unitRate: z.number(),
+  productVariantId: z.string(),
   batches: z.array(grnBatchSchema).min(1, "At least one batch is required."),
 });
 
@@ -91,6 +102,8 @@ export function GrnForm() {
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
 
   const form = useForm<GrnFormValues>({
     resolver: zodResolver(grnFormSchema),
@@ -116,7 +129,7 @@ export function GrnForm() {
 
         try {
             const [poResponse, suppliersResponse, productsResponse, variantsResponse, locationsResponse] = await Promise.all([
-                 fetch(`https://server-erp.payshia.com/purchase-orders/${poId}`),
+                 fetch(`https://server-erp.payshia.com/purchase-orders/${id}`),
                  fetch('https://server-erp.payshia.com/suppliers'),
                  fetch('https://server-erp.payshia.com/products'),
                  fetch('https://server-erp.payshia.com/product-variants'),
@@ -150,9 +163,13 @@ export function GrnForm() {
                         sku: variant?.sku || `SKU-${item.product_variant_id}`,
                         productName: product?.name || 'Unknown Product',
                         receivable: parseFloat(String(item.quantity)),
+                        unitRate: parseFloat(String(item.order_rate)),
+                        productVariantId: item.product_variant_id,
                         batches: [{
                             batchNumber: '',
                             receivedQty: parseFloat(String(item.quantity)),
+                            mfgDate: undefined,
+                            expDate: undefined
                         }]
                     }
                  });
@@ -171,6 +188,7 @@ export function GrnForm() {
 
 
   function onSubmit(data: GrnFormValues) {
+    setIsConfirmOpen(false);
     console.log(data);
     toast({
       title: "GRN Created",
@@ -178,6 +196,19 @@ export function GrnForm() {
     });
     router.push('/purchasing/grn');
   }
+
+  const handleProcessClick = async () => {
+    const isValid = await form.trigger();
+    if (isValid) {
+      setIsConfirmOpen(true);
+    }
+  }
+
+  const watchedItems = form.watch("items");
+  const subTotal = watchedItems.reduce((acc, item) => {
+    const itemTotal = item.batches.reduce((batchAcc, batch) => batchAcc + (batch.receivedQty * item.unitRate), 0);
+    return acc + itemTotal;
+  }, 0);
   
   if (isLoading) {
     return <Card><CardContent><Skeleton className="h-96 w-full" /></CardContent></Card>
@@ -196,8 +227,9 @@ export function GrnForm() {
   }
 
   return (
+    <>
     <Form {...form}>
-       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+       <form onSubmit={(e) => { e.preventDefault(); handleProcessClick(); }} className="space-y-6">
         <Card>
             <CardHeader>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -342,8 +374,78 @@ export function GrnForm() {
              <BatchDetailsFieldArray key={item.id} form={form} itemIndex={index} />
           ))}
         </div>
+        <div className="flex justify-end">
+            <Card className="w-full max-w-md">
+                <CardHeader><CardTitle>Summary</CardTitle></CardHeader>
+                <CardContent className="space-y-2">
+                    <div className="flex justify-between">
+                        <span className="text-muted-foreground">Subtotal</span>
+                        <span className="font-mono font-medium">${subTotal.toFixed(2)}</span>
+                    </div>
+                     <div className="flex justify-between">
+                        <span className="text-muted-foreground">Tax (Calculated)</span>
+                        <span className="font-mono font-medium">$0.00</span>
+                    </div>
+                     <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
+                        <span>Grand Total</span>
+                        <span className="font-mono">${subTotal.toFixed(2)}</span>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
       </form>
     </Form>
+    <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent className="max-w-4xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Goods Received Note</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please review the received items and batches below. This action will update your inventory levels.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Batch No.</TableHead>
+                        <TableHead>MFD</TableHead>
+                        <TableHead>EXP</TableHead>
+                        <TableHead className="text-right">Qty</TableHead>
+                        <TableHead className="text-right">Rate</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {watchedItems.flatMap((item, itemIndex) => 
+                        item.batches.map((batch, batchIndex) => (
+                            <TableRow key={`${item.sku}-${batchIndex}`}>
+                                <TableCell className="font-medium">{item.productName}</TableCell>
+                                <TableCell>{batch.batchNumber}</TableCell>
+                                <TableCell>{batch.mfgDate ? format(batch.mfgDate, "PPP") : 'N/A'}</TableCell>
+                                <TableCell>{batch.expDate ? format(batch.expDate, "PPP") : 'N/A'}</TableCell>
+                                <TableCell className="text-right">{batch.receivedQty}</TableCell>
+                                <TableCell className="text-right font-mono">${item.unitRate.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono">${(batch.receivedQty * item.unitRate).toFixed(2)}</TableCell>
+                            </TableRow>
+                        ))
+                    )}
+                </TableBody>
+                 <TableFooter>
+                    <TableRow>
+                        <TableCell colSpan={6} className="text-right font-bold">Grand Total</TableCell>
+                        <TableCell className="text-right font-bold font-mono">${subTotal.toFixed(2)}</TableCell>
+                    </TableRow>
+                </TableFooter>
+            </Table>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={form.handleSubmit(onSubmit)}>Continue & Process</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -364,7 +466,7 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
                 <div className="flex justify-between items-center">
                     <div>
                         <CardTitle className="text-lg">{item.productName}</CardTitle>
-                        <CardDescription>Receivable: {item.receivable} | Received: {totalReceived}</CardDescription>
+                        <CardDescription>Receivable: {item.receivable} | Received: {totalReceived} | Rate: ${item.unitRate.toFixed(2)}</CardDescription>
                     </div>
                      {hasError && (
                         <span className="text-sm font-medium text-destructive">
@@ -373,7 +475,7 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
                     )}
                 </div>
             </CardHeader>
-            <CardContent className="pt-4">
+            <CardContent className="pt-4 overflow-x-auto">
                  <Table>
                     <TableHeader>
                         <TableRow>
@@ -405,7 +507,7 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
                                             <Popover>
                                                 <PopoverTrigger asChild>
                                                 <FormControl>
-                                                    <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                    <Button variant={"outline"} className={cn("w-[150px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
                                                     {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                                                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                                     </Button>
@@ -429,7 +531,7 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
                                             <Popover>
                                                 <PopoverTrigger asChild>
                                                 <FormControl>
-                                                    <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                    <Button variant={"outline"} className={cn("w-[150px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
                                                     {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                                                     <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                                     </Button>
@@ -478,4 +580,3 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
         </Card>
     );
 }
-
