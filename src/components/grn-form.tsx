@@ -129,7 +129,7 @@ export function GrnForm() {
 
         try {
             const [poResponse, suppliersResponse, productsResponse, variantsResponse, locationsResponse] = await Promise.all([
-                 fetch(`https://server-erp.payshia.com/purchase-orders/${id}`),
+                 fetch(`https://server-erp.payshia.com/purchase-orders/${poId}`),
                  fetch('https://server-erp.payshia.com/suppliers'),
                  fetch('https://server-erp.payshia.com/products'),
                  fetch('https://server-erp.payshia.com/product-variants'),
