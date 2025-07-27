@@ -22,23 +22,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
-import type { PurchaseOrder, Supplier } from "@/lib/types";
-import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import type { PurchaseOrder, Supplier, Product } from "@/lib/types";
+import { CalendarIcon, PlusCircle, Trash2, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { Skeleton } from "./ui/skeleton";
 
 const grnItemBatchSchema = z.object({
     batchNumber: z.string().min(1, "Batch number is required."),
@@ -49,6 +43,7 @@ const grnItemBatchSchema = z.object({
 
 const grnItemSchema = z.object({
   sku: z.string().min(1, "Product is required."),
+  productName: z.string(),
   poQuantity: z.number(),
   batches: z.array(grnItemBatchSchema).min(1, "At least one batch is required."),
 });
@@ -70,15 +65,15 @@ const grnFormSchema = z.object({
 
 type GrnFormValues = z.infer<typeof grnFormSchema>;
 
-interface GrnFormProps {
-    suppliers: Supplier[];
-    purchaseOrders: PurchaseOrder[];
-}
-
-export function GrnForm({ suppliers, purchaseOrders }: GrnFormProps) {
+export function GrnForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
-  
+  const poId = searchParams.get('poId');
+  const [purchaseOrder, setPurchaseOrder] = useState<PurchaseOrder | null>(null);
+  const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const defaultValues: Partial<GrnFormValues> = {
     date: new Date(),
     items: [],
@@ -95,32 +90,97 @@ export function GrnForm({ suppliers, purchaseOrders }: GrnFormProps) {
     name: "items",
   });
 
-  const supplierId = form.watch('supplierId');
-  
-  const handlePoChange = (poId: string) => {
-    const po = purchaseOrders.find(p => p.id === poId);
-    if (po && po.items) {
-      const newItems = po.items.map(item => ({
-        sku: item.sku,
-        poQuantity: item.quantity,
-        batches: [{
-          batchNumber: '',
-          receivedQty: item.quantity,
-        }]
-      }));
-      replace(newItems);
-    } else {
-      replace([]);
+  useEffect(() => {
+    async function fetchPoData() {
+        if (!poId) {
+            toast({
+                variant: 'destructive',
+                title: 'No Purchase Order ID',
+                description: 'A purchase order must be specified to create a GRN.'
+            })
+            setIsLoading(false);
+            return;
+        };
+
+        try {
+            const poResponse = await fetch(`https://server-erp.payshia.com/purchase-orders/${poId}`);
+            if (!poResponse.ok) throw new Error('Failed to fetch PO data');
+            const poData: PurchaseOrder = await poResponse.json();
+            
+            if (poData.supplier_id) {
+                 const supplierResponse = await fetch(`https://server-erp.payshia.com/suppliers/${poData.supplier_id}`);
+                 if (supplierResponse.ok) {
+                    const supplierData: Supplier = await supplierResponse.json();
+                    setSupplier(supplierData);
+                    form.setValue('supplierId', supplierData.supplier_id);
+                 }
+            }
+            
+            setPurchaseOrder(poData);
+            form.setValue('poId', poData.id);
+
+            if (poData.items) {
+                 const productsResponse = await fetch(`https://server-erp.payshia.com/products`);
+                 const variantsResponse = await fetch(`https://server-erp.payshia.com/product-variants`);
+                 const products: Product[] = await productsResponse.json();
+                 const variants: any[] = await variantsResponse.json();
+
+                 const newItems = poData.items.map(item => {
+                    const product = products.find(p => p.id === item.product_id);
+                    const variant = variants.find(v => v.id === item.product_variant_id);
+                    return {
+                        sku: variant?.sku || `SKU-${item.product_variant_id}`,
+                        productName: product?.name || 'Unknown Product',
+                        poQuantity: item.quantity,
+                        batches: [{
+                            batchNumber: '',
+                            receivedQty: item.quantity,
+                        }]
+                    }
+                 });
+                 replace(newItems);
+            }
+
+        } catch (error) {
+             toast({
+                variant: 'destructive',
+                title: 'Failed to load PO Data',
+                description: 'Could not fetch the purchase order details from the server.',
+            })
+        } finally {
+            setIsLoading(false);
+        }
+
     }
-  }
+    fetchPoData();
+  }, [poId, toast, form, replace]);
+
 
   function onSubmit(data: GrnFormValues) {
     console.log(data);
     toast({
       title: "GRN Created",
-      description: `The GRN has been successfully created.`,
+      description: `The GRN for PO #${purchaseOrder?.po_number} has been successfully created.`,
     });
     router.push('/purchasing/grn');
+  }
+
+  if (isLoading) {
+    return <div><Skeleton className="h-96 w-full" /></div>
+  }
+
+  if (!poId || !purchaseOrder) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Error</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p>Could not load Purchase Order. Please go back to the PO list and try again.</p>
+                <Button onClick={() => router.push('/purchasing/purchase-orders')} className="mt-4">Go to PO List</Button>
+            </CardContent>
+        </Card>
+    );
   }
 
   return (
@@ -168,60 +228,21 @@ export function GrnForm({ suppliers, purchaseOrders }: GrnFormProps) {
                         </FormItem>
                     )}
                 />
-                 <FormField
-                    control={form.control}
-                    name="supplierId"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Supplier</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a supplier" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {suppliers.map(s => (
-                                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="poId"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Purchase Order</FormLabel>
-                             <Select onValueChange={(value) => {
-                                field.onChange(value);
-                                handlePoChange(value);
-                             }} defaultValue={field.value} disabled={!supplierId}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a PO" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {purchaseOrders.filter(po => po.supplierId === supplierId).map(po => (
-                                        <SelectItem key={po.id} value={po.id}>{po.id}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
+                 <div className="space-y-2">
+                    <FormLabel>Supplier</FormLabel>
+                    <Input readOnly value={supplier?.supplier_name || ''} />
+                </div>
+                 <div className="space-y-2">
+                    <FormLabel>Purchase Order</FormLabel>
+                    <Input readOnly value={purchaseOrder.po_number || ''} />
+                </div>
             </CardContent>
         </Card>
 
         {fields.map((item, itemIndex) => (
             <Card key={item.id}>
                  <CardHeader>
-                    <CardTitle className="text-lg">{item.sku}</CardTitle>
+                    <CardTitle className="text-lg">{item.productName} ({item.sku})</CardTitle>
                     <CardDescription>
                         Ordered Quantity: <span className="font-bold">{item.poQuantity}</span>
                     </CardDescription>
@@ -353,4 +374,3 @@ function BatchDetailsFieldArray({ itemIndex, control }: { itemIndex: number, con
         </div>
     )
 }
-

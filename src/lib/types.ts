@@ -141,6 +141,7 @@ export type PurchaseOrderItem = {
 
 export type GrnItem = {
     sku: string;
+    productName: string;
     poQuantity: number;
     batches: {
         batchNumber: string;
@@ -157,6 +158,7 @@ export type GoodsReceivedNote = {
     receivedDate: string;
     locationId: string;
     locationName: string;
+    itemCount: number;
     items: GrnItem[];
 }
 
