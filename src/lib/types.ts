@@ -11,7 +11,9 @@ export type GrnItem = {
     sku: string;
     productId: string;
     productName: string;
-    receivable: number;
+    orderQty: number;
+    alreadyReceived: number;
+    receivable: number; // This is the balance qty
     unitRate: number;
     productVariantId: string;
     batches: GrnBatch[];

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,7 +24,6 @@ import { format, parseISO } from "date-fns";
 import React, { useEffect, useState } from "react";
 import type { GrnFormValues } from "@/components/grn-form";
 
-// We reuse the same schema for validation on the confirmation page
 const grnBatchSchema = z.object({
     batchNumber: z.string().min(1, "Batch number is required."),
     mfgDate: z.date().optional(),
@@ -36,6 +36,8 @@ const grnItemSchema = z.object({
   productId: z.string(),
   productName: z.string(),
   receivable: z.number(),
+  alreadyReceived: z.number(),
+  orderQty: z.number(),
   unitRate: z.number(),
   productVariantId: z.string(),
   batches: z.array(grnBatchSchema).min(1, "At least one batch is required."),

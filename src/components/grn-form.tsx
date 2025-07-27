@@ -54,7 +54,9 @@ const grnItemSchema = z.object({
   sku: z.string(),
   productId: z.string(),
   productName: z.string(),
-  receivable: z.number(),
+  receivable: z.number(), // This is the balance qty
+  alreadyReceived: z.number(),
+  orderQty: z.number(),
   unitRate: z.number(),
   productVariantId: z.string(),
   batches: z.array(grnBatchSchema).min(1, "At least one batch is required."),
@@ -73,11 +75,12 @@ const grnFormSchema = z.object({
   remark: z.string().optional(),
 }).refine(data => {
     return data.items.every(item => {
-        const totalReceived = item.batches.reduce((sum, batch) => sum + batch.receivedQty, 0);
-        return totalReceived <= item.receivable;
+        const totalReceivedInForm = item.batches.reduce((sum, batch) => sum + batch.receivedQty, 0);
+        // Receivable here is the balance quantity
+        return totalReceivedInForm <= item.receivable;
     });
 }, {
-    message: "Total received quantity for an item cannot exceed the receivable quantity.",
+    message: "Total received quantity for an item cannot exceed the balance quantity.",
     path: ["items"],
 });
 
@@ -147,24 +150,38 @@ export function GrnForm() {
             form.setValue('taxType', poData.tax_type);
 
             if (poData.items) {
-                 const newItems = poData.items.map(item => {
+                 const newItemsPromises = poData.items.map(async (item) => {
                     const product = productsData.find(p => p.id === item.product_id);
                     const variant = variantsData.find(v => v.id === item.product_variant_id);
+
+                    const receivedQtyResponse = await fetch(`https://server-erp.payshia.com/purchase-order-items/total-received-qty/?product_id=${item.product_id}&po_number=${poData.po_number}&company_id=1`);
+                    let alreadyReceived = 0;
+                    if(receivedQtyResponse.ok) {
+                        const receivedQtyData = await receivedQtyResponse.json();
+                        alreadyReceived = parseFloat(receivedQtyData.total_received_qty) || 0;
+                    }
+                    
+                    const orderQty = parseFloat(String(item.quantity));
+                    const receivable = orderQty - alreadyReceived;
+
                     return {
                         sku: variant?.sku || `SKU-${item.product_variant_id}`,
                         productId: item.product_id,
                         productName: product?.name || 'Unknown Product',
-                        receivable: parseFloat(String(item.quantity)),
+                        orderQty: orderQty,
+                        alreadyReceived: alreadyReceived,
+                        receivable: receivable,
                         unitRate: parseFloat(String(item.order_rate)),
                         productVariantId: item.product_variant_id,
                         batches: [{
                             batchNumber: '',
-                            receivedQty: parseFloat(String(item.quantity)),
+                            receivedQty: receivable > 0 ? receivable : 0,
                             mfgDate: undefined,
                             expDate: undefined
                         }]
                     }
                  });
+                 const newItems = await Promise.all(newItemsPromises);
                  replace(newItems);
             }
 
@@ -408,8 +425,8 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
     });
 
     const item = form.watch(`items.${itemIndex}`);
-    const totalReceived = item.batches.reduce((sum: number, batch: any) => sum + Number(batch.receivedQty || 0), 0);
-    const hasError = totalReceived > item.receivable;
+    const totalReceivedInForm = item.batches.reduce((sum: number, batch: any) => sum + Number(batch.receivedQty || 0), 0);
+    const hasError = totalReceivedInForm > item.receivable;
 
     return (
         <Card>
@@ -417,11 +434,13 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
                 <div className="flex justify-between items-center">
                     <div>
                         <CardTitle className="text-lg">{item.productName}</CardTitle>
-                        <CardDescription>Receivable: {item.receivable} | Received: {totalReceived} | Rate: ${item.unitRate.toFixed(2)}</CardDescription>
+                        <CardDescription>
+                            Order Qty: {item.orderQty} | Received: {item.alreadyReceived} | Balance: {item.receivable} | Rate: ${item.unitRate.toFixed(2)}
+                        </CardDescription>
                     </div>
                      {hasError && (
                         <span className="text-sm font-medium text-destructive">
-                            Received quantity exceeds receivable quantity!
+                            Received quantity exceeds balance quantity!
                         </span>
                     )}
                 </div>
