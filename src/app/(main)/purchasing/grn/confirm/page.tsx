@@ -2,17 +2,11 @@
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import * as z from "zod";
 import {
   Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,14 +17,10 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { CalendarIcon, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Pencil } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 import { format, parseISO } from "date-fns";
 import React, { useEffect, useState } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { GrnFormValues } from "@/components/grn-form";
 
 // We reuse the same schema for validation on the confirmation page
@@ -116,16 +106,60 @@ export default function GrnConfirmationPage() {
 
     const onSubmit = async (data: GrnFormValues) => {
         setIsSubmitting(true);
-        console.log("Final GRN Data:", data);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        toast({
-            title: "GRN Created Successfully!",
-            description: `The goods received for PO #${data.poNumber} have been recorded.`,
-        });
-        localStorage.removeItem('grnConfirmationData');
-        router.push('/purchasing/grn');
+
+        try {
+            const stockEntryPromises = data.items.flatMap(item => 
+                item.batches.map(batch => {
+                    const payload = {
+                        type: "IN",
+                        quantity: batch.receivedQty,
+                        product_id: parseInt(item.productVariantId, 10),
+                        reference: `GRN_PO_${data.poNumber}`,
+                        location_id: parseInt(data.locationId, 10),
+                        created_by: 1, // This should be dynamic in a real app
+                        created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+                        is_active: 1,
+                        ref_id: parseInt(data.poId, 10),
+                        company_id: 1,
+                        patch_code: batch.batchNumber,
+                        manufacture_date: batch.mfgDate ? format(batch.mfgDate, 'yyyy-MM-dd') : undefined,
+                        expire_date: batch.expDate ? format(batch.expDate, 'yyyy-MM-dd') : undefined,
+                    };
+                    
+                    return fetch('https://server-erp.payshia.com/stock-entries', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(payload),
+                    }).then(async response => {
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(`Failed to create stock entry for ${item.productName} (Batch: ${batch.batchNumber}): ${errorData.message || 'Unknown error'}`);
+                        }
+                        return response.json();
+                    });
+                })
+            );
+
+            await Promise.all(stockEntryPromises);
+            
+            toast({
+                title: "GRN Created & Stock Updated!",
+                description: `The goods for PO #${data.poNumber} have been recorded and stock has been updated.`,
+            });
+            localStorage.removeItem('grnConfirmationData');
+            router.push('/purchasing/grn');
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast({
+                variant: 'destructive',
+                title: "Failed to create GRN",
+                description: errorMessage,
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     if (isLoading) {
@@ -138,11 +172,11 @@ export default function GrnConfirmationPage() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight text-nowrap">Confirm GRN</h1>
-                        <p className="text-muted-foreground">Review and edit the details below before saving the GRN.</p>
+                        <p className="text-muted-foreground">Review the details below before saving the GRN.</p>
                     </div>
                      <div className="flex items-center gap-2 w-full sm:w-auto">
                         <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isSubmitting}>
-                            <Pencil className="mr-2 h-4 w-4" /> Go Back & Edit
+                            <Pencil className="mr-2 h-4 w-4" /> Go Back
                         </Button>
                         <Button type="submit" className="w-full" disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -199,3 +233,4 @@ export default function GrnConfirmationPage() {
         </Form>
     );
 }
+
