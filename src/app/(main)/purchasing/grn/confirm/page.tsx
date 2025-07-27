@@ -76,7 +76,7 @@ const grnFormSchema = z.object({
 export default function GrnConfirmationPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const form = useForm<GrnFormValues>({
@@ -108,7 +108,6 @@ export default function GrnConfirmationPage() {
         }
     }, [router, toast, form]);
     
-    const { fields } = useFieldArray({ control: form.control, name: "items" });
     const watchedItems = form.watch("items") || [];
     const subTotal = watchedItems.reduce((acc, item) => {
         const itemTotal = item.batches.reduce((batchAcc, batch) => batchAcc + (batch.receivedQty * item.unitRate), 0);
@@ -173,9 +172,9 @@ export default function GrnConfirmationPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {fields.flatMap((item, itemIndex) => 
+                                {watchedItems.flatMap((item, itemIndex) => 
                                     item.batches.map((batch, batchIndex) => (
-                                        <TableRow key={`${item.id}-${batchIndex}`}>
+                                        <TableRow key={`${item.productVariantId}-${batchIndex}`}>
                                             <TableCell className="font-medium">{item.productName}</TableCell>
                                             <TableCell>{batch.batchNumber}</TableCell>
                                             <TableCell>{batch.mfgDate ? format(batch.mfgDate, "dd/MM/yy") : 'N/A'}</TableCell>
