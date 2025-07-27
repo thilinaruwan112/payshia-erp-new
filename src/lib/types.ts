@@ -1,5 +1,6 @@
 
 
+
 export type ProductVariant = {
   id: string;
   sku: string;
@@ -18,7 +19,7 @@ export type Product = {
   category: string;
   category_id?: string;
   brand_id?: string;
-  variants?: ProductVariant[];
+  variants: ProductVariant[];
   price: number | string;
   status: 'active' | 'draft';
   stock_unit?: string;
@@ -138,6 +139,17 @@ export type PurchaseOrderItem = {
     total_cost?: number;
 };
 
+export type GrnItem = {
+    sku: string;
+    poQuantity: number;
+    batches: {
+        batchNumber: string;
+        mfgDate?: Date;
+        expDate?: Date;
+        receivedQty: number;
+    }[];
+}
+
 export type GoodsReceivedNote = {
     id: string;
     poId: string;
@@ -145,7 +157,7 @@ export type GoodsReceivedNote = {
     receivedDate: string;
     locationId: string;
     locationName: string;
-    itemCount: number;
+    items: GrnItem[];
 }
 
 export type StockTransfer = {
