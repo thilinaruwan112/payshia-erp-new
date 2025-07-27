@@ -40,16 +40,6 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
 
 const grnBatchSchema = z.object({
@@ -90,7 +80,7 @@ const grnFormSchema = z.object({
 });
 
 
-type GrnFormValues = z.infer<typeof grnFormSchema>;
+export type GrnFormValues = z.infer<typeof grnFormSchema>;
 
 export function GrnForm() {
   const router = useRouter();
@@ -102,9 +92,7 @@ export function GrnForm() {
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-
-
+  
   const form = useForm<GrnFormValues>({
     resolver: zodResolver(grnFormSchema),
     defaultValues: {
@@ -187,20 +175,31 @@ export function GrnForm() {
   }, [poId, toast, form, replace]);
 
 
-  function onSubmit(data: GrnFormValues) {
-    setIsConfirmOpen(false);
-    console.log(data);
-    toast({
-      title: "GRN Created",
-      description: `The GRN for PO #${purchaseOrder?.po_number} has been successfully created.`,
-    });
-    router.push('/purchasing/grn');
-  }
-
-  const handleProcessClick = async () => {
+  async function onSubmit(data: GrnFormValues) {
     const isValid = await form.trigger();
-    if (isValid) {
-      setIsConfirmOpen(true);
+    if (!isValid) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Please check the form for errors before proceeding.',
+      });
+      return;
+    }
+    // Store data in local storage and navigate
+    try {
+      const fullGrnData = {
+        ...data,
+        supplierName: supplier?.supplier_name,
+        poNumber: purchaseOrder?.po_number,
+      }
+      localStorage.setItem('grnConfirmationData', JSON.stringify(fullGrnData));
+      router.push('/purchasing/grn/confirm');
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Could not proceed',
+        description: 'Failed to prepare data for confirmation.',
+      });
     }
   }
 
@@ -227,9 +226,8 @@ export function GrnForm() {
   }
 
   return (
-    <>
     <Form {...form}>
-       <form onSubmit={(e) => { e.preventDefault(); handleProcessClick(); }} className="space-y-6">
+       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Card>
             <CardHeader>
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -241,7 +239,7 @@ export function GrnForm() {
                         <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
                         <Button type="submit" className="w-full">
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Process GRN
+                            Proceed to Confirmation
                         </Button>
                     </div>
                 </div>
@@ -395,57 +393,6 @@ export function GrnForm() {
         </div>
       </form>
     </Form>
-    <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <AlertDialogContent className="max-w-4xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Goods Received Note</AlertDialogTitle>
-            <AlertDialogDescription>
-              Please review the received items and batches below. This action will update your inventory levels.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto">
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead>Batch No.</TableHead>
-                        <TableHead>MFD</TableHead>
-                        <TableHead>EXP</TableHead>
-                        <TableHead className="text-right">Qty</TableHead>
-                        <TableHead className="text-right">Rate</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {watchedItems.flatMap((item, itemIndex) => 
-                        item.batches.map((batch, batchIndex) => (
-                            <TableRow key={`${item.sku}-${batchIndex}`}>
-                                <TableCell className="font-medium">{item.productName}</TableCell>
-                                <TableCell>{batch.batchNumber}</TableCell>
-                                <TableCell>{batch.mfgDate ? format(batch.mfgDate, "PPP") : 'N/A'}</TableCell>
-                                <TableCell>{batch.expDate ? format(batch.expDate, "PPP") : 'N/A'}</TableCell>
-                                <TableCell className="text-right">{batch.receivedQty}</TableCell>
-                                <TableCell className="text-right font-mono">${item.unitRate.toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono">${(batch.receivedQty * item.unitRate).toFixed(2)}</TableCell>
-                            </TableRow>
-                        ))
-                    )}
-                </TableBody>
-                 <TableFooter>
-                    <TableRow>
-                        <TableCell colSpan={6} className="text-right font-bold">Grand Total</TableCell>
-                        <TableCell className="text-right font-bold font-mono">${subTotal.toFixed(2)}</TableCell>
-                    </TableRow>
-                </TableFooter>
-            </Table>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={form.handleSubmit(onSubmit)}>Continue & Process</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
   );
 }
 
