@@ -109,7 +109,7 @@ export default function GrnConfirmationPage() {
     }, [router, toast, form]);
     
     const { fields } = useFieldArray({ control: form.control, name: "items" });
-    const watchedItems = form.watch("items");
+    const watchedItems = form.watch("items") || [];
     const subTotal = watchedItems.reduce((acc, item) => {
         const itemTotal = item.batches.reduce((batchAcc, batch) => batchAcc + (batch.receivedQty * item.unitRate), 0);
         return acc + itemTotal;
@@ -156,7 +156,7 @@ export default function GrnConfirmationPage() {
                     <CardHeader>
                         <CardTitle>GRN for PO #{form.getValues().poNumber}</CardTitle>
                         <CardDescription>
-                            From Supplier: {form.getValues().supplierName} | Date: {format(form.getValues().date, 'PPP')}
+                            From Supplier: {form.getValues().supplierName} | Date: {form.getValues().date ? format(form.getValues().date, 'PPP') : '...'}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -200,4 +200,3 @@ export default function GrnConfirmationPage() {
         </Form>
     );
 }
-
