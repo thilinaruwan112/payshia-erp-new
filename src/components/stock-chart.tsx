@@ -13,6 +13,7 @@ export function StockChart({ locationId }: StockChartProps) {
   const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!locationId) return;
     const locationInventory = inventory.filter(i => i.locationId === locationId);
     const data = locationInventory.map(item => {
         const product = products.find(p => p.variants.some(v => v.sku === item.sku));

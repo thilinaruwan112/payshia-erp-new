@@ -1,6 +1,6 @@
 
-import { plans, products, locations, orders } from './data';
-import type { Plan } from './types';
+import { plans } from './data';
+import type { Plan, Location } from './types';
 
 // In a real app, you'd get this from the user's session or authentication context.
 const MOCK_CURRENT_USER_PLAN_ID = 'plan-basic';
@@ -27,19 +27,30 @@ export async function checkPlanLimit(type: LimitType): Promise<{
   let limit = Infinity;
   let usage = 0;
 
+  // Since we can't do top-level await for fetches in this file,
+  // we'll have to rely on pages to fetch their own data and this
+  // function will be less accurate for server components.
+  // For client components, they should fetch and pass usage.
+
   switch (type) {
     case 'products':
       limit = currentPlan.limits.products;
-      usage = products.length;
+      // Usage should be fetched from the API on the calling page
       break;
     case 'locations':
       limit = currentPlan.limits.locations;
-      usage = locations.length;
+       try {
+        const response = await fetch('https://server-erp.payshia.com/locations');
+        const data: Location[] = await response.json();
+        usage = data.length;
+      } catch (e) {
+        usage = 999; // Assume limit is reached if API fails
+      }
       break;
     case 'orders':
        limit = currentPlan.limits.orders;
        // In a real app, you'd filter orders by the current month
-       usage = orders.length;
+       // Usage should be fetched from the API
        break;
   }
   

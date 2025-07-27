@@ -45,7 +45,7 @@ const collectionFormSchema = z.object({
 type CollectionFormValues = z.infer<typeof collectionFormSchema>;
 
 interface CollectionFormProps {
-    collection?: Collection;
+    collection?: Collection & { products?: Product[] };
 }
 
 export function CollectionForm({ collection }: CollectionFormProps) {
@@ -53,7 +53,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
   
-  const [selectedProducts, setSelectedProducts] = React.useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = React.useState<Product[]>(collection?.products || []);
 
   const defaultValues: Partial<CollectionFormValues> = {
     title: collection?.title || "",
@@ -73,6 +73,9 @@ export function CollectionForm({ collection }: CollectionFormProps) {
 
   async function onSubmit(data: CollectionFormValues) {
     setIsLoading(true);
+    const url = collection ? `https://server-erp.payshia.com/collections/${collection.id}` : 'https://server-erp.payshia.com/collections';
+    const method = collection ? 'PUT' : 'POST';
+
     const collectionPayload = {
       title: data.title,
       description: data.description,
@@ -81,8 +84,8 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     };
     
     try {
-        const response = await fetch('https://server-erp.payshia.com/collections', {
-            method: 'POST',
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -95,23 +98,21 @@ export function CollectionForm({ collection }: CollectionFormProps) {
             throw new Error(result.message || 'Something went wrong');
         }
 
-        const newCollectionId = result.id;
+        const collectionId = collection?.id || result.id;
 
-        if (data.products && data.products.length > 0) {
-            for (const productId of data.products) {
-                const collectionProductPayload = {
-                    collection_id: newCollectionId,
-                    product_id: parseInt(productId, 10),
-                };
+        // Sync products
+        const initialProductIds = new Set(collection?.products?.map(p => p.id) || []);
+        const currentProducts = selectedProducts;
+        
+        // Add only newly added products (those without a collectionProductId)
+        const productsToAdd = currentProducts.filter(p => !p.collectionProductId);
 
-                await fetch('https://server-erp.payshia.com/collection-products', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(collectionProductPayload),
-                });
-            }
+        for (const productToAdd of productsToAdd) {
+            await fetch('https://server-erp.payshia.com/collection-products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ collection_id: collectionId, product_id: parseInt(productToAdd.id, 10) }),
+            });
         }
 
         toast({
@@ -119,6 +120,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
             description: `The collection "${data.title}" has been saved.`,
         });
         router.push('/products/collections');
+        router.refresh();
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -143,19 +145,56 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     setValue('products', updatedProducts.map(p => p.id), { shouldValidate: true });
   }
 
-  const removeProduct = (productId: string) => {
-    const updatedProducts = selectedProducts.filter(p => p.id !== productId);
-    setSelectedProducts(updatedProducts);
-    setValue('products', updatedProducts.map(p => p.id), { shouldValidate: true });
+  const removeProduct = async (productToRemove: Product) => {
+    // If product is not saved yet (no collectionProductId), just remove from UI state
+    if (!productToRemove.collectionProductId) {
+       const updatedProducts = selectedProducts.filter(p => p.id !== productToRemove.id);
+       setSelectedProducts(updatedProducts);
+       setValue('products', updatedProducts.map(p => p.id), { shouldValidate: true });
+       return;
+    }
+
+    // If it's a saved product, call the API to delete the association
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/collection-products/${productToRemove.collectionProductId}`, {
+            method: 'DELETE',
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to remove product from collection');
+        }
+
+        // On successful deletion, update the UI state
+        const updatedProducts = selectedProducts.filter(p => p.id !== productToRemove.id);
+        setSelectedProducts(updatedProducts);
+        setValue('products', updatedProducts.map(p => p.id), { shouldValidate: true });
+        
+        toast({
+            title: 'Product Removed',
+            description: `"${productToRemove.name}" has been removed from the collection.`,
+        });
+
+    } catch (error) {
+         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+         toast({
+            variant: 'destructive',
+            title: 'Error Removing Product',
+            description: errorMessage,
+        });
+    }
   }
 
-  const pageTitle = collection ? 'Edit Collection' : 'Create Collection';
+  const pageTitle = collection ? `Edit Collection: ${collection.title}` : 'Create Collection';
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <h1 className="text-3xl font-bold tracking-tight text-nowrap">{pageTitle}</h1>
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight text-nowrap">{pageTitle}</h1>
+                <p className="text-muted-foreground">{collection ? 'Update the details for this collection.' : 'Add a new collection to your system.'}</p>
+            </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isLoading}>Cancel</Button>
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -216,7 +255,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                            {selectedProducts.map(product => (
                              <div key={product.id} className="relative group">
                                 <Image
-                                    src="https://placehold.co/150x150.png"
+                                    src={product.product_image_url || "https://placehold.co/150x150.png"}
                                     alt={product.name}
                                     width={150}
                                     height={150}
@@ -227,7 +266,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                                     variant="destructive" 
                                     size="icon"
                                     className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => removeProduct(product.id)}
+                                    onClick={() => removeProduct(product)}
                                 >
                                     <X className="h-4 w-4" />
                                 </Button>
@@ -282,7 +321,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                   {form.watch('cover_image_url') ? (
                     <div className="relative">
                        <Image
-                        src={form.watch('cover_image_url') as string}
+                        src="https://placehold.co/200x200.png"
                         alt="Cover image preview"
                         width={200}
                         height={200}

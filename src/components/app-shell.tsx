@@ -79,6 +79,8 @@ import { CalculatorModal } from './calculator-modal';
 import { format } from 'date-fns';
 import { useLocation } from '@/components/location-provider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Skeleton } from './ui/skeleton';
+import { cn } from '@/lib/utils';
 
 const user = {
   name: 'Admin User',
@@ -196,19 +198,31 @@ const navItems = [
 ];
 
 function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
-    const { currentLocation, setCurrentLocation, availableLocations } = useLocation();
+    const { currentLocation, setCurrentLocation, availableLocations, isLoading } = useLocation();
+
+    if (isLoading) {
+        return <Skeleton className={cn("h-10", isMobile ? "w-full" : "w-48")} />
+    }
+
+    if (!currentLocation) {
+        return (
+            <div className={cn("p-2", isMobile ? "" : "md:block hidden")}>
+                <Button variant="outline" disabled>No Locations Found</Button>
+            </div>
+        )
+    }
 
     if (isMobile) {
         return (
             <div className="md:hidden p-2">
-                 <Select value={currentLocation.id} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.id === id)!)}>
+                 <Select value={currentLocation.location_id} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.location_id === id)!)}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select location" />
                     </SelectTrigger>
                     <SelectContent>
                          {availableLocations.map(location => (
-                             <SelectItem key={location.id} value={location.id}>
-                                {location.name}
+                             <SelectItem key={location.location_id} value={location.location_id}>
+                                {location.location_name}
                             </SelectItem>
                         ))}
                     </SelectContent>
@@ -222,17 +236,17 @@ function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
             <DropdownMenuTrigger asChild>
                  <Button variant="outline" className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
-                    <span>{currentLocation.name}</span>
+                    <span>{currentLocation.location_name}</span>
                     <ChevronDown className="h-3 w-3" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 <DropdownMenuLabel>Change Location</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuRadioGroup value={currentLocation.id} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.id === id)!)}>
+                <DropdownMenuRadioGroup value={currentLocation.location_id} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.location_id === id)!)}>
                     {availableLocations.map(location => (
-                         <DropdownMenuRadioItem key={location.id} value={location.id}>
-                            {location.name}
+                         <DropdownMenuRadioItem key={location.location_id} value={location.location_id}>
+                            {location.location_name}
                         </DropdownMenuRadioItem>
                     ))}
                 </DropdownMenuRadioGroup>

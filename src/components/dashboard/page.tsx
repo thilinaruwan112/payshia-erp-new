@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -36,6 +35,7 @@ import { SalesChart } from '@/components/sales-chart';
 import { StockChart } from '@/components/stock-chart';
 import { useLocation } from '@/components/location-provider';
 import { useMemo } from 'react';
+import { Skeleton } from '../ui/skeleton';
 
 export default function Dashboard() {
   const { currentLocation, isLoading } = useLocation();
@@ -60,7 +60,7 @@ export default function Dashboard() {
 
     return { lowStockItems, totalStock, totalSKUs };
   }, [locationInventory, products]);
-  
+
   if (isLoading) {
     return (
         <div className="flex h-full flex-1 items-center justify-center">

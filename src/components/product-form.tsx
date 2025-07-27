@@ -31,12 +31,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { collections } from "@/lib/data";
 import { Trash2, UploadCloud, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import type { Product } from "@/lib/types";
+import type { Product, Supplier } from "@/lib/types";
 
 type Category = {
   id: string;
@@ -85,7 +84,7 @@ const productFormSchema = z.object({
   price2: z.coerce.number().optional(),
   foreignPrice: z.coerce.number().optional(),
   variants: z.array(variantSchema).min(1, { message: "At least one variant is required." }),
-  collections: z.array(z.string()).optional(),
+  supplier: z.array(z.string()).optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -102,29 +101,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
   const [sizes, setSizes] = useState<Size[]>([]);
-
-  const defaultValues: Partial<ProductFormValues> = {
-    name: product?.name || "",
-    printName: product?.print_name || "",
-    tamilName: product?.tamilName || "",
-    sinhalaName: product?.sinhala_name || "",
-    displayName: product?.displayName || "",
-    description: product?.description || "",
-    stockUnit: product?.stock_unit || "Nos",
-    status: product?.status || "active",
-    categoryId: product?.category_id || "",
-    brandId: product?.brand_id || "",
-    sellingPrice: product?.price ? parseFloat(String(product.price)) : 0,
-    costPrice: product?.cost_price ? parseFloat(String(product.cost_price)) : 0,
-    minPrice: product?.min_price ? parseFloat(String(product.min_price)) : 0,
-    wholesalePrice: product?.wholesale_price ? parseFloat(String(product.wholesale_price)) : 0,
-    variants: product?.variants?.map(v => ({
-        id: v.id,
-        sku: v.sku,
-        colorId: v.color_id ?? undefined,
-        sizeId: v.size_id ?? undefined,
-    })) || [{ sku: "", colorId: "", sizeId: "" }],
-  };
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   useEffect(() => {
     async function fetchData(url: string, setData: Function, type: string) {
@@ -148,13 +125,52 @@ export function ProductForm({ product }: ProductFormProps) {
     fetchData('https://server-erp.payshia.com/brands', setBrands, 'brands');
     fetchData('https://server-erp.payshia.com/colors', setColors, 'colors');
     fetchData('https://server-erp.payshia.com/sizes', setSizes, 'sizes');
+    fetchData('https://server-erp.payshia.com/suppliers', setSuppliers, 'suppliers');
   }, [toast]);
+  //test
+  const defaultValues: Partial<ProductFormValues> = {
+    name: product?.name || "",
+    printName: product?.print_name || "",
+    tamilName: product?.tamil_name || "",
+    sinhalaName: product?.sinhala_name || "",
+    displayName: product?.display_name || "",
+    description: product?.description || "",
+    stockUnit: product?.stock_unit || "Nos",
+    status: product?.status || "active",
+    categoryId: product?.category_id || "",
+    brandId: product?.brand_id || "",
+    sellingPrice: product?.price ? parseFloat(String(product.price)) : 0,
+    costPrice: product?.cost_price ? parseFloat(String(product.cost_price)) : 0,
+    minPrice: product?.min_price ? parseFloat(String(product.min_price)) : 0,
+    wholesalePrice: product?.wholesale_price ? parseFloat(String(product.wholesale_price)) : 0,
+    variants: product?.variants?.map(v => ({
+        id: v.id,
+        sku: v.sku,
+        colorId: v.color_id ?? undefined,
+        sizeId: v.size_id ?? undefined,
+    })) || [{ sku: "", colorId: "", sizeId: "" }],
+    supplier: product?.supplier?.split(',').map(sName => {
+        const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
+        return foundSupplier ? foundSupplier.supplier_id : '';
+    }).filter(Boolean) || [],
+  };
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues,
     mode: "onChange",
   });
+  
+  // When suppliers data loads, we need to re-evaluate the default values for the supplier field
+  useEffect(() => {
+    if (product?.supplier && suppliers.length > 0) {
+        const supplierIds = product.supplier.split(',').map(sName => {
+            const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
+            return foundSupplier ? foundSupplier.supplier_id : null;
+        }).filter(Boolean) as string[];
+        form.setValue('supplier', supplierIds);
+    }
+  }, [product, suppliers, form.setValue, form]);
 
   const { fields, append, remove } = useFieldArray({
     name: "variants",
@@ -162,15 +178,13 @@ export function ProductForm({ product }: ProductFormProps) {
   });
 
   const handleRemoveVariant = async (index: number) => {
-    const variantId = fields[index].id;
-
-    // If it's a new variant not yet saved, just remove it from the form
+    const variantId = form.getValues(`variants.${index}.id`);
+    
     if (!variantId) {
         remove(index);
         return;
     }
 
-    // If it's an existing variant, call the API to delete it
     try {
         const response = await fetch(`https://server-erp.payshia.com/product-variants/${variantId}`, {
             method: 'DELETE',
@@ -180,12 +194,11 @@ export function ProductForm({ product }: ProductFormProps) {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Failed to delete variant');
         }
-
-        // On successful deletion from DB, remove from form state
+        
         remove(index);
         toast({
             title: 'Variant Deleted',
-            description: 'The variant has been removed.',
+            description: 'The variant has been successfully removed.',
         });
 
     } catch (error) {
@@ -202,6 +215,7 @@ export function ProductForm({ product }: ProductFormProps) {
     setIsLoading(true);
 
     const selectedCategory = categories.find(c => c.id === data.categoryId);
+    const supplierIdsString = data.supplier?.join(', ');
 
     const apiPayload = {
       name: data.name,
@@ -217,6 +231,7 @@ export function ProductForm({ product }: ProductFormProps) {
       sinhala_name: data.sinhalaName,
       print_name: data.printName,
       brand_id: data.brandId ? parseInt(data.brandId, 10) : undefined,
+      supplier: supplierIdsString,
       variants: data.variants.map(v => ({
         id: v.id,
         sku: v.sku,
@@ -665,54 +680,58 @@ export function ProductForm({ product }: ProductFormProps) {
                                 </FormItem>
                             )}
                         />
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Suppliers</CardTitle>
+                        <CardDescription>Select the suppliers for this product.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
                         <FormField
                             control={form.control}
-                            name="collections"
+                            name="supplier"
                             render={() => (
                                 <FormItem>
-                                    <div className="mb-4">
-                                        <FormLabel>Collections</FormLabel>
-                                        <FormDescription>
-                                            Add this product to a collection.
-                                        </FormDescription>
+                                    <div className="space-y-2">
+                                        {suppliers.map((supplier) => (
+                                            <FormField
+                                                key={supplier.supplier_id}
+                                                control={form.control}
+                                                name="supplier"
+                                                render={({ field }) => {
+                                                    return (
+                                                    <FormItem
+                                                        key={supplier.supplier_id}
+                                                        className="flex flex-row items-start space-x-3 space-y-0"
+                                                    >
+                                                        <FormControl>
+                                                        <Checkbox
+                                                            checked={field.value?.includes(supplier.supplier_id)}
+                                                            onCheckedChange={(checked) => {
+                                                            return checked
+                                                                ? field.onChange([...(field.value || []), supplier.supplier_id])
+                                                                : field.onChange(
+                                                                    field.value?.filter(
+                                                                    (value) => value !== supplier.supplier_id
+                                                                    )
+                                                                )
+                                                            }}
+                                                        />
+                                                        </FormControl>
+                                                        <FormLabel className="font-normal">
+                                                            {supplier.supplier_name}
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                    )
+                                                }}
+                                            />
+                                        ))}
                                     </div>
-                                    {collections.map((item) => (
-                                        <FormField
-                                        key={item.id}
-                                        control={form.control}
-                                        name="collections"
-                                        render={({ field }) => {
-                                            return (
-                                            <FormItem
-                                                key={item.id}
-                                                className="flex flex-row items-start space-x-3 space-y-0"
-                                            >
-                                                <FormControl>
-                                                <Checkbox
-                                                    checked={field.value?.includes(item.id)}
-                                                    onCheckedChange={(checked) => {
-                                                    return checked
-                                                        ? field.onChange([...(field.value || []), item.id])
-                                                        : field.onChange(
-                                                            field.value?.filter(
-                                                            (value) => value !== item.id
-                                                            )
-                                                        )
-                                                    }}
-                                                />
-                                                </FormControl>
-                                                <FormLabel className="font-normal">
-                                                {item.title}
-                                                </FormLabel>
-                                            </FormItem>
-                                            )
-                                        }}
-                                        />
-                                    ))}
                                     <FormMessage />
                                 </FormItem>
                             )}
-                            />
+                        />
                     </CardContent>
                 </Card>
             </div>

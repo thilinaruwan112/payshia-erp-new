@@ -1,12 +1,14 @@
 
 
 export type ProductVariant = {
-  id?: string;
+  id: string;
   sku: string;
   color?: string;
   size?: string;
   color_id?: string | null;
   size_id?: string | null;
+  product_id?: string;
+  barcode?: string | null;
 };
 
 export type Product = {
@@ -16,25 +18,40 @@ export type Product = {
   category: string;
   category_id?: string;
   brand_id?: string;
-  variants: ProductVariant[];
+  variants?: ProductVariant[];
   price: number | string;
   status: 'active' | 'draft';
   stock_unit?: string;
   cost_price?: number | string;
   min_price?: number | string;
   wholesale_price?: number | string;
+  price2?: number;
+  foreignPrice?: number;
   product_image_url?: string;
   print_name?: string;
   sinhala_name?: string;
-  tamilName?: string;
-  displayName?: string;
+  tamil_name?: string | null;
+  display_name?: string | null;
+  collectionProductId?: string; // Used for collection product association
+  supplier?: string;
 };
 
 export type Location = {
-  id: string;
-  name: string;
-  type: 'Warehouse' | 'Store';
-  salesChannels: ('E-commerce' | 'Retail' | 'Wholesale' | 'POS')[];
+  location_id: string;
+  location_code: string;
+  location_name: string;
+  is_active: string;
+  created_at: string;
+  created_by: string;
+  logo_path: string | null;
+  address_line1: string;
+  address_line2: string | null;
+  city: string;
+  phone_1: string;
+  phone_2: string | null;
+  pos_status: string;
+  pos_token: string;
+  location_type: 'Retail' | 'Warehouse' | string;
 };
 
 export type InventoryItem = {
@@ -72,30 +89,54 @@ export type Collection = {
   description?: string;
   cover_image_url?: string;
   status: 'active' | 'draft';
-  productCount?: number;
   created_at: string;
   updated_at: string;
+  products?: Product[];
 };
 
 export type Supplier = {
-    id: string;
-    name: string;
-    contactPerson: string;
-    email: string;
-    phone: string;
-    address: string;
-}
+  supplier_id: string;
+  supplier_name: string;
+  contact_person: string;
+  email: string;
+  telephone: string;
+  street_name: string;
+  city: string;
+  zip_code: string;
+  fax: string;
+  opening_balance: string;
+};
 
 export type PurchaseOrder = {
     id: string;
-    supplierId: string;
-    supplierName: string;
-    date: string;
-    expectedDelivery: string;
-    status: 'Draft' | 'Sent' | 'Partial' | 'Received' | 'Cancelled';
-    total: number;
-    itemCount: number;
+    po_number: string;
+    location_id: string;
+    supplier_id: string;
+    currency: string;
+    tax_type: string;
+    sub_total: string;
+    created_by: string;
+    created_at: string;
+    is_active: string;
+    po_status: string;
+    remarks: string;
+    company_id: string;
+    items?: PurchaseOrderItem[];
 }
+
+export type PurchaseOrderItem = {
+    purchase_order_id?: string;
+    product_id: string;
+    quantity: number;
+    order_rate: number;
+    order_unit?: string;
+    product_variant_id: string;
+    is_active?: number;
+    // Fields for display purposes
+    product_name?: string;
+    variant_sku?: string;
+    total_cost?: number;
+};
 
 export type GoodsReceivedNote = {
     id: string;

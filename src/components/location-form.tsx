@@ -7,7 +7,6 @@ import * as z from "zod";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -18,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -31,16 +31,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Checkbox } from "./ui/checkbox";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Switch } from "./ui/switch";
 
-const salesChannels = ["E-commerce", "Retail", "Wholesale", "POS"] as const;
 
 const locationFormSchema = z.object({
-  name: z.string().min(3, "Location name is required."),
-  type: z.enum(["Warehouse", "Store"]),
-  salesChannels: z.array(z.string()).refine(value => value.some(item => item), {
-    message: "You have to select at least one sales channel.",
-  }),
+  location_name: z.string().min(3, "Location name is required."),
+  location_type: z.string().min(1, "Location type is required."),
+  address_line1: z.string().min(3, "Address is required."),
+  address_line2: z.string().optional(),
+  city: z.string().min(2, "City is required."),
+  phone_1: z.string().min(10, "A valid phone number is required."),
+  phone_2: z.string().optional(),
+  pos_status: z.boolean().default(false),
 });
 
 type LocationFormValues = z.infer<typeof locationFormSchema>;
@@ -52,11 +56,17 @@ interface LocationFormProps {
 export function LocationForm({ location }: LocationFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   
   const defaultValues: Partial<LocationFormValues> = {
-    name: location?.name || "",
-    type: location?.type || "Store",
-    salesChannels: location?.salesChannels || [],
+    location_name: location?.location_name || "",
+    location_type: location?.location_type || "Retail",
+    address_line1: location?.address_line1 || "",
+    address_line2: location?.address_line2 || "",
+    city: location?.city || "",
+    phone_1: location?.phone_1 || "",
+    phone_2: location?.phone_2 || "",
+    pos_status: location?.pos_status === "1",
   };
 
   const form = useForm<LocationFormValues>({
@@ -65,16 +75,52 @@ export function LocationForm({ location }: LocationFormProps) {
     mode: "onChange",
   });
 
-  function onSubmit(data: LocationFormValues) {
-    console.log(data);
-    toast({
-      title: location ? "Location Updated" : "Location Created",
-      description: `The location "${data.name}" has been saved.`,
-    });
-    router.push('/locations');
+  async function onSubmit(data: LocationFormValues) {
+    setIsLoading(true);
+
+    const payload = {
+      ...data,
+      is_active: 1,
+      pos_status: data.pos_status ? 1 : 0,
+      created_by: 'admin', // This should be dynamic in a real app
+    };
+    
+    const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
+    const method = location ? 'PUT' : 'POST';
+
+    try {
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Something went wrong');
+      }
+
+      toast({
+        title: location ? "Location Updated" : "Location Created",
+        description: `The location "${data.location_name}" has been saved.`,
+      });
+      router.push('/locations');
+      router.refresh();
+    } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+       toast({
+        variant: "destructive",
+        title: "Failed to save location",
+        description: errorMessage,
+      });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
-  const pageTitle = location ? 'Edit Location' : 'Create Location';
+  const pageTitle = location ? `Edit Location: ${location.location_name}` : 'Create Location';
   const pageDescription = location ? 'Update the details of this location.' : 'Add a new location to your system.';
 
   return (
@@ -86,105 +132,146 @@ export function LocationForm({ location }: LocationFormProps) {
                  <p className="text-muted-foreground">{pageDescription}</p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
-                <Button type="submit" className="w-full">Save Location</Button>
+                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isLoading}>Cancel</Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {location ? 'Save Changes' : 'Save Location'}
+                </Button>
             </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            <Card className="lg:col-span-2">
-                <CardHeader>
-                    <CardTitle>Location Details</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+            <CardHeader>
+                <CardTitle>Location Details</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                    control={form.control}
+                    name="location_name"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Location Name</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. Downtown Store" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="location_type"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Location Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                <SelectValue placeholder="Select a type" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="Retail">Retail Store</SelectItem>
+                                <SelectItem value="Warehouse">Warehouse</SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <div className="md:col-span-2">
                     <FormField
                         control={form.control}
-                        name="name"
+                        name="address_line1"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Location Name</FormLabel>
+                            <FormLabel>Address Line 1</FormLabel>
                             <FormControl>
-                                <Input placeholder="e.g. Downtown Store" {...field} />
+                                <Input placeholder="e.g. 123 Main St" {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
                     />
+                 </div>
+                 <div className="md:col-span-2">
                     <FormField
                         control={form.control}
-                        name="type"
+                        name="address_line2"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Location Type</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                    <SelectValue placeholder="Select a type" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Store">Store</SelectItem>
-                                    <SelectItem value="Warehouse">Warehouse</SelectItem>
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
+                            <FormLabel>Address Line 2 (Optional)</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g. Apt #4B" {...field} />
+                            </FormControl>
+                            <FormMessage />
                             </FormItem>
                         )}
                     />
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Sales Channels</CardTitle>
-                    <FormDescription>Select the sales channels available at this location.</FormDescription>
-                </CardHeader>
-                <CardContent>
-                     <FormField
-                        control={form.control}
-                        name="salesChannels"
-                        render={() => (
-                            <FormItem className="space-y-3">
-                                {salesChannels.map((item) => (
-                                    <FormField
-                                    key={item}
-                                    control={form.control}
-                                    name="salesChannels"
-                                    render={({ field }) => {
-                                        return (
-                                        <FormItem
-                                            key={item}
-                                            className="flex flex-row items-start space-x-3 space-y-0"
-                                        >
-                                            <FormControl>
-                                            <Checkbox
-                                                checked={field.value?.includes(item)}
-                                                onCheckedChange={(checked) => {
-                                                return checked
-                                                    ? field.onChange([...(field.value || []), item])
-                                                    : field.onChange(
-                                                        field.value?.filter(
-                                                        (value) => value !== item
-                                                        )
-                                                    )
-                                                }}
-                                            />
-                                            </FormControl>
-                                            <FormLabel className="font-normal">
-                                            {item}
-                                            </FormLabel>
-                                        </FormItem>
-                                        )
-                                    }}
-                                    />
-                                ))}
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                </CardContent>
-            </Card>
-        </div>
+                 </div>
+                <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. Colombo" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="phone_1"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Primary Phone</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. 0112345678" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="phone_2"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Secondary Phone (Optional)</FormLabel>
+                        <FormControl>
+                            <Input placeholder="e.g. 0771234567" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="pos_status"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                                POS Active
+                            </FormLabel>
+                             <CardDescription>
+                                Enable or disable the Point of Sale terminal for this location.
+                            </CardDescription>
+                        </div>
+                        <FormControl>
+                            <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                        </FormItem>
+                    )}
+                 />
+            </CardContent>
+        </Card>
       </form>
     </Form>
   );
