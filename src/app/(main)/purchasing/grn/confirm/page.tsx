@@ -103,50 +103,62 @@ export default function GrnConfirmationPage() {
         const itemTotal = item.batches.reduce((batchAcc, batch) => batchAcc + (batch.receivedQty * item.unitRate), 0);
         return acc + itemTotal;
     }, 0);
+    const taxValue = subTotal * 0.18; // Assuming 18% tax based on sample
+    const grandTotal = subTotal + taxValue;
 
     const onSubmit = async (data: GrnFormValues) => {
         setIsSubmitting(true);
+        const grnItemsPayload = data.items.flatMap(item => 
+            item.batches.map(batch => ({
+                product_id: parseInt(item.productVariantId, 10),
+                order_unit: "pcs", // This might need to be dynamic
+                order_rate: item.unitRate,
+                received_qty: batch.receivedQty,
+                patch_code: batch.batchNumber,
+                expire_date: batch.expDate ? format(batch.expDate, 'yyyy-MM-dd') : undefined,
+                manufacture_date: batch.mfgDate ? format(batch.mfgDate, 'yyyy-MM-dd') : undefined,
+                created_by: "admin",
+                is_active: 1,
+                po_number: data.poNumber,
+            }))
+        );
+
+        const grnPayload = {
+            location_id: parseInt(data.locationId, 10),
+            company_id: 101, // From sample
+            supplier_id: parseInt(data.supplierId, 10),
+            currency: data.currency,
+            tax_type: data.taxType,
+            sub_total: subTotal,
+            tax_value: taxValue,
+            grand_total: grandTotal,
+            created_by: "admin",
+            created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+            is_active: 1,
+            grn_status: "Received",
+            remarks: data.remark,
+            payment_status: data.paymentStatus,
+            po_number: data.poNumber,
+            items: grnItemsPayload,
+        };
 
         try {
-            const stockEntryPromises = data.items.flatMap(item => 
-                item.batches.map(batch => {
-                    const payload = {
-                        type: "IN",
-                        quantity: batch.receivedQty,
-                        product_id: parseInt(item.productVariantId, 10),
-                        reference: `GRN_PO_${data.poNumber}`,
-                        location_id: parseInt(data.locationId, 10),
-                        created_by: 1, // This should be dynamic in a real app
-                        created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-                        is_active: 1,
-                        ref_id: parseInt(data.poId, 10),
-                        company_id: 1,
-                        patch_code: batch.batchNumber,
-                        manufacture_date: batch.mfgDate ? format(batch.mfgDate, 'yyyy-MM-dd') : undefined,
-                        expire_date: batch.expDate ? format(batch.expDate, 'yyyy-MM-dd') : undefined,
-                    };
-                    
-                    return fetch('https://server-erp.payshia.com/stock-entries', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(payload),
-                    }).then(async response => {
-                        if (!response.ok) {
-                            const errorData = await response.json();
-                            throw new Error(`Failed to create stock entry for ${item.productName} (Batch: ${batch.batchNumber}): ${errorData.message || 'Unknown error'}`);
-                        }
-                        return response.json();
-                    });
-                })
-            );
+            const response = await fetch('https://server-erp.payshia.com/grn', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(grnPayload),
+            });
 
-            await Promise.all(stockEntryPromises);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to create GRN entry.');
+            }
             
             toast({
-                title: "GRN Created & Stock Updated!",
-                description: `The goods for PO #${data.poNumber} have been recorded and stock has been updated.`,
+                title: "GRN Created Successfully!",
+                description: `The goods for PO #${data.poNumber} have been recorded.`,
             });
             localStorage.removeItem('grnConfirmationData');
             router.push('/purchasing/grn');
@@ -223,7 +235,7 @@ export default function GrnConfirmationPage() {
                              <TableFooter>
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-right font-bold">Grand Total</TableCell>
-                                    <TableCell className="text-right font-bold font-mono">${subTotal.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-bold font-mono">${grandTotal.toFixed(2)}</TableCell>
                                 </TableRow>
                             </TableFooter>
                         </Table>
