@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -51,6 +52,7 @@ const grnBatchSchema = z.object({
 
 const grnItemSchema = z.object({
   sku: z.string(),
+  productId: z.string(),
   productName: z.string(),
   receivable: z.number(),
   unitRate: z.number(),
@@ -98,6 +100,7 @@ export function GrnForm() {
     defaultValues: {
         date: new Date(),
         items: [],
+        remark: "",
     },
     mode: "onChange",
   });
@@ -149,6 +152,7 @@ export function GrnForm() {
                     const variant = variantsData.find(v => v.id === item.product_variant_id);
                     return {
                         sku: variant?.sku || `SKU-${item.product_variant_id}`,
+                        productId: item.product_id,
                         productName: product?.name || 'Unknown Product',
                         receivable: parseFloat(String(item.quantity)),
                         unitRate: parseFloat(String(item.order_rate)),

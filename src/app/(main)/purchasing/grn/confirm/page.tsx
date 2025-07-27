@@ -33,6 +33,7 @@ const grnBatchSchema = z.object({
 
 const grnItemSchema = z.object({
   sku: z.string(),
+  productId: z.string(),
   productName: z.string(),
   receivable: z.number(),
   unitRate: z.number(),
@@ -110,7 +111,7 @@ export default function GrnConfirmationPage() {
         setIsSubmitting(true);
         const grnItemsPayload = data.items.flatMap(item => 
             item.batches.map(batch => ({
-                product_id: parseInt(item.productVariantId, 10),
+                product_id: parseInt(item.productId, 10),
                 order_unit: "pcs", // This might need to be dynamic
                 order_rate: item.unitRate,
                 received_qty: batch.receivedQty,
@@ -136,7 +137,7 @@ export default function GrnConfirmationPage() {
             created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
             is_active: 1,
             grn_status: "Received",
-            remarks: data.remark,
+            remarks: data.remark || "",
             payment_status: data.paymentStatus,
             po_number: data.poNumber,
             items: grnItemsPayload,
@@ -245,4 +246,3 @@ export default function GrnConfirmationPage() {
         </Form>
     );
 }
-

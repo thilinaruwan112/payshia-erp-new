@@ -9,6 +9,7 @@ export type GrnBatch = {
 
 export type GrnItem = {
     sku: string;
+    productId: string;
     productName: string;
     receivable: number;
     unitRate: number;
