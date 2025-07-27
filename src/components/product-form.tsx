@@ -127,7 +127,7 @@ export function ProductForm({ product }: ProductFormProps) {
     fetchData('https://server-erp.payshia.com/sizes', setSizes, 'sizes');
     fetchData('https://server-erp.payshia.com/suppliers', setSuppliers, 'suppliers');
   }, [toast]);
-  
+  //test
   const defaultValues: Partial<ProductFormValues> = {
     name: product?.name || "",
     printName: product?.print_name || "",
