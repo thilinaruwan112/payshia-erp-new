@@ -32,7 +32,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { PurchaseOrder, Supplier, Product, ProductVariant, Location } from "@/lib/types";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, Plus, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
@@ -43,17 +43,18 @@ import { Skeleton } from "./ui/skeleton";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 
+const grnBatchSchema = z.object({
+    batchNumber: z.string().min(1, "Batch number is required."),
+    mfgDate: z.date().optional(),
+    expDate: z.date().optional(),
+    receivedQty: z.coerce.number().min(0.01, "Quantity must be greater than 0."),
+});
+
 const grnItemSchema = z.object({
   sku: z.string(),
   productName: z.string(),
-  unit: z.string(),
-  stock: z.number(),
   receivable: z.number(),
-  receivedQty: z.coerce.number().min(0, "Cannot be negative.").optional(),
-  mfgDate: z.date().optional(),
-  expDate: z.date().optional(),
-  unitRate: z.number(),
-  amount: z.number(),
+  batches: z.array(grnBatchSchema).min(1, "At least one batch is required."),
 });
 
 
@@ -69,11 +70,11 @@ const grnFormSchema = z.object({
   remark: z.string().optional(),
 }).refine(data => {
     return data.items.every(item => {
-        const received = item.receivedQty || 0;
-        return received <= item.receivable;
+        const totalReceived = item.batches.reduce((sum, batch) => sum + batch.receivedQty, 0);
+        return totalReceived <= item.receivable;
     });
 }, {
-    message: "Received quantity cannot exceed the receivable quantity for an item.",
+    message: "Total received quantity for an item cannot exceed the receivable quantity.",
     path: ["items"],
 });
 
@@ -145,17 +146,14 @@ export function GrnForm() {
                  const newItems = poData.items.map(item => {
                     const product = productsData.find(p => p.id === item.product_id);
                     const variant = variantsData.find(v => v.id === item.product_variant_id);
-                    const receivableQty = parseFloat(String(item.quantity)); // Ensure this is a number
-                    const unitRate = parseFloat(String(item.order_rate)); // Ensure this is a number
                     return {
                         sku: variant?.sku || `SKU-${item.product_variant_id}`,
                         productName: product?.name || 'Unknown Product',
-                        unit: product?.stock_unit || 'Nos',
-                        stock: 0, // In a real app, this would be fetched
-                        receivable: receivableQty,
-                        receivedQty: receivableQty, // Default to receivable
-                        unitRate: unitRate,
-                        amount: receivableQty * unitRate,
+                        receivable: parseFloat(String(item.quantity)),
+                        batches: [{
+                            batchNumber: '',
+                            receivedQty: parseFloat(String(item.quantity)),
+                        }]
                     }
                  });
                  replace(newItems);
@@ -180,17 +178,7 @@ export function GrnForm() {
     });
     router.push('/purchasing/grn');
   }
-
-  const watchedItems = form.watch("items");
-
-  const subTotal = watchedItems.reduce((acc, item) => {
-    const receivedQty = item.receivedQty || 0;
-    return acc + (receivedQty * item.unitRate);
-  }, 0);
-  const taxAmount = subTotal * 0.15; // Assuming 15% tax
-  const grandTotal = subTotal + taxAmount;
-
-
+  
   if (isLoading) {
     return <Card><CardContent><Skeleton className="h-96 w-full" /></CardContent></Card>
   }
@@ -221,7 +209,7 @@ export function GrnForm() {
                         <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
                         <Button type="submit" className="w-full">
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Process
+                            Process GRN
                         </Button>
                     </div>
                 </div>
@@ -347,125 +335,147 @@ export function GrnForm() {
                     )}
                 />
             </CardContent>
-            <CardContent>
-                 <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[25%]">Item/Service</TableHead>
-                            <TableHead>Unit</TableHead>
-                            <TableHead>Stock</TableHead>
-                            <TableHead>Receivable</TableHead>
-                            <TableHead>Received Qty</TableHead>
-                            <TableHead>Mf. Date</TableHead>
-                            <TableHead>Exp. Date</TableHead>
-                            <TableHead>Unit Rate</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                         {fields.map((item, index) => {
-                            const unitRate = item.unitRate || 0;
-                            const receivedQty = watchedItems[index]?.receivedQty || 0;
-                            const amount = unitRate * receivedQty;
-                            
-                             return (
-                                <TableRow key={item.id}>
-                                    <TableCell>{item.productName}</TableCell>
-                                    <TableCell>{item.unit}</TableCell>
-                                    <TableCell>{item.stock}</TableCell>
-                                    <TableCell>{item.receivable.toFixed(3)}</TableCell>
-                                    <TableCell>
-                                        <FormField
-                                            control={form.control}
-                                            name={`items.${index}.receivedQty`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormControl>
-                                                        <Input type="number" {...field} className="min-w-[100px]" />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </TableCell>
-                                     <TableCell>
-                                        <FormField
-                                            control={form.control}
-                                            name={`items.${index}.mfgDate`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button variant={"outline"} className={cn("w-[150px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
-                                                    </PopoverContent>
-                                                </Popover>
-                                                <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <FormField
-                                            control={form.control}
-                                            name={`items.${index}.expDate`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                    <FormControl>
-                                                        <Button variant={"outline"} className={cn("w-[150px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                        </Button>
-                                                    </FormControl>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
-                                                    </PopoverContent>
-                                                </Popover>
-                                                <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </TableCell>
-                                    <TableCell className="text-right">${item.unitRate.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">${amount.toFixed(2)}</TableCell>
-                                </TableRow>
-                             )
-                         })}
-                    </TableBody>
-                    <TableFooter>
-                        <TableRow>
-                            <TableCell colSpan={8} className="text-right">Sub Total</TableCell>
-                            <TableCell className="text-right">${subTotal.toFixed(2)}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                            <TableCell colSpan={8} className="text-right">Tax (15%)</TableCell>
-                            <TableCell className="text-right">${taxAmount.toFixed(2)}</TableCell>
-                        </TableRow>
-                         <TableRow>
-                            <TableCell colSpan={8} className="text-right font-bold">Grand Total</TableCell>
-                            <TableCell className="text-right font-bold">${grandTotal.toFixed(2)}</TableCell>
-                        </TableRow>
-                    </TableFooter>
-                </Table>
-            </CardContent>
-            <CardFooter>
-                 <div className="space-y-2">
-                    <Label>Remark</Label>
-                    <Textarea placeholder="Add Comment here" {...form.register('remark')} />
-                </div>
-            </CardFooter>
         </Card>
+
+        <div className="space-y-4">
+          {fields.map((item, index) => (
+             <BatchDetailsFieldArray key={item.id} form={form} itemIndex={index} />
+          ))}
+        </div>
       </form>
     </Form>
   );
 }
+
+// Helper component to manage nested batches for a single item
+function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: number }) {
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: `items.${itemIndex}.batches`,
+    });
+
+    const item = form.watch(`items.${itemIndex}`);
+    const totalReceived = item.batches.reduce((sum: number, batch: any) => sum + Number(batch.receivedQty || 0), 0);
+    const hasError = totalReceived > item.receivable;
+
+    return (
+        <Card>
+            <CardHeader className="bg-muted/50">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <CardTitle className="text-lg">{item.productName}</CardTitle>
+                        <CardDescription>Receivable: {item.receivable} | Received: {totalReceived}</CardDescription>
+                    </div>
+                     {hasError && (
+                        <span className="text-sm font-medium text-destructive">
+                            Received quantity exceeds receivable quantity!
+                        </span>
+                    )}
+                </div>
+            </CardHeader>
+            <CardContent className="pt-4">
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Batch No.</TableHead>
+                            <TableHead>MFD</TableHead>
+                            <TableHead>EXP</TableHead>
+                            <TableHead className="w-[150px]">Received Qty</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {fields.map((batch, batchIndex) => (
+                             <TableRow key={batch.id}>
+                                <TableCell>
+                                    <FormField
+                                        control={form.control}
+                                        name={`items.${itemIndex}.batches.${batchIndex}.batchNumber`}
+                                        render={({ field }) => (
+                                            <FormItem><FormControl><Input placeholder="Batch ABC" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormField
+                                        control={form.control}
+                                        name={`items.${itemIndex}.batches.${batchIndex}.mfgDate`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                     <FormField
+                                        control={form.control}
+                                        name={`items.${itemIndex}.batches.${batchIndex}.expDate`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                <FormControl>
+                                                    <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                    </Button>
+                                                </FormControl>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
+                                                </PopoverContent>
+                                            </Popover>
+                                            <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormField
+                                        control={form.control}
+                                        name={`items.${itemIndex}.batches.${batchIndex}.receivedQty`}
+                                        render={({ field }) => (
+                                            <FormItem><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                        )}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    {fields.length > 1 && (
+                                        <Button variant="ghost" size="icon" onClick={() => remove(batchIndex)}>
+                                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                    )}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+            <CardFooter>
+                 <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ batchNumber: '', receivedQty: 0 })}
+                >
+                    <Plus className="mr-2 h-4 w-4" /> Add Batch
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
+

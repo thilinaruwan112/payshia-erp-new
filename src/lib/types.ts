@@ -1,5 +1,18 @@
 
 
+export type GrnBatch = {
+    batchNumber: string;
+    mfgDate?: Date;
+    expDate?: Date;
+    receivedQty: number;
+}
+
+export type GrnItem = {
+    sku: string;
+    productName: string;
+    receivable: number;
+    batches: GrnBatch[];
+}
 
 export type ProductVariant = {
   id: string;
@@ -138,18 +151,6 @@ export type PurchaseOrderItem = {
     variant_sku?: string;
     total_cost?: number;
 };
-
-export type GrnItem = {
-    sku: string;
-    productName: string;
-    poQuantity: number;
-    batches: {
-        batchNumber: string;
-        mfgDate?: Date;
-        expDate?: Date;
-        receivedQty: number;
-    }[];
-}
 
 export type GoodsReceivedNote = {
     id: string;
