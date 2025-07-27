@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { PurchaseOrder, Supplier, Product } from "@/lib/types";
+import type { PurchaseOrder, Supplier, Product, ProductVariant } from "@/lib/types";
 import { CalendarIcon, PlusCircle, Trash2, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -123,7 +123,7 @@ export function GrnForm() {
                  const productsResponse = await fetch(`https://server-erp.payshia.com/products`);
                  const variantsResponse = await fetch(`https://server-erp.payshia.com/product-variants`);
                  const products: Product[] = await productsResponse.json();
-                 const variants: any[] = await variantsResponse.json();
+                 const variants: ProductVariant[] = await variantsResponse.json();
 
                  const newItems = poData.items.map(item => {
                     const product = products.find(p => p.id === item.product_id);
