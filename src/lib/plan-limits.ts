@@ -38,7 +38,7 @@ export async function checkPlanLimit(type: LimitType): Promise<{
       // Usage should be fetched from the API on the calling page
       break;
     case 'locations':
-      limit = currentPlan.limits.locations;
+       limit = currentPlan.limits.locations;
        try {
         const response = await fetch('https://server-erp.payshia.com/locations');
         const data: Location[] = await response.json();
