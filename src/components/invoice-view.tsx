@@ -2,13 +2,13 @@
 'use client'
 
 import { type Invoice, type User, type Product, type ProductVariant } from '@/lib/types';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
-import { Printer } from 'lucide-react';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -34,6 +34,7 @@ const getStatusColor = (status: Invoice['invoice_status']) => {
 
 
 export function InvoiceView({ id }: InvoiceViewProps) {
+  const router = useRouter();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -115,6 +116,10 @@ export function InvoiceView({ id }: InvoiceViewProps) {
             </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Button variant="outline" onClick={() => router.back()}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+              </Button>
               <Button variant="outline" onClick={() => window.print()}>
                   <Printer className="mr-2 h-4 w-4" />
                   Print
