@@ -1,6 +1,6 @@
 
-import { InvoiceView } from '@/components/invoice-view';
+import { InvoicePrintView } from '@/components/invoice-print-view';
 
 export default async function PrintInvoicePage({ params }: { params: { id: string } }) {
-  return <InvoiceView id={params.id} isPrintView={true} />;
+  return <InvoicePrintView id={params.id} />;
 }
