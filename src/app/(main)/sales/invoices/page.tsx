@@ -52,7 +52,7 @@ const getStatusColor = (status: Invoice['invoice_status']) => {
 
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [customers, setCustomers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -60,18 +60,18 @@ export default function InvoicesPage() {
     async function fetchData() {
         setIsLoading(true);
         try {
-            const [invoiceResponse, userResponse] = await Promise.all([
-                fetch('https://server-erp.payshia.com/invoices'),
-                fetch('https://server-erp.payshia.com/users'), // Assuming a users endpoint
+            const [invoiceResponse, customerResponse] = await Promise.all([
+                fetch('https://server-erp.payshia.com/invoices?company_id=1'),
+                fetch('https://server-erp.payshia.com/customers'),
             ]);
 
             if (!invoiceResponse.ok) throw new Error('Failed to fetch invoices');
-            if (!userResponse.ok) throw new Error('Failed to fetch users');
+            if (!customerResponse.ok) throw new Error('Failed to fetch customers');
 
             const invoiceData = await invoiceResponse.json();
-            const userData = await userResponse.json();
+            const customerData = await customerResponse.json();
             setInvoices(invoiceData.invoices || []);
-            setUsers(userData.users || []); // Assuming the API returns { users: [] }
+            setCustomers(customerData || []);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
             toast({
@@ -87,7 +87,8 @@ export default function InvoicesPage() {
   }, [toast]);
   
   const getCustomerName = (customerId: string) => {
-    return users.find(u => u.id === customerId)?.name || customerId;
+    const customer = customers.find(c => c.customer_id === customerId);
+    return customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : `ID: ${customerId}`;
   }
 
   return (
