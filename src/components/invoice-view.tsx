@@ -92,7 +92,7 @@ export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
 
   useEffect(() => {
     if (isPrintView && !isLoading && invoice) {
-        window.print();
+        setTimeout(() => window.print(), 500); // Small delay to ensure styles apply
     }
   }, [isPrintView, isLoading, invoice]);
 
@@ -113,7 +113,7 @@ export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 print:text-black">
        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
@@ -137,7 +137,7 @@ export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
           </div>
         </div>
 
-        <Card>
+        <Card className="print-card-styles">
             <CardHeader>
                 <CardTitle>Details</CardTitle>
             </CardHeader>
@@ -165,7 +165,7 @@ export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
              </CardContent>
         </Card>
 
-         <Card>
+         <Card className="print-card-styles">
             <CardHeader>
                 <CardTitle>Items</CardTitle>
                 <CardDescription>List of products included in this invoice.</CardDescription>
