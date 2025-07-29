@@ -13,8 +13,8 @@ export default function PrintLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="print:bg-white print:text-black">
-        <main className="p-8">
+      <body className="print:bg-white print:text-black bg-gray-100 dark:bg-gray-800">
+        <main className="flex justify-center p-8">
             {children}
         </main>
       </body>

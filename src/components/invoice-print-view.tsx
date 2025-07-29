@@ -84,7 +84,7 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
   const discountPercentage = parseFloat(invoice.discount_percentage) || 0;
 
   return (
-    <div className="bg-white text-black font-sans text-sm p-4">
+    <div className="bg-white text-black font-sans text-sm p-4 w-[210mm] min-h-[297mm] shadow-lg print:shadow-none">
       <div className="w-full h-full border border-gray-300 p-4">
         {/* Header */}
         <div className="flex justify-between items-start mb-6">
