@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, FileText } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -131,7 +131,19 @@ export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
                <Button asChild variant="outline">
                     <Link href={`/sales/invoices/${id}/print`} target="_blank">
                         <Printer className="mr-2 h-4 w-4" />
-                        Print
+                        Print Invoice
+                    </Link>
+              </Button>
+               <Button asChild variant="outline">
+                    <Link href={`/sales/invoices/${id}/dispatch-note`} target="_blank">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Dispatch Note
+                    </Link>
+              </Button>
+               <Button asChild variant="outline">
+                    <Link href={`/sales/invoices/${id}/gate-pass`} target="_blank">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Gate Pass
                     </Link>
               </Button>
           </div>
