@@ -95,11 +95,16 @@ export type User = {
   id: string;
   name: string;
   role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer';
-  avatar: string;
+  avatar?: string;
   loyaltyPoints?: number;
   email?: string;
   phone?: string;
   address?: string;
+  // Fields from the new customer API
+  customer_id: string;
+  customer_first_name: string;
+  customer_last_name: string;
+  phone_number: string;
 };
 
 export type Collection = {

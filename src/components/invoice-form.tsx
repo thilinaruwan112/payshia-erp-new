@@ -170,7 +170,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
         grand_total: grandTotal,
         discount_amount: totalDiscountAmount,
         discount_percentage: subtotal > 0 ? (totalDiscountAmount / subtotal) * 100 : 0,
-        customer_code: data.customerId, // Assuming customerId can be used as customer_code
+        customer_code: data.customerId,
         service_charge: serviceCharge,
         tendered_amount: data.status === 'Paid' ? grandTotal : 0, // Assume full payment if status is paid
         close_type: "Cash", // Hardcoded as per sample
@@ -192,7 +192,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
             item_price: item.unitPrice,
             item_discount: item.discount || 0,
             quantity: item.quantity,
-            customer_id: parseInt(data.customerId.replace('user-', '')),
+            customer_id: parseInt(data.customerId),
             table_id: 0,
             cost_price: item.costPrice,
             is_active: 1,
@@ -305,7 +305,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                                     </FormControl>
                                     <SelectContent>
                                         {customers.map(c => (
-                                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
