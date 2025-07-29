@@ -77,13 +77,13 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
   const { currentLocation } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const allSkus = products.flatMap(p => p.variants.map(v => ({
+  const allSkus = products.flatMap(p => (p.variants || []).map(v => ({
       label: `${p.name} (${v.sku})`,
       value: v.sku,
       productId: p.id,
-      sellingPrice: p.price,
-      wholesalePrice: p.wholesalePrice || p.price,
-      costPrice: p.costPrice || 0,
+      sellingPrice: parseFloat(String(p.price)),
+      wholesalePrice: p.wholesale_price ? parseFloat(String(p.wholesale_price)) : parseFloat(String(p.price)),
+      costPrice: p.cost_price ? parseFloat(String(p.cost_price)) : 0,
   })));
   
   const defaultValues: Partial<InvoiceFormValues> = {
