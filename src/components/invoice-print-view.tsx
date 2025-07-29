@@ -6,40 +6,16 @@ import { notFound, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from './ui/button';
-import { ArrowLeft, Printer } from 'lucide-react';
-import { Badge } from './ui/badge';
-import { cn } from '@/lib/utils';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import Link from 'next/link';
+import { format } from 'date-fns';
 
 interface InvoicePrintViewProps {
     id: string;
 }
 
-const getStatusColor = (status: Invoice['invoice_status']) => {
-  switch (status) {
-    case 'Draft':
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    case 'Sent':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-    case 'Paid':
-      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-    case 'Overdue':
-      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-  }
-};
-
-
 export function InvoicePrintView({ id }: InvoicePrintViewProps) {
-  const router = useRouter();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -48,7 +24,6 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
       if (!id) return;
       setIsLoading(true);
       try {
-        // Assume an endpoint for a single invoice exists
         const invoiceResponse = await fetch(`https://server-erp.payshia.com/invoices/${id}`);
         if (!invoiceResponse.ok) {
            if (invoiceResponse.status === 404) notFound();
@@ -57,24 +32,19 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
         const invoiceData: Invoice = await invoiceResponse.json();
         setInvoice(invoiceData);
 
-        // Fetch all necessary related data
-        const [customersResponse, productsResponse, variantsResponse] = await Promise.all([
+        const [customersResponse, productsResponse] = await Promise.all([
            fetch(`https://server-erp.payshia.com/customers`),
            fetch('https://server-erp.payshia.com/products'),
-           fetch('https://server-erp.payshia.com/product-variants'),
         ]);
 
         if (!customersResponse.ok) throw new Error('Failed to fetch customers');
         if (!productsResponse.ok) throw new Error('Failed to fetch products');
-        if (!variantsResponse.ok) throw new Error('Failed to fetch variants');
         
         const customersData: User[] = await customersResponse.json();
         const productsData: Product[] = await productsResponse.json();
-        const variantsData: ProductVariant[] = await variantsResponse.json();
 
         setCustomer(customersData.find(c => c.customer_id === invoiceData.customer_code) || null);
         setProducts(productsData);
-        setVariants(variantsData);
 
       } catch (error) {
         toast({
@@ -91,7 +61,7 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
 
   useEffect(() => {
     if (!isLoading && invoice) {
-        setTimeout(() => window.print(), 500); // Small delay to ensure styles apply
+        setTimeout(() => window.print(), 500);
     }
   }, [isLoading, invoice]);
 
@@ -110,134 +80,147 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
     product_name: getProductName(item.product_id),
     total_cost: parseFloat(String(item.item_price)) * item.quantity,
   }));
+  
+  const discountPercentage = parseFloat(invoice.discount_percentage) || 0;
 
   return (
-    <div className="space-y-6 print:text-black">
-        <Card className="print-card-styles">
-            <CardHeader>
-                <CardTitle>Details</CardTitle>
-            </CardHeader>
-             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-6">
-                <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Customer</p>
-                    <p className="font-semibold">{customer?.customer_first_name} {customer?.customer_last_name}</p>
+    <div className="bg-white text-black font-sans text-sm">
+        <div className="p-8">
+            {/* Header */}
+            <div className="flex justify-between items-start mb-6">
+                <div className="text-xs">
+                    <h1 className="text-xl font-bold mb-1">Thilina Products</h1>
+                    <p>#455, 533A3, Pelmadulla</p>
+                    <p>Rathnapura, 70070</p>
+                    <p>Tel: 0770481363 / 0721185012</p>
+                    <p>Email: info@payshia.com</p>
+                    <p>Web: www.payshia.com</p>
                 </div>
-                 <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Status</p>
-                    <p>
-                        <Badge variant="secondary" className={cn(getStatusColor(invoice.invoice_status))}>
-                           {invoice.invoice_status}
-                        </Badge>
-                    </p>
+                <div className="text-right">
+                    <h2 className="text-3xl font-bold mb-4">INVOICE</h2>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                       <span className="font-bold">Date</span>
+                       <span>{format(new Date(invoice.current_time), "dd/MM/yyyy HH:mm:ss")}</span>
+                       <span className="font-bold">INV Number</span>
+                       <span>{invoice.invoice_number}</span>
+                       <span className="font-bold">Location</span>
+                       <span>VILLA HOTEL</span>
+                    </div>
                 </div>
-                 <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Subtotal</p>
-                    <p className="font-semibold font-mono">${parseFloat(invoice.inv_amount).toFixed(2)}</p>
-                </div>
-                 <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Total Discount</p>
-                    <p className="font-semibold font-mono text-destructive">-${parseFloat(invoice.discount_amount).toFixed(2)}</p>
-                </div>
-             </CardContent>
-        </Card>
+            </div>
 
-         <Card className="print-card-styles">
-            <CardHeader>
-                <CardTitle>Items</CardTitle>
-                <CardDescription>List of products included in this invoice.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Product</TableHead>
-                            <TableHead className="text-right">Quantity</TableHead>
-                            <TableHead className="text-right">Unit Price</TableHead>
-                            <TableHead className="text-right">Discount</TableHead>
-                            <TableHead className="text-right">Total</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {invoiceItems?.map((item, index) => (
-                           <TableRow key={index}>
-                                <TableCell>{item.product_name}</TableCell>
-                                <TableCell className="text-right">{item.quantity}</TableCell>
-                                <TableCell className="text-right font-mono">${parseFloat(String(item.item_price)).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono text-destructive">-${parseFloat(String(item.item_discount)).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono">${item.total_cost.toFixed(2)}</TableCell>
-                           </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </CardContent>
-             <CardFooter className="flex justify-end font-bold text-lg">
-                <div className="w-full max-w-sm space-y-2">
-                    <div className="flex justify-between">
-                        <span>Subtotal</span>
-                        <span className="font-mono">${parseFloat(invoice.inv_amount).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-destructive">
-                        <span>Total Discount</span>
-                        <span className="font-mono">-${parseFloat(invoice.discount_amount).toFixed(2)}</span>
-                    </div>
-                     <div className="flex justify-between">
-                        <span>Service Charge</span>
-                        <span className="font-mono">${parseFloat(invoice.service_charge).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
-                        <span>Grand Total</span>
-                        <span className="font-mono">${parseFloat(invoice.grand_total).toFixed(2)}</span>
+            {/* Customer Info */}
+            <div className="mb-6">
+                <div className="bg-blue-900 text-white font-bold p-1 px-2 text-sm">
+                    Customer
+                </div>
+                 <div className="text-xs mt-2">
+                    <p className="font-bold">{customer?.customer_first_name} {customer?.customer_last_name}</p>
+                    <p>{customer?.address_line1}, {customer?.address_line2}, {customer?.city_id}</p>
+                    <p>Tel: {customer?.phone_number}</p>
+                    <p>Email: {customer?.email_address}</p>
+                </div>
+            </div>
+
+            {/* Items Table */}
+            <table className="w-full text-xs border-collapse">
+                <thead>
+                    <tr className="bg-blue-900 text-white">
+                        <th className="p-1 text-left border border-gray-400">#</th>
+                        <th className="p-1 text-left border border-gray-400">Description</th>
+                        <th className="p-1 text-left border border-gray-400">Unit</th>
+                        <th className="p-1 text-right border border-gray-400">Qty</th>
+                        <th className="p-1 text-right border border-gray-400">Unit Price</th>
+                        <th className="p-1 text-right border border-gray-400">Discount</th>
+                        <th className="p-1 text-right border border-gray-400">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {invoiceItems?.map((item, index) => (
+                         <tr key={index} className="odd:bg-white even:bg-gray-100">
+                             <td className="p-1 border-r border-gray-400 text-center">{index + 1}</td>
+                             <td className="p-1 border-r border-gray-400">{item.product_name}</td>
+                             <td className="p-1 border-r border-gray-400">{item.order_unit || 'Nos'}</td>
+                             <td className="p-1 border-r border-gray-400 text-right">{item.quantity.toFixed(2)}</td>
+                             <td className="p-1 border-r border-gray-400 text-right">{parseFloat(String(item.item_price)).toFixed(2)}</td>
+                             <td className="p-1 border-r border-gray-400 text-right">{parseFloat(String(item.item_discount)).toFixed(2)}</td>
+                             <td className="p-1 text-right">{item.total_cost.toFixed(2)}</td>
+                         </tr>
+                    ))}
+                    {/* Add empty rows to fill page */}
+                     {Array.from({ length: 10 - (invoiceItems?.length || 0) }).map((_, i) => (
+                        <tr key={`empty-${i}`} className="odd:bg-white even:bg-gray-100 h-6">
+                            <td className="p-1 border-r border-gray-400"></td>
+                            <td className="p-1 border-r border-gray-400"></td>
+                            <td className="p-1 border-r border-gray-400"></td>
+                            <td className="p-1 border-r border-gray-400"></td>
+                            <td className="p-1 border-r border-gray-400"></td>
+                            <td className="p-1 border-r border-gray-400"></td>
+                            <td className="p-1"></td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+
+            {/* Totals */}
+            <div className="flex justify-between mt-1">
+                <div className="w-[60%] text-xs">
+                    <div className="bg-green-100 p-1 font-bold border-l border-r border-b border-gray-400">
+                        Comments & Special Instructions
                     </div>
                 </div>
-            </CardFooter>
-         </Card>
+                <div className="w-[40%] text-xs">
+                    <div className="grid grid-cols-2 p-1">
+                        <span className="font-bold">Sub Total</span>
+                        <span className="text-right">{parseFloat(invoice.inv_amount).toFixed(2)}</span>
+                    </div>
+                    <div className="grid grid-cols-2 p-1">
+                        <span className="font-bold">Discount ({discountPercentage.toFixed(2)}%)</span>
+                        <span className="text-right">{parseFloat(invoice.discount_amount).toFixed(2)}</span>
+                    </div>
+                     <div className="grid grid-cols-2 p-1">
+                        <span className="font-bold">Charge</span>
+                        <span className="text-right">{parseFloat(invoice.service_charge).toFixed(2)}</span>
+                    </div>
+                     <div className="grid grid-cols-2 p-1">
+                        <span className="font-bold">Shipping</span>
+                        <span className="text-right">0.00</span>
+                    </div>
+                     <div className="grid grid-cols-2 p-1">
+                        <span className="font-bold">Other</span>
+                        <span className="text-right">0.00</span>
+                    </div>
+                    <div className="grid grid-cols-2 p-1 bg-gray-200 border-t-2 border-black mt-1">
+                        <span className="font-bold">Total</span>
+                        <span className="font-bold text-right">{parseFloat(invoice.grand_total).toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-between items-center text-xs mt-20">
+                <div>
+                    <p>.......................................</p>
+                    <p>Checked by</p>
+                </div>
+                 <div>
+                    <p>.......................................</p>
+                    <p>Authorized by</p>
+                </div>
+                 <div>
+                    <p>.......................................</p>
+                    <p>Received by</p>
+                </div>
+            </div>
+        </div>
     </div>
   );
 }
 
 function InvoiceViewSkeleton() {
   return (
-    <div className="space-y-6">
-       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <Skeleton className="h-9 w-64" />
-            <Skeleton className="h-4 w-48 mt-2" />
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Skeleton className="h-10 w-24" />
-             <Skeleton className="h-10 w-24" />
-          </div>
-        </div>
-        <Card>
-            <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-5 w-32" /></div>
-                <div className="space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-6 w-24 rounded-full" /></div>
-                <div className="space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-5 w-24" /></div>
-                <div className="space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-5 w-20" /></div>
-             </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-4 w-64 mt-2" />
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-2">
-                    {Array.from({length: 3}).map((_, i) => (
-                        <div key={i} className="flex justify-between items-center py-2">
-                            <div className="flex-1 space-y-2"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-3 w-1/4" /></div>
-                            <Skeleton className="h-4 w-12" />
-                            <Skeleton className="h-4 w-16" />
-                            <Skeleton className="h-4 w-20" />
-                        </div>
-                    ))}
-                </div>
-            </CardContent>
-             <CardFooter className="flex justify-end">
-                <Skeleton className="h-8 w-48" />
-            </CardFooter>
-         </Card>
+    <div className="p-8">
+      <Skeleton className="h-[800px] w-full" />
     </div>
   );
 }
