@@ -1,5 +1,7 @@
 
 
+'use client'
+
 import {
   Card,
   CardContent,
@@ -17,7 +19,6 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { invoices } from '@/lib/data';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -28,9 +29,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { Invoice } from '@/lib/types';
+import type { Invoice, User } from '@/lib/types';
+import { useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const getStatusColor = (status: Invoice['status']) => {
+const getStatusColor = (status: Invoice['invoice_status']) => {
   switch (status) {
     case 'Draft':
       return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
@@ -47,6 +51,45 @@ const getStatusColor = (status: Invoice['status']) => {
 
 
 export default function InvoicesPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchData() {
+        setIsLoading(true);
+        try {
+            const [invoiceResponse, userResponse] = await Promise.all([
+                fetch('https://server-erp.payshia.com/invoices'),
+                fetch('https://server-erp.payshia.com/users'), // Assuming a users endpoint
+            ]);
+
+            if (!invoiceResponse.ok) throw new Error('Failed to fetch invoices');
+            if (!userResponse.ok) throw new Error('Failed to fetch users');
+
+            const invoiceData = await invoiceResponse.json();
+            const userData = await userResponse.json();
+            setInvoices(invoiceData.invoices || []);
+            setUsers(userData.users || []); // Assuming the API returns { users: [] }
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast({
+                variant: 'destructive',
+                title: 'Failed to load data',
+                description: errorMessage
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchData();
+  }, [toast]);
+  
+  const getCustomerName = (customerId: string) => {
+    return users.find(u => u.id === customerId)?.name || customerId;
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -79,7 +122,6 @@ export default function InvoicesPage() {
                 <TableHead>Customer</TableHead>
                 <TableHead className="hidden sm:table-cell">Status</TableHead>
                 <TableHead className="hidden md:table-cell">Date</TableHead>
-                <TableHead className="hidden md:table-cell">Due Date</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -87,35 +129,54 @@ export default function InvoicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoices.map((invoice) => (
-                <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">{invoice.id}</TableCell>
-                  <TableCell>{invoice.customerName}</TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                     <Badge variant="secondary" className={cn(getStatusColor(invoice.status))}>
-                      {invoice.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">{new Date(invoice.date).toLocaleDateString()}</TableCell>
-                  <TableCell className="hidden md:table-cell">{new Date(invoice.dueDate).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right font-mono">${invoice.total.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Send Reminder</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                    </TableRow>
+                ))
+              ) : (
+                invoices.map((invoice) => (
+                  <TableRow key={invoice.id}>
+                    <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                    <TableCell>{getCustomerName(invoice.customer_code)}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                       <Badge variant="secondary" className={cn(getStatusColor(invoice.invoice_status))}>
+                        {invoice.invoice_status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">{new Date(invoice.invoice_date).toLocaleDateString()}</TableCell>
+                    <TableCell className="text-right font-mono">${parseFloat(invoice.grand_total).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem>Send Reminder</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+               {!isLoading && invoices.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                        No invoices found.
+                    </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

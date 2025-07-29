@@ -253,24 +253,48 @@ export type FixedAsset = {
 };
 
 export type InvoiceItem = {
-  sku: string;
-  productName: string;
-  quantity: number;
-  unitPrice: number;
-  discount?: number;
-  total: number;
+    id?: string;
+    user_id?: number;
+    product_id: number;
+    item_price: number;
+    item_discount: number;
+    quantity: number;
+    customer_id?: number;
+    table_id?: number;
+    cost_price: number;
+    is_active?: number;
+    hold_status?: number;
+    printed_status?: number;
+    // Client-side only
+    sku?: string;
+    productName?: string;
 };
 
 export type Invoice = {
-  id: string;
-  orderId?: string;
-  customerName: string;
-  date: string;
-  dueDate: string;
-  status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
-  total: number;
-  discount: number;
-  items: InvoiceItem[];
+    id: string;
+    invoice_number: string;
+    invoice_date: string;
+    inv_amount: string;
+    grand_total: string;
+    discount_amount: string;
+    discount_percentage: string;
+    customer_code: string;
+    service_charge: string;
+    tendered_amount: string;
+    close_type: string;
+    invoice_status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+    current_time: string;
+    location_id: string;
+    table_id: string;
+    order_ready_status: string;
+    created_by: string;
+    is_active: string;
+    steward_id: string;
+    cost_value: string;
+    remark: string | null;
+    ref_hold: string | null;
+    company_id: string;
+    items?: InvoiceItem[];
 };
 
 export type PaymentReceipt = {
