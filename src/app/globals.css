@@ -87,38 +87,39 @@ body {
   }
 }
 
+@page {
+  size: A4;
+  margin: 0;
+}
+
 @media print {
-  body {
+  body, html {
     background-color: white !important;
     color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
+
   .print-only {
     display: block !important;
   }
+
   .no-print, .print\:hidden {
     display: none !important;
   }
   
+  * {
+    background-color: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
   .print\:bg-white {
     background-color: white !important;
   }
 
   .print\:text-black {
     color: black !important;
-  }
-
-  * {
-    -webkit-print-color-adjust: exact !important;
-    color-adjust: exact !important;
-    background-color: transparent !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-
-  /* Override card styles for printing */
-  .print-card-styles {
-    border: 1px solid #ccc !important;
-    box-shadow: none !important;
-    background-color: white !important;
   }
 }
