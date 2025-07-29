@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import {
@@ -70,7 +69,7 @@ export default function InvoicesPage() {
 
             const invoiceData = await invoiceResponse.json();
             const customerData = await customerResponse.json();
-            setInvoices(invoiceData.invoices || []);
+            setInvoices(invoiceData || []);
             setCustomers(customerData || []);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
