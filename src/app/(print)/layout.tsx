@@ -13,7 +13,7 @@ export default function PrintLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="print:bg-white">
+      <body className="print:bg-white print:text-black">
         <main className="p-8">
             {children}
         </main>
