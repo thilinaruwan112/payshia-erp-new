@@ -12,9 +12,11 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import Link from 'next/link';
 
 interface InvoiceViewProps {
     id: string;
+    isPrintView: boolean;
 }
 
 const getStatusColor = (status: Invoice['invoice_status']) => {
@@ -33,7 +35,7 @@ const getStatusColor = (status: Invoice['invoice_status']) => {
 };
 
 
-export function InvoiceView({ id }: InvoiceViewProps) {
+export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
   const router = useRouter();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
@@ -88,6 +90,12 @@ export function InvoiceView({ id }: InvoiceViewProps) {
     fetchData();
   }, [id, toast]);
 
+  useEffect(() => {
+    if (isPrintView && !isLoading && invoice) {
+        window.print();
+    }
+  }, [isPrintView, isLoading, invoice]);
+
   const getProductName = (productId: number) => products.find(p => p.id === String(productId))?.name || 'Unknown Product';
   
   if (isLoading) {
@@ -106,7 +114,7 @@ export function InvoiceView({ id }: InvoiceViewProps) {
 
   return (
     <div className="space-y-6">
-       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
               Invoice: {invoice.invoice_number}
@@ -120,9 +128,11 @@ export function InvoiceView({ id }: InvoiceViewProps) {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
               </Button>
-              <Button variant="outline" onClick={() => window.print()}>
-                  <Printer className="mr-2 h-4 w-4" />
-                  Print
+               <Button asChild variant="outline">
+                    <Link href={`/sales/invoices/${id}/print`} target="_blank">
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print
+                    </Link>
               </Button>
           </div>
         </div>
@@ -219,6 +229,7 @@ function InvoiceViewSkeleton() {
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Skeleton className="h-10 w-24" />
+             <Skeleton className="h-10 w-24" />
           </div>
         </div>
         <Card>
