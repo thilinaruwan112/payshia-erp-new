@@ -14,11 +14,12 @@ async function getData(): Promise<{ products: Product[], customers: User[], orde
             throw new Error('Failed to fetch initial data');
         }
 
-        const products = await productsRes.json();
+        const productsData = await productsRes.json();
         const users = await usersRes.json();
         const orders = await ordersRes.json();
         
         const customers = users.users.filter((u: User) => u.role === 'Customer');
+        const products = productsData.products || [];
 
         return { products, customers, orders };
     } catch (error) {
