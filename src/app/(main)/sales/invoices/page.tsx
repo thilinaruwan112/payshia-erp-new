@@ -162,7 +162,9 @@ export default function InvoicesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/sales/invoices/${invoice.id}`}>View Details</Link>
+                          </DropdownMenuItem>
                           <DropdownMenuItem>Send Reminder</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
