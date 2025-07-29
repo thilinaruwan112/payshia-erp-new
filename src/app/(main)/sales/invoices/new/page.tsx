@@ -15,15 +15,21 @@ async function getData(): Promise<{ products: Product[], customers: User[], orde
             throw new Error('Failed to fetch initial data');
         }
 
-        const productsData: Product[] = await productsRes.json();
+        const productsData = await productsRes.json();
         const usersData = await usersRes.json();
-        const orders: Order[] = await ordersRes.json();
-        const variants: ProductVariant[] = await variantsRes.json();
+        const ordersData = await ordersRes.json();
+        const variantsData = await variantsRes.json();
         
-        const customers = usersData.users.filter((u: User) => u.role === 'Customer');
+        // The API might be wrapping the array in an object, e.g. { products: [] }
+        const products: Product[] = Array.isArray(productsData) ? productsData : productsData.products || [];
+        const users: User[] = Array.isArray(usersData) ? usersData : usersData.users || [];
+        const orders: Order[] = Array.isArray(ordersData) ? ordersData : ordersData.orders || [];
+        const variants: ProductVariant[] = Array.isArray(variantsData) ? variantsData : variantsData.variants || [];
+
+        const customers = users.filter((u: User) => u.role === 'Customer');
         
         // Associate variants with their parent products
-        const productsWithVariants = productsData.map(product => ({
+        const productsWithVariants = products.map(product => ({
             ...product,
             variants: variants.filter(v => v.product_id === product.id)
         }));
@@ -37,6 +43,6 @@ async function getData(): Promise<{ products: Product[], customers: User[], orde
 
 
 export default async function NewInvoicePage() {
-  const { products, customers, orders } = await getData();
-  return <InvoiceForm products={products} customers={customers} orders={orders} />;
+  const data = await getData();
+  return <InvoiceForm {...data} />;
 }

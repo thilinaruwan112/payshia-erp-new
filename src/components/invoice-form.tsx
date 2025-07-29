@@ -457,7 +457,8 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                     </TableHeader>
                     <TableBody>
                          {fields.map((field, index) => {
-                            const selectedSku = allSkus.find(s => s.value === watchedItems[index]?.sku);
+                            const selectedSku = watchedItems[index]?.sku;
+                            const product = products.find(p => p.variants.some(v => v.sku === selectedSku));
                             const unitPrice = watchedItems[index]?.unitPrice || 0;
                             const quantity = watchedItems[index]?.quantity || 0;
                             const discount = watchedItems[index]?.discount || 0;
