@@ -9,12 +9,15 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
-import { ArrowLeft, Printer, FileText } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Download } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import Link from 'next/link';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 interface InvoiceViewProps {
     id: string;
@@ -44,6 +47,10 @@ export function InvoiceView({ id }: InvoiceViewProps) {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [isVehicleDialogVisible, setVehicleDialogVisible] = useState(false);
+  const [vehicleNumber, setVehicleNumber] = useState("");
+  const [printType, setPrintType] = useState<'dispatch' | 'gatepass' | null>(null);
+
 
   useEffect(() => {
     async function fetchData() {
@@ -113,7 +120,19 @@ export function InvoiceView({ id }: InvoiceViewProps) {
     window.open(url, '_blank');
   };
 
+  const handlePrintWithVehicle = () => {
+    if (printType) {
+      const url = `/sales/invoices/${id}/${printType === 'dispatch' ? 'dispatch-note' : 'gate-pass'}?vehicleNo=${encodeURIComponent(vehicleNumber)}`;
+      window.open(url, '_blank');
+      setVehicleDialogVisible(false);
+      setVehicleNumber('');
+      setPrintType(null);
+    }
+  }
+
+
   return (
+    <>
     <div className="space-y-6 print:text-black">
        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 print:hidden">
           <div>
@@ -131,9 +150,9 @@ export function InvoiceView({ id }: InvoiceViewProps) {
               </Button>
                <AlertDialog>
                     <AlertDialogTrigger asChild>
-                         <Button variant="outline">
+                         <Button>
                             <Printer className="mr-2 h-4 w-4" />
-                            Print Invoice
+                            Print
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -154,17 +173,13 @@ export function InvoiceView({ id }: InvoiceViewProps) {
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
-               <Button asChild variant="outline">
-                    <Link href={`/sales/invoices/${id}/dispatch-note`} target="_blank">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Dispatch Note
-                    </Link>
+               <Button variant="outline" onClick={() => { setPrintType('dispatch'); setVehicleDialogVisible(true); }}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Dispatch Note
               </Button>
-               <Button asChild variant="outline">
-                    <Link href={`/sales/invoices/${id}/gate-pass`} target="_blank">
-                        <FileText className="mr-2 h-4 w-4" />
-                        Gate Pass
-                    </Link>
+               <Button variant="outline" onClick={() => { setPrintType('gatepass'); setVehicleDialogVisible(true); }}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Gate Pass
               </Button>
           </div>
         </div>
@@ -245,6 +260,32 @@ export function InvoiceView({ id }: InvoiceViewProps) {
             </CardFooter>
          </Card>
     </div>
+    <Dialog open={isVehicleDialogVisible} onOpenChange={setVehicleDialogVisible}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Enter Vehicle Number</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="vehicle-no" className="text-right">
+                        Vehicle No.
+                    </Label>
+                    <Input
+                        id="vehicle-no"
+                        value={vehicleNumber}
+                        onChange={(e) => setVehicleNumber(e.target.value)}
+                        className="col-span-3"
+                        placeholder="e.g. ABC-1234"
+                    />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setVehicleDialogVisible(false)}>Cancel</Button>
+                <Button type="submit" onClick={handlePrintWithVehicle}>Continue to Print</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+  </>
   );
 }
 

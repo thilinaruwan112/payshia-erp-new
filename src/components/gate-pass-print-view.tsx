@@ -1,8 +1,9 @@
 
+
 'use client'
 
 import { type Invoice, type User, type Product } from '@/lib/types';
-import { notFound } from 'next/navigation';
+import { notFound, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,6 +19,8 @@ export function GatePassPrintView({ id }: PrintViewProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const vehicleNo = searchParams.get('vehicleNo');
 
   useEffect(() => {
     async function fetchData() {
@@ -118,7 +121,7 @@ export function GatePassPrintView({ id }: PrintViewProps) {
             <span className="font-semibold text-gray-600">Time:</span>
             <span>{format(new Date(invoice.current_time), "HH:mm:ss")}</span>
              <span className="font-semibold text-gray-600">Vehicle No:</span>
-            <span>_______________</span>
+            <span>{vehicleNo || '_______________'}</span>
           </div>
         </div>
       </section>
@@ -153,15 +156,15 @@ export function GatePassPrintView({ id }: PrintViewProps) {
        <footer className="mt-24 pt-6 text-center text-gray-500 text-xs">
          <div className="flex justify-between items-end text-sm">
             <div>
-                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8 mt-8"></p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8 mt-16"></p>
                 <p>Prepared by</p>
             </div>
              <div>
-                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8 mt-8"></p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8 mt-16"></p>
                 <p>Checked by (Security)</p>
             </div>
              <div>
-                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8 mt-8"></p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8 mt-16"></p>
                 <p>Driver Signature</p>
             </div>
         </div>
