@@ -1,18 +1,19 @@
 
 'use client';
 
-import { useSearchParams, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import type { Invoice, User, Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
-function PosInvoicePrint({ id }: { id: string }) {
+export default function POSInvoicePage({ params }: { params: { id: string } }) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { id } = params;
 
   useEffect(() => {
     async function fetchData() {
@@ -160,13 +161,4 @@ function PosInvoicePrint({ id }: { id: string }) {
       </div>
     </div>
   );
-}
-
-
-export default function POSInvoicePage({ params }: { params: { id: string } }) {
-    return (
-        <React.Suspense fallback={<div className="w-[58mm] bg-white text-black p-2 font-mono">Loading...</div>}>
-            <PosInvoicePrint id={params.id} />
-        </React.Suspense>
-    )
 }
