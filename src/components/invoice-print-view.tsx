@@ -171,18 +171,18 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
       {showBankDetails && (
         <section className="mt-8 pt-6 border-t-2 border-gray-200">
             <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Payment Details</h3>
-            <div className="grid grid-cols-2 gap-4 text-xs">
-                <div>
+            <div className="grid grid-cols-5 gap-4 text-xs">
+                <div className="col-span-2">
                     <p className="font-bold text-gray-800">Bank of Payshia</p>
                     <p>Account Name: Payshia ERP Solutions</p>
                     <p>Account No: 123-456-7890</p>
                     <p>Branch: Colombo</p>
                 </div>
-                 <div className="text-right">
-                    <div className="font-bold text-gray-800 text-left">
+                 <div className="col-span-3">
+                    <div className="font-bold text-gray-800">
                         Please include the invoice number in your payment reference.
                     </div>
-                    <div className="text-muted-foreground text-left">
+                    <div className="text-muted-foreground">
                         Kindly send the payment receipt to payments@example.com
                     </div>
                 </div>
@@ -206,6 +206,7 @@ function InvoiceViewSkeleton() {
     </div>
   );
 }
+
 
 
 
