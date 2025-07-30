@@ -60,6 +60,7 @@ const invoiceFormSchema = z.object({
   status: z.enum(["Draft", "Sent", "Paid"]),
   items: z.array(invoiceItemSchema).min(1, "At least one item is required."),
   discount: z.coerce.number().min(0).optional(),
+  serviceCharge: z.coerce.number().min(0).optional(),
   remark: z.string().optional(),
 });
 
@@ -93,6 +94,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
     status: 'Draft',
     items: [],
     discount: 0,
+    serviceCharge: 0,
   };
 
   const form = useForm<InvoiceFormValues>({
@@ -109,6 +111,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
   const watchedItems = form.watch("items");
   const customerId = form.watch("customerId");
   const billDiscount = form.watch("discount") || 0;
+  const serviceCharge = form.watch("serviceCharge") || 0;
   const invoiceType = form.watch("invoiceType");
 
   const availableOrders = React.useMemo(() => {
@@ -152,7 +155,6 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
   }, 0)
 
   const totalDiscountAmount = itemDiscounts + billDiscount;
-  const serviceCharge = subtotal * 0.05; // 5% service charge
   const grandTotal = subtotal - totalDiscountAmount + serviceCharge;
 
   async function onSubmit(data: InvoiceFormValues) {
@@ -171,7 +173,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
         discount_amount: totalDiscountAmount,
         discount_percentage: subtotal > 0 ? (totalDiscountAmount / subtotal) * 100 : 0,
         customer_code: data.customerId,
-        service_charge: serviceCharge,
+        service_charge: data.serviceCharge || 0,
         tendered_amount: data.status === 'Paid' ? grandTotal : 0, // Assume full payment if status is paid
         close_type: "Cash", // Hardcoded as per sample
         invoice_status: data.status,
@@ -584,8 +586,19 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                         />
                     </div>
                      <div className="flex justify-between">
-                        <span>Service Charge (5%)</span>
-                        <span className="font-mono">${serviceCharge.toFixed(2)}</span>
+                        <span className="flex-1 mr-4">Service Charge</span>
+                         <FormField
+                            control={form.control}
+                            name={`serviceCharge`}
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormControl>
+                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </div>
                      <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Grand Total</span>
