@@ -145,17 +145,17 @@ export function GatePassPrintView({ id }: PrintViewProps) {
       </section>
 
        <footer className="mt-24 pt-6 text-center text-gray-500 text-xs">
-         <div className="flex justify-between items-center text-sm">
+         <div className="flex justify-between items-end text-sm">
             <div>
-                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8">.......................................</p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8 mt-8"></p>
                 <p>Prepared by</p>
             </div>
              <div>
-                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8">.......................................</p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8 mt-8"></p>
                 <p>Checked by (Security)</p>
             </div>
              <div>
-                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8">.......................................</p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8 mt-8"></p>
                 <p>Driver Signature</p>
             </div>
         </div>
