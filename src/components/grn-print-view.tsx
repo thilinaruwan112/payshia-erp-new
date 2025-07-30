@@ -45,8 +45,10 @@ export function GrnPrintView({ id }: PrintViewProps) {
         const productsData: Product[] = await productsResponse.json();
         const variantsData: ProductVariant[] = await variantsResponse.json();
 
-        setGrn(grnData.grn);
-        setSupplier(suppliersData.find(s => s.supplier_id === grnData.grn.supplier_id) || null);
+        const grnDetails = grnData.grn;
+
+        setGrn(grnDetails);
+        setSupplier(suppliersData.find(s => s.supplier_id === grnDetails.supplier_id) || null);
         setProducts(productsData);
         setVariants(variantsData);
 
