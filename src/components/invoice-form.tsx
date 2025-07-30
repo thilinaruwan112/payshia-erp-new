@@ -212,7 +212,7 @@ export function InvoiceForm({ productsWithVariants, customers, orders }: Invoice
         close_type: "Cash",
         invoice_status: data.status,
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-        location_id: parseInt(currentLocation.location_id),
+        location_id: parseInt(currentLocation.location_id, 10),
         table_id: 0,
         order_ready_status: 1,
         created_by: "Admin User",
@@ -234,6 +234,7 @@ export function InvoiceForm({ productsWithVariants, customers, orders }: Invoice
             is_active: 1,
             hold_status: 0,
             printed_status: 1,
+            company_id: "1",
         }))
     };
 
@@ -673,4 +674,3 @@ export function InvoiceForm({ productsWithVariants, customers, orders }: Invoice
     </Form>
   );
 }
-
