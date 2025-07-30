@@ -159,7 +159,22 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
         </div>
       </section>
 
-      <footer className="mt-20 pt-6 border-t-2 border-gray-200 text-center text-gray-500 text-xs">
+      <section className="mt-8 pt-6 border-t-2 border-gray-200">
+        <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Payment Details</h3>
+        <div className="grid grid-cols-2 gap-4 text-xs">
+            <div>
+                <p className="font-bold text-gray-800">Bank of Payshia</p>
+                <p>Account Name: Payshia ERP Solutions</p>
+                <p>Account No: 123-456-7890</p>
+                <p>Branch: Colombo</p>
+            </div>
+            <div className="text-right">
+                <p className="font-bold text-gray-800">Please include the invoice number in your payment reference.</p>
+            </div>
+        </div>
+      </section>
+
+      <footer className="mt-12 pt-6 border-t-2 border-gray-200 text-center text-gray-500 text-xs">
         <p className="font-semibold">Thank you for your business!</p>
         <p>If you have any questions about this invoice, please contact us.</p>
         <p>www.payshia.com</p>
