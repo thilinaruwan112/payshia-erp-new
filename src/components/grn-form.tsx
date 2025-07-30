@@ -433,7 +433,7 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
             <CardHeader className="bg-muted/50">
                 <div className="flex justify-between items-center">
                     <div>
-                        <CardTitle className="text-lg">{item.productName}</CardTitle>
+                        <CardTitle className="text-lg">{item.productName} ({item.sku})</CardTitle>
                         <CardDescription>
                             Order Qty: {item.orderQty} | Received: {item.alreadyReceived} | Balance: {item.receivable} | Rate: ${item.unitRate.toFixed(2)}
                         </CardDescription>
