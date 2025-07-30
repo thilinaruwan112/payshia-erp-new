@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { type Invoice, type User, type Product, type ProductVariant } from '@/lib/types';
@@ -13,10 +14,10 @@ import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import Link from 'next/link';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
 interface InvoiceViewProps {
     id: string;
-    isPrintView: boolean;
 }
 
 const getStatusColor = (status: Invoice['invoice_status']) => {
@@ -35,7 +36,7 @@ const getStatusColor = (status: Invoice['invoice_status']) => {
 };
 
 
-export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
+export function InvoiceView({ id }: InvoiceViewProps) {
   const router = useRouter();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
@@ -90,11 +91,6 @@ export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
     fetchData();
   }, [id, toast]);
 
-  useEffect(() => {
-    if (isPrintView && !isLoading && invoice) {
-        setTimeout(() => window.print(), 500); // Small delay to ensure styles apply
-    }
-  }, [isPrintView, isLoading, invoice]);
 
   const getProductName = (productId: number) => products.find(p => p.id === String(productId))?.name || 'Unknown Product';
   
@@ -111,6 +107,11 @@ export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
     product_name: getProductName(item.product_id),
     total_cost: parseFloat(String(item.item_price)) * item.quantity,
   }));
+  
+  const handlePrint = (showBankDetails: boolean) => {
+    const url = `/sales/invoices/${id}/print?showBankDetails=${showBankDetails}`;
+    window.open(url, '_blank');
+  };
 
   return (
     <div className="space-y-6 print:text-black">
@@ -128,12 +129,31 @@ export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
               </Button>
-               <Button asChild variant="outline">
-                    <Link href={`/sales/invoices/${id}/print`} target="_blank">
-                        <Printer className="mr-2 h-4 w-4" />
-                        Print Invoice
-                    </Link>
-              </Button>
+               <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                         <Button variant="outline">
+                            <Printer className="mr-2 h-4 w-4" />
+                            Print Invoice
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Print Options</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Do you want to include bank details for payment on the printed invoice?
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                             <AlertDialogAction onClick={() => handlePrint(false)}>
+                                Print without Bank Details
+                            </AlertDialogAction>
+                            <AlertDialogAction onClick={() => handlePrint(true)}>
+                                Print with Bank Details
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
                <Button asChild variant="outline">
                     <Link href={`/sales/invoices/${id}/dispatch-note`} target="_blank">
                         <FileText className="mr-2 h-4 w-4" />
@@ -150,39 +170,35 @@ export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
         </div>
 
         <Card className="print-card-styles">
-            <CardHeader>
-                <CardTitle>Details</CardTitle>
-            </CardHeader>
-             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-6">
-                <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Customer</p>
-                    <p className="font-semibold">{customer?.customer_first_name} {customer?.customer_last_name}</p>
-                </div>
-                 <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Status</p>
-                    <p>
-                        <Badge variant="secondary" className={cn(getStatusColor(invoice.invoice_status))}>
+            <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                     <CardTitle>Invoice {invoice.invoice_number}</CardTitle>
+                     <CardDescription>
+                         <Badge variant="secondary" className={cn('mt-2', getStatusColor(invoice.invoice_status))}>
                            {invoice.invoice_status}
                         </Badge>
-                    </p>
+                     </CardDescription>
                 </div>
-                 <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Subtotal</p>
-                    <p className="font-semibold font-mono">${parseFloat(invoice.inv_amount).toFixed(2)}</p>
+                <div className="text-right">
+                    <p className="font-semibold text-lg">Payshia ERP</p>
+                    <p className="text-sm text-muted-foreground">#455, 533A3, Pelmadulla</p>
                 </div>
-                 <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Total Discount</p>
-                    <p className="font-semibold font-mono text-destructive">-${parseFloat(invoice.discount_amount).toFixed(2)}</p>
-                </div>
-             </CardContent>
-        </Card>
-
-         <Card className="print-card-styles">
-            <CardHeader>
-                <CardTitle>Items</CardTitle>
-                <CardDescription>List of products included in this invoice.</CardDescription>
             </CardHeader>
-            <CardContent>
+             <CardContent>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-6 mb-8">
+                     <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Billed To</p>
+                        <p className="font-semibold">{customer?.customer_first_name} {customer?.customer_last_name}</p>
+                        <p className="text-sm text-muted-foreground">{customer?.address_line1}, {customer?.city_id}</p>
+                     </div>
+                     <div className="space-y-1 text-right">
+                        <p className="text-sm font-medium text-muted-foreground">Invoice Date</p>
+                        <p className="font-semibold">{new Date(invoice.invoice_date).toLocaleDateString()}</p>
+                         <p className="text-sm font-medium text-muted-foreground mt-2">Due Date</p>
+                        <p className="font-semibold">{new Date(invoice.invoice_date).toLocaleDateString()}</p>
+                     </div>
+                </div>
+
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -205,8 +221,9 @@ export function InvoiceView({ id, isPrintView }: InvoiceViewProps) {
                         ))}
                     </TableBody>
                 </Table>
-            </CardContent>
-             <CardFooter className="flex justify-end font-bold text-lg">
+
+             </CardContent>
+             <CardFooter className="flex justify-end">
                 <div className="w-full max-w-sm space-y-2">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
@@ -241,29 +258,43 @@ function InvoiceViewSkeleton() {
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Skeleton className="h-10 w-24" />
-             <Skeleton className="h-10 w-24" />
+             <Skeleton className="h-10 w-32" />
+             <Skeleton className="h-10 w-32" />
+             <Skeleton className="h-10 w-32" />
           </div>
         </div>
         <Card>
-            <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-             <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-5 w-32" /></div>
-                <div className="space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-6 w-24 rounded-full" /></div>
-                <div className="space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-5 w-24" /></div>
-                <div className="space-y-1"><Skeleton className="h-4 w-20" /><Skeleton className="h-5 w-20" /></div>
-             </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-4 w-64 mt-2" />
+            <CardHeader className="flex flex-row items-start justify-between">
+                 <div>
+                    <Skeleton className="h-8 w-48" />
+                    <Skeleton className="h-6 w-24 mt-2 rounded-full" />
+                 </div>
+                 <div className="text-right">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-4 w-48 mt-2" />
+                 </div>
             </CardHeader>
-            <CardContent>
+             <CardContent>
+                 <div className="grid grid-cols-2 gap-4 mb-8">
+                     <div className="space-y-2">
+                        <Skeleton className="h-4 w-16" />
+                        <Skeleton className="h-5 w-32" />
+                         <Skeleton className="h-4 w-48" />
+                     </div>
+                     <div className="space-y-2 text-right">
+                        <Skeleton className="h-4 w-16 ml-auto" />
+                        <Skeleton className="h-5 w-24 ml-auto" />
+                        <Skeleton className="h-4 w-16 ml-auto mt-2" />
+                        <Skeleton className="h-5 w-24 ml-auto" />
+                     </div>
+                 </div>
+
                 <div className="space-y-2">
                     {Array.from({length: 3}).map((_, i) => (
                         <div key={i} className="flex justify-between items-center py-2">
-                            <div className="flex-1 space-y-2"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-3 w-1/4" /></div>
+                            <Skeleton className="h-4 flex-1 max-w-sm" />
                             <Skeleton className="h-4 w-12" />
+                            <Skeleton className="h-4 w-16" />
                             <Skeleton className="h-4 w-16" />
                             <Skeleton className="h-4 w-20" />
                         </div>
@@ -271,7 +302,12 @@ function InvoiceViewSkeleton() {
                 </div>
             </CardContent>
              <CardFooter className="flex justify-end">
-                <Skeleton className="h-8 w-48" />
+                 <div className="w-full max-w-sm space-y-4">
+                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-5 w-full" />
+                    <Skeleton className="h-8 w-full mt-2" />
+                 </div>
             </CardFooter>
          </Card>
     </div>
