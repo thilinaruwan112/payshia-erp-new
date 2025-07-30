@@ -138,9 +138,9 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
             {invoiceItems?.map((item, index) => (
               <tr key={index} className="border-b border-gray-100">
                 <td className="p-3">{item.product_name}</td>
-                <td className="p-3 text-right">{item.quantity.toFixed(2)}</td>
-                <td className="p-3 text-right">${parseFloat(String(item.item_price)).toFixed(2)}</td>
-                <td className="p-3 text-right">${item.total_cost.toFixed(2)}</td>
+                <td className="p-3 text-right">{item.quantity.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             ))}
           </tbody>
@@ -151,19 +151,19 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
         <div className="w-full max-w-xs space-y-2 text-gray-700">
           <div className="flex justify-between">
             <span>Subtotal</span>
-            <span>${parseFloat(invoice.inv_amount).toFixed(2)}</span>
+            <span>${parseFloat(invoice.inv_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between">
             <span>Discount</span>
-            <span>-${parseFloat(invoice.discount_amount).toFixed(2)}</span>
+            <span>-${parseFloat(invoice.discount_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
            <div className="flex justify-between">
             <span>Service Charge</span>
-            <span>${parseFloat(invoice.service_charge).toFixed(2)}</span>
+            <span>${parseFloat(invoice.service_charge).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
             <span>Total</span>
-            <span>${parseFloat(invoice.grand_total).toFixed(2)}</span>
+            <span>${parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
       </section>

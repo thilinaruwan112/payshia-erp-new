@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -139,7 +140,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${totalRevenue.toLocaleString()}
+                  ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   +20.1% from last month
@@ -171,7 +172,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  ${(totalRevenue / totalOrders).toFixed(2)}
+                  ${(totalRevenue / totalOrders).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   +19% from last month
@@ -202,7 +203,7 @@ export default function ReportsPage() {
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(value) => `$${value}`}
+                    tickFormatter={(value) => `$${value.toLocaleString()}`}
                   />
                   <Tooltip
                     contentStyle={{
@@ -210,6 +211,7 @@ export default function ReportsPage() {
                       border: '1px solid hsl(var(--border))',
                       borderRadius: 'var(--radius)',
                     }}
+                    formatter={(value: number) => value.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
                   />
                   <Legend />
                   <Bar
@@ -276,7 +278,7 @@ export default function ReportsPage() {
                                 return (
                                     <TableRow key={item.sku}>
                                         <TableCell>{product?.name} ({item.sku})</TableCell>
-                                        <TableCell className="text-right">{item.stock}</TableCell>
+                                        <TableCell className="text-right">{item.stock.toLocaleString()}</TableCell>
                                     </TableRow>
                                 )
                             })}
@@ -324,7 +326,7 @@ export default function ReportsPage() {
                                 {topCustomers.map(customer => (
                                     <TableRow key={customer.name}>
                                         <TableCell>{customer.name}</TableCell>
-                                        <TableCell className="text-right">${customer.totalSpent.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">${customer.totalSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -350,7 +352,7 @@ export default function ReportsPage() {
                                         <TableCell>{customer.name}</TableCell>
                                         <TableCell className="text-right flex items-center justify-end gap-1">
                                             <Star className="w-4 h-4 text-yellow-400" />
-                                            <span className="font-medium">{customer.loyaltyPoints || 0}</span>
+                                            <span className="font-medium">{(customer.loyaltyPoints || 0).toLocaleString()}</span>
                                         </TableCell>
                                     </TableRow>
                                 ))}

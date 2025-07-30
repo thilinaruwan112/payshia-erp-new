@@ -143,14 +143,14 @@ export function DispatchNotePrintView({ id }: PrintViewProps) {
                 <td className="p-3">{index + 1}</td>
                 <td className="p-3">{item.product_name}</td>
                 <td className="p-3 text-right">{item.order_unit || 'Nos'}</td>
-                <td className="p-3 text-right">{item.quantity.toFixed(2)}</td>
+                <td className="p-3 text-right">{item.quantity.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
               </tr>
             ))}
           </tbody>
            <tfoot>
             <tr className="font-bold bg-gray-100">
               <td colSpan={3} className="p-3 text-right text-gray-600 uppercase">Total Quantity</td>
-              <td className="p-3 text-right">{totalQuantity.toFixed(2)}</td>
+              <td className="p-3 text-right">{totalQuantity.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
             </tr>
           </tfoot>
         </table>

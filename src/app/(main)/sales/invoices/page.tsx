@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import {
@@ -151,7 +152,7 @@ export default function InvoicesPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{new Date(invoice.invoice_date).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right font-mono">${parseFloat(invoice.grand_total).toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-mono">${parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

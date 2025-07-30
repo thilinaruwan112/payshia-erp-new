@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -70,7 +71,7 @@ export default function ExpensesPage() {
                   <TableCell>{new Date(expense.date).toLocaleDateString()}</TableCell>
                   <TableCell className="font-medium">{expense.payee}</TableCell>
                   <TableCell className="hidden sm:table-cell">{expense.expenseAccountName}</TableCell>
-                  <TableCell className="text-right font-mono">${expense.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">${expense.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

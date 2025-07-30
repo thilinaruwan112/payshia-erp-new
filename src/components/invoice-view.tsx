@@ -229,9 +229,9 @@ export function InvoiceView({ id }: InvoiceViewProps) {
                            <TableRow key={index}>
                                 <TableCell>{item.product_name}</TableCell>
                                 <TableCell className="text-right">{item.quantity}</TableCell>
-                                <TableCell className="text-right font-mono">${parseFloat(String(item.item_price)).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono text-destructive">-${parseFloat(String(item.item_discount)).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono">${item.total_cost.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                <TableCell className="text-right font-mono text-destructive">-${parseFloat(String(item.item_discount)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                <TableCell className="text-right font-mono">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                            </TableRow>
                         ))}
                     </TableBody>
@@ -242,19 +242,19 @@ export function InvoiceView({ id }: InvoiceViewProps) {
                 <div className="w-full max-w-sm space-y-2">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span className="font-mono">${parseFloat(invoice.inv_amount).toFixed(2)}</span>
+                        <span className="font-mono">${parseFloat(invoice.inv_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between text-destructive">
                         <span>Total Discount</span>
-                        <span className="font-mono">-${parseFloat(invoice.discount_amount).toFixed(2)}</span>
+                        <span className="font-mono">-${parseFloat(invoice.discount_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                      <div className="flex justify-between">
                         <span>Service Charge</span>
-                        <span className="font-mono">${parseFloat(invoice.service_charge).toFixed(2)}</span>
+                        <span className="font-mono">${parseFloat(invoice.service_charge).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
                         <span>Grand Total</span>
-                        <span className="font-mono">${parseFloat(invoice.grand_total).toFixed(2)}</span>
+                        <span className="font-mono">${parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                 </div>
             </CardFooter>

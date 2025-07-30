@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -72,7 +73,7 @@ export default function PaymentsPage() {
                   <TableCell className="font-medium">{payment.supplierName}</TableCell>
                   <TableCell className="hidden sm:table-cell">{payment.poId || 'N/A'}</TableCell>
                    <TableCell className="hidden md:table-cell">{payment.paymentAccountName}</TableCell>
-                  <TableCell className="text-right font-mono">${payment.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">${payment.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

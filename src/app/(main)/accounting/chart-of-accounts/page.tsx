@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -98,7 +99,7 @@ export default function ChartOfAccountsPage() {
                   <TableCell className="hidden md:table-cell">
                      <Badge variant="outline">{account.subType}</Badge>
                   </TableCell>
-                  <TableCell className="text-right font-mono">${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
