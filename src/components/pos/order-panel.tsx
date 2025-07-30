@@ -43,7 +43,7 @@ interface OrderPanelProps {
   onRemoveItem: (productId: string) => void;
   onClearCart: (invoiceId: string) => void;
   onHoldOrder: () => void;
-  onSendToKitchen: () => void;
+  onSendToKitchen: (orderId: string) => void;
   isDrawer?: boolean;
   onClose?: () => void;
   setDiscount: (discount: number) => void;
@@ -172,7 +172,7 @@ export function OrderPanel({
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
 
-  const { cart, customer, name: orderName, discount } = order;
+  const { cart, customer, name: orderName, discount, id: orderId } = order;
 
   const handleSuccessfulPayment = async (paymentMethod: string) => {
     // This is a simplified simulation. A real app would have a robust backend process.
@@ -190,6 +190,33 @@ export function OrderPanel({
     setPaymentOpen(false);
     onClearCart(mockInvoiceId); // Pass the new ID to clear the right order
   };
+  
+  const handleSendToKitchen = () => {
+    if (!order || cart.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Cart is empty',
+        description: 'Cannot send an empty order to the kitchen.',
+      });
+      return;
+    }
+
+    const orderData = {
+        orderId: order.id,
+        orderName: order.name,
+        cashierName: cashierName,
+        items: cart.map(item => ({ name: item.product.name, quantity: item.quantity })),
+    };
+    
+    const encodedData = btoa(JSON.stringify(orderData));
+    window.open(`/pos/kot/${order.id}?data=${encodedData}`, '_blank');
+    
+    toast({
+      title: 'KOT Sent!',
+      description: `Order for ${order.name} sent to the kitchen.`,
+      icon: <ChefHat className="h-6 w-6 text-green-500" />,
+    });
+  }
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -335,7 +362,7 @@ export function OrderPanel({
             </Button>
             <Button
               variant="outline"
-              onClick={onSendToKitchen}
+              onClick={handleSendToKitchen}
               className="col-span-2 h-12"
               disabled={cart.length === 0}
             >
