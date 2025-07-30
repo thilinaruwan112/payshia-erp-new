@@ -10,12 +10,43 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from './ui/button';
 import { Printer, ArrowLeft } from 'lucide-react';
 import { Badge } from './ui/badge';
+import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { format } from 'date-fns';
 
 interface GrnViewProps {
     id: string;
 }
+
+const getStatusText = (status: string) => {
+  switch (status) {
+    case '0':
+      return 'Pending';
+    case '1':
+      return 'Approved';
+    case '2':
+      return 'Rejected';
+    case '3':
+      return 'Cancelled';
+    default:
+      return 'Received';
+  }
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case '0': // Pending
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    case '1': // Approved
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+    case '2': // Rejected
+    case '3': // Cancelled
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+    default:
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+  }
+};
+
 
 export function GrnView({ id }: GrnViewProps) {
   const router = useRouter();
@@ -141,8 +172,8 @@ export function GrnView({ id }: GrnViewProps) {
                  <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">GRN Status</p>
                     <p>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                           {grn.grn_status}
+                        <Badge variant="secondary" className={cn(getStatusColor(grn.grn_status))}>
+                           {getStatusText(grn.grn_status)}
                         </Badge>
                     </p>
                 </div>
