@@ -8,15 +8,23 @@ export type GrnBatch = {
 }
 
 export type GrnItem = {
-    sku: string;
-    productId: string;
-    productName: string;
-    orderQty: number;
-    alreadyReceived: number;
-    receivable: number; // This is the balance qty
-    unitRate: number;
-    productVariantId: string;
-    batches: GrnBatch[];
+    id?: string;
+    grn_id?: string;
+    product_id: number;
+    product_variant_id: number;
+    order_unit: string;
+    order_rate: number | string;
+    received_qty: string;
+    patch_code: string;
+    expire_date: string;
+    manufacture_date: string;
+    created_by: string;
+    is_active: number;
+    po_number: string;
+    // For view
+    product_name?: string;
+    variant_sku?: string;
+    total_cost?: number;
 }
 
 export type ProductVariant = {
@@ -168,13 +176,23 @@ export type PurchaseOrderItem = {
 
 export type GoodsReceivedNote = {
     id: string;
-    poId: string;
-    supplierName: string;
-    receivedDate: string;
-    locationId: string;
-    locationName: string;
-    itemCount: number;
-    items: GrnItem[];
+    grn_number: string;
+    location_id: string;
+    company_id: string;
+    supplier_id: string;
+    currency: string;
+    tax_type: string;
+    sub_total: string;
+    tax_value: string;
+    grand_total: string;
+    created_by: string;
+    created_at: string;
+    is_active: string;
+    grn_status: string;
+    remarks: string;
+    payment_status: string;
+    po_number: string;
+    items?: GrnItem[];
 }
 
 export type StockTransfer = {

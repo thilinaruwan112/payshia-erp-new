@@ -42,6 +42,7 @@ import {
   ShoppingBag,
   Boxes,
   Archive,
+  History,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -151,7 +152,8 @@ const navItems = [
     icon: Building,
     subItems: [
       { href: '/purchasing/purchase-orders', label: 'Purchase Orders' },
-      { href: '/purchasing/grn', label: 'GRN' },
+      { href: '/purchasing/grn', label: 'Create GRN' },
+      { href: '/purchasing/grn/history', label: 'GRN History', icon: History },
     ],
   },
   {
