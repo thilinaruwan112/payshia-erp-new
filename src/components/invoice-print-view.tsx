@@ -169,9 +169,7 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
       </section>
       
       {showBankDetails && (
-        <>
-          <div style={{ pageBreakBefore: 'always' }} />
-          <section className="mt-8 pt-6 border-t-2 border-gray-200">
+        <section className="mt-8 pt-6 border-t-2 border-gray-200">
             <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Payment Details</h3>
             <div className="grid grid-cols-2 gap-4 text-xs">
                 <div>
@@ -182,11 +180,10 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
                 </div>
                 <div className="text-right">
                     <p className="font-bold text-gray-800">Please include the invoice number in your payment reference.</p>
-                    <p className="font-bold text-slate-500 mt-2">Kindly send the payment receipt to payments@example.com</p>
+                    <p className="text-sm text-muted-foreground mt-2">Kindly send the payment receipt to payments@example.com</p>
                 </div>
             </div>
           </section>
-        </>
       )}
 
       <footer className="mt-12 pt-6 border-t-2 border-gray-200 text-center text-gray-500 text-xs">
