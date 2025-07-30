@@ -134,13 +134,6 @@ export function GatePassPrintView({ id }: PrintViewProps) {
                 <td className="p-3 text-right">{item.quantity.toFixed(2)}</td>
               </tr>
             ))}
-             {Array.from({ length: 15 - (invoiceItems?.length || 0) }).map((_, i) => (
-              <tr key={`empty-${i}`} className="h-9 border-b border-gray-100">
-                <td className="p-3"></td>
-                <td className="p-3"></td>
-                <td className="p-3"></td>
-              </tr>
-            ))}
           </tbody>
            <tfoot>
             <tr className="font-bold bg-gray-100">
