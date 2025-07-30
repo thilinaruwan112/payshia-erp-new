@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { type GoodsReceivedNote, type Supplier, type Product, type ProductVariant } from '@/lib/types';
@@ -94,7 +95,7 @@ export function GrnPrintView({ id }: PrintViewProps) {
   }));
 
   return (
-    <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
+    <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Payshia ERP</h1>
@@ -127,7 +128,7 @@ export function GrnPrintView({ id }: PrintViewProps) {
         </div>
       </section>
 
-      <section className="mt-8">
+      <section className="mt-8 flex-grow">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-gray-100 text-gray-600 uppercase text-xs">
@@ -166,17 +167,17 @@ export function GrnPrintView({ id }: PrintViewProps) {
         </div>
       </section>
 
-       <footer className="absolute bottom-8 w-full left-0 px-8">
-         <div className="mt-12 pt-6 border-t-2 border-gray-200 text-center text-gray-500 text-xs">
+       <footer className="mt-auto pt-6 text-center text-gray-500 text-xs">
+         <div className="mt-12 pt-6 border-t-2 border-gray-200">
             <p className="font-semibold">Goods received in good condition.</p>
          </div>
          <div className="flex justify-between items-end text-sm mt-16">
             <div>
-                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-12 mt-16"></p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-12"></p>
                 <p>Authorized Signature</p>
             </div>
              <div>
-                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-12 mt-16"></p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-12"></p>
                 <p>Checked By</p>
             </div>
         </div>
