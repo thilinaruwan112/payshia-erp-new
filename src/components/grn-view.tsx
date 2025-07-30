@@ -51,7 +51,11 @@ export function GrnView({ id }: GrnViewProps) {
         const productsData: Product[] = await productsResponse.json();
         const variantsData: ProductVariant[] = await variantsResponse.json();
         
+        // The API nests the GRN object under a "grn" key
         const grnDetails = grnData.grn;
+        if (!grnDetails) {
+            throw new Error("GRN data is not in the expected format.");
+        }
 
         setGrn(grnDetails);
         setSupplier(suppliersData.find(s => s.supplier_id === grnDetails.supplier_id) || null);
@@ -85,7 +89,20 @@ export function GrnView({ id }: GrnViewProps) {
   }
 
   if (!grn) {
-    return <div>GRN not found or failed to load.</div>;
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Error</CardTitle>
+                <CardDescription>Could not load GRN data. It may have been deleted or the server is unavailable.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <Button variant="outline" onClick={() => router.back()}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Go Back
+                </Button>
+            </CardContent>
+        </Card>
+    )
   }
 
   const grnItems = grn.items?.map(item => ({
@@ -164,7 +181,7 @@ export function GrnView({ id }: GrnViewProps) {
                                 <TableCell>{item.product_name}</TableCell>
                                 <TableCell>{item.variant_sku}</TableCell>
                                 <TableCell>{item.patch_code}</TableCell>
-                                <TableCell>{item.expire_date ? format(new Date(item.expire_date), 'dd/MM/yy') : 'N/A'}</TableCell>
+                                <TableCell>{item.expire_date && item.expire_date !== '0000-00-00' ? format(new Date(item.expire_date), 'dd/MM/yy') : 'N/A'}</TableCell>
                                 <TableCell className="text-right">{parseFloat(item.received_qty)}</TableCell>
                            </TableRow>
                         ))}
@@ -210,14 +227,27 @@ function GrnViewSkeleton() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-2">
-                    {Array.from({length: 3}).map((_, i) => (
-                        <div key={i} className="flex justify-between items-center py-2">
-                            <div className="flex-1 space-y-2"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-3 w-1/4" /></div>
-                            <Skeleton className="h-4 w-12" />
-                            <Skeleton className="h-4 w-16" />
-                            <Skeleton className="h-4 w-20" />
-                        </div>
-                    ))}
+                    <TableRow>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    </TableRow>
+                     <TableRow>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    </TableRow>
+                     <TableRow>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    </TableRow>
                 </div>
             </CardContent>
         </Card>
