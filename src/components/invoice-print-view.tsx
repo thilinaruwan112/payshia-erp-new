@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { type Invoice, type User, type Product, type ProductVariant } from '@/lib/types';
@@ -60,6 +61,12 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
     }
     fetchData();
   }, [id, toast]);
+
+  useEffect(() => {
+    if (invoice) {
+        document.title = `${invoice.invoice_number} - Invoice - Payshia ERP`;
+    }
+  }, [invoice]);
 
   useEffect(() => {
     if (!isLoading && invoice) {
