@@ -60,6 +60,12 @@ export function GatePassPrintView({ id }: PrintViewProps) {
   }, [id, toast]);
 
   useEffect(() => {
+    if (invoice) {
+        document.title = `GP-${invoice.invoice_number} - Gate Pass - Payshia ERP`;
+    }
+  }, [invoice]);
+
+  useEffect(() => {
     if (!isLoading && invoice) {
         setTimeout(() => window.print(), 500);
     }

@@ -60,6 +60,12 @@ export function DispatchNotePrintView({ id }: PrintViewProps) {
   }, [id, toast]);
 
   useEffect(() => {
+    if (invoice) {
+        document.title = `DN-${invoice.invoice_number} - Dispatch Note - Payshia ERP`;
+    }
+  }, [invoice]);
+
+  useEffect(() => {
     if (!isLoading && invoice) {
         setTimeout(() => window.print(), 500);
     }
