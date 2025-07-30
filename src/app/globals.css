@@ -94,8 +94,6 @@ body {
 
 @media print {
   body, html {
-    background-color: white !important;
-    color: black !important;
     -webkit-print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
@@ -109,17 +107,7 @@ body {
   }
   
   * {
-    background-color: transparent !important;
-    color: black !important;
     box-shadow: none !important;
     text-shadow: none !important;
-  }
-
-  .print\:bg-white {
-    background-color: white !important;
-  }
-
-  .print\:text-black {
-    color: black !important;
   }
 }
