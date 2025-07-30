@@ -78,149 +78,92 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
   const invoiceItems = invoice.items?.map(item => ({
     ...item,
     product_name: getProductName(item.product_id),
-    total_cost: parseFloat(String(item.item_price)) * item.quantity,
+    total_cost: parseFloat(String(item.item_price)) * item.quantity - parseFloat(String(item.item_discount)),
   }));
-  
-  const discountPercentage = parseFloat(invoice.discount_percentage) || 0;
 
   return (
-    <div className="bg-white text-black font-sans text-sm p-4 w-[210mm] min-h-[297mm] shadow-lg print:shadow-none">
-      <div className="w-full h-full border border-gray-300 p-4">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-6">
-            <div className="text-xs">
-                <h1 className="text-xl font-bold mb-1">Thilina Products</h1>
-                <p>#455, 533A3, Pelmadulla</p>
-                <p>Rathnapura, 70070</p>
-                <p>Tel: 0770481363 / 0721185012</p>
-                <p>Email: info@payshia.com</p>
-                <p>Web: www.payshia.com</p>
-            </div>
-            <div className="text-right">
-                <h2 className="text-3xl font-bold mb-4">INVOICE</h2>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                   <span className="font-bold">Date</span>
-                   <span>{format(new Date(invoice.current_time), "dd/MM/yyyy HH:mm:ss")}</span>
-                   <span className="font-bold">INV Number</span>
-                   <span>{invoice.invoice_number}</span>
-                   <span className="font-bold">Location</span>
-                   <span>VILLA HOTEL</span>
-                </div>
-            </div>
+    <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
+      <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Payshia ERP</h1>
+          <p>#455, 533A3, Pelmadulla</p>
+          <p>Rathnapura, 70070</p>
+          <p>info@payshia.com</p>
         </div>
-
-        {/* Customer Info */}
-        <div className="mb-6">
-            <div className="bg-[#1C2C54] text-white font-bold p-1 px-2 text-sm">
-                Customer
-            </div>
-             <div className="text-xs mt-2 p-1 border-l border-r border-b border-gray-300">
-                <p className="font-bold">{customer?.customer_first_name} {customer?.customer_last_name}</p>
-                <p>{customer?.address_line1}, {customer?.address_line2}, {customer?.city_id}</p>
-                <p>Tel: {customer?.phone_number}</p>
-                <p>Email: {customer?.email_address}</p>
-            </div>
+        <div className="text-right">
+          <h2 className="text-4xl font-bold uppercase text-gray-700">Invoice</h2>
         </div>
+      </header>
 
-        {/* Items Table */}
-        <table className="w-full text-xs border-collapse">
-            <thead>
-                <tr className="bg-[#1C2C54] text-white">
-                    <th className="p-1 text-left border border-gray-400">#</th>
-                    <th className="p-1 text-left border border-gray-400">Description</th>
-                    <th className="p-1 text-left border border-gray-400">Unit</th>
-                    <th className="p-1 text-right border border-gray-400">Qty</th>
-                    <th className="p-1 text-right border border-gray-400">Unit Price</th>
-                    <th className="p-1 text-right border border-gray-400">Discount</th>
-                    <th className="p-1 text-right border border-gray-400">Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {invoiceItems?.map((item, index) => (
-                     <tr key={index} className="odd:bg-white even:bg-gray-100">
-                         <td className="p-1 border-r border-l border-gray-400 text-center">{index + 1}</td>
-                         <td className="p-1 border-r border-gray-400">{item.product_name}</td>
-                         <td className="p-1 border-r border-gray-400">{item.order_unit || 'Nos'}</td>
-                         <td className="p-1 border-r border-gray-400 text-right">{item.quantity.toFixed(2)}</td>
-                         <td className="p-1 border-r border-gray-400 text-right">{parseFloat(String(item.item_price)).toFixed(2)}</td>
-                         <td className="p-1 border-r border-gray-400 text-right">{parseFloat(String(item.item_discount)).toFixed(2)}</td>
-                         <td className="p-1 border-r border-gray-400 text-right">{item.total_cost.toFixed(2)}</td>
-                     </tr>
-                ))}
-                {/* Add empty rows to fill page */}
-                 {Array.from({ length: 10 - (invoiceItems?.length || 0) }).map((_, i) => (
-                    <tr key={`empty-${i}`} className="odd:bg-white even:bg-gray-100 h-6">
-                        <td className="p-1 border-r border-l border-gray-400"></td>
-                        <td className="p-1 border-r border-gray-400"></td>
-                        <td className="p-1 border-r border-gray-400"></td>
-                        <td className="p-1 border-r border-gray-400"></td>
-                        <td className="p-1 border-r border-gray-400"></td>
-                        <td className="p-1 border-r border-gray-400"></td>
-                        <td className="p-1 border-r border-gray-400"></td>
-                    </tr>
-                ))}
-            </tbody>
-             <tfoot>
-                <tr className="border-t-2 border-b border-gray-400">
-                    <td colSpan={7} className="border-l border-r border-gray-400 h-6"></td>
-                </tr>
-            </tfoot>
+      <section className="grid grid-cols-2 gap-4 mt-6">
+        <div>
+          <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Bill To</h3>
+          <p className="font-bold text-gray-800">{customer?.customer_first_name} {customer?.customer_last_name}</p>
+          <p>{customer?.address_line1}</p>
+          <p>{customer?.city_id}</p>
+          <p>{customer?.email_address}</p>
+        </div>
+        <div className="text-right">
+          <div className="grid grid-cols-2 gap-1">
+            <span className="font-semibold text-gray-600">Invoice #:</span>
+            <span>{invoice.invoice_number}</span>
+            <span className="font-semibold text-gray-600">Invoice Date:</span>
+            <span>{format(new Date(invoice.invoice_date), "dd MMM, yyyy")}</span>
+            <span className="font-semibold text-gray-600">Due Date:</span>
+            <span>{format(new Date(invoice.invoice_date), "dd MMM, yyyy")}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="bg-gray-100 text-gray-600 uppercase text-xs">
+              <th className="p-3 w-1/2">Description</th>
+              <th className="p-3 text-right">Quantity</th>
+              <th className="p-3 text-right">Unit Price</th>
+              <th className="p-3 text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoiceItems?.map((item, index) => (
+              <tr key={index} className="border-b border-gray-100">
+                <td className="p-3">{item.product_name}</td>
+                <td className="p-3 text-right">{item.quantity.toFixed(2)}</td>
+                <td className="p-3 text-right">${parseFloat(String(item.item_price)).toFixed(2)}</td>
+                <td className="p-3 text-right">${item.total_cost.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
         </table>
+      </section>
 
-        {/* Totals */}
-        <div className="flex justify-between mt-1">
-            <div className="w-[60%] text-xs">
-                <div className="bg-[#EAF1DD] p-1 font-bold border-l border-r border-b border-gray-400">
-                    Comments & Special Instructions
-                </div>
-                 <div className="border-l border-r border-b border-gray-400 h-16 p-1">
-                    {invoice.remark}
-                 </div>
-            </div>
-            <div className="w-[40%] text-xs">
-                <div className="grid grid-cols-2 p-1">
-                    <span className="font-bold">Sub Total</span>
-                    <span className="text-right">{parseFloat(invoice.inv_amount).toFixed(2)}</span>
-                </div>
-                <div className="grid grid-cols-2 p-1">
-                    <span className="font-bold">Discount ({discountPercentage.toFixed(2)}%)</span>
-                    <span className="text-right">{parseFloat(invoice.discount_amount).toFixed(2)}</span>
-                </div>
-                 <div className="grid grid-cols-2 p-1">
-                    <span className="font-bold">Charge</span>
-                    <span className="text-right">{parseFloat(invoice.service_charge).toFixed(2)}</span>
-                </div>
-                 <div className="grid grid-cols-2 p-1">
-                    <span className="font-bold">Shipping</span>
-                    <span className="text-right">0.00</span>
-                </div>
-                 <div className="grid grid-cols-2 p-1">
-                    <span className="font-bold">Other</span>
-                    <span className="text-right">0.00</span>
-                </div>
-                <div className="grid grid-cols-2 p-1 bg-gray-200 border-t-2 border-black mt-1">
-                    <span className="font-bold">Total</span>
-                    <span className="font-bold text-right">{parseFloat(invoice.grand_total).toFixed(2)}</span>
-                </div>
-            </div>
+      <section className="flex justify-end mt-6">
+        <div className="w-full max-w-xs space-y-2 text-gray-700">
+          <div className="flex justify-between">
+            <span>Subtotal</span>
+            <span>${parseFloat(invoice.inv_amount).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Discount</span>
+            <span>-${parseFloat(invoice.discount_amount).toFixed(2)}</span>
+          </div>
+           <div className="flex justify-between">
+            <span>Service Charge</span>
+            <span>${parseFloat(invoice.service_charge).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
+            <span>Total</span>
+            <span>${parseFloat(invoice.grand_total).toFixed(2)}</span>
+          </div>
         </div>
+      </section>
 
-        {/* Footer */}
-        <div className="flex justify-between items-center text-xs mt-20">
-            <div>
-                <p>.......................................</p>
-                <p>Checked by</p>
-            </div>
-             <div>
-                <p>.......................................</p>
-                <p>Authorized by</p>
-            </div>
-             <div>
-                <p>.......................................</p>
-                <p>Received by</p>
-            </div>
-        </div>
-      </div>
+      <footer className="mt-20 pt-6 border-t-2 border-gray-200 text-center text-gray-500 text-xs">
+        <p className="font-semibold">Thank you for your business!</p>
+        <p>If you have any questions about this invoice, please contact us.</p>
+        <p>www.payshia.com</p>
+      </footer>
     </div>
   );
 }
