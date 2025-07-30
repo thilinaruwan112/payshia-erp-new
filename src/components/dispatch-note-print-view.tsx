@@ -83,7 +83,7 @@ export function DispatchNotePrintView({ id }: PrintViewProps) {
   const totalQuantity = invoiceItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
   return (
-    <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
+    <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
        <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Payshia ERP</h1>

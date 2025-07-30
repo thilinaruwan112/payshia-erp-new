@@ -84,7 +84,7 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
   }));
 
   return (
-    <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
+    <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Payshia ERP</h1>
@@ -163,7 +163,7 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
       
       {showBankDetails && (
         <>
-          <div className="page-break" />
+          <div style={{ pageBreakBefore: 'always' }} />
           <section className="mt-8 pt-6 border-t-2 border-gray-200">
             <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Payment Details</h3>
             <div className="grid grid-cols-2 gap-4 text-xs">
@@ -175,7 +175,7 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
                 </div>
                 <div className="text-right">
                     <p className="font-bold text-gray-800">Please include the invoice number in your payment reference.</p>
-                    <p className="font-bold text-muted-foreground mt-2">Kindly send the payment receipt to payments@example.com</p>
+                    <p className="font-bold text-slate-500 mt-2">Kindly send the payment receipt to payments@example.com</p>
                 </div>
             </div>
           </section>
