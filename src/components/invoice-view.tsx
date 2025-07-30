@@ -43,8 +43,6 @@ export function InvoiceView({ id }: InvoiceViewProps) {
   const router = useRouter();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const [isVehicleDialogVisible, setVehicleDialogVisible] = useState(false);
@@ -57,33 +55,19 @@ export function InvoiceView({ id }: InvoiceViewProps) {
       if (!id) return;
       setIsLoading(true);
       try {
-        // Assume an endpoint for a single invoice exists
-        const invoiceResponse = await fetch(`https://server-erp.payshia.com/invoices/${id}`);
-        if (!invoiceResponse.ok) {
-           if (invoiceResponse.status === 404) notFound();
+        const response = await fetch(`https://server-erp.payshia.com/invoices/full/${id}`);
+        if (!response.ok) {
+           if (response.status === 404) notFound();
            throw new Error('Failed to fetch invoice data');
         }
-        const invoiceData: Invoice = await invoiceResponse.json();
-        setInvoice(invoiceData);
-
-        // Fetch all necessary related data
-        const [customersResponse, productsResponse, variantsResponse] = await Promise.all([
-           fetch(`https://server-erp.payshia.com/customers`),
-           fetch('https://server-erp.payshia.com/products'),
-           fetch('https://server-erp.payshia.com/product-variants'),
-        ]);
-
-        if (!customersResponse.ok) throw new Error('Failed to fetch customers');
-        if (!productsResponse.ok) throw new Error('Failed to fetch products');
-        if (!variantsResponse.ok) throw new Error('Failed to fetch variants');
-        
-        const customersData: User[] = await customersResponse.json();
-        const productsData: Product[] = await productsResponse.json();
-        const variantsData: ProductVariant[] = await variantsResponse.json();
-
-        setCustomer(customersData.find(c => c.customer_id === invoiceData.customer_code) || null);
-        setProducts(productsData);
-        setVariants(variantsData);
+        const data: Invoice = await response.json();
+        setInvoice(data);
+        // Customer data can be extracted if it's included in the new endpoint response
+        // For now, assuming it's part of the response based on your request.
+        // If not, a separate customer fetch would be needed.
+        if (data.customer) {
+          setCustomer(data.customer);
+        }
 
       } catch (error) {
         toast({
@@ -97,9 +81,6 @@ export function InvoiceView({ id }: InvoiceViewProps) {
     }
     fetchData();
   }, [id, toast]);
-
-
-  const getProductName = (productId: number) => products.find(p => p.id === String(productId))?.name || 'Unknown Product';
   
   if (isLoading) {
     return <InvoiceViewSkeleton />;
@@ -111,18 +92,18 @@ export function InvoiceView({ id }: InvoiceViewProps) {
 
   const invoiceItems = invoice.items?.map(item => ({
     ...item,
-    product_name: getProductName(item.product_id),
-    total_cost: parseFloat(String(item.item_price)) * item.quantity,
+    product_name: item.productName || `Product ID ${item.product_id}`, // Use productName from API
+    total_cost: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)),
   }));
   
   const handlePrint = (showBankDetails: boolean) => {
-    const url = `/sales/invoices/${id}/print?showBankDetails=${showBankDetails}`;
+    const url = `/sales/invoices/${invoice.invoice_number}/print?showBankDetails=${showBankDetails}`;
     window.open(url, '_blank');
   };
 
   const handlePrintWithVehicle = () => {
     if (printType) {
-      const url = `/sales/invoices/${id}/${printType === 'dispatch' ? 'dispatch-note' : 'gate-pass'}?vehicleNo=${encodeURIComponent(vehicleNumber)}`;
+      const url = `/sales/invoices/${invoice.invoice_number}/${printType === 'dispatch' ? 'dispatch-note' : 'gate-pass'}?vehicleNo=${encodeURIComponent(vehicleNumber)}`;
       window.open(url, '_blank');
       setVehicleDialogVisible(false);
       setVehicleNumber('');
@@ -228,7 +209,7 @@ export function InvoiceView({ id }: InvoiceViewProps) {
                         {invoiceItems?.map((item, index) => (
                            <TableRow key={index}>
                                 <TableCell>{item.product_name}</TableCell>
-                                <TableCell className="text-right">{item.quantity}</TableCell>
+                                <TableCell className="text-right">{parseFloat(String(item.quantity))}</TableCell>
                                 <TableCell className="text-right font-mono">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                 <TableCell className="text-right font-mono text-destructive">-${parseFloat(String(item.item_discount)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                 <TableCell className="text-right font-mono">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>

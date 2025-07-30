@@ -105,6 +105,9 @@ export type User = {
   customer_first_name: string;
   customer_last_name: string;
   phone_number: string;
+  address_line1?: string;
+  city_id?: string;
+  email_address?: string;
 };
 
 export type Collection = {
@@ -262,17 +265,19 @@ export type InvoiceItem = {
     id?: string;
     user_id?: number;
     product_id: number;
-    item_price: number;
-    item_discount: number;
-    quantity: number;
+    item_price: number | string;
+    item_discount: number | string;
+    quantity: number | string;
     customer_id?: number;
     table_id?: number;
-    cost_price: number;
+    cost_price: number | string;
     is_active?: number;
     hold_status?: number;
     printed_status?: number;
+    company_id?: string;
+    added_date?: string;
+    invoice_number?: string;
     // Client-side only
-    sku?: string;
     productName?: string;
 };
 
@@ -301,6 +306,7 @@ export type Invoice = {
     ref_hold: string | null;
     company_id: string;
     items?: InvoiceItem[];
+    customer?: User; // Can be added if the new endpoint returns it
 };
 
 export type PaymentReceipt = {

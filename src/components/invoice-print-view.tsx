@@ -2,7 +2,7 @@
 
 'use client'
 
-import { type Invoice, type User, type Product, type ProductVariant } from '@/lib/types';
+import { type Invoice, type User } from '@/lib/types';
 import { notFound, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +16,6 @@ interface InvoicePrintViewProps {
 export function InvoicePrintView({ id }: InvoicePrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -27,27 +26,16 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
       if (!id) return;
       setIsLoading(true);
       try {
-        const invoiceResponse = await fetch(`https://server-erp.payshia.com/invoices/${id}`);
-        if (!invoiceResponse.ok) {
-           if (invoiceResponse.status === 404) notFound();
+        const response = await fetch(`https://server-erp.payshia.com/invoices/full/${id}`);
+        if (!response.ok) {
+           if (response.status === 404) notFound();
            throw new Error('Failed to fetch invoice data');
         }
-        const invoiceData: Invoice = await invoiceResponse.json();
-        setInvoice(invoiceData);
-
-        const [customersResponse, productsResponse] = await Promise.all([
-           fetch(`https://server-erp.payshia.com/customers`),
-           fetch('https://server-erp.payshia.com/products'),
-        ]);
-
-        if (!customersResponse.ok) throw new Error('Failed to fetch customers');
-        if (!productsResponse.ok) throw new Error('Failed to fetch products');
-        
-        const customersData: User[] = await customersResponse.json();
-        const productsData: Product[] = await productsResponse.json();
-
-        setCustomer(customersData.find(c => c.customer_id === invoiceData.customer_code) || null);
-        setProducts(productsData);
+        const data: Invoice = await response.json();
+        setInvoice(data);
+        if (data.customer) {
+            setCustomer(data.customer);
+        }
 
       } catch (error) {
         toast({
@@ -73,8 +61,6 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
         setTimeout(() => window.print(), 500);
     }
   }, [isLoading, invoice]);
-
-  const getProductName = (productId: number) => products.find(p => p.id === String(productId))?.name || 'Unknown Product';
   
   if (isLoading) {
     return <InvoiceViewSkeleton />;
@@ -86,8 +72,8 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
 
   const invoiceItems = invoice.items?.map(item => ({
     ...item,
-    product_name: getProductName(item.product_id),
-    total_cost: parseFloat(String(item.item_price)) * item.quantity - parseFloat(String(item.item_discount)),
+    product_name: item.productName || `Product ID ${item.product_id}`,
+    total_cost: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)) - parseFloat(String(item.item_discount)),
   }));
 
   return (
@@ -138,7 +124,7 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
             {invoiceItems?.map((item, index) => (
               <tr key={index} className="border-b border-gray-100">
                 <td className="p-3">{item.product_name}</td>
-                <td className="p-3 text-right">{item.quantity.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">{parseFloat(String(item.quantity)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                 <td className="p-3 text-right">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="p-3 text-right">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
@@ -206,10 +192,4 @@ function InvoiceViewSkeleton() {
     </div>
   );
 }
-
-
-
-
-
-
 
