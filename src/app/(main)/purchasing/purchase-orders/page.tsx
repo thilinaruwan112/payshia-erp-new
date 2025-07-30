@@ -185,7 +185,11 @@ export default function PurchaseOrdersPage() {
                           <DropdownMenuItem asChild>
                             <Link href={`/purchasing/purchase-orders/${po.id}`}>View Details</Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Create GRN</DropdownMenuItem>
+                          {po.po_status === '1' && ( // Only show if Approved
+                            <DropdownMenuItem asChild>
+                              <Link href={`/purchasing/grn/new?poId=${po.id}`}>Create GRN</Link>
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem asChild>
                             <Link href={`/accounting/payments/new?poId=${po.id}&supplierId=${po.supplier_id}&amount=${po.sub_total}`}>

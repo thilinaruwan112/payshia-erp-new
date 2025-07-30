@@ -86,3 +86,28 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  body, html {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .no-print, .print\:hidden {
+    display: none !important;
+  }
+  
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}

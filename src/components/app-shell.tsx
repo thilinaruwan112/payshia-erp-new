@@ -42,6 +42,7 @@ import {
   ShoppingBag,
   Boxes,
   Archive,
+  History,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -81,6 +82,8 @@ import { useLocation } from '@/components/location-provider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Calendar } from './ui/calendar';
 
 const user = {
   name: 'Admin User',
@@ -149,7 +152,8 @@ const navItems = [
     icon: Building,
     subItems: [
       { href: '/purchasing/purchase-orders', label: 'Purchase Orders' },
-      { href: '/purchasing/grn', label: 'GRN' },
+      { href: '/purchasing/grn', label: 'Create GRN' },
+      { href: '/purchasing/grn/history', label: 'GRN History', icon: History },
     ],
   },
   {
@@ -260,7 +264,9 @@ function DateTimeLocation() {
     const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
     useEffect(() => {
-        setCurrentTime(new Date());
+        const now = new Date();
+        setCurrentTime(now);
+
         const timer = setInterval(() => {
             setCurrentTime(new Date());
         }, 1000);
@@ -280,15 +286,39 @@ function DateTimeLocation() {
     return (
         <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground sm:mr-auto">
            <LocationSwitcher />
-
-             <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                <span>{format(currentTime, 'PPP')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>{format(currentTime, 'pp')}</span>
-            </div>
+            <Popover>
+                <PopoverTrigger asChild>
+                     <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4" />
+                        <span>{format(currentTime, 'PPP')}</span>
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar
+                        mode="single"
+                        selected={currentTime}
+                        disabled
+                    />
+                </PopoverContent>
+            </Popover>
+            <Popover>
+                 <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        <span>{format(currentTime, 'pp')}</span>
+                    </Button>
+                </PopoverTrigger>
+                 <PopoverContent className="w-auto p-4">
+                    <div className="text-center">
+                        <div className="text-4xl font-bold">
+                            {format(currentTime, 'HH:mm')}
+                        </div>
+                        <div className="text-lg text-muted-foreground">
+                            {format(currentTime, 'ss')}s
+                        </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
         </div>
     )
 }

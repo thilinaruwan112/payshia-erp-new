@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -77,7 +78,7 @@ export default function ReceiptsPage() {
                   <TableCell className="hidden md:table-cell">
                      <Badge variant="secondary">{receipt.paymentMethod}</Badge>
                   </TableCell>
-                  <TableCell className="text-right font-mono">${receipt.amount.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-mono">${receipt.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

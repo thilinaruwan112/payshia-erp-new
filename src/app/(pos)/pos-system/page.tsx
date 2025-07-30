@@ -169,13 +169,7 @@ export default function POSPage() {
   const clearCart = () => {
     if (!currentOrderId) return;
     setActiveOrders((prevOrders) =>
-      prevOrders.map((order) => {
-        const currentOrderIndex = prevOrders.findIndex(o => o.id === currentOrderId);
-        if(currentOrderIndex > -1) {
-          prevOrders.splice(currentOrderIndex, 1);
-        }
-        return order;
-      })
+        prevOrders.filter((order) => order.id !== currentOrderId)
     );
     createNewOrder(); // Create a new empty order after clearing the paid one
     setDrawerOpen(false); // Close drawer after clearing cart
@@ -236,19 +230,17 @@ export default function POSPage() {
   const orderPanelComponent = currentOrder ? (
      <OrderPanel
         key={currentOrder.id}
-        cart={currentOrder.cart}
+        order={currentOrder}
         orderTotals={orderTotals}
+        cashierName={currentCashier.name}
         onUpdateQuantity={updateQuantity}
         onRemoveItem={removeFromCart}
-        onClearCart={clearCart}
+        onClearCart={() => clearCart()}
         onHoldOrder={holdOrder}
         onSendToKitchen={sendToKitchen}
         isDrawer={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
-        discount={currentOrder.discount}
         setDiscount={setDiscount}
-        customer={currentOrder.customer}
-        orderName={currentOrder.name}
      />
   ) : (
       <div className="flex flex-col h-full bg-card items-center justify-center text-center p-8">

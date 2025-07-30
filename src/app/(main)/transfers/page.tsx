@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -95,8 +96,8 @@ export default function StockTransfersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{new Date(transfer.date).toLocaleDateString()}</TableCell>
-                  <TableCell className="hidden sm:table-cell text-right">{transfer.itemCount}</TableCell>
-                  <TableCell className="text-right font-mono">${transfer.totalValue.toFixed(2)}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-right">{transfer.itemCount.toLocaleString()}</TableCell>
+                  <TableCell className="text-right font-mono">${transfer.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

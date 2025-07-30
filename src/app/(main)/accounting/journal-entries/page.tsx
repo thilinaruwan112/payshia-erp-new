@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -71,8 +72,8 @@ export default function JournalEntriesPage() {
                   <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
                   <TableCell className="font-mono">{entry.id}</TableCell>
                   <TableCell className="hidden sm:table-cell max-w-sm truncate">{entry.narration}</TableCell>
-                  <TableCell className="text-right font-mono">${entry.totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
-                  <TableCell className="text-right font-mono">${entry.totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">${entry.totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">${entry.totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

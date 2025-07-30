@@ -1,5 +1,32 @@
 
 
+export type GrnBatch = {
+    batchNumber: string;
+    mfgDate?: Date;
+    expDate?: Date;
+    receivedQty: number;
+}
+
+export type GrnItem = {
+    id?: string;
+    grn_id?: string;
+    product_id: number;
+    product_variant_id: number;
+    order_unit: string;
+    order_rate: number | string;
+    received_qty: string;
+    patch_code: string;
+    expire_date: string;
+    manufacture_date: string;
+    created_by: string;
+    is_active: number;
+    po_number: string;
+    // For view
+    product_name?: string;
+    variant_sku?: string;
+    total_cost?: number;
+}
+
 export type ProductVariant = {
   id: string;
   sku: string;
@@ -18,7 +45,7 @@ export type Product = {
   category: string;
   category_id?: string;
   brand_id?: string;
-  variants?: ProductVariant[];
+  variants: ProductVariant[];
   price: number | string;
   status: 'active' | 'draft';
   stock_unit?: string;
@@ -76,11 +103,19 @@ export type User = {
   id: string;
   name: string;
   role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer';
-  avatar: string;
+  avatar?: string;
   loyaltyPoints?: number;
   email?: string;
   phone?: string;
   address?: string;
+  // Fields from the new customer API
+  customer_id: string;
+  customer_first_name: string;
+  customer_last_name: string;
+  phone_number: string;
+  address_line1?: string;
+  city_id?: string;
+  email_address?: string;
 };
 
 export type Collection = {
@@ -92,6 +127,7 @@ export type Collection = {
   created_at: string;
   updated_at: string;
   products?: Product[];
+  productCount?: number;
 };
 
 export type Supplier = {
@@ -140,12 +176,23 @@ export type PurchaseOrderItem = {
 
 export type GoodsReceivedNote = {
     id: string;
-    poId: string;
-    supplierName: string;
-    receivedDate: string;
-    locationId: string;
-    locationName: string;
-    itemCount: number;
+    grn_number: string;
+    location_id: string;
+    company_id: string;
+    supplier_id: string;
+    currency: string;
+    tax_type: string;
+    sub_total: string;
+    tax_value: string;
+    grand_total: string;
+    created_by: string;
+    created_at: string;
+    is_active: string;
+    grn_status: string;
+    remarks: string;
+    payment_status: string;
+    po_number: string;
+    items?: GrnItem[];
 }
 
 export type StockTransfer = {
@@ -233,24 +280,51 @@ export type FixedAsset = {
 };
 
 export type InvoiceItem = {
-  sku: string;
-  productName: string;
-  quantity: number;
-  unitPrice: number;
-  discount?: number;
-  total: number;
+    id?: string;
+    user_id?: number;
+    product_id: number;
+    item_price: number | string;
+    item_discount: number | string;
+    quantity: number | string;
+    customer_id?: number;
+    table_id?: number;
+    cost_price: number | string;
+    is_active?: number;
+    hold_status?: number;
+    printed_status?: number;
+    company_id?: string;
+    added_date?: string;
+    invoice_number?: string;
+    // Client-side only
+    productName?: string;
 };
 
 export type Invoice = {
-  id: string;
-  orderId?: string;
-  customerName: string;
-  date: string;
-  dueDate: string;
-  status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
-  total: number;
-  discount: number;
-  items: InvoiceItem[];
+    id: string;
+    invoice_number: string;
+    invoice_date: string;
+    inv_amount: string;
+    grand_total: string;
+    discount_amount: string;
+    discount_percentage: string;
+    customer_code: string;
+    service_charge: string;
+    tendered_amount: string;
+    close_type: string;
+    invoice_status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+    current_time: string;
+    location_id: string;
+    table_id: string;
+    order_ready_status: string;
+    created_by: string;
+    is_active: string;
+    steward_id: string;
+    cost_value: string;
+    remark: string | null;
+    ref_hold: string | null;
+    company_id: string;
+    items?: InvoiceItem[];
+    customer?: User; // Can be added if the new endpoint returns it
 };
 
 export type PaymentReceipt = {

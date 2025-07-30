@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -292,8 +293,8 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                                               )}
                                           />
                                       </TableCell>
-                                      <TableCell className="font-mono">${costPrice.toFixed(2)}</TableCell>
-                                      <TableCell className="font-mono">${sellingPrice.toFixed(2)}</TableCell>
+                                      <TableCell className="font-mono">${costPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                      <TableCell className="font-mono">${sellingPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                       <TableCell>
                                           <FormField
                                               control={form.control}
@@ -308,7 +309,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                                               )}
                                           />
                                       </TableCell>
-                                      <TableCell className="text-right font-mono">${totalValue.toFixed(2)}</TableCell>
+                                      <TableCell className="text-right font-mono">${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                       <TableCell>
                                           {fields.length > 1 && (
                                               <Button variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -323,7 +324,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                        <TableFooter>
                           <TableRow>
                               <TableCell colSpan={4} className="text-right font-bold">Total Transfer Value</TableCell>
-                              <TableCell className="text-right font-bold font-mono">${transferTotalValue.toFixed(2)}</TableCell>
+                              <TableCell className="text-right font-bold font-mono">${transferTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                               <TableCell></TableCell>
                           </TableRow>
                       </TableFooter>
@@ -345,7 +346,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                 <p><strong>From:</strong> {fromLocation?.name}</p>
                 <p><strong>To:</strong> {toLocation?.name}</p>
                 <p><strong>Items:</strong> {watchedItems.length}</p>
-                <p><strong>Total Value:</strong> <span className="font-mono">${transferTotalValue.toFixed(2)}</span></p>
+                <p><strong>Total Value:</strong> <span className="font-mono">${transferTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
