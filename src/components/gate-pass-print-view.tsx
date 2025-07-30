@@ -83,80 +83,90 @@ export function GatePassPrintView({ id }: PrintViewProps) {
   const totalQuantity = invoiceItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
   return (
-    <div className="bg-white text-black font-sans text-sm p-4 w-[210mm] min-h-[297mm] shadow-lg print:shadow-none">
-      <div className="w-full h-full border border-gray-300 p-4 flex flex-col">
-        <div className="text-center mb-6">
-            <h1 className="text-xl font-bold mb-1">Thilina Products</h1>
-            <p className="text-xs">#455, 533A3, Pelmadulla, Rathnapura, 70070</p>
-            <h2 className="text-2xl font-bold mt-4 underline">GATE PASS</h2>
+    <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
+      <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Payshia ERP</h1>
+          <p>#455, 533A3, Pelmadulla</p>
+          <p>Rathnapura, 70070</p>
+          <p>info@payshia.com</p>
         </div>
-        
-        <div className="grid grid-cols-2 gap-4 text-sm mb-6">
-            <div>
-                <p><span className="font-bold">GP No:</span> GP-{invoice.invoice_number}</p>
-                <p><span className="font-bold">Invoice No:</span> {invoice.invoice_number}</p>
-                 <p><span className="font-bold">Customer:</span> {customer?.customer_first_name} {customer?.customer_last_name}</p>
-            </div>
-            <div className="text-right">
-                <p><span className="font-bold">Date:</span> {format(new Date(invoice.invoice_date), "dd/MM/yyyy")}</p>
-                <p><span className="font-bold">Time:</span> {format(new Date(invoice.current_time), "HH:mm:ss")}</p>
-                <p><span className="font-bold">Vehicle No:</span> ______________</p>
-            </div>
+        <div className="text-right">
+          <h2 className="text-4xl font-bold uppercase text-gray-700">Gate Pass</h2>
         </div>
+      </header>
 
-        <table className="w-full text-sm border-collapse border border-gray-400">
-            <thead>
-                <tr className="bg-gray-200">
-                    <th className="p-2 text-center border border-gray-400">#</th>
-                    <th className="p-2 text-left border border-gray-400">Item Description</th>
-                    <th className="p-2 text-right border border-gray-400">Quantity</th>
-                </tr>
-            </thead>
-            <tbody>
-                {invoiceItems?.map((item, index) => (
-                     <tr key={index}>
-                         <td className="p-2 border border-gray-400 text-center">{index + 1}</td>
-                         <td className="p-2 border border-gray-400">{item.product_name}</td>
-                         <td className="p-2 border border-gray-400 text-right">{item.quantity.toFixed(2)}</td>
-                     </tr>
-                ))}
-                 {Array.from({ length: 10 - (invoiceItems?.length || 0) }).map((_, i) => (
-                    <tr key={`empty-${i}`} className="h-8">
-                        <td className="p-2 border border-gray-400"></td>
-                        <td className="p-2 border border-gray-400"></td>
-                        <td className="p-2 border border-gray-400"></td>
-                    </tr>
-                ))}
-            </tbody>
-             <tfoot>
-                <tr className="font-bold bg-gray-200">
-                    <td colSpan={2} className="p-2 text-right border border-gray-400">Total Quantity</td>
-                    <td className="p-2 text-right border border-gray-400">{totalQuantity.toFixed(2)}</td>
-                </tr>
-            </tfoot>
+      <section className="grid grid-cols-2 gap-4 mt-6">
+        <div>
+          <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Customer</h3>
+          <p className="font-bold text-gray-800">{customer?.customer_first_name} {customer?.customer_last_name}</p>
+        </div>
+        <div className="text-right">
+          <div className="grid grid-cols-2 gap-1">
+            <span className="font-semibold text-gray-600">GP No:</span>
+            <span>GP-{invoice.invoice_number}</span>
+             <span className="font-semibold text-gray-600">Invoice No:</span>
+            <span>{invoice.invoice_number}</span>
+            <span className="font-semibold text-gray-600">Date:</span>
+            <span>{format(new Date(invoice.invoice_date), "dd MMM, yyyy")}</span>
+            <span className="font-semibold text-gray-600">Time:</span>
+            <span>{format(new Date(invoice.current_time), "HH:mm:ss")}</span>
+             <span className="font-semibold text-gray-600">Vehicle No:</span>
+            <span>_______________</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="bg-gray-100 text-gray-600 uppercase text-xs">
+              <th className="p-3 w-[10%]">#</th>
+              <th className="p-3 w-[70%]">Description</th>
+              <th className="p-3 text-right">Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoiceItems?.map((item, index) => (
+              <tr key={index} className="border-b border-gray-100">
+                <td className="p-3">{index + 1}</td>
+                <td className="p-3">{item.product_name}</td>
+                <td className="p-3 text-right">{item.quantity.toFixed(2)}</td>
+              </tr>
+            ))}
+             {Array.from({ length: 15 - (invoiceItems?.length || 0) }).map((_, i) => (
+              <tr key={`empty-${i}`} className="h-9 border-b border-gray-100">
+                <td className="p-3"></td>
+                <td className="p-3"></td>
+                <td className="p-3"></td>
+              </tr>
+            ))}
+          </tbody>
+           <tfoot>
+            <tr className="font-bold bg-gray-100">
+              <td colSpan={2} className="p-3 text-right text-gray-600 uppercase">Total Quantity</td>
+              <td className="p-3 text-right">{totalQuantity.toFixed(2)}</td>
+            </tr>
+          </tfoot>
         </table>
+      </section>
 
-        <div className="text-sm mt-4">
-            <p><span className="font-bold">Remarks:</span> {invoice.remark}</p>
-        </div>
-
-        <div className="flex-grow"></div>
-
-        <div className="flex justify-between items-center text-sm mt-20 pt-4">
+       <footer className="mt-24 pt-6 text-center text-gray-500 text-xs">
+         <div className="flex justify-between items-center text-sm">
             <div>
-                <p>.......................................</p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8">.......................................</p>
                 <p>Prepared by</p>
             </div>
              <div>
-                <p>.......................................</p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8">.......................................</p>
                 <p>Checked by (Security)</p>
             </div>
              <div>
-                <p>.......................................</p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8">.......................................</p>
                 <p>Driver Signature</p>
             </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }

@@ -80,85 +80,97 @@ export function DispatchNotePrintView({ id }: PrintViewProps) {
     product_name: getProductName(item.product_id),
   }));
 
+  const totalQuantity = invoiceItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+
   return (
-    <div className="bg-white text-black font-sans text-sm p-4 w-[210mm] min-h-[297mm] shadow-lg print:shadow-none">
-      <div className="w-full h-full border border-gray-300 p-4">
-        <div className="text-center mb-6">
-            <h1 className="text-xl font-bold mb-1">Thilina Products</h1>
-            <p className="text-xs">#455, 533A3, Pelmadulla, Rathnapura, 70070</p>
-            <h2 className="text-2xl font-bold mt-4">DISPATCH NOTE</h2>
+    <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
+       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Payshia ERP</h1>
+          <p>#455, 533A3, Pelmadulla</p>
+          <p>Rathnapura, 70070</p>
+          <p>info@payshia.com</p>
         </div>
-        
-        <div className="grid grid-cols-2 gap-4 text-xs mb-6">
-            <div>
-                <p><span className="font-bold">DN No:</span> DN-{invoice.invoice_number}</p>
-                <p><span className="font-bold">Invoice No:</span> {invoice.invoice_number}</p>
-            </div>
-            <div className="text-right">
-                <p><span className="font-bold">Date:</span> {format(new Date(invoice.invoice_date), "dd/MM/yyyy")}</p>
-                <p><span className="font-bold">Vehicle No:</span> ______________</p>
-            </div>
+        <div className="text-right">
+          <h2 className="text-4xl font-bold uppercase text-gray-700">Dispatch Note</h2>
         </div>
+      </header>
 
-        <div className="mb-6">
-            <div className="font-bold p-1 px-2 text-sm">
-                Customer Details
-            </div>
-             <div className="text-xs mt-1 p-2 border border-gray-300 rounded-md">
-                <p><span className="font-bold">Name:</span> {customer?.customer_first_name} {customer?.customer_last_name}</p>
-                <p><span className="font-bold">Address:</span> {customer?.address_line1}, {customer?.address_line2}, {customer?.city_id}</p>
-                <p><span className="font-bold">Contact:</span> {customer?.phone_number}</p>
-            </div>
+      <section className="grid grid-cols-2 gap-4 mt-6">
+        <div>
+          <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Customer</h3>
+          <p className="font-bold text-gray-800">{customer?.customer_first_name} {customer?.customer_last_name}</p>
+          <p>{customer?.address_line1}</p>
+          <p>{customer?.city_id}</p>
+          <p>{customer?.email_address}</p>
         </div>
-
-        <table className="w-full text-xs border-collapse border border-gray-400">
-            <thead>
-                <tr className="bg-gray-200">
-                    <th className="p-1 text-center border border-gray-400">#</th>
-                    <th className="p-1 text-left border border-gray-400">Description</th>
-                    <th className="p-1 text-center border border-gray-400">Unit</th>
-                    <th className="p-1 text-right border border-gray-400">Quantity</th>
-                </tr>
-            </thead>
-            <tbody>
-                {invoiceItems?.map((item, index) => (
-                     <tr key={index} className="odd:bg-white even:bg-gray-100">
-                         <td className="p-1 border-r border-l border-gray-400 text-center">{index + 1}</td>
-                         <td className="p-1 border-r border-gray-400">{item.product_name}</td>
-                         <td className="p-1 border-r border-gray-400 text-center">{item.order_unit || 'Nos'}</td>
-                         <td className="p-1 border-r border-gray-400 text-right">{item.quantity.toFixed(2)}</td>
-                     </tr>
-                ))}
-                 {Array.from({ length: 15 - (invoiceItems?.length || 0) }).map((_, i) => (
-                    <tr key={`empty-${i}`} className="h-6">
-                        <td className="p-1 border-r border-l border-gray-400"></td>
-                        <td className="p-1 border-r border-gray-400"></td>
-                        <td className="p-1 border-r border-gray-400"></td>
-                        <td className="p-1 border-r border-gray-400"></td>
-                    </tr>
-                ))}
-            </tbody>
+        <div className="text-right">
+          <div className="grid grid-cols-2 gap-1">
+            <span className="font-semibold text-gray-600">DN No:</span>
+            <span>DN-{invoice.invoice_number}</span>
+            <span className="font-semibold text-gray-600">Invoice No:</span>
+            <span>{invoice.invoice_number}</span>
+            <span className="font-semibold text-gray-600">Date:</span>
+            <span>{format(new Date(invoice.invoice_date), "dd MMM, yyyy")}</span>
+             <span className="font-semibold text-gray-600">Vehicle No:</span>
+            <span>_______________</span>
+          </div>
+        </div>
+      </section>
+      
+      <section className="mt-8">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="bg-gray-100 text-gray-600 uppercase text-xs">
+              <th className="p-3 w-[10%]">#</th>
+              <th className="p-3 w-[60%]">Description</th>
+              <th className="p-3 text-right">Unit</th>
+              <th className="p-3 text-right">Quantity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoiceItems?.map((item, index) => (
+              <tr key={index} className="border-b border-gray-100">
+                <td className="p-3">{index + 1}</td>
+                <td className="p-3">{item.product_name}</td>
+                <td className="p-3 text-right">{item.order_unit || 'Nos'}</td>
+                <td className="p-3 text-right">{item.quantity.toFixed(2)}</td>
+              </tr>
+            ))}
+             {Array.from({ length: 15 - (invoiceItems?.length || 0) }).map((_, i) => (
+              <tr key={`empty-${i}`} className="h-9 border-b border-gray-100">
+                <td className="p-3"></td>
+                <td className="p-3"></td>
+                <td className="p-3"></td>
+                <td className="p-3"></td>
+              </tr>
+            ))}
+          </tbody>
+           <tfoot>
+            <tr className="font-bold bg-gray-100">
+              <td colSpan={3} className="p-3 text-right text-gray-600 uppercase">Total Quantity</td>
+              <td className="p-3 text-right">{totalQuantity.toFixed(2)}</td>
+            </tr>
+          </tfoot>
         </table>
+      </section>
 
-        <div className="text-xs mt-4">
-            <p><span className="font-bold">Remarks:</span> {invoice.remark}</p>
-        </div>
-
-        <div className="flex justify-between items-center text-xs mt-20 pt-4">
+      <footer className="mt-24 pt-6 text-center text-gray-500 text-xs">
+         <div className="flex justify-between items-center text-sm">
             <div>
-                <p>.......................................</p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8">.......................................</p>
                 <p>Prepared by</p>
             </div>
              <div>
-                <p>.......................................</p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8">.......................................</p>
                 <p>Authorized by</p>
             </div>
              <div>
-                <p>.......................................</p>
+                <p className="border-t-2 border-gray-400 border-dotted pt-2 px-8">.......................................</p>
                 <p>Received by</p>
             </div>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
