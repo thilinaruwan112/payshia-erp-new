@@ -154,7 +154,7 @@ export function GrnForm() {
                     const product = productsData.find(p => p.id === item.product_id);
                     const variant = variantsData.find(v => v.id === item.product_variant_id);
 
-                    const receivedQtyResponse = await fetch(`https://server-erp.payshia.com/purchase-order-items/total-received-qty/?product_id=${item.product_id}&po_number=${poData.po_number}&company_id=1`);
+                    const receivedQtyResponse = await fetch(`https://server-erp.payshia.com/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${poData.po_number}&company_id=1`);
                     let alreadyReceived = 0;
                     if(receivedQtyResponse.ok) {
                         const receivedQtyData = await receivedQtyResponse.json();
