@@ -260,12 +260,10 @@ function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
 
 function DateTimeLocation() {
     const [currentTime, setCurrentTime] = useState<Date | null>(null);
-    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
     useEffect(() => {
         const now = new Date();
         setCurrentTime(now);
-        setSelectedDate(now);
 
         const timer = setInterval(() => {
             setCurrentTime(new Date());
@@ -296,16 +294,29 @@ function DateTimeLocation() {
                 <PopoverContent className="w-auto p-0">
                     <Calendar
                         mode="single"
-                        selected={selectedDate}
-                        onSelect={(date) => setSelectedDate(date || new Date())}
-                        initialFocus
+                        selected={currentTime}
+                        disabled
                     />
                 </PopoverContent>
             </Popover>
-            <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>{format(currentTime, 'pp')}</span>
-            </div>
+            <Popover>
+                 <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        <span>{format(currentTime, 'pp')}</span>
+                    </Button>
+                </PopoverTrigger>
+                 <PopoverContent className="w-auto p-4">
+                    <div className="text-center">
+                        <div className="text-4xl font-bold">
+                            {format(currentTime, 'HH:mm')}
+                        </div>
+                        <div className="text-lg text-muted-foreground">
+                            {format(currentTime, 'ss')}s
+                        </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
         </div>
     )
 }
