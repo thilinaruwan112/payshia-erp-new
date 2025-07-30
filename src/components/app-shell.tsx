@@ -81,6 +81,8 @@ import { useLocation } from '@/components/location-provider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Calendar } from './ui/calendar';
 
 const user = {
   name: 'Admin User',
@@ -258,9 +260,13 @@ function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
 
 function DateTimeLocation() {
     const [currentTime, setCurrentTime] = useState<Date | null>(null);
+    const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
     useEffect(() => {
-        setCurrentTime(new Date());
+        const now = new Date();
+        setCurrentTime(now);
+        setSelectedDate(now);
+
         const timer = setInterval(() => {
             setCurrentTime(new Date());
         }, 1000);
@@ -280,11 +286,22 @@ function DateTimeLocation() {
     return (
         <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground sm:mr-auto">
            <LocationSwitcher />
-
-             <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                <span>{format(currentTime, 'PPP')}</span>
-            </div>
+            <Popover>
+                <PopoverTrigger asChild>
+                     <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4" />
+                        <span>{format(currentTime, 'PPP')}</span>
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => setSelectedDate(date || new Date())}
+                        initialFocus
+                    />
+                </PopoverContent>
+            </Popover>
             <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span>{format(currentTime, 'pp')}</span>
