@@ -1,43 +1,60 @@
 
 'use client';
 
-import { useSearchParams } from 'next/navigation';
-import React, { useEffect } from 'react';
-import type { CartItem, OrderInfo, ActiveOrder } from '@/app/(pos)/pos-system/page';
+import { useSearchParams, notFound } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import type { Invoice, User, Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
-function PosInvoicePrint() {
-  const searchParams = useSearchParams();
-  const [order, setOrder] = React.useState<ActiveOrder | null>(null);
-  const [orderInfo, setOrderInfo] = React.useState<OrderInfo | null>(null);
-  const [cashierName, setCashierName] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(true);
+function PosInvoicePrint({ id }: { id: string }) {
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [customer, setCustomer] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    const orderData = searchParams.get('order');
-    const orderInfoData = searchParams.get('orderInfo');
-    const cashier = searchParams.get('cashier');
+    async function fetchData() {
+        if (!id) return;
+        setIsLoading(true);
+        try {
+            const invoiceResponse = await fetch(`https://server-erp.payshia.com/invoices/${id}`);
+            if (!invoiceResponse.ok) {
+                if (invoiceResponse.status === 404) notFound();
+                throw new Error('Failed to fetch invoice data');
+            }
+            const invoiceData: Invoice = await invoiceResponse.json();
+            setInvoice(invoiceData);
 
-    if (orderData && orderInfoData) {
-      try {
-        setOrder(JSON.parse(orderData));
-        setOrderInfo(JSON.parse(orderInfoData));
-        setCashierName(cashier || 'N/A');
-      } catch (e) {
-        console.error("Failed to parse order data", e);
-      }
+            if (invoiceData.customer_code) {
+                 const customersResponse = await fetch(`https://server-erp.payshia.com/customers`);
+                 if (customersResponse.ok) {
+                    const customersData: User[] = await customersResponse.json();
+                    setCustomer(customersData.find(c => c.customer_id === invoiceData.customer_code) || null);
+                 }
+            }
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Failed to load invoice',
+                description: error instanceof Error ? error.message : 'Could not fetch data from the server.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
-    setIsLoading(false);
-  }, [searchParams]);
+    fetchData();
+  }, [id, toast]);
 
   useEffect(() => {
-    if (!isLoading && order) {
-      document.title = `Receipt - ${order.name}`;
+    if (!isLoading && invoice) {
+      document.title = `Receipt - ${invoice.invoice_number}`;
       setTimeout(() => window.print(), 500);
     }
-  }, [isLoading, order]);
+  }, [isLoading, invoice]);
 
-  if (isLoading || !order || !orderInfo) {
+  if (isLoading || !invoice) {
     return (
       <div className="w-[58mm] bg-white text-black p-2 font-mono">
         <Skeleton className="h-5 w-3/4 mx-auto" />
@@ -64,6 +81,12 @@ function PosInvoicePrint() {
       </div>
     );
   }
+  
+  const totalDiscount = parseFloat(invoice.discount_amount);
+  const subtotal = parseFloat(invoice.inv_amount);
+  const total = parseFloat(invoice.grand_total);
+  // Tax is not explicitly in the payload, so we calculate it
+  const tax = total - subtotal + totalDiscount - parseFloat(invoice.service_charge);
 
   return (
     <div className="w-[58mm] bg-white text-black p-1 font-mono text-[9px] leading-snug">
@@ -77,26 +100,27 @@ function PosInvoicePrint() {
       <div className="my-2 border-t border-dashed border-black"></div>
       
       <div>
-        <p>Date: {new Date().toLocaleString()}</p>
-        <p>Receipt#: {order.id}</p>
-        <p>Cashier: {cashierName}</p>
+        <p>Date: {format(new Date(invoice.invoice_date), "dd/MM/yyyy HH:mm")}</p>
+        <p>Receipt#: {invoice.invoice_number}</p>
+        <p>Cashier: {invoice.created_by}</p>
+         {customer && <p>Customer: {customer.customer_first_name} {customer.customer_last_name}</p>}
       </div>
 
       <div className="my-2 border-t border-dashed border-black"></div>
 
-      {/* Items */}
       <table className="w-full">
         <thead>
           <tr>
             <th className="text-left">ITEM</th>
             <th className="text-center">QTY</th>
             <th className="text-right">PRICE</th>
+            <th className="text-right">TOTAL</th>
           </tr>
         </thead>
         <tbody>
-          {order.cart.map((item: CartItem) => (
-            <tr key={item.product.id}>
-              <td colSpan={3}>{item.product.name}</td>
+          {invoice.items?.map((item) => (
+            <tr key={item.product_id}>
+              <td colSpan={4}>{item.productName || `Product ID: ${item.product_id}`}</td>
             </tr>
           ))}
         </tbody>
@@ -108,19 +132,23 @@ function PosInvoicePrint() {
       <div className="space-y-1">
         <div className="flex justify-between">
           <span>Subtotal:</span>
-          <span>${orderInfo.subtotal.toFixed(2)}</span>
+          <span>${subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
           <span>Discount:</span>
-          <span>-${(orderInfo.discount + orderInfo.itemDiscounts).toFixed(2)}</span>
+          <span>-${totalDiscount.toFixed(2)}</span>
+        </div>
+         <div className="flex justify-between">
+          <span>Service Charge:</span>
+          <span>${parseFloat(invoice.service_charge).toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
           <span>Tax:</span>
-          <span>${orderInfo.tax.toFixed(2)}</span>
+          <span>${tax > 0 ? tax.toFixed(2) : '0.00'}</span>
         </div>
         <div className="flex justify-between font-bold text-xs mt-1 border-t border-black pt-1">
           <span>TOTAL:</span>
-          <span>${orderInfo.total.toFixed(2)}</span>
+          <span>${total.toFixed(2)}</span>
         </div>
       </div>
 
@@ -135,10 +163,10 @@ function PosInvoicePrint() {
 }
 
 
-export default function POSInvoicePage() {
+export default function POSInvoicePage({ params }: { params: { id: string } }) {
     return (
         <React.Suspense fallback={<div className="w-[58mm] bg-white text-black p-2 font-mono">Loading...</div>}>
-            <PosInvoicePrint />
+            <PosInvoicePrint id={params.id} />
         </React.Suspense>
     )
 }

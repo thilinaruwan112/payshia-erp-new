@@ -41,7 +41,7 @@ interface OrderPanelProps {
   cashierName: string;
   onUpdateQuantity: (productId: string, newQuantity: number) => void;
   onRemoveItem: (productId: string) => void;
-  onClearCart: () => void;
+  onClearCart: (invoiceId: string) => void;
   onHoldOrder: () => void;
   onSendToKitchen: () => void;
   isDrawer?: boolean;
@@ -174,23 +174,21 @@ export function OrderPanel({
 
   const { cart, customer, name: orderName, discount } = order;
 
-  const handleSuccessfulPayment = (paymentMethod: string) => {
+  const handleSuccessfulPayment = async (paymentMethod: string) => {
+    // This is a simplified simulation. A real app would have a robust backend process.
     toast({
-      title: 'Payment Successful',
-      description: `Charged $${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
+      title: 'Payment Processing...',
+      description: `Processing $${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
     });
     
-    // Open print window
-    const orderData = encodeURIComponent(JSON.stringify(order));
-    const orderInfoData = encodeURIComponent(JSON.stringify(orderTotals));
-    const cashier = encodeURIComponent(cashierName);
-    window.open(
-      `/pos/invoice/${order.id}?order=${orderData}&orderInfo=${orderInfoData}&cashier=${cashier}`,
-      '_blank'
-    );
+    // Simulate creating an invoice record and getting an ID back
+    const mockInvoiceId = `INV-${Date.now()}`;
+    
+    // Open print window with the new invoice ID
+    window.open(`/pos/invoice/${mockInvoiceId}`, '_blank');
 
     setPaymentOpen(false);
-    onClearCart();
+    onClearCart(mockInvoiceId); // Pass the new ID to clear the right order
   };
 
   return (
