@@ -236,8 +236,9 @@ export default function POSPage() {
   const orderPanelComponent = currentOrder ? (
      <OrderPanel
         key={currentOrder.id}
-        cart={currentOrder.cart}
+        order={currentOrder}
         orderTotals={orderTotals}
+        cashierName={currentCashier.name}
         onUpdateQuantity={updateQuantity}
         onRemoveItem={removeFromCart}
         onClearCart={clearCart}
@@ -245,10 +246,7 @@ export default function POSPage() {
         onSendToKitchen={sendToKitchen}
         isDrawer={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
-        discount={currentOrder.discount}
         setDiscount={setDiscount}
-        customer={currentOrder.customer}
-        orderName={currentOrder.name}
      />
   ) : (
       <div className="flex flex-col h-full bg-card items-center justify-center text-center p-8">

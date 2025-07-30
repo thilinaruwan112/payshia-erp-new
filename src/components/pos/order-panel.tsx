@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import type { CartItem, OrderInfo } from '@/app/(pos)/pos-system/page';
+import type { CartItem, OrderInfo, ActiveOrder } from '@/app/(pos)/pos-system/page';
 import type { User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -36,8 +36,9 @@ import { Label } from '../ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 interface OrderPanelProps {
-  cart: CartItem[];
+  order: ActiveOrder;
   orderTotals: OrderInfo;
+  cashierName: string;
   onUpdateQuantity: (productId: string, newQuantity: number) => void;
   onRemoveItem: (productId: string) => void;
   onClearCart: () => void;
@@ -45,10 +46,7 @@ interface OrderPanelProps {
   onSendToKitchen: () => void;
   isDrawer?: boolean;
   onClose?: () => void;
-  discount: number;
   setDiscount: (discount: number) => void;
-  customer: User;
-  orderName: string;
 }
 
 const PaymentDialog = ({
@@ -56,14 +54,10 @@ const PaymentDialog = ({
   onSuccessfulPayment,
 }: {
   orderTotals: OrderInfo;
-  onSuccessfulPayment: () => void;
+  onSuccessfulPayment: (paymentMethod: string) => void;
 }) => {
   const [amountTendered, setAmountTendered] = React.useState('');
   const change = Number(amountTendered) - orderTotals.total;
-
-  const handlePayment = (paymentMethod: string) => {
-    onSuccessfulPayment();
-  };
 
   return (
     <DialogContent>
@@ -79,14 +73,14 @@ const PaymentDialog = ({
           <Button
             variant="outline"
             className="h-20 text-lg"
-            onClick={() => handlePayment('Cash')}
+            onClick={() => onSuccessfulPayment('Cash')}
           >
             Cash
           </Button>
           <Button
             variant="outline"
             className="h-20 text-lg"
-            onClick={() => handlePayment('Card')}
+            onClick={() => onSuccessfulPayment('Card')}
           >
             <CreditCard className="mr-2" /> Card
           </Button>
@@ -112,7 +106,7 @@ const PaymentDialog = ({
           <Button variant="outline">Cancel</Button>
         </DialogClose>
         <Button
-          onClick={() => handlePayment('Cash')}
+          onClick={() => onSuccessfulPayment('Cash')}
           disabled={!amountTendered || change < 0}
         >
           Confirm Payment
@@ -162,8 +156,9 @@ const DiscountDialog = ({
 };
 
 export function OrderPanel({
-  cart,
+  order,
   orderTotals,
+  cashierName,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -171,20 +166,29 @@ export function OrderPanel({
   onSendToKitchen,
   isDrawer,
   onClose,
-  discount,
   setDiscount,
-  customer,
-  orderName,
 }: OrderPanelProps) {
   const { toast } = useToast();
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
 
-  const handleSuccessfulPayment = () => {
+  const { cart, customer, name: orderName, discount } = order;
+
+  const handleSuccessfulPayment = (paymentMethod: string) => {
     toast({
       title: 'Payment Successful',
-      description: `Charged $${orderTotals.total.toFixed(2)}.`,
+      description: `Charged $${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
     });
+    
+    // Open print window
+    const orderData = encodeURIComponent(JSON.stringify(order));
+    const orderInfoData = encodeURIComponent(JSON.stringify(orderTotals));
+    const cashier = encodeURIComponent(cashierName);
+    window.open(
+      `/pos/invoice/${order.id}?order=${orderData}&orderInfo=${orderInfoData}&cashier=${cashier}`,
+      '_blank'
+    );
+
     setPaymentOpen(false);
     onClearCart();
   };
