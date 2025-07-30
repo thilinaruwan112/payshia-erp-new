@@ -40,15 +40,13 @@ export function GrnPrintView({ id }: PrintViewProps) {
         if (!productsResponse.ok) throw new Error('Failed to fetch products');
         if (!variantsResponse.ok) throw new Error('Failed to fetch variants');
 
-        const grnData = await grnResponse.json();
+        const grnData: GoodsReceivedNote = await grnResponse.json();
         const suppliersData: Supplier[] = await suppliersResponse.json();
         const productsData: Product[] = await productsResponse.json();
         const variantsData: ProductVariant[] = await variantsResponse.json();
 
-        const grnDetails = grnData.grn;
-
-        setGrn(grnDetails);
-        setSupplier(suppliersData.find(s => s.supplier_id === grnDetails.supplier_id) || null);
+        setGrn(grnData);
+        setSupplier(suppliersData.find(s => s.supplier_id === grnData.supplier_id) || null);
         setProducts(productsData);
         setVariants(variantsData);
 
@@ -149,7 +147,7 @@ export function GrnPrintView({ id }: PrintViewProps) {
                   <p className="text-xs text-gray-500">SKU: {item.variant_sku}</p>
                 </td>
                 <td className="p-3">{item.patch_code}</td>
-                <td className="p-3">{item.expire_date ? format(new Date(item.expire_date), 'dd/MM/yy') : 'N/A'}</td>
+                <td className="p-3">{item.expire_date && item.expire_date !== '0000-00-00' ? format(new Date(item.expire_date), 'dd/MM/yy') : 'N/A'}</td>
                 <td className="p-3 text-right">{parseFloat(item.received_qty)}</td>
                 <td className="p-3 text-right">${parseFloat(String(item.order_rate)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="p-3 text-right">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
