@@ -265,19 +265,16 @@ export function InvoiceView({ id }: InvoiceViewProps) {
             <DialogHeader>
                 <DialogTitle>Enter Vehicle Number</DialogTitle>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="vehicle-no" className="text-right">
+            <div className="space-y-2 py-4">
+                 <Label htmlFor="vehicle-no">
                         Vehicle No.
                     </Label>
-                    <Input
-                        id="vehicle-no"
-                        value={vehicleNumber}
-                        onChange={(e) => setVehicleNumber(e.target.value)}
-                        className="col-span-3"
-                        placeholder="e.g. ABC-1234"
-                    />
-                </div>
+                <Input
+                    id="vehicle-no"
+                    value={vehicleNumber}
+                    onChange={(e) => setVehicleNumber(e.target.value)}
+                    placeholder="e.g. ABC-1234"
+                />
             </div>
             <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setVehicleDialogVisible(false)}>Cancel</Button>
