@@ -42,6 +42,13 @@ import React from "react";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useLocation } from "./location-provider";
 
+type StockInfo = {
+    batch_id: string;
+    patch_code: string;
+    stock_qty: string;
+    expire_date: string;
+}
+
 const invoiceItemSchema = z.object({
       sku: z.string().min(1, "Product is required."),
       productId: z.string().min(1),
@@ -49,6 +56,7 @@ const invoiceItemSchema = z.object({
       unitPrice: z.coerce.number().min(0, "Unit price must be positive."),
       costPrice: z.coerce.number().min(0),
       discount: z.coerce.number().min(0, "Discount must be positive.").optional(),
+      batchId: z.string().min(1, "Batch is required."),
     });
 
 const invoiceFormSchema = z.object({
@@ -77,6 +85,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
   const { toast } = useToast();
   const { currentLocation } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [stockInfo, setStockInfo] = React.useState<Record<string, StockInfo[]>>({});
 
   const allSkus = products.flatMap(p => (p.variants || []).map(v => ({
       label: `${p.name} (${v.sku})`,
@@ -134,10 +143,27 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                 unitPrice: Number(price) || 0,
                 costPrice: Number(product?.costPrice) || 0,
                 discount: 0,
+                batchId: '',
             }
         });
         form.setValue('orderId', order.id);
         replace(newItems);
+    }
+  }
+
+  const handleProductSelect = async (sku: string, index: number) => {
+    if (!currentLocation) return;
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/stocks/sku/${sku}?location_id=${currentLocation.location_id}`);
+        if (!response.ok) {
+            throw new Error("Failed to fetch stock");
+        }
+        const data: StockInfo[] = await response.json();
+        setStockInfo(prev => ({ ...prev, [index]: data }));
+    } catch (error) {
+        console.error(error);
+        setStockInfo(prev => ({...prev, [index]: []}));
+        toast({variant: 'destructive', title: 'Error', description: 'Could not fetch stock for this product.'});
     }
   }
 
@@ -450,6 +476,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                     <TableHeader>
                         <TableRow>
                             <TableHead className="w-[30%]">Product</TableHead>
+                            <TableHead className="w-[20%]">Batch</TableHead>
                             <TableHead>Qty</TableHead>
                             <TableHead>Unit Price</TableHead>
                             <TableHead>Discount</TableHead>
@@ -459,8 +486,6 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                     </TableHeader>
                     <TableBody>
                          {fields.map((field, index) => {
-                            const selectedSku = watchedItems[index]?.sku;
-                            const product = products.find(p => p.variants.some(v => v.sku === selectedSku));
                             const unitPrice = watchedItems[index]?.unitPrice || 0;
                             const quantity = watchedItems[index]?.quantity || 0;
                             const discount = watchedItems[index]?.discount || 0;
@@ -477,6 +502,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                                                     <Select
                                                         onValueChange={(value) => {
                                                             field.onChange(value);
+                                                            handleProductSelect(value, index);
                                                             const selected = allSkus.find(s => s.value === value);
                                                             const price = invoiceType === 'Wholesale' ? selected?.wholesalePrice : selected?.sellingPrice;
                                                             form.setValue(`items.${index}.unitPrice`, Number(price) || 0);
@@ -493,6 +519,32 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                                                         <SelectContent>
                                                             {allSkus.map(sku => (
                                                                 <SelectItem key={sku.value} value={sku.value}>{sku.label}</SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                         <FormField
+                                            control={form.control}
+                                            name={`items.${index}.batchId`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!stockInfo[index]}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select batch" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {stockInfo[index]?.map(stock => (
+                                                                <SelectItem key={stock.batch_id} value={stock.batch_id}>
+                                                                    {stock.patch_code} (Qty: {stock.stock_qty})
+                                                                    {stock.expire_date && ` - Exp: ${format(new Date(stock.expire_date), 'dd/MM/yy')}`}
+                                                                </SelectItem>
                                                             ))}
                                                         </SelectContent>
                                                     </Select>
@@ -556,7 +608,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                          })}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', productId: '', quantity: 1, unitPrice: 0, costPrice: 0, discount: 0 })} className="mt-4">
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', productId: '', quantity: 1, unitPrice: 0, costPrice: 0, discount: 0, batchId: '' })} className="mt-4">
                     Add another item
                 </Button>
             </CardContent>
@@ -611,3 +663,4 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
     </Form>
   );
 }
+
