@@ -178,7 +178,7 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
                     <p>Account No: 123-456-7890</p>
                     <p>Branch: Colombo</p>
                 </div>
-                 <div className="col-span-3">
+                 <div className="col-span-3 text-right">
                     <div className="font-bold text-gray-800">
                         Please include the invoice number in your payment reference.
                     </div>
@@ -206,6 +206,7 @@ function InvoiceViewSkeleton() {
     </div>
   );
 }
+
 
 
 
