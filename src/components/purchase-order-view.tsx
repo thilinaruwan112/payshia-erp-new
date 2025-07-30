@@ -1,14 +1,15 @@
 
+
 'use client'
 
 import { type PurchaseOrder, type Supplier, type Product, type ProductVariant } from '@/lib/types';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
-import { Printer } from 'lucide-react';
+import { Printer, ArrowLeft } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -48,6 +49,7 @@ const getStatusColor = (status: string) => {
 
 
 export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
+  const router = useRouter();
   const [po, setPo] = useState<PurchaseOrder | null>(null);
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -100,6 +102,12 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
 
   const getProductName = (productId: string) => products.find(p => p.id === productId)?.name || 'Unknown Product';
   const getVariantSku = (variantId: string) => variants.find(v => v.id === variantId)?.sku || 'N/A';
+  
+  const handlePrint = () => {
+    if (po) {
+      window.open(`/purchasing/purchase-orders/${po.id}/print`, '_blank');
+    }
+  };
 
   if (isLoading) {
     return <PurchaseOrderViewSkeleton />;
@@ -128,7 +136,11 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
             </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Button variant="outline" onClick={() => window.print()}>
+              <Button variant="outline" onClick={() => router.back()}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+              </Button>
+              <Button onClick={handlePrint}>
                   <Printer className="mr-2 h-4 w-4" />
                   Print
               </Button>
@@ -213,6 +225,7 @@ function PurchaseOrderViewSkeleton() {
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Skeleton className="h-10 w-24" />
+             <Skeleton className="h-10 w-24" />
           </div>
         </div>
         <Card>
