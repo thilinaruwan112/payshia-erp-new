@@ -43,10 +43,11 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useLocation } from "./location-provider";
 
 type StockInfo = {
-    batch_id: string;
-    patch_code: string;
-    stock_qty: string;
+    product_id: string;
     expire_date: string;
+    total_in: string;
+    total_out: string;
+    stock_balance: string;
 }
 
 const invoiceItemSchema = z.object({
@@ -151,15 +152,16 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
     }
   }
 
-  const handleProductSelect = async (sku: string, index: number) => {
-    if (!currentLocation) return;
+  const handleProductSelect = async (productId: string, index: number) => {
+    if (!productId) return;
     try {
-        const response = await fetch(`https://server-erp.payshia.com/stocks/sku/${sku}?location_id=${currentLocation.location_id}`);
+        const response = await fetch(`https://server-erp.payshia.com/stock-entry/summary?company_id=101&product_id=${productId}`);
         if (!response.ok) {
             throw new Error("Failed to fetch stock");
         }
-        const data: StockInfo[] = await response.json();
-        setStockInfo(prev => ({ ...prev, [index]: data }));
+        const data = await response.json();
+        const validBatches = data.grouped_by_expire_date.filter((batch: StockInfo) => parseFloat(batch.stock_balance) > 0);
+        setStockInfo(prev => ({ ...prev, [index]: validBatches }));
     } catch (error) {
         console.error(error);
         setStockInfo(prev => ({...prev, [index]: []}));
@@ -175,8 +177,6 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
 
   const itemDiscounts = watchedItems.reduce((total, item) => {
       const discount = Number(item.discount) || 0;
-      // Note: The sample API payload seems to have discount per item, not per quantity. 
-      // Adjust if it should be `discount * quantity`.
       return total + discount; 
   }, 0)
 
@@ -200,22 +200,22 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
         discount_percentage: subtotal > 0 ? (totalDiscountAmount / subtotal) * 100 : 0,
         customer_code: data.customerId,
         service_charge: data.serviceCharge || 0,
-        tendered_amount: data.status === 'Paid' ? grandTotal : 0, // Assume full payment if status is paid
-        close_type: "Cash", // Hardcoded as per sample
+        tendered_amount: data.status === 'Paid' ? grandTotal : 0,
+        close_type: "Cash",
         invoice_status: data.status,
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id),
-        table_id: 0, // Hardcoded
-        order_ready_status: 1, // Hardcoded
-        created_by: "Admin User", // Hardcoded
+        table_id: 0,
+        order_ready_status: 1,
+        created_by: "Admin User",
         is_active: 1,
-        steward_id: "STW-001", // Hardcoded
+        steward_id: "STW-001",
         cost_value: data.items.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0),
         remark: data.remark || "",
         ref_hold: null,
-        company_id: "1", // Hardcoded
+        company_id: "1",
         items: data.items.map(item => ({
-            user_id: 1, // Hardcoded user ID
+            user_id: 1,
             product_id: parseInt(item.productId),
             item_price: item.unitPrice,
             item_discount: item.discount || 0,
@@ -502,12 +502,13 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                                                     <Select
                                                         onValueChange={(value) => {
                                                             field.onChange(value);
-                                                            handleProductSelect(value, index);
                                                             const selected = allSkus.find(s => s.value === value);
+                                                            handleProductSelect(selected?.productId || '', index);
                                                             const price = invoiceType === 'Wholesale' ? selected?.wholesalePrice : selected?.sellingPrice;
                                                             form.setValue(`items.${index}.unitPrice`, Number(price) || 0);
                                                             form.setValue(`items.${index}.productId`, selected?.productId || '');
                                                             form.setValue(`items.${index}.costPrice`, Number(selected?.costPrice) || 0);
+                                                            form.setValue(`items.${index}.batchId`, ''); // Reset batch on product change
                                                         }}
                                                         defaultValue={field.value}
                                                     >
@@ -533,7 +534,7 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                                             name={`items.${index}.batchId`}
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!stockInfo[index]}>
+                                                    <Select onValueChange={field.onChange} value={field.value} disabled={!stockInfo[index]}>
                                                         <FormControl>
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Select batch" />
@@ -541,9 +542,9 @@ export function InvoiceForm({ products, customers, orders }: InvoiceFormProps) {
                                                         </FormControl>
                                                         <SelectContent>
                                                             {stockInfo[index]?.map(stock => (
-                                                                <SelectItem key={stock.batch_id} value={stock.batch_id}>
-                                                                    {stock.patch_code} (Qty: {stock.stock_qty})
-                                                                    {stock.expire_date && ` - Exp: ${format(new Date(stock.expire_date), 'dd/MM/yy')}`}
+                                                                <SelectItem key={stock.expire_date} value={stock.expire_date}>
+                                                                    EXP: {stock.expire_date === '0000-00-00' ? 'N/A' : format(new Date(stock.expire_date), 'dd/MM/yy')} 
+                                                                    (Qty: {parseFloat(stock.stock_balance).toFixed(2)})
                                                                 </SelectItem>
                                                             ))}
                                                         </SelectContent>
