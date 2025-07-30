@@ -114,6 +114,7 @@ export default function GrnConfirmationPage() {
         const grnItemsPayload = data.items.flatMap(item => 
             item.batches.map(batch => ({
                 product_id: parseInt(item.productId, 10),
+                product_variant_id: parseInt(item.productVariantId, 10),
                 order_unit: "pcs", // This might need to be dynamic
                 order_rate: item.unitRate,
                 received_qty: batch.receivedQty,
