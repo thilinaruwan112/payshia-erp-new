@@ -129,7 +129,7 @@ export default function GrnConfirmationPage() {
 
         const grnPayload = {
             location_id: parseInt(data.locationId, 10),
-            company_id: 101, // From sample
+            company_id: 1,
             supplier_id: parseInt(data.supplierId, 10),
             currency: data.currency,
             tax_type: data.taxType,
