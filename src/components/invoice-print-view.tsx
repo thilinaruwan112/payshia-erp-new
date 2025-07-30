@@ -179,11 +179,11 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
                     <p>Branch: Colombo</p>
                 </div>
                  <div className="col-span-3 text-right">
-                    <div className="font-bold text-gray-800">
+                    <div className="font-bold text-gray-800 whitespace-nowrap">
                         Please include the invoice number in your payment reference.
                     </div>
                     <div className="text-muted-foreground">
-                        Kindly send the payment receipt to payments@example.com
+                        Kindly send the payment receipt to<br />payments@example.com
                     </div>
                 </div>
             </div>
@@ -206,6 +206,7 @@ function InvoiceViewSkeleton() {
     </div>
   );
 }
+
 
 
 
