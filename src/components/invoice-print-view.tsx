@@ -178,9 +178,11 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
                     <p>Account No: 123-456-7890</p>
                     <p>Branch: Colombo</p>
                 </div>
-                <div className="text-right">
-                    <p className="font-bold text-gray-800">Please include the invoice number in your payment reference.</p>
-                    <p className="text-xs text-muted-foreground mt-2">Kindly send the payment receipt to payments@example.com</p>
+                 <div className="text-right">
+                    <div>
+                        <p className="font-bold text-gray-800">Please include the invoice number in your payment reference.</p>
+                        <p className="block text-xs text-muted-foreground mt-2">Kindly send the payment receipt to payments@example.com</p>
+                    </div>
                 </div>
             </div>
           </section>
