@@ -80,7 +80,9 @@ export function AddToCartDialog({
             <div className="p-6 flex flex-col">
               <DialogHeader className="mb-4">
                 <DialogTitle className="text-2xl">{product.name}</DialogTitle>
-                <p className="text-sm text-muted-foreground">{product.variants[0].sku}</p>
+                <p className="text-sm text-muted-foreground">
+                  {product.variants && product.variants.length > 0 ? product.variants[0].sku : 'No SKU'}
+                </p>
               </DialogHeader>
 
               <div className="bg-muted/50 rounded-lg p-4 flex justify-center items-center mb-4">
@@ -117,7 +119,7 @@ export function AddToCartDialog({
                 </div>
                 <div className="col-span-3">
                   <p className="text-muted-foreground">Barcode</p>
-                  <p className="font-mono tracking-widest">{product.variants[0].sku}</p>
+                  <p className="font-mono tracking-widest">{product.variants && product.variants.length > 0 ? product.variants[0].sku : 'N/A'}</p>
                 </div>
               </div>
               
