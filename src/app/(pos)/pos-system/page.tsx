@@ -72,7 +72,13 @@ export default function POSPage() {
                 throw new Error('Failed to fetch products');
             }
             const data = await response.json();
-            const parsedData = data.map((p: Product) => ({...p, price: parseFloat(p.price as any)}));
+            const parsedData = data.map((p: Product) => ({
+                ...p, 
+                price: parseFloat(p.price as any),
+                min_price: parseFloat(p.min_price as any),
+                wholesale_price: parseFloat(p.wholesale_price as any),
+                cost_price: parseFloat(p.cost_price as any),
+            }));
             setProducts(parsedData || []);
         } catch (error) {
             toast({
