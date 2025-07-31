@@ -48,6 +48,12 @@ export type ActiveOrder = {
   customer: User;
 };
 
+interface ProductWithVariants {
+    product: Product;
+    variants: ProductVariant[];
+}
+
+
 let orderCounter = 1;
 
 export default function POSPage() {
@@ -72,38 +78,37 @@ export default function POSPage() {
     async function fetchProducts() {
         setIsLoadingProducts(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/products`);
+            const response = await fetch(`https://server-erp.payshia.com/products/with-variants`);
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
-            const data: Product[] = await response.json();
+            const data: { products: ProductWithVariants[] } = await response.json();
             
             // Flatten products into PosProduct[]
-            const flattenedProducts = data.flatMap(p => {
+            const flattenedProducts = (data.products || []).flatMap(p => {
               if (!p.variants || p.variants.length === 0) {
-                // Handle products with no variants by creating a "default" variant
                  return [{
-                  ...p,
-                  price: parseFloat(p.price as any) || 0,
-                  min_price: parseFloat(p.min_price as any) || 0,
-                  wholesale_price: parseFloat(p.wholesale_price as any) || 0,
-                  cost_price: parseFloat(p.cost_price as any) || 0,
-                  variant: { id: p.id, sku: `SKU-${p.id}` }, // Create a mock variant
-                  variantName: p.name,
+                  ...p.product,
+                  price: parseFloat(p.product.price as any) || 0,
+                  min_price: parseFloat(p.product.min_price as any) || 0,
+                  wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
+                  cost_price: parseFloat(p.product.cost_price as any) || 0,
+                  variant: { id: p.product.id, sku: `SKU-${p.product.id}` }, // Create a mock variant
+                  variantName: p.product.name,
                 }];
               }
 
               return p.variants.map(v => {
-                const variantParts = [p.name];
+                const variantParts = [p.product.name];
                 if (v.color) variantParts.push(v.color);
                 if (v.size) variantParts.push(v.size);
                 
                 return {
-                  ...p,
-                  price: parseFloat(p.price as any) || 0,
-                  min_price: parseFloat(p.min_price as any) || 0,
-                  wholesale_price: parseFloat(p.wholesale_price as any) || 0,
-                  cost_price: parseFloat(p.cost_price as any) || 0,
+                  ...p.product,
+                  price: parseFloat(p.product.price as any) || 0,
+                  min_price: parseFloat(p.product.min_price as any) || 0,
+                  wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
+                  cost_price: parseFloat(p.product.cost_price as any) || 0,
                   variant: v,
                   variantName: variantParts.join(' - '),
                 };
