@@ -17,6 +17,9 @@ import {
 } from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
 import { AddToCartDialog } from '@/components/pos/add-to-cart-dialog';
+import { useLocation } from '@/components/location-provider';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import Link from 'next/link';
 
 export type CartItem = {
   product: Product;
@@ -57,12 +60,18 @@ export default function POSPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const [currentCashier, setCurrentCashier] = useState(users[2]);
+  
+  const { currentLocation, isLoading: isLocationLoading } = useLocation();
 
   useEffect(() => {
     async function fetchProducts() {
+        if (!currentLocation) {
+            setProducts([]);
+            return;
+        }
         setIsLoadingProducts(true);
         try {
-            const response = await fetch('https://server-erp.payshia.com/products/pos');
+            const response = await fetch(`https://server-erp.payshia.com/products/pos/${currentLocation.location_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
@@ -74,12 +83,13 @@ export default function POSPage() {
                 title: 'Error',
                 description: 'Could not fetch products from the server.',
             });
+            setProducts([]);
         } finally {
             setIsLoadingProducts(false);
         }
     }
     fetchProducts();
-  }, [toast]);
+  }, [toast, currentLocation]);
 
 
   const currentOrder = useMemo(
@@ -252,6 +262,29 @@ export default function POSPage() {
       return { subtotal, tax, discount: currentOrder.discount, itemDiscounts, total };
   }, [currentOrder]);
 
+   if (isLocationLoading) {
+    return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
+  }
+
+  if (!currentLocation) {
+    return (
+        <div className="flex h-screen w-screen items-center justify-center p-4">
+             <Card className="text-center">
+                <CardHeader>
+                    <CardTitle>No Location Found</CardTitle>
+                    <CardDescription>Could not find a location with POS enabled. Please check your locations settings in the admin dashboard.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button asChild>
+                        <Link href="/locations" target="_blank">
+                            Go to Locations
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+    )
+  }
 
   const orderPanelComponent = currentOrder ? (
      <OrderPanel

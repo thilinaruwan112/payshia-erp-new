@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { User, Product } from '@/lib/types';
-import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock } from 'lucide-react';
+import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock, ChevronDown } from 'lucide-react';
 import { ThemeToggle } from '../theme-toggle';
 import Link from 'next/link';
 import { Button } from '../ui/button';
@@ -23,8 +23,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuRadioItem,
+  DropdownMenuRadioGroup
 } from '../ui/dropdown-menu';
 import { format } from 'date-fns';
+import { useLocation } from '../location-provider';
+import { Skeleton } from '../ui/skeleton';
 
 interface PosHeaderProps {
   searchTerm: string;
@@ -37,6 +41,8 @@ interface PosHeaderProps {
 
 function DateTimeLocation() {
     const [currentTime, setCurrentTime] = useState(new Date());
+    const { currentLocation, setCurrentLocation, availableLocations, isLoading } = useLocation();
+
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -45,17 +51,47 @@ function DateTimeLocation() {
         return () => clearInterval(timer);
     }, []);
 
+    if (isLoading) {
+        return (
+            <div className="flex items-center gap-4 text-sm text-muted-foreground order-2 sm:order-1 sm:mr-auto">
+                 <Skeleton className="h-10 w-32" />
+            </div>
+        )
+    }
+
+    if (!currentLocation) {
+        return null;
+    }
+    
+    const posLocations = availableLocations.filter(loc => loc.pos_status === '1');
+
     return (
         <div className="flex items-center gap-4 text-sm text-muted-foreground order-2 sm:order-1 sm:mr-auto">
-             <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>Downtown Store</span>
-            </div>
-             <div className="flex items-center gap-2">
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                     <Button variant="outline" className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>{currentLocation.location_name}</span>
+                        <ChevronDown className="h-3 w-3" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuLabel>Change POS Location</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuRadioGroup value={currentLocation.location_id} onValueChange={(id) => setCurrentLocation(posLocations.find(l => l.location_id === id)!)}>
+                        {posLocations.map(location => (
+                            <DropdownMenuRadioItem key={location.location_id} value={location.location_id}>
+                                {location.location_name}
+                            </DropdownMenuRadioItem>
+                        ))}
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+            </DropdownMenu>
+             <div className="hidden sm:flex items-center gap-2">
                 <CalendarDays className="h-4 w-4" />
                 <span>{format(currentTime, 'PPP')}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span>{format(currentTime, 'p')}</span>
             </div>
