@@ -65,19 +65,14 @@ export default function POSPage() {
 
   useEffect(() => {
     async function fetchProducts() {
-        if (!currentLocation) {
-            setProducts([]);
-            setIsLoadingProducts(false);
-            return;
-        }
         setIsLoadingProducts(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/products/pos/${currentLocation.location_id}`);
+            const response = await fetch(`https://server-erp.payshia.com/products`);
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
             const data = await response.json();
-            setProducts(data.products || []);
+            setProducts(data || []);
         } catch (error) {
             toast({
                 variant: 'destructive',
@@ -90,7 +85,7 @@ export default function POSPage() {
         }
     }
     fetchProducts();
-  }, [toast, currentLocation]);
+  }, [toast]);
 
 
   const currentOrder = useMemo(
