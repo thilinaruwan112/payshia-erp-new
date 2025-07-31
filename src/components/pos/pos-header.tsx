@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { User, Product } from '@/lib/types';
+import type { PosProduct } from '@/app/(pos)/pos-system/page';
 import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock, ChevronDown } from 'lucide-react';
 import { ThemeToggle } from '../theme-toggle';
 import Link from 'next/link';
@@ -36,7 +37,7 @@ interface PosHeaderProps {
   category: string;
   setCategory: (value: string) => void;
   cashier: User;
-  products: Product[];
+  products: PosProduct[];
 }
 
 function DateTimeLocation() {

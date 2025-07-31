@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { users } from '@/lib/data';
-import type { Product, User } from '@/lib/types';
+import type { Product, User, ProductVariant } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -21,8 +21,13 @@ import { useLocation } from '@/components/location-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
 
+export type PosProduct = Product & {
+  variant: ProductVariant;
+  variantName: string;
+};
+
 export type CartItem = {
-  product: Product;
+  product: PosProduct;
   quantity: number;
   itemDiscount?: number;
 };
@@ -47,7 +52,7 @@ let orderCounter = 1;
 
 export default function POSPage() {
   const { toast } = useToast();
-  const [products, setProducts] = useState<Product[]>([]);
+  const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
@@ -57,7 +62,7 @@ export default function POSPage() {
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isHeldOrdersOpen, setHeldOrdersOpen] = useState(false);
 
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
 
   const [currentCashier, setCurrentCashier] = useState(users[2]);
   
@@ -71,22 +76,35 @@ export default function POSPage() {
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
-            const data = await response.json();
-            const parsedData = data.map((p: Product) => ({
-                ...p, 
-                price: parseFloat(p.price as any),
-                min_price: parseFloat(p.min_price as any),
-                wholesale_price: parseFloat(p.wholesale_price as any),
-                cost_price: parseFloat(p.cost_price as any),
-            }));
-            setProducts(parsedData || []);
+            const data: Product[] = await response.json();
+            
+            // Flatten products into PosProduct[]
+            const flattenedProducts = data.flatMap(p => 
+              (p.variants || []).map(v => {
+                const variantParts = [p.name];
+                if (v.color) variantParts.push(v.color);
+                if (v.size) variantParts.push(v.size);
+                
+                return {
+                  ...p,
+                  price: parseFloat(p.price as any) || 0,
+                  min_price: parseFloat(p.min_price as any) || 0,
+                  wholesale_price: parseFloat(p.wholesale_price as any) || 0,
+                  cost_price: parseFloat(p.cost_price as any) || 0,
+                  variant: v,
+                  variantName: variantParts.join(' - '),
+                };
+              })
+            );
+
+            setPosProducts(flattenedProducts);
         } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
                 description: 'Could not fetch products from the server.',
             });
-            setProducts([]);
+            setPosProducts([]);
         } finally {
             setIsLoadingProducts(false);
         }
@@ -119,7 +137,7 @@ export default function POSPage() {
     }
   }, [activeOrders.length]);
 
-  const handleProductSelect = (product: Product) => {
+  const handleProductSelect = (product: PosProduct) => {
     if (!currentOrderId) {
        toast({
         variant: 'destructive',
@@ -131,7 +149,7 @@ export default function POSPage() {
     setSelectedProduct(product);
   }
 
-  const addToCart = (product: Product, quantity: number, discount: number) => {
+  const addToCart = (product: PosProduct, quantity: number, discount: number) => {
     if (!currentOrderId) {
       return;
     }
@@ -139,12 +157,12 @@ export default function POSPage() {
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
         const existingItem = order.cart.find(
-          (item) => item.product.id === product.id
+          (item) => item.product.variant.id === product.variant.id
         );
         let newCart;
         if (existingItem) {
           newCart = order.cart.map((item) =>
-            item.product.id === product.id
+            item.product.variant.id === product.variant.id
               ? { ...item, quantity: item.quantity + quantity, itemDiscount: (item.itemDiscount || 0) + discount }
               : item
           );
@@ -157,17 +175,17 @@ export default function POSPage() {
     setSelectedProduct(null); // Close the dialog
   };
 
-  const updateQuantity = (productId: string, newQuantity: number) => {
+  const updateQuantity = (variantId: string, newQuantity: number) => {
     if (!currentOrderId) return;
     setActiveOrders((prevOrders) =>
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
         let newCart;
         if (newQuantity <= 0) {
-          newCart = order.cart.filter((item) => item.product.id !== productId);
+          newCart = order.cart.filter((item) => item.product.variant.id !== variantId);
         } else {
           newCart = order.cart.map((item) =>
-            item.product.id === productId
+            item.product.variant.id === variantId
               ? { ...item, quantity: newQuantity }
               : item
           );
@@ -177,12 +195,12 @@ export default function POSPage() {
     );
   };
 
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = (variantId: string) => {
      if (!currentOrderId) return;
      setActiveOrders((prevOrders) =>
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
-        const newCart = order.cart.filter((item) => item.product.id !== productId);
+        const newCart = order.cart.filter((item) => item.product.variant.id !== variantId);
         return {...order, cart: newCart };
       })
     );
@@ -240,12 +258,12 @@ export default function POSPage() {
   }
 
   const filteredProducts = useMemo(() => {
-    return products.filter(
+    return posProducts.filter(
       (product) =>
         (category === 'All' || product.category === category) &&
-        product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        product.variantName.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, category, products]);
+  }, [searchTerm, category, posProducts]);
   
   const totalItems = useMemo(() => {
     if (!currentOrder) return 0;
@@ -345,7 +363,7 @@ export default function POSPage() {
             category={category}
             setCategory={setCategory}
             cashier={currentCashier}
-            products={products}
+            products={posProducts}
           />
           <main className="flex-1 p-4">
             <div className="flex justify-end gap-2 mb-4">

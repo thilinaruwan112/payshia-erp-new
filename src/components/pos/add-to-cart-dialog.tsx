@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import type { Product } from '@/lib/types';
+import type { PosProduct } from '@/app/(pos)/pos-system/page';
 import {
   Dialog,
   DialogContent,
@@ -19,9 +19,9 @@ import { Plus, X } from 'lucide-react';
 import { Separator } from '../ui/separator';
 
 interface AddToCartDialogProps {
-  product: Product | null;
+  product: PosProduct | null;
   onClose: () => void;
-  onAddToCart: (product: Product, quantity: number, discount: number) => void;
+  onAddToCart: (product: PosProduct, quantity: number, discount: number) => void;
 }
 
 export function AddToCartDialog({
@@ -79,10 +79,8 @@ export function AddToCartDialog({
             {/* Left Column: Product Info */}
             <div className="p-6 flex flex-col">
               <DialogHeader className="mb-4">
-                <DialogTitle className="text-2xl">{product.name}</DialogTitle>
-                <p className="text-sm text-muted-foreground">
-                  {product.variants && product.variants.length > 0 ? product.variants[0].sku : 'No SKU'}
-                </p>
+                <DialogTitle className="text-2xl">{product.variantName}</DialogTitle>
+                <p className="text-sm text-muted-foreground">{product.variant.sku || 'No SKU'}</p>
               </DialogHeader>
 
               <div className="bg-muted/50 rounded-lg p-4 flex justify-center items-center mb-4">
@@ -119,7 +117,7 @@ export function AddToCartDialog({
                 </div>
                 <div className="col-span-3">
                   <p className="text-muted-foreground">Barcode</p>
-                  <p className="font-mono tracking-widest">{product.variants && product.variants.length > 0 ? product.variants[0].sku : 'N/A'}</p>
+                  <p className="font-mono tracking-widest">{product.variant.sku || 'N/A'}</p>
                 </div>
               </div>
               

@@ -39,8 +39,8 @@ interface OrderPanelProps {
   order: ActiveOrder;
   orderTotals: OrderInfo;
   cashierName: string;
-  onUpdateQuantity: (productId: string, newQuantity: number) => void;
-  onRemoveItem: (productId: string) => void;
+  onUpdateQuantity: (variantId: string, newQuantity: number) => void;
+  onRemoveItem: (variantId: string) => void;
   onClearCart: (invoiceId: string) => void;
   onHoldOrder: () => void;
   onSendToKitchen: (orderId: string) => void;
@@ -205,7 +205,7 @@ export function OrderPanel({
         orderId: order.id,
         orderName: order.name,
         cashierName: cashierName,
-        items: cart.map(item => ({ name: item.product.name, quantity: item.quantity })),
+        items: cart.map(item => ({ name: item.product.variantName, quantity: item.quantity })),
     };
     
     const encodedData = btoa(JSON.stringify(orderData));
@@ -238,7 +238,7 @@ export function OrderPanel({
         <div className='flex items-center justify-between'>
             <div className='flex items-center gap-3'>
                 <Avatar className='h-12 w-12'>
-                    <AvatarImage src={customer.avatar} alt={customer.name} data-ai-hint="profile picture" />
+                    <AvatarImage src={customer.avatar} alt={customer.name} data-ai-hint="profile picture"/>
                     <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
@@ -262,7 +262,7 @@ export function OrderPanel({
           <ScrollArea className="h-full max-h-[calc(100vh-570px)]">
             <div className="divide-y divide-border">
               {cart.map((item) => (
-                <div key={item.product.id} className="p-4 flex gap-4">
+                <div key={item.product.variant.id} className="p-4 flex gap-4">
                   <Image
                     src={`https://placehold.co/64x64.png`}
                     alt={item.product.name}
@@ -272,7 +272,7 @@ export function OrderPanel({
                     data-ai-hint="product photo"
                   />
                   <div className="flex-1 flex flex-col">
-                    <span className="font-semibold">{item.product.name}</span>
+                    <span className="font-semibold">{item.product.variantName}</span>
                     <span className="text-muted-foreground text-sm">
                       ${item.product.price.toFixed(2)}
                     </span>
@@ -287,7 +287,7 @@ export function OrderPanel({
                         variant="ghost"
                         className="h-8 w-8"
                         onClick={() =>
-                          onUpdateQuantity(item.product.id, item.quantity - 1)
+                          onUpdateQuantity(item.product.variant.id, item.quantity - 1)
                         }
                       >
                         <MinusCircle className="h-5 w-5" />
@@ -298,7 +298,7 @@ export function OrderPanel({
                         variant="ghost"
                         className="h-8 w-8"
                         onClick={() =>
-                          onUpdateQuantity(item.product.id, item.quantity + 1)
+                          onUpdateQuantity(item.product.variant.id, item.quantity + 1)
                         }
                       >
                         <PlusCircle className="h-5 w-5" />
@@ -313,7 +313,7 @@ export function OrderPanel({
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 mt-auto text-muted-foreground hover:text-destructive"
-                      onClick={() => onRemoveItem(item.product.id)}
+                      onClick={() => onRemoveItem(item.product.variant.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
