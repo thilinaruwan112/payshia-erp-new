@@ -67,6 +67,7 @@ export default function POSPage() {
     async function fetchProducts() {
         if (!currentLocation) {
             setProducts([]);
+            setIsLoadingProducts(false);
             return;
         }
         setIsLoadingProducts(true);
