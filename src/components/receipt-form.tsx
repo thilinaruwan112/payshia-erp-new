@@ -31,12 +31,13 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { User, Invoice } from "@/lib/types";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import React from "react";
+import { useLocation } from "./location-provider";
 
 const receiptFormSchema = z.object({
   date: z.date({
@@ -58,6 +59,8 @@ interface ReceiptFormProps {
 export function ReceiptForm({ customers, invoices }: ReceiptFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { currentLocation } = useLocation();
+  const [isLoading, setIsLoading] = React.useState(false);
   
   const defaultValues: Partial<ReceiptFormValues> = {
     date: new Date(),
@@ -75,25 +78,74 @@ export function ReceiptForm({ customers, invoices }: ReceiptFormProps) {
   
   const availableInvoices = React.useMemo(() => {
     if (!customerId) return [];
-    const customer = customers.find(c => c.id === customerId);
-    if (!customer) return [];
-    return invoices.filter(inv => inv.customerName === customer.name && inv.status !== 'Paid');
-  }, [customerId, customers, invoices]);
+    // Assuming invoice object has a customerId field. The mock data uses customerName.
+    // Let's adjust to use customer_code from the real Invoice type which seems to be customer ID.
+    return invoices.filter(inv => inv.customer_code === customerId && inv.invoice_status !== 'Paid');
+  }, [customerId, invoices]);
 
   const handleInvoiceChange = (invoiceId: string) => {
     const invoice = invoices.find(inv => inv.id === invoiceId);
     if (invoice) {
-        form.setValue("amount", invoice.total);
+        // Grand total is a string in the type, so we parse it.
+        form.setValue("amount", parseFloat(invoice.grand_total));
     }
   }
 
-  function onSubmit(data: ReceiptFormValues) {
-    console.log(data);
-    toast({
-      title: "Receipt Created",
-      description: `The payment receipt has been saved.`,
-    });
-    router.push('/sales/receipts');
+  async function onSubmit(data: ReceiptFormValues) {
+    if (!currentLocation) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'No business location selected. Please select a location from the top bar.',
+        });
+        return;
+    }
+    
+    setIsLoading(true);
+
+    const payload = {
+        type: data.paymentMethod,
+        is_active: 1,
+        date: format(data.date, "yyyy-MM-dd"),
+        amount: data.amount,
+        created_by: 1, // Assuming a logged-in user ID
+        ref_id: data.invoiceId,
+        location_id: parseInt(currentLocation.location_id, 10),
+        customer_id: parseInt(data.customerId, 10),
+        today_invoice: data.invoiceId, // This seems redundant but is in your sample
+        company_id: 1, // Assuming a default company ID
+    };
+
+    try {
+        const response = await fetch('https://server-erp.payshia.com/receipts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to create receipt.');
+        }
+
+        toast({
+          title: "Receipt Created",
+          description: `The payment receipt has been saved successfully.`,
+        });
+        router.push('/sales/receipts');
+        router.refresh();
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: "destructive",
+            title: "Failed to save receipt",
+            description: errorMessage,
+        });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -105,8 +157,11 @@ export function ReceiptForm({ customers, invoices }: ReceiptFormProps) {
                  <p className="text-muted-foreground">Record a payment received from a customer.</p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
-                <Button type="submit" className="w-full">Save Receipt</Button>
+                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isLoading}>Cancel</Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Receipt
+                </Button>
             </div>
         </div>
 
@@ -171,7 +226,7 @@ export function ReceiptForm({ customers, invoices }: ReceiptFormProps) {
                                 </FormControl>
                                 <SelectContent>
                                     {customers.map(c => (
-                                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                        <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -200,7 +255,7 @@ export function ReceiptForm({ customers, invoices }: ReceiptFormProps) {
                                 </FormControl>
                                 <SelectContent>
                                     {availableInvoices.map(inv => (
-                                        <SelectItem key={inv.id} value={inv.id}>{inv.id} - ${inv.total.toFixed(2)}</SelectItem>
+                                        <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number} - ${parseFloat(inv.grand_total).toFixed(2)}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
