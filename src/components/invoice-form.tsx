@@ -211,6 +211,7 @@ export function InvoiceForm({ productsWithVariants, customers, orders }: Invoice
         tendered_amount: data.status === 'Paid' ? grandTotal : 0,
         close_type: "Cash",
         invoice_status: data.status,
+        payment_status: "Pending",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
         table_id: 0,
