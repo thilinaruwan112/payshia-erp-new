@@ -10,8 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { products } from '@/lib/data';
-import type { User } from '@/lib/types';
+import type { User, Product } from '@/lib/types';
 import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock } from 'lucide-react';
 import { ThemeToggle } from '../theme-toggle';
 import Link from 'next/link';
@@ -33,6 +32,7 @@ interface PosHeaderProps {
   category: string;
   setCategory: (value: string) => void;
   cashier: User;
+  products: Product[];
 }
 
 function DateTimeLocation() {
@@ -69,7 +69,8 @@ export function PosHeader({
   setSearchTerm,
   category,
   setCategory,
-  cashier
+  cashier,
+  products
 }: PosHeaderProps) {
   const categories = ['All', ...new Set(products.map((p) => p.category))];
 

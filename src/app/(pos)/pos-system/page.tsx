@@ -1,14 +1,14 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { products, users } from '@/lib/data';
+import React, { useState, useMemo, useEffect } from 'react';
+import { users } from '@/lib/data';
 import type { Product, User } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -44,6 +44,8 @@ let orderCounter = 1;
 
 export default function POSPage() {
   const { toast } = useToast();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
@@ -55,6 +57,30 @@ export default function POSPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const [currentCashier, setCurrentCashier] = useState(users[2]);
+
+  useEffect(() => {
+    async function fetchProducts() {
+        setIsLoadingProducts(true);
+        try {
+            const response = await fetch('https://server-erp.payshia.com/products/pos');
+            if (!response.ok) {
+                throw new Error('Failed to fetch products');
+            }
+            const data = await response.json();
+            setProducts(data.products || []);
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not fetch products from the server.',
+            });
+        } finally {
+            setIsLoadingProducts(false);
+        }
+    }
+    fetchProducts();
+  }, [toast]);
+
 
   const currentOrder = useMemo(
     () => activeOrders.find((order) => order.id === currentOrderId),
@@ -206,7 +232,7 @@ export default function POSPage() {
         (category === 'All' || product.category === category) &&
         product.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, category]);
+  }, [searchTerm, category, products]);
   
   const totalItems = useMemo(() => {
     if (!currentOrder) return 0;
@@ -216,7 +242,7 @@ export default function POSPage() {
   const orderTotals = useMemo((): OrderInfo => {
      if (!currentOrder) return { subtotal: 0, tax: 0, discount: 0, itemDiscounts: 0, total: 0 };
      const subtotal = currentOrder.cart.reduce(
-        (acc, item) => acc + item.product.price * item.quantity,
+        (acc, item) => acc + (item.product.price as number) * item.quantity,
         0
       );
       const itemDiscounts = currentOrder.cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
@@ -283,6 +309,7 @@ export default function POSPage() {
             category={category}
             setCategory={setCategory}
             cashier={currentCashier}
+            products={products}
           />
           <main className="flex-1 p-4">
             <div className="flex justify-end gap-2 mb-4">
@@ -301,7 +328,13 @@ export default function POSPage() {
                   <Plus className="mr-2 h-4 w-4" /> New Order
               </Button>
             </div>
-            <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
+             {isLoadingProducts ? (
+              <div className="flex items-center justify-center h-[calc(100vh-250px)]">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+              </div>
+            ) : (
+                <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
+            )}
           </main>
         </div>
 

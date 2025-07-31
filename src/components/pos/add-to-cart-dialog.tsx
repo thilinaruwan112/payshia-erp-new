@@ -69,7 +69,7 @@ export function AddToCartDialog({
   };
 
   const isOpen = !!product;
-  const discountedPrice = product ? product.price - parseFloat(discount) : 0;
+  const discountedPrice = product ? (product.price as number) - parseFloat(discount) : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -101,19 +101,19 @@ export function AddToCartDialog({
                 </div>
                 <div>
                   <p className="text-muted-foreground">Unit</p>
-                  <p className="font-bold">{product.stockUnit || 'Nos'}</p>
+                  <p className="font-bold">{product.stock_unit || 'Nos'}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Price</p>
-                  <p className="font-bold">${product.price.toFixed(2)}</p>
+                  <p className="font-bold">${(product.price as number).toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Min</p>
-                  <p className="font-bold text-red-500">${(product.minPrice || 0).toFixed(2)}</p>
+                  <p className="font-bold text-red-500">${(product.min_price as number || 0).toFixed(2)}</p>
                 </div>
                  <div>
                   <p className="text-muted-foreground">Wholesale</p>
-                  <p className="font-bold">${(product.wholesalePrice || 0).toFixed(2)}</p>
+                  <p className="font-bold">${(product.wholesale_price as number || 0).toFixed(2)}</p>
                 </div>
                 <div className="col-span-3">
                   <p className="text-muted-foreground">Barcode</p>

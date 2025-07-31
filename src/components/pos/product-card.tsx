@@ -32,7 +32,7 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
         <div className='p-4'>
             <h3 className="font-semibold text-lg truncate group-hover:text-primary">{product.name}</h3>
             <p className="text-sm text-muted-foreground">{product.category}</p>
-            <p className="font-bold text-xl mt-2">${product.price.toFixed(2)}</p>
+            <p className="font-bold text-xl mt-2">${(product.price as number).toFixed(2)}</p>
         </div>
       </CardContent>
     </Card>
