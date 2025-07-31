@@ -188,8 +188,9 @@ export function InvoiceForm({ productsWithVariants, customers, orders }: Invoice
       return total + discount; 
   }, 0)
 
-  const totalDiscountAmount = itemDiscounts + billDiscount;
-  const grandTotal = subtotal - totalDiscountAmount + serviceCharge;
+  const totalDiscountAmount = (Number(itemDiscounts) || 0) + (Number(billDiscount) || 0);
+  const grandTotal = (Number(subtotal) || 0) - (Number(totalDiscountAmount) || 0) + (Number(serviceCharge) || 0);
+
 
   async function onSubmit(data: InvoiceFormValues) {
     setIsLoading(true);
