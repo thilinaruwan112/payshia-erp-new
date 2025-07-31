@@ -1,4 +1,5 @@
 
+'use client'
 
 import {
   Card,
@@ -17,7 +18,6 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { receipts } from '@/lib/data';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -27,8 +27,79 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import type { User } from '@/lib/types';
+import { useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
+
+type Receipt = {
+    id: string;
+    rec_number: string;
+    type: string;
+    is_active: string;
+    date: string;
+    amount: string;
+    created_by: string;
+    ref_id: string;
+    location_id: string;
+    customer_id: string;
+    today_invoice: string;
+    company_id: string;
+    now_time: string;
+};
 
 export default function ReceiptsPage() {
+    const [receipts, setReceipts] = useState<Receipt[]>([]);
+    const [customers, setCustomers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        async function fetchData() {
+            setIsLoading(true);
+            try {
+                const [receiptResponse, customerResponse] = await Promise.all([
+                    fetch('https://server-erp.payshia.com/receipts/company/1'),
+                    fetch('https://server-erp.payshia.com/customers'),
+                ]);
+
+                if (!receiptResponse.ok) throw new Error('Failed to fetch receipts');
+                if (!customerResponse.ok) throw new Error('Failed to fetch customers');
+
+                const receiptData = await receiptResponse.json();
+                const customerData = await customerResponse.json();
+                setReceipts(receiptData || []);
+                setCustomers(customerData || []);
+
+            } catch (error) {
+                 const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+                 toast({
+                    variant: 'destructive',
+                    title: 'Failed to load data',
+                    description: errorMessage
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchData();
+    }, [toast]);
+    
+    const getCustomerName = (customerId: string) => {
+        const customer = customers.find(c => c.customer_id === customerId);
+        return customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : `ID: ${customerId}`;
+    }
+
+    const getPaymentMethodText = (type: string) => {
+        switch (type) {
+            case '0': return 'Cash';
+            case '1': return 'Card';
+            case '2': return 'Bank Transfer';
+            default: return type;
+        }
+    }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -69,33 +140,54 @@ export default function ReceiptsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {receipts.map((receipt) => (
-                <TableRow key={receipt.id}>
-                  <TableCell className="font-medium">{receipt.id}</TableCell>
-                  <TableCell>{receipt.customerName}</TableCell>
-                  <TableCell className="hidden sm:table-cell">{receipt.invoiceId}</TableCell>
-                  <TableCell className="hidden md:table-cell">{new Date(receipt.date).toLocaleDateString()}</TableCell>
-                  <TableCell className="hidden md:table-cell">
-                     <Badge variant="secondary">{receipt.paymentMethod}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono">${receipt.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Print Receipt</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                    </TableRow>
+                ))
+              ) : (
+                receipts.map((receipt) => (
+                  <TableRow key={receipt.id}>
+                    <TableCell className="font-medium">{receipt.rec_number}</TableCell>
+                    <TableCell>{getCustomerName(receipt.customer_id)}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{receipt.ref_id}</TableCell>
+                    <TableCell className="hidden md:table-cell">{format(new Date(receipt.date), 'dd MMM, yyyy')}</TableCell>
+                    <TableCell className="hidden md:table-cell">
+                       <Badge variant="secondary">{getPaymentMethodText(receipt.type)}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">${parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem>Print Receipt</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+               {!isLoading && receipts.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                        No receipts found.
+                    </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
