@@ -79,8 +79,21 @@ export default function POSPage() {
             const data: Product[] = await response.json();
             
             // Flatten products into PosProduct[]
-            const flattenedProducts = data.flatMap(p => 
-              (p.variants || []).map(v => {
+            const flattenedProducts = data.flatMap(p => {
+              if (!p.variants || p.variants.length === 0) {
+                // Handle products with no variants by creating a "default" variant
+                 return [{
+                  ...p,
+                  price: parseFloat(p.price as any) || 0,
+                  min_price: parseFloat(p.min_price as any) || 0,
+                  wholesale_price: parseFloat(p.wholesale_price as any) || 0,
+                  cost_price: parseFloat(p.cost_price as any) || 0,
+                  variant: { id: p.id, sku: `SKU-${p.id}` }, // Create a mock variant
+                  variantName: p.name,
+                }];
+              }
+
+              return p.variants.map(v => {
                 const variantParts = [p.name];
                 if (v.color) variantParts.push(v.color);
                 if (v.size) variantParts.push(v.size);
@@ -95,7 +108,7 @@ export default function POSPage() {
                   variantName: variantParts.join(' - '),
                 };
               })
-            );
+            });
 
             setPosProducts(flattenedProducts);
         } catch (error) {
