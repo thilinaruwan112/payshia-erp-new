@@ -1,30 +1,28 @@
 
 import { ReceiptForm } from '@/components/receipt-form';
-import { type User, type Invoice } from '@/lib/types';
+import { type User } from '@/lib/types';
 
-async function getData(): Promise<{ customers: User[], invoices: Invoice[] }> {
+async function getData(): Promise<{ customers: User[] }> {
     try {
-        const [customerResponse, invoiceResponse] = await Promise.all([
+        const [customerResponse] = await Promise.all([
              fetch('https://server-erp.payshia.com/customers'),
-             fetch('https://server-erp.payshia.com/invoices')
         ]);
         
-        if (!customerResponse.ok || !invoiceResponse.ok) {
+        if (!customerResponse.ok) {
             throw new Error('Failed to fetch data for receipt form');
         }
         
         const customers = await customerResponse.json();
-        const invoices = await invoiceResponse.json();
         
-        return { customers: customers || [], invoices: invoices || [] };
+        return { customers: customers || [] };
     } catch (error) {
         console.error("Failed to fetch receipt data:", error);
-        return { customers: [], invoices: [] };
+        return { customers: [] };
     }
 }
 
 
 export default async function NewReceiptPage() {
-  const { customers, invoices } = await getData();
-  return <ReceiptForm customers={customers} invoices={invoices} />;
+  const { customers } = await getData();
+  return <ReceiptForm customers={customers} />;
 }

@@ -53,14 +53,15 @@ type ReceiptFormValues = z.infer<typeof receiptFormSchema>;
 
 interface ReceiptFormProps {
     customers: User[];
-    invoices: Invoice[];
 }
 
-export function ReceiptForm({ customers, invoices }: ReceiptFormProps) {
+export function ReceiptForm({ customers }: ReceiptFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currentLocation } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isFetchingInvoices, setIsFetchingInvoices] = React.useState(false);
+  const [customerInvoices, setCustomerInvoices] = React.useState<Invoice[]>([]);
   
   const defaultValues: Partial<ReceiptFormValues> = {
     date: new Date(),
@@ -75,18 +76,41 @@ export function ReceiptForm({ customers, invoices }: ReceiptFormProps) {
   });
 
   const customerId = form.watch("customerId");
-  
-  const availableInvoices = React.useMemo(() => {
-    if (!customerId) return [];
-    // Assuming invoice object has a customerId field. The mock data uses customerName.
-    // Let's adjust to use customer_code from the real Invoice type which seems to be customer ID.
-    return invoices.filter(inv => inv.customer_code === customerId && inv.invoice_status !== 'Paid');
-  }, [customerId, invoices]);
 
-  const handleInvoiceChange = (invoiceId: string) => {
-    const invoice = invoices.find(inv => inv.id === invoiceId);
+  React.useEffect(() => {
+    async function fetchCustomerInvoices(selectedCustomerId: string) {
+        if (!selectedCustomerId) {
+            setCustomerInvoices([]);
+            return;
+        };
+        setIsFetchingInvoices(true);
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedCustomerId}`);
+            if (!response.ok) {
+                throw new Error("Failed to fetch pending invoices for customer.");
+            }
+            const data = await response.json();
+            setCustomerInvoices(data || []);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+            toast({
+                variant: 'destructive',
+                title: 'Could not fetch invoices',
+                description: errorMessage,
+            });
+            setCustomerInvoices([]);
+        } finally {
+            setIsFetchingInvoices(false);
+        }
+    }
+
+    fetchCustomerInvoices(customerId);
+  }, [customerId, toast]);
+  
+
+  const handleInvoiceChange = (invoiceNumber: string) => {
+    const invoice = customerInvoices.find(inv => inv.invoice_number === invoiceNumber);
     if (invoice) {
-        // Grand total is a string in the type, so we parse it.
         form.setValue("amount", parseFloat(invoice.grand_total));
     }
   }
@@ -112,8 +136,8 @@ export function ReceiptForm({ customers, invoices }: ReceiptFormProps) {
         ref_id: data.invoiceId,
         location_id: parseInt(currentLocation.location_id, 10),
         customer_id: parseInt(data.customerId, 10),
-        today_invoice: data.invoiceId, // This seems redundant but is in your sample
-        company_id: 1, // Assuming a default company ID
+        today_invoice: data.invoiceId,
+        company_id: 1,
     };
 
     try {
@@ -218,7 +242,14 @@ export function ReceiptForm({ customers, invoices }: ReceiptFormProps) {
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Customer</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select 
+                                onValueChange={(value) => {
+                                    field.onChange(value);
+                                    form.setValue('invoiceId', ''); // Reset invoice selection
+                                    form.setValue('amount', 0); // Reset amount
+                                }}
+                                defaultValue={field.value}
+                            >
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a customer" />
@@ -245,17 +276,19 @@ export function ReceiptForm({ customers, invoices }: ReceiptFormProps) {
                                     field.onChange(value);
                                     handleInvoiceChange(value);
                                 }} 
-                                defaultValue={field.value}
-                                disabled={!customerId}
+                                value={field.value}
+                                disabled={!customerId || isFetchingInvoices}
                             >
                                 <FormControl>
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select an invoice" />
+                                        <SelectValue placeholder={isFetchingInvoices ? 'Loading invoices...' : 'Select an invoice'} />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {availableInvoices.map(inv => (
-                                        <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number} - ${parseFloat(inv.grand_total).toFixed(2)}</SelectItem>
+                                    {customerInvoices.map(inv => (
+                                        <SelectItem key={inv.id} value={inv.invoice_number}>
+                                            {inv.invoice_number} - ${parseFloat(inv.grand_total).toFixed(2)}
+                                        </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
