@@ -190,12 +190,6 @@ export default function PurchaseOrdersPage() {
                               <Link href={`/purchasing/grn/new?poId=${po.id}`}>Create GRN</Link>
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem asChild>
-                            <Link href={`/accounting/payments/new?poId=${po.id}&supplierId=${po.supplier_id}&amount=${po.sub_total}`}>
-                              Record Payment
-                            </Link>
-                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
