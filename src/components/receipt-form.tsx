@@ -31,7 +31,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { User, Invoice } from "@/lib/types";
-import { CalendarIcon, Loader2, CheckCircle } from "lucide-react";
+import { CalendarIcon, Loader2, CheckCircle, Info } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
@@ -258,47 +258,52 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
                     </CardContent>
                 </Card>
 
-                 {customerId && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Step 2: Select Invoice</CardTitle>
-                            <CardDescription>Choose the pending invoice to apply the payment to.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             {isFetchingInvoices ? (
-                                <div className="text-center p-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>
-                             ) : customerInvoices.length > 0 ? (
-                                <div className="grid grid-cols-2 gap-4">
-                                    {customerInvoices.map(invoice => (
-                                        <Card 
-                                            key={invoice.id} 
-                                            className={cn(
-                                                "cursor-pointer hover:border-primary transition-all relative",
-                                                selectedInvoice?.id === invoice.id && "border-2 border-primary"
-                                            )}
-                                            onClick={() => handleInvoiceSelect(invoice)}
-                                        >
-                                            <CardHeader>
-                                                <CardTitle className="text-base">{invoice.invoice_number}</CardTitle>
-                                                <CardDescription>{format(new Date(invoice.invoice_date), "dd MMM, yyyy")}</CardDescription>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <p className="font-bold text-lg">${parseFloat(invoice.grand_total).toFixed(2)}</p>
-                                            </CardContent>
-                                            {selectedInvoice?.id === invoice.id && (
-                                                <div className="absolute top-2 right-2 p-1 bg-primary text-primary-foreground rounded-full">
-                                                    <CheckCircle className="h-4 w-4" />
-                                                </div>
-                                            )}
-                                        </Card>
-                                    ))}
-                                </div>
-                             ) : (
-                                <div className="text-center text-muted-foreground p-8">No pending invoices found for this customer.</div>
-                             )}
-                        </CardContent>
-                    </Card>
-                 )}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Step 2: Select Invoice</CardTitle>
+                        <CardDescription>Choose the pending invoice to apply the payment to.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {!customerId ? (
+                            <div className="h-48 flex flex-col items-center justify-center text-center text-muted-foreground bg-muted/50 rounded-lg">
+                                <Info className="h-8 w-8 mb-2" />
+                                <p>Please select a customer first to see their pending invoices.</p>
+                            </div>
+                        ) : isFetchingInvoices ? (
+                            <div className="h-48 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>
+                        ) : customerInvoices.length > 0 ? (
+                            <div className="grid grid-cols-2 gap-4">
+                                {customerInvoices.map(invoice => (
+                                    <Card 
+                                        key={invoice.id} 
+                                        className={cn(
+                                            "cursor-pointer hover:border-primary transition-all relative",
+                                            selectedInvoice?.id === invoice.id && "border-2 border-primary"
+                                        )}
+                                        onClick={() => handleInvoiceSelect(invoice)}
+                                    >
+                                        <CardHeader>
+                                            <CardTitle className="text-base">{invoice.invoice_number}</CardTitle>
+                                            <CardDescription>{format(new Date(invoice.invoice_date), "dd MMM, yyyy")}</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="font-bold text-lg">${parseFloat(invoice.grand_total).toFixed(2)}</p>
+                                        </CardContent>
+                                        {selectedInvoice?.id === invoice.id && (
+                                            <div className="absolute top-2 right-2 p-1 bg-primary text-primary-foreground rounded-full">
+                                                <CheckCircle className="h-4 w-4" />
+                                            </div>
+                                        )}
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="h-48 flex items-center justify-center text-center text-muted-foreground">
+                                <p>No pending invoices found for this customer.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
 
             <div className="sticky top-24 space-y-4">
