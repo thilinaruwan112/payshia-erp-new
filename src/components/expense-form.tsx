@@ -38,6 +38,7 @@ import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Combobox } from "./ui/combobox";
+import { useCurrency } from "./currency-provider";
 
 const expenseFormSchema = z.object({
   date: z.date({
@@ -61,6 +62,7 @@ interface ExpenseFormProps {
 export function ExpenseForm({ expenseAccounts, paymentAccounts, payees }: ExpenseFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   
   const defaultValues: Partial<ExpenseFormValues> = {
     date: new Date(),
@@ -171,7 +173,7 @@ export function ExpenseForm({ expenseAccounts, paymentAccounts, payees }: Expens
                         <FormItem>
                         <FormLabel>Amount</FormLabel>
                         <FormControl>
-                            <Input type="number" placeholder="0.00" {...field} startIcon="$" />
+                            <Input type="number" placeholder="0.00" {...field} startIcon={currencySymbol} />
                         </FormControl>
                          <FormMessage />
                         </FormItem>

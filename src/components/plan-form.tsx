@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import type { Plan } from "@/lib/types";
 import { Textarea } from "./ui/textarea";
 import { Trash2 } from "lucide-react";
+import { useCurrency } from "./currency-provider";
 
 const planFormSchema = z.object({
   name: z.string().min(3, "Plan name must be at least 3 characters."),
@@ -50,6 +51,7 @@ interface PlanFormProps {
 export function PlanForm({ plan }: PlanFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   
   const defaultValues: Partial<PlanFormValues> = {
     name: plan?.name || "",
@@ -130,7 +132,7 @@ export function PlanForm({ plan }: PlanFormProps) {
                                 <FormItem>
                                 <FormLabel>Price (/month)</FormLabel>
                                 <FormControl>
-                                    <Input type="number" placeholder="e.g. 79" {...field} startIcon="$" />
+                                    <Input type="number" placeholder="e.g. 79" {...field} startIcon={currencySymbol} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>

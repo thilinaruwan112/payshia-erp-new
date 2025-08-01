@@ -38,6 +38,7 @@ import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import React from "react";
+import { useCurrency } from "./currency-provider";
 
 const paymentFormSchema = z.object({
   date: z.date({
@@ -62,6 +63,7 @@ export function PaymentForm({ suppliers, purchaseOrders, paymentAccounts }: Paym
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
 
   const defaultValues: Partial<PaymentFormValues> = {
     date: new Date(),
@@ -183,7 +185,7 @@ export function PaymentForm({ suppliers, purchaseOrders, paymentAccounts }: Paym
                         <FormItem>
                         <FormLabel>Amount</FormLabel>
                         <FormControl>
-                            <Input type="number" placeholder="0.00" {...field} startIcon="$" />
+                            <Input type="number" placeholder="0.00" {...field} startIcon={currencySymbol} />
                         </FormControl>
                          <FormMessage />
                         </FormItem>

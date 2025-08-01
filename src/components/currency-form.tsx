@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import React from "react";
+import { useCurrency } from "./currency-provider";
+import { currencies } from "@/lib/currencies";
 
 const currencyFormSchema = z.object({
   currency: z.string().min(1, "Currency is required."),
@@ -39,9 +41,10 @@ type CurrencyFormValues = z.infer<typeof currencyFormSchema>;
 
 export function CurrencyForm() {
   const { toast } = useToast();
+  const { currency, setCurrency } = useCurrency();
   
   const defaultValues: Partial<CurrencyFormValues> = {
-    currency: "LKR",
+    currency: currency,
   };
 
   const form = useForm<CurrencyFormValues>({
@@ -50,8 +53,12 @@ export function CurrencyForm() {
     mode: "onChange",
   });
 
+  React.useEffect(() => {
+    form.reset({ currency });
+  }, [currency, form]);
+
   function onSubmit(data: CurrencyFormValues) {
-    console.log(data);
+    setCurrency(data.currency);
     toast({
       title: "Currency Updated",
       description: `The default currency has been set to ${data.currency}.`,
@@ -75,18 +82,16 @@ export function CurrencyForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Currency</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a currency" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="LKR">LKR - Sri Lankan Rupee</SelectItem>
-                      <SelectItem value="USD">USD - United States Dollar</SelectItem>
-                      <SelectItem value="EUR">EUR - Euro</SelectItem>
-                      <SelectItem value="GBP">GBP - British Pound</SelectItem>
-                      <SelectItem value="JPY">JPY - Japanese Yen</SelectItem>
+                      {currencies.map(c => (
+                         <SelectItem key={c.code} value={c.code}>{c.code} - {c.name}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

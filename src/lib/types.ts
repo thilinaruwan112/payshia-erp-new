@@ -131,6 +131,7 @@ export type Collection = {
 };
 
 export type Supplier = {
+  id: string; // Keep this for client-side consistency if needed
   supplier_id: string;
   supplier_name: string;
   contact_person: string;
@@ -158,6 +159,12 @@ export type PurchaseOrder = {
     remarks: string;
     company_id: string;
     items?: PurchaseOrderItem[];
+    // For client-side join
+    supplierName?: string;
+    total?: number;
+    itemCount?: number;
+    expectedDelivery?: string;
+    status: 'Received' | 'Sent' | 'Draft';
 }
 
 export type PurchaseOrderItem = {
