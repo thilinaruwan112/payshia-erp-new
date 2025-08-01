@@ -55,13 +55,21 @@ interface ReceiptFormProps {
     customers: User[];
 }
 
+interface BalanceDetails {
+    grand_total: string;
+    total_paid_amount: string;
+    balance: number;
+}
+
 export function ReceiptForm({ customers }: ReceiptFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currentLocation } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
   const [isFetchingInvoices, setIsFetchingInvoices] = React.useState(false);
+  const [isFetchingBalance, setIsFetchingBalance] = React.useState(false);
   const [customerInvoices, setCustomerInvoices] = React.useState<Invoice[]>([]);
+  const [balanceDetails, setBalanceDetails] = React.useState<BalanceDetails | null>(null);
   
   const defaultValues: Partial<ReceiptFormValues> = {
     date: new Date(),
@@ -76,6 +84,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
   });
 
   const customerId = form.watch("customerId");
+  const invoiceId = form.watch("invoiceId");
 
   React.useEffect(() => {
     async function fetchCustomerInvoices(selectedCustomerId: string) {
@@ -84,6 +93,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
             return;
         };
         setIsFetchingInvoices(true);
+        setBalanceDetails(null);
         try {
             const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedCustomerId}`);
             if (!response.ok) {
@@ -108,12 +118,35 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
   }, [customerId, toast]);
   
 
-  const handleInvoiceChange = (invoiceNumber: string) => {
-    const invoice = customerInvoices.find(inv => inv.invoice_number === invoiceNumber);
-    if (invoice) {
-        form.setValue("amount", parseFloat(invoice.grand_total));
+  React.useEffect(() => {
+    async function fetchInvoiceBalance(invoiceNum: string) {
+        if (!invoiceNum || !customerId) {
+            setBalanceDetails(null);
+            return;
+        };
+        setIsFetchingBalance(true);
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=1&customer_id=${customerId}&ref_id=${invoiceNum}`);
+            if (!response.ok) {
+                throw new Error("Failed to fetch invoice balance.");
+            }
+            const data: BalanceDetails = await response.json();
+            setBalanceDetails(data);
+            form.setValue("amount", data.balance);
+        } catch (error) {
+             const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+            toast({
+                variant: 'destructive',
+                title: 'Could not fetch balance',
+                description: errorMessage,
+            });
+            setBalanceDetails(null);
+        } finally {
+            setIsFetchingBalance(false);
+        }
     }
-  }
+    fetchInvoiceBalance(invoiceId);
+  }, [invoiceId, customerId, toast, form.setValue, form]);
 
   async function onSubmit(data: ReceiptFormValues) {
     if (!currentLocation) {
@@ -128,7 +161,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
     setIsLoading(true);
 
     const payload = {
-        type: data.paymentMethod,
+        type: data.paymentMethod === 'Cash' ? '0' : data.paymentMethod === 'Card' ? '1' : '2',
         is_active: 1,
         date: format(data.date, "yyyy-MM-dd"),
         amount: data.amount,
@@ -272,10 +305,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
                         <FormItem>
                             <FormLabel>Reference Invoice</FormLabel>
                             <Select 
-                                onValueChange={(value) => {
-                                    field.onChange(value);
-                                    handleInvoiceChange(value);
-                                }} 
+                                onValueChange={field.onChange} 
                                 value={field.value}
                                 disabled={!customerId || isFetchingInvoices}
                             >
@@ -331,6 +361,27 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
                         </FormItem>
                     )}
                 />
+                 {isFetchingBalance ? (
+                    <div className="p-4 bg-muted/50 rounded-md flex items-center justify-center">
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <span>Fetching balance...</span>
+                    </div>
+                ) : balanceDetails && (
+                    <div className="p-4 bg-muted/50 rounded-md space-y-1 text-sm">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Grand Total:</span>
+                            <span className="font-mono">${parseFloat(balanceDetails.grand_total).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Paid Amount:</span>
+                            <span className="font-mono">${parseFloat(balanceDetails.total_paid_amount).toFixed(2)}</span>
+                        </div>
+                         <div className="flex justify-between font-bold">
+                            <span>Balance Due:</span>
+                            <span className="font-mono">${balanceDetails.balance.toFixed(2)}</span>
+                        </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
       </form>
