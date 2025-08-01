@@ -150,6 +150,7 @@ const navItems = [
     subItems: [
         { href: '/suppliers/dashboard', label: 'Dashboard', icon: LayoutGrid },
         { href: '/suppliers', label: 'All Suppliers', icon: Users },
+        { href: '/suppliers/payments', label: 'Payments', icon: Wallet },
         { href: '/suppliers/returns', label: 'Supplier Returns', icon: Undo2 },
     ]
   },
@@ -165,7 +166,6 @@ const navItems = [
     label: 'Accounting',
     icon: Landmark,
     subItems: [
-      { href: '/accounting/payments', label: 'Payments', icon: Wallet },
       { href: '/accounting/expenses', label: 'Expenses', icon: FileDigit },
       { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: BookUser },
       { href: '/accounting/journal-entries', label: 'Journal Entries', icon: FileText },

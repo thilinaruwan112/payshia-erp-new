@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -127,7 +128,7 @@ export function PaymentForm({ suppliers, paymentAccounts }: PaymentFormProps) {
       title: "Payment Recorded",
       description: `The payment has been saved.`,
     });
-    router.push('/accounting/payments');
+    router.push('/suppliers/payments');
   }
 
 
