@@ -31,7 +31,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { User, Invoice } from "@/lib/types";
-import { CalendarIcon, Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2, CheckCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
@@ -69,6 +69,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
   const [isFetchingInvoices, setIsFetchingInvoices] = React.useState(false);
   const [isFetchingBalance, setIsFetchingBalance] = React.useState(false);
   const [customerInvoices, setCustomerInvoices] = React.useState<Invoice[]>([]);
+  const [selectedInvoice, setSelectedInvoice] = React.useState<Invoice | null>(null);
   const [balanceDetails, setBalanceDetails] = React.useState<BalanceDetails | null>(null);
   
   const defaultValues: Partial<ReceiptFormValues> = {
@@ -84,7 +85,6 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
   });
 
   const customerId = form.watch("customerId");
-  const invoiceId = form.watch("invoiceId");
 
   React.useEffect(() => {
     async function fetchCustomerInvoices(selectedCustomerId: string) {
@@ -93,7 +93,10 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
             return;
         };
         setIsFetchingInvoices(true);
+        setSelectedInvoice(null);
         setBalanceDetails(null);
+        form.reset({ ...form.getValues(), invoiceId: '', amount: 0 });
+
         try {
             const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedCustomerId}`);
             if (!response.ok) {
@@ -115,38 +118,35 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
     }
 
     fetchCustomerInvoices(customerId);
-  }, [customerId, toast]);
+  }, [customerId, toast, form]);
   
+  const handleInvoiceSelect = async (invoice: Invoice) => {
+    setSelectedInvoice(invoice);
+    form.setValue('invoiceId', invoice.invoice_number);
+    setIsFetchingBalance(true);
+    setBalanceDetails(null);
 
-  React.useEffect(() => {
-    async function fetchInvoiceBalance(invoiceNum: string) {
-        if (!invoiceNum || !customerId) {
-            setBalanceDetails(null);
-            return;
-        };
-        setIsFetchingBalance(true);
-        try {
-            const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=1&customer_id=${customerId}&ref_id=${invoiceNum}`);
-            if (!response.ok) {
-                throw new Error("Failed to fetch invoice balance.");
-            }
-            const data: BalanceDetails = await response.json();
-            setBalanceDetails(data);
-            form.setValue("amount", data.balance);
-        } catch (error) {
-             const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-            toast({
-                variant: 'destructive',
-                title: 'Could not fetch balance',
-                description: errorMessage,
-            });
-            setBalanceDetails(null);
-        } finally {
-            setIsFetchingBalance(false);
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=1&customer_id=${customerId}&ref_id=${invoice.invoice_number}`);
+        if (!response.ok) {
+            throw new Error("Failed to fetch invoice balance.");
         }
+        const data: BalanceDetails = await response.json();
+        setBalanceDetails(data);
+        form.setValue("amount", data.balance);
+    } catch (error) {
+         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+        toast({
+            variant: 'destructive',
+            title: 'Could not fetch balance',
+            description: errorMessage,
+        });
+        setBalanceDetails(null);
+    } finally {
+        setIsFetchingBalance(false);
     }
-    fetchInvoiceBalance(invoiceId);
-  }, [invoiceId, customerId, toast, form]);
+  }
+
 
   async function onSubmit(data: ReceiptFormValues) {
     if (!currentLocation) {
@@ -165,7 +165,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
         is_active: 1,
         date: format(data.date, "yyyy-MM-dd"),
         amount: data.amount,
-        created_by: 1, // Assuming a logged-in user ID
+        created_by: 1,
         ref_id: data.invoiceId,
         location_id: parseInt(currentLocation.location_id, 10),
         customer_id: parseInt(data.customerId, 10),
@@ -213,200 +213,209 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
                  <h1 className="text-3xl font-bold tracking-tight text-nowrap">New Payment Receipt</h1>
                  <p className="text-muted-foreground">Record a payment received from a customer.</p>
             </div>
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+             <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isLoading}>Cancel</Button>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading || !selectedInvoice}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Receipt
                 </Button>
             </div>
         </div>
-
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            <Card className="lg:col-span-2">
-                <CardHeader>
-                    <CardTitle>Receipt Details</CardTitle>
-                    <CardDescription>Enter the details of the payment received.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                        control={form.control}
-                        name="customerId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Customer</FormLabel>
-                                <Select 
-                                    onValueChange={(value) => {
-                                        field.onChange(value);
-                                        form.setValue('invoiceId', ''); // Reset invoice selection
-                                        form.setValue('amount', 0); // Reset amount
-                                    }}
-                                    defaultValue={field.value}
-                                >
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select a customer" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {customers.map(c => (
-                                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <FormField
-                        control={form.control}
-                        name="date"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                            <FormLabel>Date of Payment</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                <FormControl>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full pl-3 text-left font-normal",
-                                        !field.value && "text-muted-foreground"
-                                    )}
-                                    >
-                                    {field.value ? (
-                                        format(field.value, "PPP")
-                                    ) : (
-                                        <span>Pick a date</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    disabled={(date) =>
-                                    date > new Date() || date < new Date("1900-01-01")
-                                    }
-                                    initialFocus
-                                />
-                                </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="invoiceId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Reference Invoice</FormLabel>
-                                <Select 
-                                    onValueChange={field.onChange} 
-                                    value={field.value}
-                                    disabled={!customerId || isFetchingInvoices}
-                                >
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder={isFetchingInvoices ? 'Loading invoices...' : 'Select an invoice'} />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {customerInvoices.map(inv => (
-                                            <SelectItem key={inv.id} value={inv.invoice_number}>
-                                                {inv.invoice_number} - ${parseFloat(inv.grand_total).toFixed(2)}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="paymentMethod"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Payment Method</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select a method" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        <SelectItem value="Card">Card</SelectItem>
-                                        <SelectItem value="Cash">Cash</SelectItem>
-                                        <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                </CardContent>
-            </Card>
-
-            <div className="space-y-4">
-                 <Card>
+            <div className="lg:col-span-2 space-y-8">
+                <Card>
                     <CardHeader>
-                        <CardTitle>Amount</CardTitle>
+                        <CardTitle>Step 1: Select Customer</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <FormField
+                         <FormField
                             control={form.control}
-                            name="amount"
+                            name="customerId"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormControl>
-                                    <Input type="number" placeholder="0.00" {...field} className="h-16 text-2xl" startIcon={<span className="text-2xl">$</span>} />
-                                </FormControl>
-                                <FormMessage />
+                                    <Select 
+                                        onValueChange={(value) => {
+                                            field.onChange(value);
+                                        }}
+                                        defaultValue={field.value}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a customer" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {customers.map(c => (
+                                                <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
                     </CardContent>
-                 </Card>
-                  <Card>
-                    <CardHeader>
-                        <CardTitle>Invoice Balance</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                       {isFetchingBalance ? (
-                            <div className="p-4 bg-muted/50 rounded-md flex items-center justify-center">
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                <span>Fetching balance...</span>
-                            </div>
-                        ) : balanceDetails ? (
-                            <div className="space-y-2 text-base">
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Grand Total:</span>
-                                    <span className="font-mono">${parseFloat(balanceDetails.grand_total).toFixed(2)}</span>
+                </Card>
+
+                 {customerId && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Step 2: Select Invoice</CardTitle>
+                            <CardDescription>Choose the pending invoice to apply the payment to.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             {isFetchingInvoices ? (
+                                <div className="text-center p-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>
+                             ) : customerInvoices.length > 0 ? (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {customerInvoices.map(invoice => (
+                                        <Card 
+                                            key={invoice.id} 
+                                            className={cn(
+                                                "cursor-pointer hover:border-primary transition-all relative",
+                                                selectedInvoice?.id === invoice.id && "border-2 border-primary"
+                                            )}
+                                            onClick={() => handleInvoiceSelect(invoice)}
+                                        >
+                                            <CardHeader>
+                                                <CardTitle className="text-base">{invoice.invoice_number}</CardTitle>
+                                                <CardDescription>{format(new Date(invoice.invoice_date), "dd MMM, yyyy")}</CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <p className="font-bold text-lg">${parseFloat(invoice.grand_total).toFixed(2)}</p>
+                                            </CardContent>
+                                            {selectedInvoice?.id === invoice.id && (
+                                                <div className="absolute top-2 right-2 p-1 bg-primary text-primary-foreground rounded-full">
+                                                    <CheckCircle className="h-4 w-4" />
+                                                </div>
+                                            )}
+                                        </Card>
+                                    ))}
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Paid Amount:</span>
-                                    <span className="font-mono">${parseFloat(balanceDetails.total_paid_amount).toFixed(2)}</span>
+                             ) : (
+                                <div className="text-center text-muted-foreground p-8">No pending invoices found for this customer.</div>
+                             )}
+                        </CardContent>
+                    </Card>
+                 )}
+            </div>
+
+            <div className="sticky top-24 space-y-4">
+                {selectedInvoice && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Step 3: Confirm Payment</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {isFetchingBalance ? (
+                                <div className="p-4 bg-muted/50 rounded-md flex items-center justify-center">
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <span>Fetching balance...</span>
                                 </div>
-                                <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                                    <span>Balance Due:</span>
-                                    <span className="font-mono">${balanceDetails.balance.toFixed(2)}</span>
+                            ) : balanceDetails ? (
+                                <>
+                                 <div className="space-y-2 text-base p-4 bg-muted rounded-md">
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Grand Total:</span>
+                                        <span className="font-mono">${parseFloat(balanceDetails.grand_total).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-muted-foreground">Paid Amount:</span>
+                                        <span className="font-mono">${parseFloat(balanceDetails.total_paid_amount).toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                                        <span>Balance Due:</span>
+                                        <span className="font-mono">${balanceDetails.balance.toFixed(2)}</span>
+                                    </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div className="text-center text-muted-foreground py-8">
-                                <p>Select an invoice to see the balance.</p>
-                            </div>
-                        )}
-                    </CardContent>
-                 </Card>
+                                <FormField
+                                    control={form.control}
+                                    name="amount"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Amount to Pay</FormLabel>
+                                            <FormControl>
+                                                <Input type="number" placeholder="0.00" {...field} className="h-12 text-xl" startIcon={<span className="text-xl">$</span>} />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="paymentMethod"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Payment Method</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select a method" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="Card">Card</SelectItem>
+                                                    <SelectItem value="Cash">Cash</SelectItem>
+                                                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="date"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-col">
+                                        <FormLabel>Date of Payment</FormLabel>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button
+                                                variant={"outline"}
+                                                className={cn(
+                                                    "w-full pl-3 text-left font-normal",
+                                                    !field.value && "text-muted-foreground"
+                                                )}
+                                                >
+                                                {field.value ? (
+                                                    format(field.value, "PPP")
+                                                ) : (
+                                                    <span>Pick a date</span>
+                                                )}
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={field.value}
+                                                onSelect={field.onChange}
+                                                disabled={(date) =>
+                                                date > new Date() || date < new Date("1900-01-01")
+                                                }
+                                                initialFocus
+                                            />
+                                            </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                </>
+                            ) : (
+                                <div className="text-center text-muted-foreground py-4">Could not load balance details.</div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
       </form>
     </Form>
   );
 }
+
