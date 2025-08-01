@@ -84,7 +84,8 @@ export function LocationForm({ location }: LocationFormProps) {
       pos_status: data.pos_status ? 1 : 0,
       created_by: 'admin',
       logo_path: '/logos/default.png',
-      pos_token: 101, 
+      pos_token: 101,
+      company_id: 1,
     };
     
     const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
