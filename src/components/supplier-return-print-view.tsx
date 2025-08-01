@@ -92,7 +92,8 @@ export function SupplierReturnPrintView({ id }: PrintViewProps) {
         <table className="w-full text-left">
           <thead>
             <tr className="bg-gray-100 text-gray-600 uppercase text-xs">
-              <th className="p-3 w-1/2">Description (SKU)</th>
+              <th className="p-3 w-[40%]">Description (SKU)</th>
+              <th className="p-3 w-[30%]">Reason</th>
               <th className="p-3 text-right">Returned Qty</th>
               <th className="p-3 text-right">Unit Price</th>
               <th className="p-3 text-right">Amount</th>
@@ -102,6 +103,7 @@ export function SupplierReturnPrintView({ id }: PrintViewProps) {
             {sReturn.items.map((item, index) => (
               <tr key={index} className="border-b border-gray-100">
                 <td className="p-3">{item.sku}</td>
+                <td className="p-3">{item.reason}</td>
                 <td className="p-3 text-right">{item.returnedQty}</td>
                 <td className="p-3 text-right">${item.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="p-3 text-right">${(item.returnedQty * item.unitPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>

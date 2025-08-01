@@ -39,6 +39,7 @@ const returnItemSchema = z.object({
   receivedQty: z.number(),
   unitPrice: z.number(),
   returnQty: z.coerce.number().min(0, "Return quantity cannot be negative."),
+  reason: z.string().min(1, "Reason is required."),
 }).refine(data => data.returnQty <= data.receivedQty, {
     message: "Return quantity cannot exceed received quantity.",
     path: ["returnQty"],
@@ -120,6 +121,7 @@ export function SupplierReturnForm() {
                     receivedQty: parseFloat(item.received_qty),
                     unitPrice: parseFloat(String(item.order_rate)),
                     returnQty: 0,
+                    reason: '',
                 }
             }) || [];
             
@@ -174,13 +176,14 @@ export function SupplierReturnForm() {
         <Card>
             <CardHeader>
                 <CardTitle>Items to Return</CardTitle>
-                <CardDescription>Enter the quantity you want to return for each item.</CardDescription>
+                <CardDescription>Enter the quantity and reason for each item you want to return.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
                     <TableHeader>
                         <TableRow>
                             <TableHead>Product</TableHead>
+                            <TableHead className="w-[200px]">Reason</TableHead>
                             <TableHead className="text-right">Received</TableHead>
                             <TableHead className="text-right">Unit Price</TableHead>
                             <TableHead className="w-[150px] text-right">Return Qty</TableHead>
@@ -190,6 +193,20 @@ export function SupplierReturnForm() {
                         {fields.map((field, index) => (
                             <TableRow key={field.id}>
                                 <TableCell className="font-medium">{watchedItems[index].productName}</TableCell>
+                                <TableCell>
+                                    <FormField
+                                        control={form.control}
+                                        name={`items.${index}.reason`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input placeholder="e.g. Damaged" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </TableCell>
                                 <TableCell className="text-right">{watchedItems[index].receivedQty}</TableCell>
                                 <TableCell className="text-right font-mono">{currencySymbol}{watchedItems[index].unitPrice.toFixed(2)}</TableCell>
                                 <TableCell>

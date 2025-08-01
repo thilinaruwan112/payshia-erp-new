@@ -31,7 +31,7 @@ export function SupplierReturnView({ id }: SupplierReturnViewProps) {
     
     if (returnData) {
         setSReturn(returnData);
-        const supplierData = suppliers.find(s => s.id === returnData.supplierId);
+        const supplierData = suppliers.find(s => s.supplier_id === returnData.supplierId);
         setSupplier(supplierData || null);
     } else {
         toast({
@@ -118,6 +118,7 @@ export function SupplierReturnView({ id }: SupplierReturnViewProps) {
                     <TableHeader>
                         <TableRow>
                             <TableHead>SKU</TableHead>
+                            <TableHead>Reason</TableHead>
                             <TableHead className="text-right">Quantity</TableHead>
                             <TableHead className="text-right">Unit Price</TableHead>
                             <TableHead className="text-right">Total Value</TableHead>
@@ -127,6 +128,7 @@ export function SupplierReturnView({ id }: SupplierReturnViewProps) {
                         {sReturn.items.map((item, index) => (
                            <TableRow key={index}>
                                 <TableCell>{item.sku}</TableCell>
+                                <TableCell>{item.reason}</TableCell>
                                 <TableCell className="text-right">{item.returnedQty}</TableCell>
                                 <TableCell className="text-right font-mono">${item.unitPrice.toFixed(2)}</TableCell>
                                 <TableCell className="text-right font-mono">${(item.returnedQty * item.unitPrice).toFixed(2)}</TableCell>

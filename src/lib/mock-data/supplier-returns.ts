@@ -8,6 +8,6 @@ export const supplierReturns: SupplierReturn[] = [
         supplierName: 'Global Textiles Inc.',
         date: '2023-11-20',
         totalValue: 249.90, // 10 * 24.99
-        items: [{ sku: 'TS-BLK-S', returnedQty: 10, unitPrice: 24.99 }]
+        items: [{ sku: 'TS-BLK-S', returnedQty: 10, unitPrice: 24.99, reason: 'Damaged stock' }]
     },
 ];

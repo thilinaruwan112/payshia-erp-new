@@ -1,5 +1,4 @@
 
-
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -226,6 +225,7 @@ export type SupplierReturn = {
         sku: string;
         returnedQty: number;
         unitPrice: number;
+        reason: string;
     }[];
 }
 
