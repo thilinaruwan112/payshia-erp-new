@@ -268,7 +268,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
                              {isFetchingInvoices ? (
                                 <div className="text-center p-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>
                              ) : customerInvoices.length > 0 ? (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-2 gap-4">
                                     {customerInvoices.map(invoice => (
                                         <Card 
                                             key={invoice.id} 
@@ -418,4 +418,3 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
     </Form>
   );
 }
-
