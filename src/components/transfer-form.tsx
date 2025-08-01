@@ -192,11 +192,11 @@ export function TransferForm({ locations }: TransferFormProps) {
     setIsLoading(true);
 
     const payload = {
-      from_location_id: parseInt(data.fromLocationId, 10),
-      to_location_id: parseInt(data.toLocationId, 10),
+      from_location: data.fromLocationId,
+      to_location: data.toLocationId,
       transfer_date: format(data.date, 'yyyy-MM-dd'),
       status: 'pending',
-      company_id: company_id,
+      company_id: 101, // As per your sample
       created_by: "admin", 
       items: data.items.map(item => {
         const batchInfo: StockInfo = JSON.parse(item.selectedBatch);
@@ -242,11 +242,10 @@ export function TransferForm({ locations }: TransferFormProps) {
     }
   }
 
-  const handleCreateTransferClick = async () => {
-    const isValid = await form.trigger();
-    if (isValid) {
+  const handleCreateTransferClick = () => {
+     form.handleSubmit(data => {
         setIsConfirmOpen(true);
-    }
+    })();
   };
   
   const fromLocation = locations.find(l => l.location_id === form.getValues().fromLocationId);
@@ -510,5 +509,3 @@ export function TransferForm({ locations }: TransferFormProps) {
     </>
   );
 }
-
-    
