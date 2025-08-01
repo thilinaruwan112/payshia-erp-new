@@ -105,6 +105,7 @@ const navItems = [
       { href: '/dashboard', label: 'Overview', icon: LayoutGrid },
       { href: '/sales/dashboard', label: 'Sales', icon: TrendingUp },
       { href: '/inventory/dashboard', label: 'Inventory', icon: Package },
+       { href: '/suppliers/dashboard', label: 'Suppliers', icon: Building },
       { href: '/crm/dashboard', label: 'CRM', icon: Users },
       { href: '/accounting/dashboard', label: 'Accounting', icon: Landmark },
       { href: '/hrm/dashboard', label: 'HRM', icon: Briefcase },
@@ -145,7 +146,10 @@ const navItems = [
    {
     label: 'Suppliers',
     icon: Building,
-    href: '/suppliers',
+    subItems: [
+        { href: '/suppliers/dashboard', label: 'Dashboard', icon: LayoutGrid },
+        { href: '/suppliers', label: 'All Suppliers', icon: Users },
+    ]
   },
   {
     label: 'Purchasing',
