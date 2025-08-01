@@ -49,7 +49,7 @@ export type Product = {
   price: number | string;
   status: 'active' | 'draft';
   stock_unit?: string;
-  cost_price?: number | string;
+  costPrice?: number | string;
   min_price?: number | string;
   wholesale_price?: number | string;
   price2?: number;
