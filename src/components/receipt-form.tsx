@@ -302,116 +302,117 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
             </div>
 
             <div className="sticky top-24 space-y-4">
-                {selectedInvoice && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Step 3: Confirm Payment</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {isFetchingBalance ? (
-                                <div className="p-4 bg-muted/50 rounded-md flex items-center justify-center">
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    <span>Fetching balance...</span>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Step 3: Confirm Payment</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        {isFetchingBalance ? (
+                            <div className="p-4 bg-muted/50 rounded-md flex items-center justify-center">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <span>Fetching balance...</span>
+                            </div>
+                        ) : balanceDetails ? (
+                             <div className="space-y-2 text-base p-4 bg-muted rounded-md">
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Grand Total:</span>
+                                    <span className="font-mono">${parseFloat(balanceDetails.grand_total).toFixed(2)}</span>
                                 </div>
-                            ) : balanceDetails ? (
-                                <>
-                                 <div className="space-y-2 text-base p-4 bg-muted rounded-md">
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Grand Total:</span>
-                                        <span className="font-mono">${parseFloat(balanceDetails.grand_total).toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-muted-foreground">Paid Amount:</span>
-                                        <span className="font-mono">${parseFloat(balanceDetails.total_paid_amount).toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                                        <span>Balance Due:</span>
-                                        <span className="font-mono">${balanceDetails.balance.toFixed(2)}</span>
-                                    </div>
+                                <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Paid Amount:</span>
+                                    <span className="font-mono">${parseFloat(balanceDetails.total_paid_amount).toFixed(2)}</span>
                                 </div>
-                                <FormField
-                                    control={form.control}
-                                    name="amount"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Amount to Pay</FormLabel>
-                                            <FormControl>
-                                                <Input type="number" placeholder="0.00" {...field} className="h-12 text-xl" startIcon={<span className="text-xl">$</span>} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="paymentMethod"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Payment Method</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select a method" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    <SelectItem value="Card">Card</SelectItem>
-                                                    <SelectItem value="Cash">Cash</SelectItem>
-                                                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="date"
-                                    render={({ field }) => (
-                                        <FormItem className="flex flex-col">
-                                        <FormLabel>Date of Payment</FormLabel>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                            <FormControl>
-                                                <Button
-                                                variant={"outline"}
-                                                className={cn(
-                                                    "w-full pl-3 text-left font-normal",
-                                                    !field.value && "text-muted-foreground"
-                                                )}
-                                                >
-                                                {field.value ? (
-                                                    format(field.value, "PPP")
-                                                ) : (
-                                                    <span>Pick a date</span>
-                                                )}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                </Button>
-                                            </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                            <Calendar
-                                                mode="single"
-                                                selected={field.value}
-                                                onSelect={field.onChange}
-                                                disabled={(date) =>
-                                                date > new Date() || date < new Date("1900-01-01")
-                                                }
-                                                initialFocus
-                                            />
-                                            </PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                </>
-                            ) : (
-                                <div className="text-center text-muted-foreground py-4">Could not load balance details.</div>
+                                <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                                    <span>Balance Due:</span>
+                                    <span className="font-mono">${balanceDetails.balance.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        ) : (
+                             <div className="space-y-2 text-base p-4 bg-muted/50 rounded-md text-muted-foreground">
+                                <div className="flex justify-between"><span>Grand Total:</span><span className="font-mono">$0.00</span></div>
+                                <div className="flex justify-between"><span>Paid Amount:</span><span className="font-mono">$0.00</span></div>
+                                <div className="flex justify-between font-bold text-lg pt-2 border-t"><span>Balance Due:</span><span className="font-mono">$0.00</span></div>
+                            </div>
+                        )}
+                        <FormField
+                            control={form.control}
+                            name="amount"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Amount to Pay</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="0.00" {...field} className="h-12 text-xl" startIcon={<span className="text-xl">$</span>} disabled={!selectedInvoice || isFetchingBalance} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
                             )}
-                        </CardContent>
-                    </Card>
-                )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="paymentMethod"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Payment Method</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedInvoice || isFetchingBalance}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a method" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Card">Card</SelectItem>
+                                            <SelectItem value="Cash">Cash</SelectItem>
+                                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="date"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                <FormLabel>Date of Payment</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                            "w-full pl-3 text-left font-normal",
+                                            !field.value && "text-muted-foreground"
+                                        )}
+                                        disabled={!selectedInvoice || isFetchingBalance}
+                                        >
+                                        {field.value ? (
+                                            format(field.value, "PPP")
+                                        ) : (
+                                            <span>Pick a date</span>
+                                        )}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={field.onChange}
+                                        disabled={(date) =>
+                                        date > new Date() || date < new Date("1900-01-01")
+                                        }
+                                        initialFocus
+                                    />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
             </div>
         </div>
       </form>
