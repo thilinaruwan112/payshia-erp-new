@@ -43,6 +43,7 @@ import {
   Boxes,
   Archive,
   History,
+  Settings,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -184,6 +185,13 @@ const navItems = [
     ],
   },
   {
+    label: 'Settings',
+    icon: Settings,
+    subItems: [
+      { href: '/settings/currency', label: 'Currency' },
+    ],
+  },
+  {
     href: '/logistics',
     label: 'AI Logistics',
     icon: BotMessageSquare,
@@ -305,7 +313,7 @@ function DateTimeLocation() {
                  <PopoverTrigger asChild>
                     <Button variant="ghost" size="sm" className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        <span>{format(currentTime, 'pp')}</span>
+                        <span>{format(currentTime, 'p')}</span>
                     </Button>
                 </PopoverTrigger>
                  <PopoverContent className="w-auto p-4">

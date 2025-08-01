@@ -104,6 +104,7 @@ export function GrnForm() {
         date: new Date(),
         items: [],
         remark: "",
+        currency: "LKR",
     },
     mode: "onChange",
   });
