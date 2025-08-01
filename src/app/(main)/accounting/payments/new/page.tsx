@@ -17,7 +17,7 @@ function NewPaymentPageContent() {
 
 export default function NewPaymentPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense>
             <NewPaymentPageContent />
         </Suspense>
     )

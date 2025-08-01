@@ -44,6 +44,9 @@ import {
   Archive,
   History,
   Settings,
+  BookUser,
+  Building2,
+  DollarSign,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -129,16 +132,16 @@ const navItems = [
     label: 'Sales',
     icon: TrendingUp,
     subItems: [
-      { href: '/sales/invoices', label: 'Invoices' },
-      { href: '/sales/receipts', label: 'Receipts' },
+      { href: '/sales/invoices', label: 'Invoices', icon: FileText },
+      { href: '/sales/receipts', label: 'Receipts', icon: Receipt },
     ],
   },
   {
     label: 'CRM',
     icon: Contact,
     subItems: [
-        { href: '/crm/customers', label: 'Customers' },
-        { href: '/crm/loyalty-schema', label: 'Loyalty Schema' },
+        { href: '/crm/customers', label: 'Customers', icon: Users },
+        { href: '/crm/loyalty-schema', label: 'Loyalty Schema', icon: Gem },
         { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
         { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
     ],
@@ -152,8 +155,8 @@ const navItems = [
     label: 'Purchasing',
     icon: Building,
     subItems: [
-      { href: '/purchasing/purchase-orders', label: 'Purchase Orders' },
-      { href: '/purchasing/grn', label: 'Create GRN' },
+      { href: '/purchasing/purchase-orders', label: 'Purchase Orders', icon: ShoppingCart },
+      { href: '/purchasing/grn', label: 'Create GRN', icon: PlusCircle },
       { href: '/purchasing/grn/history', label: 'GRN History', icon: History },
     ],
   },
@@ -176,19 +179,19 @@ const navItems = [
     label: 'Accounting',
     icon: Landmark,
     subItems: [
-      { href: '/accounting/dashboard', label: 'Dashboard' },
-      { href: '/accounting/payments', label: 'Payments' },
-      { href: '/accounting/expenses', label: 'Expenses' },
-      { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts' },
-      { href: '/accounting/journal-entries', label: 'Journal Entries' },
-      { href: '/accounting/fixed-assets', label: 'Fixed Assets' },
+      { href: '/accounting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/accounting/payments', label: 'Payments', icon: Wallet },
+      { href: '/accounting/expenses', label: 'Expenses', icon: FileDigit },
+      { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: BookUser },
+      { href: '/accounting/journal-entries', label: 'Journal Entries', icon: FileText },
+      { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
     ],
   },
   {
     label: 'Settings',
     icon: Settings,
     subItems: [
-      { href: '/settings/currency', label: 'Currency' },
+      { href: '/settings/currency', label: 'Currency', icon: DollarSign },
     ],
   },
   {
