@@ -219,7 +219,7 @@ export function PaymentForm({ suppliers, purchaseOrders, paymentAccounts }: Paym
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>Reference PO (Optional)</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!supplierId}>
+                            <Select onValueChange={field.onChange} value={field.value} disabled={!supplierId}>
                                 <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select a PO to apply payment to" />
