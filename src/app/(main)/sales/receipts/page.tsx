@@ -174,7 +174,9 @@ export default function ReceiptsPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Print Receipt</DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/sales/receipts/${receipt.id}/print`} target="_blank">Print Receipt</Link>
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
