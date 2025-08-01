@@ -173,7 +173,7 @@ export default function ReceiptsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => console.log(`Viewing details for ${receipt.id}`)}>View Details</DropdownMenuItem>
                            <DropdownMenuItem asChild>
                             <Link href={`/sales/receipts/${receipt.id}/print`} target="_blank">Print A4 Receipt</Link>
                           </DropdownMenuItem>

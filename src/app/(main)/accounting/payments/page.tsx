@@ -1,4 +1,5 @@
 
+'use client';
 
 import {
   Card,
@@ -84,7 +85,7 @@ export default function PaymentsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => console.log(`Viewing details for ${payment.id}`)}>View Details</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

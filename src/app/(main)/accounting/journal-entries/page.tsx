@@ -1,5 +1,7 @@
 
 
+'use client';
+
 import {
   Card,
   CardContent,
@@ -84,7 +86,7 @@ export default function JournalEntriesPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => console.log(`Viewing details for ${entry.id}`)}>View Details</DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive">
                           Reverse Entry
                         </DropdownMenuItem>
