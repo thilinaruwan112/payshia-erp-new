@@ -11,6 +11,7 @@ interface LocationContextType {
   setCurrentLocation: (location: Location) => void;
   availableLocations: Location[];
   isLoading: boolean;
+  company_id: number;
 }
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
@@ -19,6 +20,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
   const [availableLocations, setAvailableLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [company_id, setCompanyId] = useState(1); // Hardcoded for now
   const { toast } = useToast();
   const pathname = usePathname();
   const isPos = pathname.startsWith('/pos-system');
@@ -63,8 +65,9 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     currentLocation,
     setCurrentLocation,
     availableLocations,
-    isLoading
-  }), [currentLocation, availableLocations, isLoading]);
+    isLoading,
+    company_id
+  }), [currentLocation, availableLocations, isLoading, company_id]);
 
   return (
     <LocationContext.Provider value={value as LocationContextType}>

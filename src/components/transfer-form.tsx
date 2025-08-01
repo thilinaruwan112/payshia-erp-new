@@ -32,7 +32,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Location, Product } from "@/lib/types";
-import { CalendarIcon, Trash2 } from "lucide-react";
+import { CalendarIcon, Loader2, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
@@ -50,6 +50,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useCurrency } from "./currency-provider";
+import { useLocation } from "./location-provider";
 
 const transferFormSchema = z.object({
   date: z.date({
@@ -79,12 +80,16 @@ interface TransferFormProps {
 export function TransferForm({ locations, products }: TransferFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { company_id } = useLocation();
+  const [isLoading, setIsLoading] = React.useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const { currencySymbol } = useCurrency();
 
   const allSkus = products.flatMap(p => p.variants.map(v => ({
       label: `${p.name} (${v.sku})`,
       value: v.sku,
+      productId: p.id,
+      variantId: v.id,
   })));
   
   const defaultValues: Partial<TransferFormValues> = {
@@ -117,13 +122,55 @@ export function TransferForm({ locations, products }: TransferFormProps) {
   }, 0);
 
 
-  function onSubmit(data: TransferFormValues) {
-    console.log(data);
-    toast({
-      title: "Stock Transfer Created",
-      description: `The transfer has been initiated.`,
-    });
-    router.push('/transfers');
+  async function onSubmit(data: TransferFormValues) {
+    setIsLoading(true);
+    const payload = {
+      from_location_id: parseInt(data.fromLocationId, 10),
+      to_location_id: parseInt(data.toLocationId, 10),
+      transfer_date: format(data.date, 'yyyy-MM-dd'),
+      status: 'pending',
+      company_id: company_id,
+      created_by: 1, // Assuming admin user
+      items: data.items.map(item => {
+        const skuDetails = allSkus.find(s => s.value === item.sku);
+        return {
+            product_id: parseInt(skuDetails?.productId || '0', 10),
+            product_variant_id: parseInt(skuDetails?.variantId || '0', 10),
+            quantity: item.quantity
+        }
+      })
+    };
+
+    try {
+        const response = await fetch('https://server-erp.payshia.com/stock-transfers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to create stock transfer.');
+        }
+
+        toast({
+            title: "Stock Transfer Created",
+            description: `The transfer has been initiated successfully.`,
+        });
+        router.push('/transfers');
+        router.refresh();
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: "destructive",
+            title: "Failed to create transfer",
+            description: errorMessage,
+        });
+    } finally {
+        setIsLoading(false);
+        setIsConfirmOpen(false);
+    }
   }
 
   const handleCreateTransferClick = async () => {
@@ -133,8 +180,8 @@ export function TransferForm({ locations, products }: TransferFormProps) {
     }
   };
   
-  const fromLocation = locations.find(l => l.id === form.getValues().fromLocationId);
-  const toLocation = locations.find(l => l.id === form.getValues().toLocationId);
+  const fromLocation = locations.find(l => l.location_id === form.getValues().fromLocationId);
+  const toLocation = locations.find(l => l.location_id === form.getValues().toLocationId);
 
   return (
     <>
@@ -211,7 +258,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                                   </FormControl>
                                   <SelectContent>
                                       {locations.map(loc => (
-                                          <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                                          <SelectItem key={loc.location_id} value={loc.location_id}>{loc.location_name}</SelectItem>
                                       ))}
                                   </SelectContent>
                               </Select>
@@ -233,7 +280,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                                   </FormControl>
                                   <SelectContent>
                                       {locations.map(loc => (
-                                          <SelectItem key={loc.id} value={loc.id}>{loc.name}</SelectItem>
+                                          <SelectItem key={loc.location_id} value={loc.location_id}>{loc.location_name}</SelectItem>
                                       ))}
                                   </SelectContent>
                               </Select>
@@ -345,8 +392,8 @@ export function TransferForm({ locations, products }: TransferFormProps) {
             <AlertDialogDescription>
               Please review the details below before creating the transfer. This action cannot be undone.
               <div className="mt-4 space-y-2 text-sm text-muted-foreground bg-muted p-3 rounded-md border">
-                <p><strong>From:</strong> {fromLocation?.name}</p>
-                <p><strong>To:</strong> {toLocation?.name}</p>
+                <p><strong>From:</strong> {fromLocation?.location_name}</p>
+                <p><strong>To:</strong> {toLocation?.location_name}</p>
                 <p><strong>Items:</strong> {watchedItems.length}</p>
                 <p><strong>Total Value:</strong> <span className="font-mono">{currencySymbol}{transferTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
               </div>
@@ -354,7 +401,10 @@ export function TransferForm({ locations, products }: TransferFormProps) {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={form.handleSubmit(onSubmit)}>Continue</AlertDialogAction>
+            <AlertDialogAction onClick={form.handleSubmit(onSubmit)} disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Continue
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
