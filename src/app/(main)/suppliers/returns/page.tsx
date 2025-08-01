@@ -180,7 +180,9 @@ export default function SupplierReturnsPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                                                     <DropdownMenuItem asChild>
+                                                        <Link href={`/suppliers/returns/${sReturn.id}`}>View Details</Link>
+                                                    </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
