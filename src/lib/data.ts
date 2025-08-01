@@ -23,6 +23,7 @@ import { emailCampaigns } from '@/lib/mock-data/email-campaigns';
 import { brands } from './mock-data/brands';
 import { colors } from './mock-data/colors';
 import { currencies } from './currencies';
+import { supplierReturns } from './mock-data/supplier-returns';
 
 export * from '@/lib/types';
 
@@ -50,4 +51,5 @@ export {
     brands,
     colors,
     currencies,
+    supplierReturns,
 }

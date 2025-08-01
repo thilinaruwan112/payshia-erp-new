@@ -18,11 +18,15 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import type { GoodsReceivedNote, Supplier } from '@/lib/types';
+import type { GoodsReceivedNote, Supplier, SupplierReturn } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MoreHorizontal } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { supplierReturns } from '@/lib/data';
 
 export default function SupplierReturnsPage() {
   const [grns, setGrns] = useState<GoodsReceivedNote[]>([]);
@@ -76,64 +80,118 @@ export default function SupplierReturnsPage() {
           </p>
         </div>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Select a GRN to Return</CardTitle>
-          <CardDescription>
-            Choose a Goods Received Note to initiate a return process.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>GRN Number</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead className="hidden md:table-cell">Date</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-8 w-24 rounded-md" /></TableCell>
-                    </TableRow>
-                ))
-              ) : (
-                grns.map((grn) => (
-                  <TableRow key={grn.id}>
-                    <TableCell className="font-medium">{grn.grn_number}</TableCell>
-                    <TableCell>{getSupplierName(grn.supplier_id)}</TableCell>
-                    <TableCell className="hidden md:table-cell">{format(new Date(grn.created_at), 'dd MMM, yyyy')}</TableCell>
-                    <TableCell className="text-right">${parseFloat(grn.grand_total).toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
-                      <Button asChild variant="outline" size="sm">
-                        <Link href={`/suppliers/returns/new?grnId=${grn.id}`}>Create Return</Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-               {!isLoading && grns.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                        No GRNs found.
-                    </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        <Tabs defaultValue="create">
+            <TabsList>
+                <TabsTrigger value="create">Create Return</TabsTrigger>
+                <TabsTrigger value="history">Return History</TabsTrigger>
+            </TabsList>
+            <TabsContent value="create">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Select a GRN to Return</CardTitle>
+                        <CardDescription>
+                            Choose a Goods Received Note to initiate a return process.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>GRN Number</TableHead>
+                            <TableHead>Supplier</TableHead>
+                            <TableHead className="hidden md:table-cell">Date</TableHead>
+                            <TableHead className="text-right">Total</TableHead>
+                            <TableHead>
+                            <span className="sr-only">Actions</span>
+                            </TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {isLoading ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-24 rounded-md" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            grns.map((grn) => (
+                            <TableRow key={grn.id}>
+                                <TableCell className="font-medium">{grn.grn_number}</TableCell>
+                                <TableCell>{getSupplierName(grn.supplier_id)}</TableCell>
+                                <TableCell className="hidden md:table-cell">{format(new Date(grn.created_at), 'dd MMM, yyyy')}</TableCell>
+                                <TableCell className="text-right">${parseFloat(grn.grand_total).toFixed(2)}</TableCell>
+                                <TableCell className="text-right">
+                                <Button asChild variant="outline" size="sm">
+                                    <Link href={`/suppliers/returns/new?grnId=${grn.id}`}>Create Return</Link>
+                                </Button>
+                                </TableCell>
+                            </TableRow>
+                            ))
+                        )}
+                        {!isLoading && grns.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center">
+                                    No GRNs found.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="history">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Supplier Return History</CardTitle>
+                        <CardDescription>A log of all past supplier returns.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Return ID</TableHead>
+                                    <TableHead>Supplier</TableHead>
+                                    <TableHead>GRN Ref.</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead className="text-right">Value</TableHead>
+                                    <TableHead><span className="sr-only">Actions</span></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {supplierReturns.map((sReturn) => (
+                                    <TableRow key={sReturn.id}>
+                                        <TableCell className="font-medium">{sReturn.id}</TableCell>
+                                        <TableCell>{sReturn.supplierName}</TableCell>
+                                        <TableCell>{sReturn.grnId}</TableCell>
+                                        <TableCell>{new Date(sReturn.date).toLocaleDateString()}</TableCell>
+                                        <TableCell className="text-right font-mono">${sReturn.totalValue.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button size="icon" variant="ghost">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                        <span className="sr-only">Toggle menu</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }

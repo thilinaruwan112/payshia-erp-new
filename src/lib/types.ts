@@ -215,6 +215,20 @@ export type StockTransfer = {
     totalValue: number;
 }
 
+export type SupplierReturn = {
+    id: string;
+    grnId: string;
+    supplierId: string;
+    supplierName: string;
+    date: string;
+    totalValue: number;
+    items: {
+        sku: string;
+        returnedQty: number;
+        unitPrice: number;
+    }[];
+}
+
 export type Plan = {
     id: string;
     name: string;
