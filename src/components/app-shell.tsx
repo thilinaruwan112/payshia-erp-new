@@ -49,6 +49,9 @@ import {
   Briefcase,
   AreaChart,
   Undo2,
+  CalendarCheck,
+  Fingerprint,
+  Star,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -175,7 +178,14 @@ const navItems = [
   {
     label: 'HRM',
     icon: Briefcase,
-    subItems: [{ href: '/hrm/dashboard', label: 'Dashboard', icon: LayoutDashboard }],
+    subItems: [
+      { href: '/hrm/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/hrm/employees', label: 'Employees', icon: Users },
+      { href: '/hrm/payroll', label: 'Payroll', icon: DollarSign },
+      { href: '/hrm/leave', label: 'Leave Management', icon: CalendarCheck },
+      { href: '/hrm/attendance', label: 'Attendance', icon: Fingerprint },
+      { href: '/hrm/performance', label: 'Performance', icon: Star },
+    ],
   },
   {
     href: '/reports',
