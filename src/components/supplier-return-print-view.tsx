@@ -24,7 +24,7 @@ export function SupplierReturnPrintView({ id }: PrintViewProps) {
     const returnData = supplierReturns.find(r => r.id === id);
     if (returnData) {
         setSReturn(returnData);
-        const supplierData = suppliers.find(s => s.id === returnData.supplierId);
+        const supplierData = suppliers.find(s => s.supplier_id === returnData.supplierId);
         setSupplier(supplierData || null);
     } else {
         notFound();
