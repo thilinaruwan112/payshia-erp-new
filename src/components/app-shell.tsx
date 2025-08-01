@@ -47,6 +47,8 @@ import {
   BookUser,
   Building2,
   DollarSign,
+  Briefcase,
+  AreaChart,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -97,10 +99,17 @@ const user = {
 };
 
 const navItems = [
-  {
-    href: '/dashboard',
-    label: 'Dashboard',
+   {
+    label: 'Dashboards',
     icon: LayoutDashboard,
+    subItems: [
+      { href: '/dashboard', label: 'Overview', icon: LayoutGrid },
+      { href: '/sales/dashboard', label: 'Sales', icon: TrendingUp },
+      { href: '/crm/dashboard', label: 'CRM', icon: Users },
+      { href: '/accounting/dashboard', label: 'Accounting', icon: Landmark },
+      { href: '/inventory/dashboard', label: 'Inventory', icon: Package },
+      { href: '/hrm/dashboard', label: 'HRM', icon: Briefcase },
+    ],
   },
   {
     href: '/reports',
@@ -121,7 +130,7 @@ const navItems = [
   {
     href: '/inventory/forecast',
     label: 'AI Forecast',
-    icon: TrendingUp,
+    icon: AreaChart,
   },
   {
     href: '/orders',
@@ -144,6 +153,13 @@ const navItems = [
         { href: '/crm/loyalty-schema', label: 'Loyalty Schema', icon: Gem },
         { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
         { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
+    ],
+  },
+   {
+    label: 'HRM',
+    icon: Briefcase,
+    subItems: [
+        { href: '/hrm/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ],
   },
   {

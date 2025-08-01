@@ -23,8 +23,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { useCurrency } from '@/components/currency-provider';
 
 export default function AccountingDashboardPage() {
+    const { currencySymbol } = useCurrency();
   const financialSummary = useMemo(() => {
     const totalRevenue = orders
       .filter((o) => o.status !== 'Cancelled')
@@ -68,7 +70,7 @@ export default function AccountingDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${financialSummary.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold">{currencySymbol}{financialSummary.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <p className="text-xs text-muted-foreground">From all sales channels</p>
           </CardContent>
         </Card>
@@ -78,7 +80,7 @@ export default function AccountingDashboardPage() {
             <Receipt className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${financialSummary.totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold">{currencySymbol}{financialSummary.totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <p className="text-xs text-muted-foreground">Based on chart of accounts</p>
           </CardContent>
         </Card>
@@ -88,7 +90,7 @@ export default function AccountingDashboardPage() {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${financialSummary.netIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold">{currencySymbol}{financialSummary.netIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <p className="text-xs text-muted-foreground">Revenue minus expenses</p>
           </CardContent>
         </Card>
@@ -98,7 +100,7 @@ export default function AccountingDashboardPage() {
             <TrendingDown className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${financialSummary.accountsPayable.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+            <div className="text-2xl font-bold">{currencySymbol}{financialSummary.accountsPayable.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <p className="text-xs text-muted-foreground">Money owed to suppliers</p>
           </CardContent>
         </Card>
@@ -115,7 +117,7 @@ export default function AccountingDashboardPage() {
             <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
+                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${currencySymbol}${(value/1000).toLocaleString()}k`} />
                 <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--background))',
@@ -123,6 +125,7 @@ export default function AccountingDashboardPage() {
                       borderRadius: 'var(--radius)',
                     }}
                     cursor={{fill: 'hsl(var(--muted))'}}
+                     formatter={(value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value).replace('$', currencySymbol)}
                 />
                 <Legend />
                 <Bar dataKey="Revenue" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />

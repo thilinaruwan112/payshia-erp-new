@@ -1,0 +1,148 @@
+
+'use client';
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import {
+  Boxes,
+  Package,
+  AlertTriangle,
+  Warehouse,
+  TrendingUp,
+  Loader2,
+  ArrowRightLeft,
+} from 'lucide-react';
+import { inventory, locations, products, stockTransfers } from '@/lib/data';
+import { useLocation } from '@/components/location-provider';
+import { useMemo } from 'react';
+import { StockChart } from '@/components/stock-chart';
+import Link from 'next/link';
+
+export default function InventoryDashboard() {
+  const { currentLocation, isLoading } = useLocation();
+
+  const inventoryStats = useMemo(() => {
+    if (!currentLocation) return { lowStockItems: 0, totalStock: 0, totalSKUs: 0 };
+    
+    const locationInventory = inventory.filter(item => item.locationId === currentLocation.location_id);
+    const lowStockItems = locationInventory.filter(item => item.stock > 0 && item.stock <= item.reorderLevel).length;
+    const totalStock = locationInventory.reduce((acc, item) => acc + item.stock, 0);
+
+    const productIdsInLocation = new Set(locationInventory.map(i => i.productId));
+    const skusInLocation = products.filter(p => productIdsInLocation.has(p.id))
+                                   .flatMap(p => p.variants)
+                                   .filter(v => locationInventory.some(i => i.sku === v.sku));
+    const totalSKUs = skusInLocation.length;
+
+    return { lowStockItems, totalStock, totalSKUs };
+  }, [currentLocation]);
+  
+  if (isLoading) {
+    return (
+        <div className="flex h-full flex-1 items-center justify-center">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
+
+  if (!currentLocation) {
+     return (
+        <div className="flex h-full flex-1 items-center justify-center text-center">
+            <p className="text-muted-foreground">Please select a location to view the inventory dashboard.</p>
+        </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Inventory Dashboard for <span className="text-primary">{currentLocation.location_name}</span></h1>
+        <p className="text-muted-foreground">
+          An overview of your stock levels and movements.
+        </p>
+      </div>
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Stock</CardTitle>
+            <Boxes className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{inventoryStats.totalStock.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Units in this location</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total SKUs</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{inventoryStats.totalSKUs}</div>
+            <p className="text-xs text-muted-foreground">Unique variants in this location</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Low Stock Alerts</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{inventoryStats.lowStockItems}</div>
+            <p className="text-xs text-muted-foreground">Items needing reorder</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Stock Transfers</CardTitle>
+            <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stockTransfers.length}</div>
+            <p className="text-xs text-muted-foreground">
+                <Link href="/transfers" className="hover:underline">View all transfers</Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+         <Card>
+            <CardHeader>
+                <CardTitle>Top Products by Stock</CardTitle>
+                <CardDescription>Your most stocked products in {currentLocation.location_name}.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <StockChart locationId={currentLocation.location_id} />
+            </CardContent>
+        </Card>
+         <Link href="/inventory/forecast">
+            <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-lg font-semibold">AI Inventory Forecasting</CardTitle>
+                <TrendingUp className="h-6 w-6 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Predict future stock needs, calculate optimal reorder points, and avoid stockouts using AI-powered demand forecasting.
+                </p>
+              </CardContent>
+            </Card>
+        </Link>
+      </div>
+    </div>
+  );
+}
