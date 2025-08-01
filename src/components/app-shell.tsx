@@ -88,7 +88,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Calendar } from './ui/calendar';
 
 const user = {
   name: 'Admin User',
@@ -148,8 +147,7 @@ const navItems = [
     subItems: [
       { href: '/suppliers', label: 'Suppliers', icon: Users },
       { href: '/purchasing/purchase-orders', label: 'Purchase Orders', icon: ShoppingCart },
-      { href: '/purchasing/grn', label: 'Create GRN', icon: PlusCircle },
-      { href: '/purchasing/grn/history', label: 'GRN History', icon: History },
+      { href: '/purchasing/grn', label: 'Goods Received Notes (GRN)', icon: FileDigit },
     ],
   },
   {
