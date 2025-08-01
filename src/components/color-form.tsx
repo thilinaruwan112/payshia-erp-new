@@ -56,13 +56,15 @@ export function ColorForm({ color }: ColorFormProps) {
     const url = color ? `https://server-erp.payshia.com/colors/${color.id}` : 'https://server-erp.payshia.com/colors';
     const method = color ? 'PUT' : 'POST';
 
+    const payload = { ...data, company_id: 1 };
+
     try {
       const response = await fetch(url, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();

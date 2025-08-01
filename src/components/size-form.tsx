@@ -55,13 +55,14 @@ export function SizeForm({ size }: SizeFormProps) {
     setIsLoading(true);
     const url = size ? `https://server-erp.payshia.com/sizes/${size.id}` : 'https://server-erp.payshia.com/sizes';
     const method = size ? 'PUT' : 'POST';
+    const payload = { ...data, company_id: 1 };
     try {
       const response = await fetch(url, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();
