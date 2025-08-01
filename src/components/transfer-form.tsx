@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Location, Product } from "@/lib/types";
+import type { Location, Product, ProductVariant } from "@/lib/types";
 import { CalendarIcon, Loader2, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -72,25 +71,52 @@ const transferFormSchema = z.object({
 
 type TransferFormValues = z.infer<typeof transferFormSchema>;
 
-interface TransferFormProps {
-    locations: Location[];
-    products: Product[];
+interface ProductWithVariants {
+  product: Product;
+  variants: ProductVariant[];
 }
 
-export function TransferForm({ locations, products }: TransferFormProps) {
+interface TransferFormProps {
+    locations: Location[];
+}
+
+export function TransferForm({ locations }: TransferFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { company_id } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const { currencySymbol } = useCurrency();
+  const [productsWithVariants, setProductsWithVariants] = React.useState<ProductWithVariants[]>([]);
 
-  const allSkus = products.flatMap(p => p.variants.map(v => ({
-      label: `${p.name} (${v.sku})`,
-      value: v.sku,
-      productId: p.id,
-      variantId: v.id,
-  })));
+  React.useEffect(() => {
+    async function fetchProducts() {
+        try {
+            const response = await fetch('https://server-erp.payshia.com/products/with-variants');
+            if (!response.ok) {
+                throw new Error('Failed to fetch products');
+            }
+            const data = await response.json();
+            setProductsWithVariants(data.products || []);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch product data.' });
+        }
+    }
+    fetchProducts();
+  }, [toast]);
+
+  const allSkus = React.useMemo(() => {
+    return productsWithVariants.flatMap(p => 
+        p.variants.map(v => ({
+            label: `${p.product.name} (${v.sku})`,
+            value: v.sku,
+            productId: p.product.id,
+            variantId: v.id,
+            costPrice: p.product.cost_price,
+            sellingPrice: p.product.price,
+        }))
+    );
+  }, [productsWithVariants]);
   
   const defaultValues: Partial<TransferFormValues> = {
     date: new Date(),
@@ -115,10 +141,10 @@ export function TransferForm({ locations, products }: TransferFormProps) {
   const watchedItems = form.watch("items");
 
   const transferTotalValue = watchedItems.reduce((total, item) => {
-    const product = products.find(p => p.variants.some(v => v.sku === item.sku));
-    const costPrice = product?.costPrice || 0;
+    const skuDetails = allSkus.find(s => s.value === item.sku);
+    const costPrice = skuDetails?.costPrice || 0;
     const quantity = Number(item.quantity) || 0;
-    return total + ((costPrice as number) * quantity);
+    return total + (parseFloat(String(costPrice)) * quantity);
   }, 0);
 
 
@@ -311,11 +337,11 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                       <TableBody>
                            {fields.map((field, index) => {
                               const selectedSku = watchedItems[index]?.sku;
-                              const product = products.find(p => p.variants.some(v => v.sku === selectedSku));
-                              const costPrice = product?.costPrice || 0;
-                              const sellingPrice = product?.price || 0;
+                              const skuDetails = allSkus.find(s => s.value === selectedSku);
+                              const costPrice = skuDetails?.costPrice || 0;
+                              const sellingPrice = skuDetails?.sellingPrice || 0;
                               const quantity = watchedItems[index]?.quantity || 0;
-                              const totalValue = (costPrice as number) * quantity;
+                              const totalValue = parseFloat(String(costPrice)) * quantity;
 
                               return (
                                  <TableRow key={field.id}>
@@ -342,8 +368,8 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                                               )}
                                           />
                                       </TableCell>
-                                      <TableCell className="font-mono">{currencySymbol}{(costPrice as number).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                      <TableCell className="font-mono">{currencySymbol}{(sellingPrice as number).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                      <TableCell className="font-mono">{currencySymbol}{(parseFloat(String(costPrice))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                      <TableCell className="font-mono">{currencySymbol}{(parseFloat(String(sellingPrice))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                       <TableCell>
                                           <FormField
                                               control={form.control}
