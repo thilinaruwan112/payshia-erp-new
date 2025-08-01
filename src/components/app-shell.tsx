@@ -211,11 +211,6 @@ const navItems = [
     ],
   },
   {
-    href: '/logistics',
-    label: 'AI Logistics',
-    icon: BotMessageSquare,
-  },
-  {
     href: '/help',
     label: 'How to Use',
     icon: HelpCircle,
