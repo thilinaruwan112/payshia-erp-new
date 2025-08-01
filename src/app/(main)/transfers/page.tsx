@@ -31,6 +31,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { StockTransfer } from '@/lib/types';
+import { useCurrency } from '@/components/currency-provider';
 
 const getStatusColor = (status: StockTransfer['status']) => {
   switch (status) {
@@ -46,6 +47,7 @@ const getStatusColor = (status: StockTransfer['status']) => {
 };
 
 export default function StockTransfersPage() {
+    const { currencySymbol } = useCurrency();
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -99,7 +101,7 @@ export default function StockTransfersPage() {
                   </TableCell>
                   <TableCell className="hidden md:table-cell">{new Date(transfer.date).toLocaleDateString()}</TableCell>
                   <TableCell className="hidden sm:table-cell text-right">{transfer.itemCount.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-mono">${transfer.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">{currencySymbol}{transfer.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

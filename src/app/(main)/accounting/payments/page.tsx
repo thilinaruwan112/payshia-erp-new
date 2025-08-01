@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -27,8 +28,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useCurrency } from '@/components/currency-provider';
 
 export default function PaymentsPage() {
+    const { currencySymbol } = useCurrency();
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -74,7 +77,7 @@ export default function PaymentsPage() {
                   <TableCell className="font-medium">{payment.supplierName}</TableCell>
                   <TableCell className="hidden sm:table-cell">{payment.poId || 'N/A'}</TableCell>
                    <TableCell className="hidden md:table-cell">{payment.paymentAccountName}</TableCell>
-                  <TableCell className="text-right font-mono">${payment.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">{currencySymbol}{payment.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

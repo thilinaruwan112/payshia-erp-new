@@ -1,4 +1,7 @@
 
+
+'use client';
+
 import {
   Card,
   CardContent,
@@ -29,6 +32,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { User } from '@/lib/types';
+import { useCurrency } from '@/components/currency-provider';
 
 const getLoyaltyTier = (points: number) => {
   if (points >= 500) return 'Platinum';
@@ -54,6 +58,7 @@ const getTierColor = (tier: LoyaltyTier) => {
 
 
 export default function CustomersPage() {
+  const { currencySymbol } = useCurrency();
   const customers = users.filter((user) => user.role === 'Customer');
 
   const customerData = customers.map((customer) => {
@@ -150,7 +155,7 @@ export default function CustomersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell font-mono">
-                    ${customer.totalSpent.toFixed(2)}
+                    {currencySymbol}{customer.totalSpent.toFixed(2)}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

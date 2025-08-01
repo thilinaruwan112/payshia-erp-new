@@ -49,6 +49,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useCurrency } from "./currency-provider";
 
 const transferFormSchema = z.object({
   date: z.date({
@@ -79,6 +80,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+  const { currencySymbol } = useCurrency();
 
   const allSkus = products.flatMap(p => p.variants.map(v => ({
       label: `${p.name} (${v.sku})`,
@@ -111,7 +113,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
     const product = products.find(p => p.variants.some(v => v.sku === item.sku));
     const costPrice = product?.costPrice || 0;
     const quantity = Number(item.quantity) || 0;
-    return total + (costPrice * quantity);
+    return total + ((costPrice as number) * quantity);
   }, 0);
 
 
@@ -266,7 +268,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                               const costPrice = product?.costPrice || 0;
                               const sellingPrice = product?.price || 0;
                               const quantity = watchedItems[index]?.quantity || 0;
-                              const totalValue = costPrice * quantity;
+                              const totalValue = (costPrice as number) * quantity;
 
                               return (
                                  <TableRow key={field.id}>
@@ -293,8 +295,8 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                                               )}
                                           />
                                       </TableCell>
-                                      <TableCell className="font-mono">${costPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                      <TableCell className="font-mono">${sellingPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                      <TableCell className="font-mono">{currencySymbol}{(costPrice as number).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                      <TableCell className="font-mono">{currencySymbol}{(sellingPrice as number).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                       <TableCell>
                                           <FormField
                                               control={form.control}
@@ -309,7 +311,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                                               )}
                                           />
                                       </TableCell>
-                                      <TableCell className="text-right font-mono">${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                      <TableCell className="text-right font-mono">{currencySymbol}{totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                       <TableCell>
                                           {fields.length > 1 && (
                                               <Button variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -324,7 +326,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                        <TableFooter>
                           <TableRow>
                               <TableCell colSpan={4} className="text-right font-bold">Total Transfer Value</TableCell>
-                              <TableCell className="text-right font-bold font-mono">${transferTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                              <TableCell className="text-right font-bold font-mono">{currencySymbol}{transferTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                               <TableCell></TableCell>
                           </TableRow>
                       </TableFooter>
@@ -346,7 +348,7 @@ export function TransferForm({ locations, products }: TransferFormProps) {
                 <p><strong>From:</strong> {fromLocation?.name}</p>
                 <p><strong>To:</strong> {toLocation?.name}</p>
                 <p><strong>Items:</strong> {watchedItems.length}</p>
-                <p><strong>Total Value:</strong> <span className="font-mono">${transferTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                <p><strong>Total Value:</strong> <span className="font-mono">{currencySymbol}{transferTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>

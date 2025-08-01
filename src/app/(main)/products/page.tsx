@@ -38,6 +38,7 @@ import React, { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useCurrency } from '@/components/currency-provider';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -46,6 +47,7 @@ export default function ProductsPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
 
   const fetchProducts = async () => {
     setIsLoading(true);
@@ -218,7 +220,7 @@ export default function ProductsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{totalStock} in stock</TableCell>
-                      <TableCell className="hidden lg:table-cell">${product.price.toFixed(2)}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{currencySymbol}{(product.price as number).toFixed(2)}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
