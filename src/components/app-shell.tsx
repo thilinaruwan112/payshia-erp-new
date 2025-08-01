@@ -48,6 +48,7 @@ import {
   DollarSign,
   Briefcase,
   AreaChart,
+  Undo2,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -149,6 +150,7 @@ const navItems = [
     subItems: [
         { href: '/suppliers/dashboard', label: 'Dashboard', icon: LayoutGrid },
         { href: '/suppliers', label: 'All Suppliers', icon: Users },
+        { href: '/suppliers/returns', label: 'Supplier Returns', icon: Undo2 },
     ]
   },
   {
@@ -412,7 +414,7 @@ const isPathActive = (pathname: string, href?: string, subItems?: any[]) => {
   if (!href) return false;
   
   // Exact match for specific top-level pages to avoid multiple highlights
-  const exactMatchPaths = ['/dashboard', '/products', '/suppliers'];
+  const exactMatchPaths = ['/dashboard', '/products', '/suppliers', '/reports', '/pos-system', '/help'];
   if (exactMatchPaths.includes(href)) {
     return pathname === href;
   }
