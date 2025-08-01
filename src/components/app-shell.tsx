@@ -410,10 +410,13 @@ const isPathActive = (pathname: string, href?: string, subItems?: any[]) => {
     return subItems.some(item => isPathActive(pathname, item.href, item.subItems));
   }
   if (!href) return false;
-  // Exact match for dashboard and products, startsWith for others
-  if (href === '/dashboard' || href === '/products') {
+  
+  // Exact match for specific top-level pages to avoid multiple highlights
+  const exactMatchPaths = ['/dashboard', '/products', '/suppliers'];
+  if (exactMatchPaths.includes(href)) {
     return pathname === href;
   }
+
   return pathname.startsWith(href);
 }
 
