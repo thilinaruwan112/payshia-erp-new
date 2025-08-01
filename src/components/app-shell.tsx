@@ -10,7 +10,6 @@ import {
   Package,
   ShoppingCart,
   Truck,
-  BotMessageSquare,
   ChevronDown,
   Users,
   Building,
@@ -99,48 +98,23 @@ const user = {
 };
 
 const navItems = [
-   {
+  {
     label: 'Dashboards',
     icon: LayoutDashboard,
     subItems: [
       { href: '/dashboard', label: 'Overview', icon: LayoutGrid },
       { href: '/sales/dashboard', label: 'Sales', icon: TrendingUp },
+      { href: '/inventory/dashboard', label: 'Inventory', icon: Package },
       { href: '/crm/dashboard', label: 'CRM', icon: Users },
       { href: '/accounting/dashboard', label: 'Accounting', icon: Landmark },
-      { href: '/inventory/dashboard', label: 'Inventory', icon: Package },
       { href: '/hrm/dashboard', label: 'HRM', icon: Briefcase },
     ],
-  },
-  {
-    href: '/reports',
-    label: 'Reports',
-    icon: BarChart3,
-  },
-  {
-    label: 'Master',
-    icon: Package,
-    subItems: [
-      { href: '/products', label: 'All Products', icon: Boxes },
-      { href: '/products/collections', label: 'Collections', icon: Archive },
-      { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
-      { href: '/products/colors', label: 'Colors', icon: SwatchBook },
-      { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
-    ],
-  },
-  {
-    href: '/inventory/forecast',
-    label: 'AI Forecast',
-    icon: AreaChart,
-  },
-  {
-    href: '/orders',
-    label: 'Orders',
-    icon: ShoppingCart,
   },
   {
     label: 'Sales',
     icon: TrendingUp,
     subItems: [
+      { href: '/orders', label: 'Orders', icon: ShoppingCart },
       { href: '/sales/invoices', label: 'Invoices', icon: FileText },
       { href: '/sales/receipts', label: 'Receipts', icon: Receipt },
     ],
@@ -149,53 +123,39 @@ const navItems = [
     label: 'CRM',
     icon: Contact,
     subItems: [
-        { href: '/crm/customers', label: 'Customers', icon: Users },
-        { href: '/crm/loyalty-schema', label: 'Loyalty Schema', icon: Gem },
-        { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
-        { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
-    ],
-  },
-   {
-    label: 'HRM',
-    icon: Briefcase,
-    subItems: [
-        { href: '/hrm/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/crm/customers', label: 'Customers', icon: Users },
+      { href: '/crm/loyalty-schema', label: 'Loyalty Schema', icon: Gem },
+      { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
+      { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
     ],
   },
   {
-    href: '/suppliers',
-    label: 'Suppliers',
-    icon: Users,
+    label: 'Inventory & Products',
+    icon: Package,
+    subItems: [
+      { href: '/products', label: 'All Products', icon: Boxes },
+      { href: '/products/collections', label: 'Collections', icon: Archive },
+      { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
+      { href: '/products/colors', label: 'Colors', icon: SwatchBook },
+      { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
+      { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
+      { href: '/inventory/forecast', label: 'AI Forecast', icon: AreaChart },
+    ],
   },
-   {
+  {
     label: 'Purchasing',
     icon: Building,
     subItems: [
+      { href: '/suppliers', label: 'Suppliers', icon: Users },
       { href: '/purchasing/purchase-orders', label: 'Purchase Orders', icon: ShoppingCart },
       { href: '/purchasing/grn', label: 'Create GRN', icon: PlusCircle },
       { href: '/purchasing/grn/history', label: 'GRN History', icon: History },
     ],
   },
   {
-    href: '/transfers',
-    label: 'Stock Transfers',
-    icon: ArrowRightLeft,
-  },
-  {
-    href: '/locations',
-    label: 'Locations',
-    icon: Warehouse,
-  },
-   {
-    href: '/billing',
-    label: 'Billing',
-    icon: CreditCard,
-  },
-  {
     label: 'Accounting',
     icon: Landmark,
     subItems: [
-      { href: '/accounting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/accounting/payments', label: 'Payments', icon: Wallet },
       { href: '/accounting/expenses', label: 'Expenses', icon: FileDigit },
       { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: BookUser },
@@ -204,16 +164,23 @@ const navItems = [
     ],
   },
   {
+    label: 'HRM',
+    icon: Briefcase,
+    subItems: [{ href: '/hrm/dashboard', label: 'Dashboard', icon: LayoutDashboard }],
+  },
+  {
+    href: '/reports',
+    label: 'Reports',
+    icon: BarChart3,
+  },
+  {
     label: 'Settings',
     icon: Settings,
     subItems: [
+      { href: '/locations', label: 'Locations', icon: Warehouse },
+      { href: '/billing', label: 'Billing & Plans', icon: CreditCard },
       { href: '/settings/currency', label: 'Currency', icon: DollarSign },
     ],
-  },
-  {
-    href: '/help',
-    label: 'How to Use',
-    icon: HelpCircle,
   },
   {
     href: '/pos-system',
@@ -221,7 +188,13 @@ const navItems = [
     icon: Terminal,
     isExternal: true,
   },
+  {
+    href: '/help',
+    label: 'How to Use',
+    icon: HelpCircle,
+  },
 ];
+
 
 function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
     const { currentLocation, setCurrentLocation, availableLocations, isLoading } = useLocation();
@@ -471,14 +444,6 @@ const NavMenu = ({ items, pathname, handleLinkClick }: { items: any[], pathname:
                     <Link href={item.href!} onClick={(e) => handleLinkClick(item.isExternal, e)} target={item.isExternal ? "_blank" : "_self"} rel={item.isExternal ? "noopener noreferrer" : ""}>
                       {item.icon && <item.icon className="mr-2 h-4 w-4" />}
                       <span>{item.label}</span>
-                      {item.label === 'AI Logistics' && (
-                        <Badge
-                          variant="destructive"
-                          className="ml-auto bg-accent text-accent-foreground animate-pulse"
-                        >
-                          New
-                        </Badge>
-                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
