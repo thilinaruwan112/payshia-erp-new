@@ -81,6 +81,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
       description: data.description,
       cover_image_url: data.cover_image_url,
       status: data.status,
+      company_id: 1,
     };
     
     try {
