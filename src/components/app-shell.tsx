@@ -142,11 +142,15 @@ const navItems = [
       { href: '/inventory/forecast', label: 'AI Forecast', icon: AreaChart },
     ],
   },
+   {
+    label: 'Suppliers',
+    icon: Building,
+    href: '/suppliers',
+  },
   {
     label: 'Purchasing',
-    icon: Building,
+    icon: ShoppingCart,
     subItems: [
-      { href: '/suppliers', label: 'Suppliers', icon: Users },
       { href: '/purchasing/purchase-orders', label: 'Purchase Orders', icon: ShoppingCart },
       { href: '/purchasing/grn', label: 'Goods Received Notes (GRN)', icon: FileDigit },
     ],
