@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -18,15 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import type { GoodsReceivedNote, Supplier } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -114,7 +105,7 @@ export default function SupplierReturnsPage() {
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                         <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
                         <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-8 w-24 rounded-md" /></TableCell>
                     </TableRow>
                 ))
               ) : (
@@ -125,7 +116,9 @@ export default function SupplierReturnsPage() {
                     <TableCell className="hidden md:table-cell">{format(new Date(grn.created_at), 'dd MMM, yyyy')}</TableCell>
                     <TableCell className="text-right">${parseFloat(grn.grand_total).toFixed(2)}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="outline" size="sm">Create Return</Button>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href={`/suppliers/returns/new?grnId=${grn.id}`}>Create Return</Link>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
