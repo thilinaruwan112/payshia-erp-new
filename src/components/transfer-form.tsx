@@ -200,9 +200,10 @@ export function TransferForm({ locations }: TransferFormProps) {
       created_by: "admin", 
       items: data.items.map(item => {
         const batchInfo: StockInfo = JSON.parse(item.selectedBatch);
+        const skuDetails = allSkus.find(s => s.value === item.sku);
         return {
             product_id: parseInt(batchInfo.product_id),
-            product_variant_id: parseInt(batchInfo.product_variant_id),
+            product_variant_id: parseInt(skuDetails!.variantId),
             quantity: item.quantity,
             patch_code: batchInfo.patch_code,
             expire_date: batchInfo.expire_date
@@ -243,9 +244,7 @@ export function TransferForm({ locations }: TransferFormProps) {
   }
 
   const handleCreateTransferClick = () => {
-     form.handleSubmit(data => {
-        setIsConfirmOpen(true);
-    })();
+     form.handleSubmit(() => setIsConfirmOpen(true))();
   };
   
   const fromLocation = locations.find(l => l.location_id === form.getValues().fromLocationId);
