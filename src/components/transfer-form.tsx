@@ -51,18 +51,20 @@ import {
 import { useCurrency } from "./currency-provider";
 import { useLocation } from "./location-provider";
 
+const transferItemSchema = z.object({
+  sku: z.string().min(1, "Product is required."),
+  quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
+  // This will store the JSON string of the selected batch
+  selectedBatch: z.string().min(1, "A batch must be selected"),
+});
+
 const transferFormSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
   }),
   fromLocationId: z.string().min(1, "Source location is required."),
   toLocationId: z.string().min(1, "Destination location is required."),
-  items: z.array(
-    z.object({
-      sku: z.string().min(1, "Product is required."),
-      quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
-    })
-  ).min(1, "At least one item is required."),
+  items: z.array(transferItemSchema).min(1, "At least one item is required."),
 }).refine(data => data.fromLocationId !== data.toLocationId, {
     message: "Source and destination locations cannot be the same.",
     path: ["toLocationId"],
@@ -74,6 +76,16 @@ type TransferFormValues = z.infer<typeof transferFormSchema>;
 interface ProductWithVariants {
   product: Product;
   variants: ProductVariant[];
+}
+
+interface StockInfo {
+    product_id: string;
+    product_variant_id: string;
+    patch_code: string;
+    expire_date: string;
+    total_in: string;
+    total_out: string;
+    stock_balance: string;
 }
 
 interface TransferFormProps {
@@ -88,6 +100,7 @@ export function TransferForm({ locations }: TransferFormProps) {
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const { currencySymbol } = useCurrency();
   const [productsWithVariants, setProductsWithVariants] = React.useState<ProductWithVariants[]>([]);
+  const [availableBatches, setAvailableBatches] = React.useState<Record<number, StockInfo[]>>({});
 
   React.useEffect(() => {
     async function fetchProducts() {
@@ -123,7 +136,7 @@ export function TransferForm({ locations }: TransferFormProps) {
     fromLocationId: "",
     toLocationId: "",
     items: [
-        { sku: '', quantity: 1 },
+        { sku: '', quantity: 1, selectedBatch: '' },
     ],
   };
 
@@ -138,7 +151,35 @@ export function TransferForm({ locations }: TransferFormProps) {
     name: "items",
   });
   
+  const fromLocationId = form.watch("fromLocationId");
   const watchedItems = form.watch("items");
+
+  const handleProductSelect = async (sku: string, index: number) => {
+    if (!fromLocationId) {
+        toast({
+            variant: 'destructive',
+            title: 'No Source Location',
+            description: 'Please select a source location first.'
+        });
+        return;
+    }
+    const skuDetails = allSkus.find(s => s.value === sku);
+    if (!skuDetails) return;
+
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${skuDetails.variantId}&location_id=${fromLocationId}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch stock for this product.');
+        }
+        const data = await response.json();
+        const batches = data.grouped_by_expire_date.filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
+        setAvailableBatches(prev => ({ ...prev, [index]: batches }));
+        form.setValue(`items.${index}.selectedBatch`, '');
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Error fetching stock', description: errorMessage });
+    }
+  }
 
   const transferTotalValue = watchedItems.reduce((total, item) => {
     const skuDetails = allSkus.find(s => s.value === item.sku);
@@ -147,22 +188,24 @@ export function TransferForm({ locations }: TransferFormProps) {
     return total + (parseFloat(String(costPrice)) * quantity);
   }, 0);
 
-
   async function onSubmit(data: TransferFormValues) {
     setIsLoading(true);
+
     const payload = {
       from_location_id: parseInt(data.fromLocationId, 10),
       to_location_id: parseInt(data.toLocationId, 10),
       transfer_date: format(data.date, 'yyyy-MM-dd'),
       status: 'pending',
       company_id: company_id,
-      created_by: 1, // Assuming admin user
+      created_by: "admin", 
       items: data.items.map(item => {
-        const skuDetails = allSkus.find(s => s.value === item.sku);
+        const batchInfo: StockInfo = JSON.parse(item.selectedBatch);
         return {
-            product_id: parseInt(skuDetails?.productId || '0', 10),
-            product_variant_id: parseInt(skuDetails?.variantId || '0', 10),
-            quantity: item.quantity
+            product_id: parseInt(batchInfo.product_id),
+            product_variant_id: parseInt(batchInfo.product_variant_id),
+            quantity: item.quantity,
+            patch_code: batchInfo.patch_code,
+            expire_date: batchInfo.expire_date
         }
       })
     };
@@ -276,7 +319,13 @@ export function TransferForm({ locations }: TransferFormProps) {
                       render={({ field }) => (
                           <FormItem>
                               <FormLabel>From (Source)</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <Select onValueChange={(value) => {
+                                  field.onChange(value);
+                                  // Reset items when location changes
+                                  remove();
+                                  append({ sku: '', quantity: 1, selectedBatch: '' });
+                                  setAvailableBatches({});
+                              }} defaultValue={field.value}>
                                   <FormControl>
                                       <SelectTrigger>
                                           <SelectValue placeholder="Select source location" />
@@ -326,9 +375,8 @@ export function TransferForm({ locations }: TransferFormProps) {
                   <Table>
                       <TableHeader>
                           <TableRow>
-                              <TableHead className="w-[40%]">Product</TableHead>
-                              <TableHead>Cost Price</TableHead>
-                              <TableHead>Selling Price</TableHead>
+                              <TableHead className="w-[30%]">Product</TableHead>
+                              <TableHead className="w-[25%]">Stock Availability</TableHead>
                               <TableHead>Quantity</TableHead>
                               <TableHead className="text-right">Total Value</TableHead>
                               <TableHead className="w-[50px]"></TableHead>
@@ -339,7 +387,6 @@ export function TransferForm({ locations }: TransferFormProps) {
                               const selectedSku = watchedItems[index]?.sku;
                               const skuDetails = allSkus.find(s => s.value === selectedSku);
                               const costPrice = skuDetails?.costPrice || 0;
-                              const sellingPrice = skuDetails?.sellingPrice || 0;
                               const quantity = watchedItems[index]?.quantity || 0;
                               const totalValue = parseFloat(String(costPrice)) * quantity;
 
@@ -351,7 +398,10 @@ export function TransferForm({ locations }: TransferFormProps) {
                                               name={`items.${index}.sku`}
                                               render={({ field }) => (
                                                   <FormItem>
-                                                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                      <Select onValueChange={(value) => {
+                                                          field.onChange(value);
+                                                          handleProductSelect(value, index);
+                                                      }} defaultValue={field.value}>
                                                           <FormControl>
                                                               <SelectTrigger>
                                                                   <SelectValue placeholder="Select a product" />
@@ -368,8 +418,31 @@ export function TransferForm({ locations }: TransferFormProps) {
                                               )}
                                           />
                                       </TableCell>
-                                      <TableCell className="font-mono">{currencySymbol}{(parseFloat(String(costPrice))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                      <TableCell className="font-mono">{currencySymbol}{(parseFloat(String(sellingPrice))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                       <TableCell>
+                                         <FormField
+                                            control={form.control}
+                                            name={`items.${index}.selectedBatch`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <Select onValueChange={field.onChange} value={field.value} disabled={!availableBatches[index]}>
+                                                        <FormControl>
+                                                            <SelectTrigger>
+                                                                <SelectValue placeholder="Select batch" />
+                                                            </SelectTrigger>
+                                                        </FormControl>
+                                                        <SelectContent>
+                                                            {(availableBatches[index] || []).map(batch => (
+                                                                <SelectItem key={`${batch.patch_code}-${batch.expire_date}`} value={JSON.stringify(batch)}>
+                                                                    {batch.patch_code} (Qty: {batch.stock_balance})
+                                                                </SelectItem>
+                                                            ))}
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </TableCell>
                                       <TableCell>
                                           <FormField
                                               control={form.control}
@@ -398,13 +471,13 @@ export function TransferForm({ locations }: TransferFormProps) {
                       </TableBody>
                        <TableFooter>
                           <TableRow>
-                              <TableCell colSpan={4} className="text-right font-bold">Total Transfer Value</TableCell>
+                              <TableCell colSpan={3} className="text-right font-bold">Total Transfer Value</TableCell>
                               <TableCell className="text-right font-bold font-mono">{currencySymbol}{transferTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                               <TableCell></TableCell>
                           </TableRow>
                       </TableFooter>
                   </Table>
-                  <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', quantity: 1 })} className="mt-4">
+                  <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', quantity: 1, selectedBatch: '' })} className="mt-4">
                       Add another item
                   </Button>
               </CardContent>
@@ -418,10 +491,10 @@ export function TransferForm({ locations }: TransferFormProps) {
             <AlertDialogDescription>
               Please review the details below before creating the transfer. This action cannot be undone.
               <div className="mt-4 space-y-2 text-sm text-muted-foreground bg-muted p-3 rounded-md border">
-                <p><strong>From:</strong> {fromLocation?.location_name}</p>
-                <p><strong>To:</strong> {toLocation?.location_name}</p>
-                <p><strong>Items:</strong> {watchedItems.length}</p>
-                <p><strong>Total Value:</strong> <span className="font-mono">{currencySymbol}{transferTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                <div><strong>From:</strong> {fromLocation?.location_name}</div>
+                <div><strong>To:</strong> {toLocation?.location_name}</div>
+                <div><strong>Items:</strong> {watchedItems.length}</div>
+                <div><strong>Total Value:</strong> <span className="font-mono">{currencySymbol}{transferTotalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -437,3 +510,5 @@ export function TransferForm({ locations }: TransferFormProps) {
     </>
   );
 }
+
+    
