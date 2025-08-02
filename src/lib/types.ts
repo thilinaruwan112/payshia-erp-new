@@ -1,5 +1,4 @@
 
-
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -49,7 +48,7 @@ export type Product = {
   price: number | string;
   status: 'active' | 'draft';
   stock_unit?: string;
-  cost_price?: number | string;
+  costPrice?: number | string;
   min_price?: number | string;
   wholesale_price?: number | string;
   price2?: number;
@@ -131,6 +130,7 @@ export type Collection = {
 };
 
 export type Supplier = {
+  id: string; // Keep this for client-side consistency if needed
   supplier_id: string;
   supplier_name: string;
   contact_person: string;
@@ -158,6 +158,12 @@ export type PurchaseOrder = {
     remarks: string;
     company_id: string;
     items?: PurchaseOrderItem[];
+    // For client-side join
+    supplierName?: string;
+    total?: number;
+    itemCount?: number;
+    expectedDelivery?: string;
+    status: 'Received' | 'Sent' | 'Draft';
 }
 
 export type PurchaseOrderItem = {
@@ -206,6 +212,21 @@ export type StockTransfer = {
     itemCount: number;
     items: { sku: string, quantity: number }[];
     totalValue: number;
+}
+
+export type SupplierReturn = {
+    id: string;
+    grnId: string;
+    supplierId: string;
+    supplierName: string;
+    date: string;
+    totalValue: number;
+    items: {
+        sku: string;
+        returnedQty: number;
+        unitPrice: number;
+        reason: string;
+    }[];
 }
 
 export type Plan = {

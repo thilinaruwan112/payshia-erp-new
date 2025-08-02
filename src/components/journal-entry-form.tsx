@@ -40,6 +40,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useCurrency } from "./currency-provider";
 
 const journalEntryFormSchema = z.object({
   date: z.date({
@@ -71,6 +72,7 @@ interface JournalEntryFormProps {
 export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   
   const defaultValues: Partial<JournalEntryFormValues> = {
     date: new Date(),
@@ -230,7 +232,7 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormControl>
-                                                    <Input type="number" placeholder="0.00" {...field} className="text-right" startIcon="$" />
+                                                    <Input type="number" placeholder="0.00" {...field} className="text-right" startIcon={currencySymbol} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -244,7 +246,7 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormControl>
-                                                    <Input type="number" placeholder="0.00" {...field} className="text-right" startIcon="$" />
+                                                    <Input type="number" placeholder="0.00" {...field} className="text-right" startIcon={currencySymbol} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -266,8 +268,8 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
                             <TableCell>
                                 <Button type="button" variant="outline" size="sm" onClick={() => append({ accountId: '', debit: 0, credit: 0 })}>Add Row</Button>
                             </TableCell>
-                            <TableCell className="text-right font-bold">${totalDebit.toFixed(2)}</TableCell>
-                            <TableCell className="text-right font-bold">${totalCredit.toFixed(2)}</TableCell>
+                            <TableCell className="text-right font-bold">{currencySymbol}{totalDebit.toFixed(2)}</TableCell>
+                            <TableCell className="text-right font-bold">{currencySymbol}{totalCredit.toFixed(2)}</TableCell>
                             <TableCell></TableCell>
                         </TableRow>
                     </TableFooter>

@@ -74,13 +74,15 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
     const url = supplier ? `https://server-erp.payshia.com/suppliers/${supplier.supplier_id}` : 'https://server-erp.payshia.com/suppliers';
     const method = supplier ? 'PUT' : 'POST';
     
+    const payload = { ...data, is_active: 1, created_by: 'admin', company_id: 1 };
+
     try {
       const response = await fetch(url, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({...data, is_active: 1, created_by: 'admin' }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {

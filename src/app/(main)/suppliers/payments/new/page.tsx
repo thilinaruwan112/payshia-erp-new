@@ -1,6 +1,7 @@
 
+
 import { PaymentForm } from '@/components/payment-form';
-import { chartOfAccounts, suppliers, purchaseOrders } from '@/lib/data';
+import { chartOfAccounts, suppliers } from '@/lib/data';
 import { Suspense } from 'react';
 
 function NewPaymentPageContent() {
@@ -9,7 +10,6 @@ function NewPaymentPageContent() {
   return (
     <PaymentForm
       suppliers={suppliers}
-      purchaseOrders={purchaseOrders}
       paymentAccounts={paymentAccounts}
     />
   );

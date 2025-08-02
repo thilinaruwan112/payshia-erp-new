@@ -1,4 +1,7 @@
 
+
+'use client';
+
 import {
   Card,
   CardContent,
@@ -111,7 +114,7 @@ export default function OrdersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => console.log(`Viewing details for ${order.id}`)}>View Details</DropdownMenuItem>
                           <DropdownMenuItem>Process Shipment</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -141,7 +144,7 @@ export default function OrdersPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => console.log(`Viewing details for ${order.id}`)}>View Details</DropdownMenuItem>
                           <DropdownMenuItem>Process Shipment</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

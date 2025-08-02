@@ -127,7 +127,7 @@ export function ProductForm({ product }: ProductFormProps) {
     fetchData('https://server-erp.payshia.com/sizes', setSizes, 'sizes');
     fetchData('https://server-erp.payshia.com/suppliers', setSuppliers, 'suppliers');
   }, [toast]);
-  //test
+  
   const defaultValues: Partial<ProductFormValues> = {
     name: product?.name || "",
     printName: product?.print_name || "",
@@ -161,7 +161,6 @@ export function ProductForm({ product }: ProductFormProps) {
     mode: "onChange",
   });
   
-  // When suppliers data loads, we need to re-evaluate the default values for the supplier field
   useEffect(() => {
     if (product?.supplier && suppliers.length > 0) {
         const supplierIds = product.supplier.split(',').map(sName => {
@@ -170,7 +169,7 @@ export function ProductForm({ product }: ProductFormProps) {
         }).filter(Boolean) as string[];
         form.setValue('supplier', supplierIds);
     }
-  }, [product, suppliers, form.setValue, form]);
+  }, [product, suppliers, form]);
 
   const { fields, append, remove } = useFieldArray({
     name: "variants",
@@ -215,30 +214,42 @@ export function ProductForm({ product }: ProductFormProps) {
     setIsLoading(true);
 
     const selectedCategory = categories.find(c => c.id === data.categoryId);
-    const supplierIdsString = data.supplier?.join(', ');
-
+    
     const apiPayload = {
       name: data.name,
-      description: data.description,
-      category: selectedCategory?.name,
+      description: data.description || "",
+      category: selectedCategory?.name || "",
       category_id: parseInt(data.categoryId, 10),
-      price: data.sellingPrice,
-      cost_price: data.costPrice,
-      min_price: data.minPrice,
-      wholesale_price: data.wholesalePrice,
-      stock_unit: data.stockUnit,
-      status: data.status,
-      sinhala_name: data.sinhalaName,
-      print_name: data.printName,
       brand_id: data.brandId ? parseInt(data.brandId, 10) : undefined,
-      supplier: supplierIdsString,
+      price: data.sellingPrice,
+      cost_price: data.costPrice || 0,
+      min_price: data.minPrice || 0,
+      wholesale_price: data.wholesalePrice || 0,
+      stock_unit: data.stockUnit || "PCS",
+      status: data.status,
+      sinhala_name: data.sinhalaName || "",
+      tamil_name: data.tamilName || "",
+      print_name: data.printName || data.name,
+      display_name: data.displayName || data.name,
+      supplier: data.supplier?.join(',') || "",
+      company_id: 1,
+      // Default values for new fields
+      lead_time_days: 0,
+      reorder_level_qty: 0,
+      item_type: "finished_good",
+      base_location: "warehouse_a",
+      product_image_url: "",
+      recipe_type: "standard",
+      barcode: "",
+      available_locations: "warehouse_a",
       variants: data.variants.map(v => ({
         id: v.id,
         sku: v.sku,
-        color: colors.find(c => c.id === v.colorId)?.name,
-        size: sizes.find(s => s.id === v.sizeId)?.value,
+        color: colors.find(c => c.id === v.colorId)?.name || "",
+        size: sizes.find(s => s.id === v.sizeId)?.value || "",
         color_id: v.colorId ? parseInt(v.colorId, 10) : undefined,
         size_id: v.sizeId ? parseInt(v.sizeId, 10) : undefined,
+        barcode: v.sku, // Using SKU as barcode for now
       })),
     };
     

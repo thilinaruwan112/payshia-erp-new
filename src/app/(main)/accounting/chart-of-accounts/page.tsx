@@ -1,5 +1,7 @@
 
 
+'use client';
+
 import {
   Card,
   CardContent,
@@ -29,6 +31,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Account } from '@/lib/types';
+import { useCurrency } from '@/components/currency-provider';
 
 const getAccountTypeColor = (type: Account['type']) => {
   switch (type) {
@@ -48,6 +51,7 @@ const getAccountTypeColor = (type: Account['type']) => {
 };
 
 export default function ChartOfAccountsPage() {
+  const { currencySymbol } = useCurrency();
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -99,7 +103,7 @@ export default function ChartOfAccountsPage() {
                   <TableCell className="hidden md:table-cell">
                      <Badge variant="outline">{account.subType}</Badge>
                   </TableCell>
-                  <TableCell className="text-right font-mono">${account.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">{currencySymbol}{account.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

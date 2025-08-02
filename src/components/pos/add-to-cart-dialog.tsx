@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import type { Product } from '@/lib/types';
+import type { PosProduct } from '@/app/(pos)/pos-system/page';
 import {
   Dialog,
   DialogContent,
@@ -19,9 +19,9 @@ import { Plus, X } from 'lucide-react';
 import { Separator } from '../ui/separator';
 
 interface AddToCartDialogProps {
-  product: Product | null;
+  product: PosProduct | null;
   onClose: () => void;
-  onAddToCart: (product: Product, quantity: number, discount: number) => void;
+  onAddToCart: (product: PosProduct, quantity: number, discount: number) => void;
 }
 
 export function AddToCartDialog({
@@ -69,7 +69,7 @@ export function AddToCartDialog({
   };
 
   const isOpen = !!product;
-  const discountedPrice = product ? product.price - parseFloat(discount) : 0;
+  const discountedPrice = product ? (product.price as number) - parseFloat(discount) : 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -79,8 +79,8 @@ export function AddToCartDialog({
             {/* Left Column: Product Info */}
             <div className="p-6 flex flex-col">
               <DialogHeader className="mb-4">
-                <DialogTitle className="text-2xl">{product.name}</DialogTitle>
-                <p className="text-sm text-muted-foreground">{product.variants[0].sku}</p>
+                <DialogTitle className="text-2xl">{product.variantName}</DialogTitle>
+                <p className="text-sm text-muted-foreground">{product.variant.sku || 'No SKU'}</p>
               </DialogHeader>
 
               <div className="bg-muted/50 rounded-lg p-4 flex justify-center items-center mb-4">
@@ -101,23 +101,23 @@ export function AddToCartDialog({
                 </div>
                 <div>
                   <p className="text-muted-foreground">Unit</p>
-                  <p className="font-bold">{product.stockUnit || 'Nos'}</p>
+                  <p className="font-bold">{product.stock_unit || 'Nos'}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Price</p>
-                  <p className="font-bold">${product.price.toFixed(2)}</p>
+                  <p className="font-bold">${(product.price as number).toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Min</p>
-                  <p className="font-bold text-red-500">${(product.minPrice || 0).toFixed(2)}</p>
+                  <p className="font-bold text-red-500">${(product.min_price as number || 0).toFixed(2)}</p>
                 </div>
                  <div>
                   <p className="text-muted-foreground">Wholesale</p>
-                  <p className="font-bold">${(product.wholesalePrice || 0).toFixed(2)}</p>
+                  <p className="font-bold">${(product.wholesale_price as number || 0).toFixed(2)}</p>
                 </div>
                 <div className="col-span-3">
                   <p className="text-muted-foreground">Barcode</p>
-                  <p className="font-mono tracking-widest">{product.variants[0].sku}</p>
+                  <p className="font-mono tracking-widest">{product.variant.sku || 'N/A'}</p>
                 </div>
               </div>
               

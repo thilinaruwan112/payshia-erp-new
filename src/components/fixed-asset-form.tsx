@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { fixedAssets } from "@/lib/data";
 import { Combobox } from "./ui/combobox";
+import { useCurrency } from "./currency-provider";
 
 const fixedAssetFormSchema = z.object({
   name: z.string().min(3, "Asset name is required."),
@@ -57,6 +58,7 @@ interface FixedAssetFormProps {
 export function FixedAssetForm({ asset }: FixedAssetFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   
   const defaultValues: Partial<FixedAssetFormValues> = {
     name: asset?.name || "",
@@ -183,7 +185,7 @@ export function FixedAssetForm({ asset }: FixedAssetFormProps) {
                         <FormItem>
                         <FormLabel>Purchase Cost</FormLabel>
                         <FormControl>
-                            <Input type="number" placeholder="0.00" {...field} startIcon="$" />
+                            <Input type="number" placeholder="0.00" {...field} startIcon={currencySymbol} />
                         </FormControl>
                          <FormMessage />
                         </FormItem>

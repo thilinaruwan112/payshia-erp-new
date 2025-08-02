@@ -10,7 +10,6 @@ import {
   Package,
   ShoppingCart,
   Truck,
-  BotMessageSquare,
   ChevronDown,
   Users,
   Building,
@@ -43,6 +42,16 @@ import {
   Boxes,
   Archive,
   History,
+  Settings,
+  BookUser,
+  Building2,
+  DollarSign,
+  Briefcase,
+  AreaChart,
+  Undo2,
+  CalendarCheck,
+  Fingerprint,
+  Star,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -94,17 +103,39 @@ const user = {
 
 const navItems = [
   {
-    href: '/dashboard',
-    label: 'Dashboard',
+    label: 'Dashboards',
     icon: LayoutDashboard,
+    subItems: [
+      { href: '/dashboard', label: 'Overview', icon: LayoutGrid },
+      { href: '/sales/dashboard', label: 'Sales', icon: TrendingUp },
+      { href: '/inventory/dashboard', label: 'Inventory', icon: Package },
+       { href: '/suppliers/dashboard', label: 'Suppliers', icon: Building },
+      { href: '/crm/dashboard', label: 'CRM', icon: Users },
+      { href: '/accounting/dashboard', label: 'Accounting', icon: Landmark },
+      { href: '/hrm/dashboard', label: 'HRM', icon: Briefcase },
+    ],
   },
   {
-    href: '/reports',
-    label: 'Reports',
-    icon: BarChart3,
+    label: 'Sales',
+    icon: TrendingUp,
+    subItems: [
+      { href: '/orders', label: 'Orders', icon: ShoppingCart },
+      { href: '/sales/invoices', label: 'Invoices', icon: FileText },
+      { href: '/sales/receipts', label: 'Receipts', icon: Receipt },
+    ],
   },
   {
-    label: 'Master',
+    label: 'CRM',
+    icon: Contact,
+    subItems: [
+      { href: '/crm/customers', label: 'Customers', icon: Users },
+      { href: '/crm/loyalty-schema', label: 'Loyalty Schema', icon: Gem },
+      { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
+      { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
+    ],
+  },
+  {
+    label: 'Inventory & Products',
     icon: Package,
     subItems: [
       { href: '/products', label: 'All Products', icon: Boxes },
@@ -112,86 +143,63 @@ const navItems = [
       { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
       { href: '/products/colors', label: 'Colors', icon: SwatchBook },
       { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
+      { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
+      { href: '/inventory/forecast', label: 'AI Forecast', icon: AreaChart },
     ],
-  },
-  {
-    href: '/inventory/forecast',
-    label: 'AI Forecast',
-    icon: TrendingUp,
-  },
-  {
-    href: '/orders',
-    label: 'Orders',
-    icon: ShoppingCart,
-  },
-  {
-    label: 'Sales',
-    icon: TrendingUp,
-    subItems: [
-      { href: '/sales/invoices', label: 'Invoices' },
-      { href: '/sales/receipts', label: 'Receipts' },
-    ],
-  },
-  {
-    label: 'CRM',
-    icon: Contact,
-    subItems: [
-        { href: '/crm/customers', label: 'Customers' },
-        { href: '/crm/loyalty-schema', label: 'Loyalty Schema' },
-        { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
-        { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
-    ],
-  },
-  {
-    href: '/suppliers',
-    label: 'Suppliers',
-    icon: Users,
   },
    {
-    label: 'Purchasing',
+    label: 'Suppliers',
     icon: Building,
     subItems: [
-      { href: '/purchasing/purchase-orders', label: 'Purchase Orders' },
-      { href: '/purchasing/grn', label: 'Create GRN' },
-      { href: '/purchasing/grn/history', label: 'GRN History', icon: History },
+        { href: '/suppliers/dashboard', label: 'Dashboard', icon: LayoutGrid },
+        { href: '/suppliers', label: 'All Suppliers', icon: Users },
+        { href: '/suppliers/payments', label: 'Payments', icon: Wallet },
+        { href: '/suppliers/returns', label: 'Supplier Returns', icon: Undo2 },
+    ]
+  },
+  {
+    label: 'Purchasing',
+    icon: ShoppingCart,
+    subItems: [
+      { href: '/purchasing/purchase-orders', label: 'Purchase Orders', icon: ShoppingCart },
+      { href: '/purchasing/grn', label: 'Goods Received Notes (GRN)', icon: FileDigit },
     ],
-  },
-  {
-    href: '/transfers',
-    label: 'Stock Transfers',
-    icon: ArrowRightLeft,
-  },
-  {
-    href: '/locations',
-    label: 'Locations',
-    icon: Warehouse,
-  },
-   {
-    href: '/billing',
-    label: 'Billing',
-    icon: CreditCard,
   },
   {
     label: 'Accounting',
     icon: Landmark,
     subItems: [
-      { href: '/accounting/dashboard', label: 'Dashboard' },
-      { href: '/accounting/payments', label: 'Payments' },
-      { href: '/accounting/expenses', label: 'Expenses' },
-      { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts' },
-      { href: '/accounting/journal-entries', label: 'Journal Entries' },
-      { href: '/accounting/fixed-assets', label: 'Fixed Assets' },
+      { href: '/accounting/expenses', label: 'Expenses', icon: FileDigit },
+      { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: BookUser },
+      { href: '/accounting/journal-entries', label: 'Journal Entries', icon: FileText },
+      { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
     ],
   },
   {
-    href: '/logistics',
-    label: 'AI Logistics',
-    icon: BotMessageSquare,
+    label: 'HRM',
+    icon: Briefcase,
+    subItems: [
+      { href: '/hrm/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/hrm/employees', label: 'Employees', icon: Users },
+      { href: '/hrm/payroll', label: 'Payroll', icon: DollarSign },
+      { href: '/hrm/leave', label: 'Leave Management', icon: CalendarCheck },
+      { href: '/hrm/attendance', label: 'Attendance', icon: Fingerprint },
+      { href: '/hrm/performance', label: 'Performance', icon: Star },
+    ],
   },
   {
-    href: '/help',
-    label: 'How to Use',
-    icon: HelpCircle,
+    href: '/reports',
+    label: 'Reports',
+    icon: BarChart3,
+  },
+  {
+    label: 'Settings',
+    icon: Settings,
+    subItems: [
+      { href: '/locations', label: 'Locations', icon: Warehouse },
+      { href: '/billing', label: 'Billing & Plans', icon: CreditCard },
+      { href: '/settings/currency', label: 'Currency', icon: DollarSign },
+    ],
   },
   {
     href: '/pos-system',
@@ -199,7 +207,13 @@ const navItems = [
     icon: Terminal,
     isExternal: true,
   },
+  {
+    href: '/help',
+    label: 'How to Use',
+    icon: HelpCircle,
+  },
 ];
+
 
 function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
     const { currentLocation, setCurrentLocation, availableLocations, isLoading } = useLocation();
@@ -305,7 +319,7 @@ function DateTimeLocation() {
                  <PopoverTrigger asChild>
                     <Button variant="ghost" size="sm" className="flex items-center gap-2">
                         <Clock className="h-4 w-4" />
-                        <span>{format(currentTime, 'pp')}</span>
+                        <span>{format(currentTime, 'p')}</span>
                     </Button>
                 </PopoverTrigger>
                  <PopoverContent className="w-auto p-4">
@@ -408,10 +422,13 @@ const isPathActive = (pathname: string, href?: string, subItems?: any[]) => {
     return subItems.some(item => isPathActive(pathname, item.href, item.subItems));
   }
   if (!href) return false;
-  // Exact match for dashboard and products, startsWith for others
-  if (href === '/dashboard' || href === '/products') {
+  
+  // Exact match for specific top-level pages to avoid multiple highlights
+  const exactMatchPaths = ['/dashboard', '/products', '/suppliers', '/reports', '/pos-system', '/help'];
+  if (exactMatchPaths.includes(href)) {
     return pathname === href;
   }
+
   return pathname.startsWith(href);
 }
 
@@ -449,14 +466,6 @@ const NavMenu = ({ items, pathname, handleLinkClick }: { items: any[], pathname:
                     <Link href={item.href!} onClick={(e) => handleLinkClick(item.isExternal, e)} target={item.isExternal ? "_blank" : "_self"} rel={item.isExternal ? "noopener noreferrer" : ""}>
                       {item.icon && <item.icon className="mr-2 h-4 w-4" />}
                       <span>{item.label}</span>
-                      {item.label === 'AI Logistics' && (
-                        <Badge
-                          variant="destructive"
-                          className="ml-auto bg-accent text-accent-foreground animate-pulse"
-                        >
-                          New
-                        </Badge>
-                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

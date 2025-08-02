@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import type { Product } from '@/lib/types';
+import type { PosProduct } from '@/app/(pos)/pos-system/page';
 import {
   Card,
   CardContent,
@@ -10,8 +10,8 @@ import {
 import Image from 'next/image';
 
 interface ProductCardProps {
-  product: Product;
-  onSelect: (product: Product) => void;
+  product: PosProduct;
+  onSelect: (product: PosProduct) => void;
 }
 
 export function ProductCard({ product, onSelect }: ProductCardProps) {
@@ -30,9 +30,9 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
           data-ai-hint="product photo"
         />
         <div className='p-4'>
-            <h3 className="font-semibold text-lg truncate group-hover:text-primary">{product.name}</h3>
+            <h3 className="font-semibold text-base truncate group-hover:text-primary leading-tight">{product.variantName}</h3>
             <p className="text-sm text-muted-foreground">{product.category}</p>
-            <p className="font-bold text-xl mt-2">${product.price.toFixed(2)}</p>
+            <p className="font-bold text-xl mt-2">${(product.price as number).toFixed(2)}</p>
         </div>
       </CardContent>
     </Card>

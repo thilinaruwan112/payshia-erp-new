@@ -1,5 +1,7 @@
 
 
+'use client';
+
 import {
   Card,
   CardContent,
@@ -26,8 +28,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useCurrency } from '@/components/currency-provider';
 
 export default function PaymentsPage() {
+    const { currencySymbol } = useCurrency();
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -38,7 +42,7 @@ export default function PaymentsPage() {
           </p>
         </div>
         <Button asChild className="w-full sm:w-auto">
-          <Link href="/accounting/payments/new">
+          <Link href="/suppliers/payments/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Payment
           </Link>
@@ -73,7 +77,7 @@ export default function PaymentsPage() {
                   <TableCell className="font-medium">{payment.supplierName}</TableCell>
                   <TableCell className="hidden sm:table-cell">{payment.poId || 'N/A'}</TableCell>
                    <TableCell className="hidden md:table-cell">{payment.paymentAccountName}</TableCell>
-                  <TableCell className="text-right font-mono">${payment.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">{currencySymbol}{payment.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -84,7 +88,7 @@ export default function PaymentsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => console.log(`Viewing details for ${payment.id}`)}>View Details</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
