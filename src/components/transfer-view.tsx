@@ -156,11 +156,9 @@ export function TransferView({ id }: TransferViewProps) {
                 </div>
                  <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">Status</p>
-                    <p>
-                        <Badge variant="secondary" className={cn(getStatusColor(transfer.status))}>
-                           {transfer.status}
-                        </Badge>
-                    </p>
+                    <Badge variant="secondary" className={cn(getStatusColor(transfer.status))}>
+                       {transfer.status}
+                    </Badge>
                 </div>
              </CardContent>
         </Card>
