@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import {
@@ -30,20 +31,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { Location } from '@/lib/types';
+import type { Location, StockTransfer } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
-type StockTransfer = {
-    id: string;
-    from_location: string;
-    to_location: string;
-    transfer_date: string;
-    status: 'pending' | 'in-transit' | 'completed';
-    stock_transfer_number: string;
-};
 
 
 const getStatusColor = (status: StockTransfer['status']) => {
@@ -180,7 +172,9 @@ export default function StockTransfersPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link href={`/transfers/${transfer.id}`}>View Details</Link>
+                              </DropdownMenuItem>
                           </DropdownMenuContent>
                           </DropdownMenu>
                       </TableCell>

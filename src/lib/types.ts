@@ -1,4 +1,5 @@
 
+
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -201,18 +202,51 @@ export type GoodsReceivedNote = {
     items?: GrnItem[];
 }
 
+export type StockTransferItem = {
+    id: string;
+    stock_transfer_id: string;
+    product_id: string;
+    product_variant_id: string;
+    quantity: string;
+    patch_code: string | null;
+    expire_date: string;
+    company_id: string;
+}
+
+export type StockEntry = {
+    id: string;
+    type: 'IN' | 'OUT';
+    quantity: string;
+    patch_code: string;
+    manufacture_date: string;
+    expire_date: string;
+    product_id: string;
+    reference: string;
+    location_id: string;
+    created_by: string;
+    created_at: string;
+    is_active: string;
+    ref_id: string;
+    company_id: string;
+    transaction_type: string;
+    product_variant_id: string;
+}
+
 export type StockTransfer = {
     id: string;
-    fromLocationId: string;
-    fromLocationName: string;
-    toLocationId: string;
-    toLocationName: string;
-    date: string;
-    status: 'Pending' | 'In Transit' | 'Completed';
-    itemCount: number;
-    items: { sku: string, quantity: number }[];
-    totalValue: number;
-}
+    from_location: string;
+    to_location: string;
+    transfer_date: string;
+    status: 'pending' | 'in-transit' | 'completed';
+    stock_transfer_number: string;
+    company_id: string;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+    items: StockTransferItem[];
+    stock_entries: StockEntry[];
+};
+
 
 export type SupplierReturn = {
     id: string;
