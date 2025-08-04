@@ -206,7 +206,7 @@ function TransferViewSkeleton() {
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Skeleton className="h-10 w-24" />
-            <Skeleton className="h-10 w-24" />
+             <Skeleton className="h-10 w-24" />
           </div>
         </div>
         <Card>
@@ -221,22 +221,39 @@ function TransferViewSkeleton() {
         <Card>
             <CardHeader>
                 <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-4 w-64 mt-2" />
             </CardHeader>
             <CardContent>
-                <div className="space-y-2">
-                    <TableRow>
-                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                    </TableRow>
-                     <TableRow>
-                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                    </TableRow>
-                </div>
+                <Table>
+                  <TableHeader>
+                      <TableRow>
+                          <TableHead><Skeleton className="h-4 w-full" /></TableHead>
+                          <TableHead><Skeleton className="h-4 w-full" /></TableHead>
+                          <TableHead><Skeleton className="h-4 w-full" /></TableHead>
+                          <TableHead><Skeleton className="h-4 w-full" /></TableHead>
+                      </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                      <TableRow>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                      </TableRow>
+                      <TableRow>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                      </TableRow>
+                      <TableRow>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                      </TableRow>
+                  </TableBody>
+                </Table>
             </CardContent>
         </Card>
     </div>
