@@ -25,23 +25,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import type { Product } from "@/lib/types";
 
 const customFieldFormSchema = z.object({
   field_name: z.string().min(2, "Field name is required."),
   description: z.string().optional(),
-  product_id: z.string().min(1, "Please select a product."),
   value: z.string().min(1, "Value is required."),
 });
 
 type CustomFieldFormValues = z.infer<typeof customFieldFormSchema>;
 
-interface CustomFieldFormProps {
-    products: Product[];
-}
-
-export function CustomFieldForm({ products }: CustomFieldFormProps) {
+export function CustomFieldForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -51,7 +44,6 @@ export function CustomFieldForm({ products }: CustomFieldFormProps) {
     defaultValues: {
         field_name: '',
         description: '',
-        product_id: '',
         value: ''
     },
     mode: "onChange",
@@ -105,7 +97,7 @@ export function CustomFieldForm({ products }: CustomFieldFormProps) {
             <h1 className="text-3xl font-bold tracking-tight text-nowrap">
               Create Custom Field
             </h1>
-            <p className="text-muted-foreground">Add a new custom data field for a product.</p>
+            <p className="text-muted-foreground">Add a new custom data field.</p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Button
@@ -143,26 +135,17 @@ export function CustomFieldForm({ products }: CustomFieldFormProps) {
             />
             <FormField
               control={form.control}
-              name="product_id"
+              name="value"
               render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Product</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Select a product" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        {products.map(product => (
-                            <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
+                  <FormItem>
+                  <FormLabel>Value</FormLabel>
+                  <FormControl>
+                      <Input placeholder="e.g. Cotton" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                  </FormItem>
               )}
-            />
+              />
              <div className="md:col-span-2">
                 <FormField
                 control={form.control}
@@ -172,21 +155,6 @@ export function CustomFieldForm({ products }: CustomFieldFormProps) {
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                         <Input placeholder="A short description for the field" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
-            <div className="md:col-span-2">
-                <FormField
-                control={form.control}
-                name="value"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Value</FormLabel>
-                    <FormControl>
-                        <Input placeholder="e.g. Cotton" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>

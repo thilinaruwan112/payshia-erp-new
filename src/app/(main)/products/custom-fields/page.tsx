@@ -30,13 +30,11 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { products } from '@/lib/data';
 
 interface CustomField {
     id: string;
     field_name: string;
     description: string;
-    product_id: string;
     value: string;
 }
 
@@ -100,11 +98,6 @@ export default function CustomFieldsPage() {
     }
   };
 
-  const getProductName = (productId: string) => {
-      const product = products.find(p => p.id === productId);
-      return product ? product.name : `ID: ${productId}`;
-  }
-
 
   return (
     <>
@@ -113,7 +106,7 @@ export default function CustomFieldsPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Custom Fields</h1>
             <p className="text-muted-foreground">
-              Manage custom fields for your products.
+              Manage your custom fields for your products.
             </p>
           </div>
           <Button asChild className="w-full sm:w-auto">
@@ -136,7 +129,6 @@ export default function CustomFieldsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Field Name</TableHead>
-                  <TableHead>Product</TableHead>
                   <TableHead>Value</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -149,7 +141,6 @@ export default function CustomFieldsPage() {
                     <TableRow key={i}>
                       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                       <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
                     </TableRow>
                   ))
@@ -157,7 +148,6 @@ export default function CustomFieldsPage() {
                   customFields.map((field) => (
                     <TableRow key={field.id}>
                       <TableCell className="font-medium">{field.field_name}</TableCell>
-                      <TableCell>{getProductName(field.product_id)}</TableCell>
                       <TableCell>{field.value}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
