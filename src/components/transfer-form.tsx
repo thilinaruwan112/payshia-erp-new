@@ -196,7 +196,7 @@ export function TransferForm({ locations }: TransferFormProps) {
       to_location: data.toLocationId,
       transfer_date: format(data.date, 'yyyy-MM-dd'),
       status: 'pending',
-      company_id: 101, // As per your sample
+      company_id: 1,
       created_by: "admin", 
       items: data.items.map(item => {
         const batchInfo: StockInfo = JSON.parse(item.selectedBatch);
