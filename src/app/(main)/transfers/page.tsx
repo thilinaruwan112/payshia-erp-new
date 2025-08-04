@@ -72,7 +72,7 @@ export default function StockTransfersPage() {
             setIsLoading(true);
             try {
                 const [transfersResponse, locationsResponse] = await Promise.all([
-                    fetch('https://server-erp.payshia.com/stock-transfers'),
+                    fetch('https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=1'),
                     fetch('https://server-erp.payshia.com/locations')
                 ]);
 
