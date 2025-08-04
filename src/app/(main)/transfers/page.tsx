@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -18,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -30,10 +31,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Location } from '@/lib/types';
-import { useCurrency } from '@/components/currency-provider';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 type StockTransfer = {
     id: string;
@@ -59,11 +60,12 @@ const getStatusColor = (status: StockTransfer['status']) => {
 };
 
 export default function StockTransfersPage() {
-    const { currencySymbol } = useCurrency();
     const { toast } = useToast();
     const [transfers, setTransfers] = useState<StockTransfer[]>([]);
     const [locations, setLocations] = useState<Location[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     useEffect(() => {
         async function fetchData() {
@@ -100,6 +102,11 @@ export default function StockTransfersPage() {
         return locations.find(loc => loc.location_id === id)?.location_name || `ID: ${id}`;
     }
 
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentTransfers = transfers.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(transfers.length / itemsPerPage);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -125,70 +132,97 @@ export default function StockTransfersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Transfer #</TableHead>
-                <TableHead>From</TableHead>
-                <TableHead>To</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                  Array.from({length: 5}).map((_, i) => (
-                      <TableRow key={i}>
-                          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                          <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                          <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+          <ScrollArea className="h-[450px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Transfer #</TableHead>
+                  <TableHead>From</TableHead>
+                  <TableHead>To</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                    Array.from({length: 5}).map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                        </TableRow>
+                    ))
+                ) : (
+                  currentTransfers.map((transfer) => (
+                      <TableRow key={transfer.id}>
+                      <TableCell className="font-medium">{transfer.stock_transfer_number}</TableCell>
+                      <TableCell>{getLocationName(transfer.from_location)}</TableCell>
+                      <TableCell>{getLocationName(transfer.to_location)}</TableCell>
+                      <TableCell>
+                          <Badge variant="secondary" className={cn(getStatusColor(transfer.status))}>
+                          {transfer.status}
+                          </Badge>
+                      </TableCell>
+                      <TableCell>{new Date(transfer.transfer_date).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">
+                          <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                              </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem>View Details</DropdownMenuItem>
+                          </DropdownMenuContent>
+                          </DropdownMenu>
+                      </TableCell>
                       </TableRow>
                   ))
-              ) : (
-                transfers.map((transfer) => (
-                    <TableRow key={transfer.id}>
-                    <TableCell className="font-medium">{transfer.stock_transfer_number}</TableCell>
-                    <TableCell>{getLocationName(transfer.from_location)}</TableCell>
-                    <TableCell>{getLocationName(transfer.to_location)}</TableCell>
-                    <TableCell>
-                        <Badge variant="secondary" className={cn(getStatusColor(transfer.status))}>
-                        {transfer.status}
-                        </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(transfer.transfer_date).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                        </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                    </TableRow>
-                ))
-              )}
-               {!isLoading && transfers.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                        No stock transfers found.
-                    </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+                 {!isLoading && currentTransfers.length === 0 && (
+                  <TableRow>
+                      <TableCell colSpan={6} className="h-24 text-center">
+                          No stock transfers found.
+                      </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         </CardContent>
+         <CardFooter className="flex justify-end items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Previous Page</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+                 <span className="sr-only">Next Page</span>
+              </Button>
+            </div>
+          </CardFooter>
       </Card>
     </div>
   );
