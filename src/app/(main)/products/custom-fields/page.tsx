@@ -51,7 +51,7 @@ export default function CustomFieldsPage() {
     async function fetchCustomFields() {
       setIsLoading(true);
       try {
-        const response = await fetch('https://server-erp.payshia.com/custom-fields');
+        const response = await fetch('https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=1');
         if (!response.ok) {
           throw new Error('Failed to fetch custom fields');
         }
