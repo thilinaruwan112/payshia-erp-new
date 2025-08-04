@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { type ReactNode, useState, useEffect } from 'react';
@@ -52,6 +51,7 @@ import {
   CalendarCheck,
   Fingerprint,
   Star,
+  PlusSquare,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -143,6 +143,7 @@ const navItems = [
       { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
       { href: '/products/colors', label: 'Colors', icon: SwatchBook },
       { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
+      { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
       { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
       { href: '/inventory/forecast', label: 'AI Forecast', icon: AreaChart },
     ],
