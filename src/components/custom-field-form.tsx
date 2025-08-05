@@ -25,11 +25,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { Textarea } from "./ui/textarea";
 
 const customFieldFormSchema = z.object({
   field_name: z.string().min(2, "Field name is required."),
   description: z.string().optional(),
-  value: z.string().min(1, "Value is required."),
 });
 
 type CustomFieldFormValues = z.infer<typeof customFieldFormSchema>;
@@ -44,7 +44,6 @@ export function CustomFieldForm() {
     defaultValues: {
         field_name: '',
         description: '',
-        value: ''
     },
     mode: "onChange",
   });
@@ -135,32 +134,17 @@ export function CustomFieldForm() {
             />
             <FormField
               control={form.control}
-              name="value"
+              name="description"
               render={({ field }) => (
                   <FormItem>
-                  <FormLabel>Value</FormLabel>
+                  <FormLabel>Description</FormLabel>
                   <FormControl>
-                      <Input placeholder="e.g. Cotton" {...field} />
+                      <Textarea placeholder="A short description for the field" {...field} />
                   </FormControl>
                   <FormMessage />
                   </FormItem>
               )}
-              />
-             <div className="md:col-span-2">
-                <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                        <Input placeholder="A short description for the field" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-                />
-            </div>
+            />
           </CardContent>
         </Card>
       </form>

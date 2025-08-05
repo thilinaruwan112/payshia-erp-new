@@ -35,7 +35,6 @@ interface CustomField {
     id: string;
     field_name: string;
     description: string;
-    value: string;
 }
 
 export default function CustomFieldsPage() {
@@ -129,7 +128,7 @@ export default function CustomFieldsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Field Name</TableHead>
-                  <TableHead>Value</TableHead>
+                  <TableHead>Description</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -148,7 +147,7 @@ export default function CustomFieldsPage() {
                   customFields.map((field) => (
                     <TableRow key={field.id}>
                       <TableCell className="font-medium">{field.field_name}</TableCell>
-                      <TableCell>{field.value}</TableCell>
+                      <TableCell>{field.description}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
