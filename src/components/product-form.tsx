@@ -57,11 +57,22 @@ type Size = {
     value: string;
 }
 
+type CustomFieldMaster = {
+    id: string;
+    field_name: string;
+    description: string;
+}
+
 const variantSchema = z.object({
   id: z.string().optional(),
   sku: z.string().min(1, { message: "SKU is required." }),
   colorId: z.string().optional(),
   sizeId: z.string().optional(),
+});
+
+const customFieldSchema = z.object({
+    master_custom_field_id: z.string(),
+    value: z.string(),
 });
 
 const productFormSchema = z.object({
@@ -85,6 +96,7 @@ const productFormSchema = z.object({
   foreignPrice: z.coerce.number().optional(),
   variants: z.array(variantSchema).min(1, { message: "At least one variant is required." }),
   supplier: z.array(z.string()).optional(),
+  customFields: z.array(customFieldSchema).optional(),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -102,6 +114,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const [colors, setColors] = useState<Color[]>([]);
   const [sizes, setSizes] = useState<Size[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [customFieldMasters, setCustomFieldMasters] = useState<CustomFieldMaster[]>([]);
 
   useEffect(() => {
     async function fetchData(url: string, setData: Function, type: string) {
@@ -126,6 +139,7 @@ export function ProductForm({ product }: ProductFormProps) {
     fetchData('https://server-erp.payshia.com/colors', setColors, 'colors');
     fetchData('https://server-erp.payshia.com/sizes', setSizes, 'sizes');
     fetchData('https://server-erp.payshia.com/suppliers', setSuppliers, 'suppliers');
+    fetchData('https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=1', setCustomFieldMasters, 'custom fields');
   }, [toast]);
   
   const defaultValues: Partial<ProductFormValues> = {
@@ -153,6 +167,7 @@ export function ProductForm({ product }: ProductFormProps) {
         const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
         return foundSupplier ? foundSupplier.supplier_id : '';
     }).filter(Boolean) || [],
+    customFields: [],
   };
 
   const form = useForm<ProductFormValues>({
@@ -233,7 +248,6 @@ export function ProductForm({ product }: ProductFormProps) {
       display_name: data.displayName || data.name,
       supplier: data.supplier?.join(',') || "",
       company_id: 1,
-      // Default values for new fields
       lead_time_days: 0,
       reorder_level_qty: 0,
       item_type: "finished_good",
@@ -249,7 +263,7 @@ export function ProductForm({ product }: ProductFormProps) {
         size: sizes.find(s => s.id === v.sizeId)?.value || "",
         color_id: v.colorId ? parseInt(v.colorId, 10) : undefined,
         size_id: v.sizeId ? parseInt(v.sizeId, 10) : undefined,
-        barcode: v.sku, // Using SKU as barcode for now
+        barcode: v.sku,
       })),
     };
     
@@ -269,6 +283,28 @@ export function ProductForm({ product }: ProductFormProps) {
 
       if (!response.ok) {
         throw new Error(result.message || 'Something went wrong');
+      }
+
+      const productId = product?.id || result.id;
+
+      if (data.customFields && data.customFields.length > 0) {
+        for (const cf of data.customFields) {
+          if (cf.value) { // Only save if there's a value
+            const customFieldPayload = {
+              master_custom_field_id: parseInt(cf.master_custom_field_id, 10),
+              company_id: 1,
+              created_by: "admin",
+              updated_by: "admin",
+              product_id: productId,
+              value: cf.value
+            };
+            await fetch('https://server-erp.payshia.com/custom-field-products', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(customFieldPayload),
+            });
+          }
+        }
       }
 
       toast({
@@ -439,6 +475,41 @@ export function ProductForm({ product }: ProductFormProps) {
                             <Button variant="outline" type="button" className="mt-4">Browse Files</Button>
                          </div>
                     </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Custom Fields</CardTitle>
+                    <CardDescription>Add extra details for this product.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {customFieldMasters.map((field, index) => (
+                      <FormField
+                          key={field.id}
+                          control={form.control}
+                          name={`customFields.${index}.value`}
+                          render={({ field: formField }) => (
+                              <FormItem>
+                                  <FormLabel>{field.field_name}</FormLabel>
+                                  <FormControl>
+                                      <Input 
+                                          placeholder={field.description || `Enter ${field.field_name}`}
+                                          {...formField}
+                                          onChange={(e) => {
+                                              form.setValue(`customFields.${index}.master_custom_field_id`, field.id);
+                                              formField.onChange(e.target.value);
+                                          }}
+                                      />
+                                  </FormControl>
+                                  <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                    ))}
+                    {customFieldMasters.length === 0 && (
+                      <p className="text-sm text-muted-foreground">No custom fields defined. You can add them in the product settings.</p>
+                    )}
+                  </CardContent>
                 </Card>
 
                 <Card>
