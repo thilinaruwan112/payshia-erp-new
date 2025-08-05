@@ -125,6 +125,13 @@ export function ProductForm({ product }: ProductFormProps) {
         }
         const data = await response.json();
         setData(data);
+        if (type === 'custom fields') {
+             // Initialize customFields in the form state when masters are loaded.
+            form.setValue('customFields', data.map((field: CustomFieldMaster) => ({
+                master_custom_field_id: field.id,
+                value: '', // Initialize with empty string
+            })));
+        }
       } catch (error) {
         console.error(error);
         toast({
