@@ -336,6 +336,8 @@ export function ProductForm({ product }: ProductFormProps) {
   }
 
   const pageTitle = product ? `Edit Product: ${product.name}` : 'Create Product';
+  const customFieldsInForm = form.watch('customFields');
+
 
   return (
     <Form {...form}>
@@ -493,29 +495,30 @@ export function ProductForm({ product }: ProductFormProps) {
                     <CardDescription>Add extra details for this product.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {customFieldMasters.map((field, index) => (
-                      <FormField
-                          key={field.id}
-                          control={form.control}
-                          name={`customFields.${index}.value`}
-                          render={({ field: formField }) => (
-                              <FormItem>
-                                  <FormLabel>{field.field_name}</FormLabel>
-                                  <FormControl>
-                                      <Input 
-                                          placeholder={field.description || `Enter ${field.field_name}`}
-                                          {...formField}
-                                          onChange={(e) => {
-                                              form.setValue(`customFields.${index}.master_custom_field_id`, field.id);
-                                              formField.onChange(e.target.value);
-                                          }}
-                                      />
-                                  </FormControl>
-                                  <FormMessage />
-                              </FormItem>
-                          )}
-                      />
-                    ))}
+                    {(customFieldsInForm || []).map((_, index) => {
+                        const masterField = customFieldMasters.find(mf => mf.id === customFieldsInForm[index].master_custom_field_id);
+                        if (!masterField) return null;
+                        
+                        return (
+                             <FormField
+                              key={masterField.id}
+                              control={form.control}
+                              name={`customFields.${index}.value`}
+                              render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel>{masterField.field_name}</FormLabel>
+                                      <FormControl>
+                                          <Input 
+                                              placeholder={masterField.description || `Enter ${masterField.field_name}`}
+                                              {...field}
+                                          />
+                                      </FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}
+                          />
+                        )
+                    })}
                     {customFieldMasters.length === 0 && (
                       <p className="text-sm text-muted-foreground">No custom fields defined. You can add them in the product settings.</p>
                     )}
