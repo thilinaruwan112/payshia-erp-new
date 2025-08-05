@@ -125,13 +125,6 @@ export function ProductForm({ product }: ProductFormProps) {
         }
         const data = await response.json();
         setData(data);
-        if (type === 'custom fields') {
-             // Initialize customFields in the form state when masters are loaded.
-            form.setValue('customFields', data.map((field: CustomFieldMaster) => ({
-                master_custom_field_id: field.id,
-                value: '', // Initialize with empty string
-            })));
-        }
       } catch (error) {
         console.error(error);
         toast({
@@ -182,6 +175,15 @@ export function ProductForm({ product }: ProductFormProps) {
     defaultValues,
     mode: "onChange",
   });
+  
+  useEffect(() => {
+    if (customFieldMasters.length > 0) {
+        form.setValue('customFields', customFieldMasters.map(field => ({
+            master_custom_field_id: field.id,
+            value: '', 
+        })));
+    }
+  }, [customFieldMasters, form]);
   
   useEffect(() => {
     if (product?.supplier && suppliers.length > 0) {
@@ -292,7 +294,8 @@ export function ProductForm({ product }: ProductFormProps) {
         throw new Error(result.message || 'Something went wrong');
       }
 
-      const productId = product?.id || result.id;
+      // Step 2: Get the product ID and save custom fields
+      const productId = product?.id || result.product.id;
 
       if (data.customFields && data.customFields.length > 0) {
         for (const cf of data.customFields) {
@@ -302,7 +305,7 @@ export function ProductForm({ product }: ProductFormProps) {
               company_id: 1,
               created_by: "admin",
               updated_by: "admin",
-              product_id: productId,
+              product_id: parseInt(productId, 10),
               value: cf.value
             };
             await fetch('https://server-erp.payshia.com/custom-field-products', {
