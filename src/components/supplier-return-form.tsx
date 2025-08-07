@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { GoodsReceivedNote, Supplier, Product, ProductVariant, GrnItem } from "@/lib/types";
 import { Loader2, Trash2 } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
 import { useCurrency } from "./currency-provider";
@@ -50,7 +50,7 @@ const returnFormSchema = z.object({
   supplierId: z.string(),
   returnDate: z.date(),
   notes: z.string().optional(),
-  items: z.array(returnItemSchema).min(1, "At least one item must be included in the return."),
+  items: z.array(returnItemSchema).min(1, "At least one item must be included in the return.").refine(items => items.some(item => item.returnQty > 0), { message: "You must return at least one item."}),
 });
 
 type ReturnFormValues = z.infer<typeof returnFormSchema>;
@@ -226,23 +226,15 @@ export function SupplierReturnForm() {
                             </TableRow>
                         ))}
                     </TableBody>
+                    <TableFooter>
+                         <TableRow>
+                            <TableCell colSpan={4} className="text-right font-bold">Total Return Value</TableCell>
+                            <TableCell className="text-right font-bold font-mono">{currencySymbol}{totalReturnValue.toFixed(2)}</TableCell>
+                         </TableRow>
+                    </TableFooter>
                 </Table>
             </CardContent>
         </Card>
-        
-        <div className="flex justify-end">
-            <Card className="w-full max-w-sm">
-                <CardHeader>
-                    <CardTitle>Return Summary</CardTitle>
-                </CardHeader>
-                 <CardContent className="space-y-2">
-                    <div className="flex justify-between font-bold text-lg">
-                        <span>Total Return Value</span>
-                        <span className="font-mono">{currencySymbol}{totalReturnValue.toFixed(2)}</span>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
       </form>
     </Form>
   )
