@@ -29,6 +29,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
 import { useCurrency } from "./currency-provider";
+import { useLocation } from "./location-provider";
 
 
 const returnItemSchema = z.object({
@@ -39,10 +40,13 @@ const returnItemSchema = z.object({
   receivedQty: z.number(),
   unitPrice: z.number(),
   returnQty: z.coerce.number().min(0, "Return quantity cannot be negative."),
-  reason: z.string().min(1, "Reason is required."),
+  reason: z.string(), // Reason is optional if returnQty is 0
 }).refine(data => data.returnQty <= data.receivedQty, {
     message: "Return quantity cannot exceed received quantity.",
     path: ["returnQty"],
+}).refine(data => data.returnQty > 0 ? data.reason.length > 0 : true, {
+    message: "A reason is required if you are returning items.",
+    path: ["reason"],
 });
 
 const returnFormSchema = z.object({
@@ -60,12 +64,14 @@ export function SupplierReturnForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
+  const { company_id } = useLocation();
   const grnId = searchParams.get('grnId');
 
   const [grn, setGrn] = useState<GoodsReceivedNote | null>(null);
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ReturnFormValues>({
     resolver: zodResolver(returnFormSchema),
@@ -136,13 +142,54 @@ export function SupplierReturnForm() {
     fetchGrnData();
   }, [grnId, toast, form, replace]);
 
-  function onSubmit(data: ReturnFormValues) {
-    console.log(data);
-    toast({
-        title: "Return Created (Simulated)",
-        description: `Supplier return for GRN ${grn?.grn_number} has been processed.`,
+  async function onSubmit(data: ReturnFormValues) {
+    setIsSubmitting(true);
+    const itemsToReturn = data.items.filter(item => item.returnQty > 0);
+
+    const promises = itemsToReturn.map(item => {
+        const payload = {
+            grn_number: grn?.grn_number,
+            product_id: parseInt(item.productId),
+            product_variant_id: parseInt(item.productVariantId),
+            received_qty: item.receivedQty,
+            return_qty: item.returnQty,
+            reason: item.reason,
+            company_id: company_id,
+        };
+        return fetch('https://server-erp.payshia.com/grn-returns', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
     });
-    router.push('/suppliers/returns');
+
+    try {
+        const responses = await Promise.all(promises);
+        
+        for (const response of responses) {
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'One or more items failed to be returned.');
+            }
+        }
+        
+        toast({
+            title: "Return Created Successfully",
+            description: `Your return for GRN ${grn?.grn_number} has been processed.`,
+        });
+        router.push('/suppliers/returns');
+        router.refresh();
+
+    } catch (error) {
+         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+         toast({
+            variant: "destructive",
+            title: "Failed to create return",
+            description: errorMessage,
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   const watchedItems = form.watch("items");
@@ -166,8 +213,8 @@ export function SupplierReturnForm() {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Create Return
                 </Button>
             </div>
