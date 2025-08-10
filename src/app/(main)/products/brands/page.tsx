@@ -43,7 +43,7 @@ export default function BrandsPage() {
     async function fetchBrands() {
       setIsLoading(true);
       try {
-        const response = await fetch('https://server-erp.payshia.com/brands');
+        const response = await fetch('https://server-erp.payshia.com/brands/company?company_id=1');
         if (!response.ok) {
           throw new Error('Failed to fetch brands');
         }

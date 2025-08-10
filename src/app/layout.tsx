@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Suspense } from 'react';
+import { NProgressComponent } from '@/components/ui/nprogress';
 
 export const metadata: Metadata = {
   title: 'Payshia ERP',
@@ -24,6 +26,9 @@ export default function RootLayout({
         ></link>
       </head>
       <body className="font-body antialiased">
+        <Suspense>
+          <NProgressComponent />
+        </Suspense>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

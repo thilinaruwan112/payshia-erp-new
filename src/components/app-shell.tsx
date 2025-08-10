@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { type ReactNode, useState, useEffect } from 'react';
@@ -52,6 +51,8 @@ import {
   CalendarCheck,
   Fingerprint,
   Star,
+  PlusSquare,
+  LogOut,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -143,6 +144,7 @@ const navItems = [
       { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
       { href: '/products/colors', label: 'Colors', icon: SwatchBook },
       { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
+      { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
       { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
       { href: '/inventory/forecast', label: 'AI Forecast', icon: AreaChart },
     ],
@@ -402,7 +404,12 @@ function UserMenu() {
         <DropdownMenuItem>Profile</DropdownMenuItem>
         <DropdownMenuItem>Settings</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Log out</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/login">
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

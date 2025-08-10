@@ -3,7 +3,7 @@ import { CurrencyProvider } from '@/components/currency-provider';
 import { LocationProvider } from '@/components/location-provider';
 import { SidebarProvider } from '@/components/ui/sidebar';
 
-export default function MainAppLayout({
+export default function AppLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;

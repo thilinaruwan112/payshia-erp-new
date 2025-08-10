@@ -45,7 +45,7 @@ export default function CollectionsPage() {
   useEffect(() => {
     async function fetchCollections() {
       try {
-        const response = await fetch('https://server-erp.payshia.com/collections');
+        const response = await fetch('https://server-erp.payshia.com/collections/company?company_id=1');
         if (!response.ok) {
           throw new Error('Failed to fetch collections');
         }

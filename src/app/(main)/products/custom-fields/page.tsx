@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
-import type { Supplier } from '@/lib/types';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -32,63 +31,69 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
-export default function SuppliersPage() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+interface CustomField {
+    id: string;
+    field_name: string;
+    description: string;
+}
+
+export default function CustomFieldsPage() {
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [selectedField, setSelectedField] = useState<CustomField | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchSuppliers() {
+    async function fetchCustomFields() {
       setIsLoading(true);
       try {
-        const response = await fetch('https://server-erp.payshia.com/suppliers/filter/by-company?company_id=1');
+        const response = await fetch('https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=1');
         if (!response.ok) {
-          throw new Error('Failed to fetch suppliers');
+          throw new Error('Failed to fetch custom fields');
         }
         const data = await response.json();
-        setSuppliers(data);
+        setCustomFields(data);
       } catch (error) {
         toast({
           variant: 'destructive',
-          title: 'Failed to load suppliers',
-          description: 'Could not fetch suppliers from the server.',
+          title: 'Failed to load custom fields',
+          description: 'Could not fetch custom fields from the server.',
         });
         console.error(error);
       } finally {
         setIsLoading(false);
       }
     }
-    fetchSuppliers();
+    fetchCustomFields();
   }, [toast]);
 
   const handleDelete = async () => {
-    if (!selectedSupplier) return;
+    if (!selectedField) return;
 
     try {
-      const response = await fetch(`https://server-erp.payshia.com/suppliers/${selectedSupplier.supplier_id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to delete supplier');
-      }
-      setSuppliers(suppliers.filter(s => s.supplier_id !== selectedSupplier.supplier_id));
-      toast({
-        title: 'Supplier Deleted',
-        description: `The supplier "${selectedSupplier.supplier_name}" has been deleted.`,
-      });
+        const response = await fetch(`https://server-erp.payshia.com/custom-fields/${selectedField.id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete custom field');
+        }
+        setCustomFields(customFields.filter(f => f.id !== selectedField.id));
+        toast({
+            title: 'Custom Field Deleted',
+            description: `The field "${selectedField.field_name}" has been deleted.`,
+        });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      toast({
-        variant: 'destructive',
-        title: 'Failed to delete supplier',
-        description: errorMessage,
-      });
+         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: 'destructive',
+            title: 'Failed to delete field',
+            description: errorMessage,
+        });
     } finally {
-      setIsConfirmOpen(false);
-      setSelectedSupplier(null);
+        setIsConfirmOpen(false);
+        setSelectedField(null);
     }
   };
 
@@ -98,71 +103,52 @@ export default function SuppliersPage() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">All Suppliers</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Custom Fields</h1>
             <p className="text-muted-foreground">
-              Manage your suppliers and vendors.
+              Manage your custom fields for your products.
             </p>
           </div>
           <Button asChild className="w-full sm:w-auto">
-            <Link href="/suppliers/new">
+            <Link href="/products/custom-fields/new">
               <PlusCircle className="mr-2 h-4 w-4" />
-              New Supplier
+              New Field
             </Link>
           </Button>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>All Suppliers</CardTitle>
+            <CardTitle>All Custom Fields</CardTitle>
             <CardDescription>
-              A list of all your suppliers.
+              A list of all custom fields in your system.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Supplier</TableHead>
-                  <TableHead className="hidden md:table-cell">Contact Person</TableHead>
-                  <TableHead className="hidden sm:table-cell">Email</TableHead>
-                  <TableHead className="hidden md:table-cell">Phone</TableHead>
+                  <TableHead>Field Name</TableHead>
+                  <TableHead>Description</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                 {isLoading ? (
+                {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell>
-                        <Skeleton className="h-4 w-40" />
-                      </TableCell>
-                       <TableCell className="hidden md:table-cell">
-                        <Skeleton className="h-4 w-32" />
-                      </TableCell>
-                       <TableCell className="hidden sm:table-cell">
-                        <Skeleton className="h-4 w-48" />
-                      </TableCell>
-                       <TableCell className="hidden md:table-cell">
-                        <Skeleton className="h-4 w-24" />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Skeleton className="h-8 w-8 rounded-md" />
-                      </TableCell>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
                     </TableRow>
                   ))
                 ) : (
-                  suppliers.map((supplier) => (
-                    <TableRow key={supplier.supplier_id}>
-                      <TableCell className="font-medium">
-                        {supplier.supplier_name}
-                        <div className="block md:hidden text-sm text-muted-foreground">{supplier.contact_person}</div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">{supplier.contact_person}</TableCell>
-                      <TableCell className="hidden sm:table-cell">{supplier.email}</TableCell>
-                      <TableCell className="hidden md:table-cell">{supplier.telephone}</TableCell>
-                       <TableCell className="text-right">
+                  customFields.map((field) => (
+                    <TableRow key={field.id}>
+                      <TableCell className="font-medium">{field.field_name}</TableCell>
+                      <TableCell>{field.description}</TableCell>
+                      <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="icon" variant="ghost">
@@ -172,13 +158,10 @@ export default function SuppliersPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/suppliers/${supplier.supplier_id}`}>Edit</Link>
-                            </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-destructive"
                               onSelect={() => {
-                                  setSelectedSupplier(supplier);
+                                  setSelectedField(field);
                                   setIsConfirmOpen(true);
                               }}
                             >
@@ -196,17 +179,18 @@ export default function SuppliersPage() {
           </CardContent>
         </Card>
       </div>
+
        <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the supplier {' '}
-              <span className="font-bold text-foreground">{selectedSupplier?.supplier_name}</span>.
+              This action cannot be undone. This will permanently delete the custom field {' '}
+              <span className="font-bold text-foreground">{selectedField?.field_name}</span>.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedSupplier(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setSelectedField(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
                 Delete
             </AlertDialogAction>
