@@ -135,8 +135,8 @@ export function ProductForm({ product }: ProductFormProps) {
       }
     }
     fetchData('https://server-erp.payshia.com/categories', setCategories, 'categories');
-    fetchData('https://server-erp.payshia.com/brands', setBrands, 'brands');
-    fetchData('https://server-erp.payshia.com/colors', setColors, 'colors');
+    fetchData('https://server-erp.payshia.com/brands/company?company_id=1', setBrands, 'brands');
+    fetchData('https://server-erp.payshia.com/product-colors/company?company_id=1', setColors, 'colors');
     fetchData('https://server-erp.payshia.com/sizes', setSizes, 'sizes');
     fetchData('https://server-erp.payshia.com/suppliers', setSuppliers, 'suppliers');
     fetchData('https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=1', setCustomFieldMasters, 'custom fields');
@@ -177,7 +177,7 @@ export function ProductForm({ product }: ProductFormProps) {
   });
   
   useEffect(() => {
-    if (customFieldMasters.length > 0) {
+    if (customFieldMasters.length > 0 && form.getValues('customFields')?.length === 0) {
         form.setValue('customFields', customFieldMasters.map(field => ({
             master_custom_field_id: field.id,
             value: '', 
@@ -495,29 +495,31 @@ export function ProductForm({ product }: ProductFormProps) {
                     <CardDescription>Add extra details for this product.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {(customFieldsInForm || []).map((_, index) => {
-                        const masterField = customFieldMasters.find(mf => mf.id === customFieldsInForm[index].master_custom_field_id);
-                        if (!masterField) return null;
-                        
-                        return (
-                             <FormField
-                              key={masterField.id}
-                              control={form.control}
-                              name={`customFields.${index}.value`}
-                              render={({ field }) => (
-                                  <FormItem>
-                                      <FormLabel>{masterField.field_name}</FormLabel>
-                                      <FormControl>
-                                          <Input 
-                                              placeholder={masterField.description || `Enter ${masterField.field_name}`}
-                                              {...field}
-                                          />
-                                      </FormControl>
-                                      <FormMessage />
-                                  </FormItem>
-                              )}
-                          />
-                        )
+                    {customFieldMasters.length > 0 && customFieldsInForm && customFieldMasters
+                      .filter(masterField => customFieldsInForm.some(cf => cf.master_custom_field_id === masterField.id))
+                      .map((masterField) => {
+                          const fieldIndex = customFieldsInForm.findIndex(cf => cf.master_custom_field_id === masterField.id);
+                          if (fieldIndex === -1) return null;
+
+                          return (
+                              <FormField
+                                key={masterField.id}
+                                control={form.control}
+                                name={`customFields.${fieldIndex}.value`}
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>{masterField.field_name}</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                placeholder={masterField.description || `Enter ${masterField.field_name}`}
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                          )
                     })}
                     {customFieldMasters.length === 0 && (
                       <p className="text-sm text-muted-foreground">No custom fields defined. You can add them in the product settings.</p>
