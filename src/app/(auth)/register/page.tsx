@@ -24,14 +24,10 @@ export default function RegisterPage() {
         <CardHeader>
           <CardTitle className="text-xl">Create your Account</CardTitle>
           <CardDescription>
-            Enter your information to create an account and set up your company.
+            Enter your information to create a user account. You will create your company in the next step.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="company-name">Company Name</Label>
-              <Input id="company-name" placeholder="Acme Inc." required />
-            </div>
             <div className="grid gap-2">
               <Label htmlFor="full-name">Full Name</Label>
               <Input id="full-name" placeholder="John Doe" required />
