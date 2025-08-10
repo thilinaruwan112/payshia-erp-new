@@ -138,7 +138,7 @@ export function ProductForm({ product }: ProductFormProps) {
     fetchData('https://server-erp.payshia.com/brands/company?company_id=1', setBrands, 'brands');
     fetchData('https://server-erp.payshia.com/product-colors/company?company_id=1', setColors, 'colors');
     fetchData('https://server-erp.payshia.com/sizes', setSizes, 'sizes');
-    fetchData('https://server-erp.payshia.com/suppliers', setSuppliers, 'suppliers');
+    fetchData('https://server-erp.payshia.com/suppliers/filter/by-company?company_id=1', setSuppliers, 'suppliers');
     fetchData('https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=1', setCustomFieldMasters, 'custom fields');
   }, [toast]);
   
@@ -294,12 +294,11 @@ export function ProductForm({ product }: ProductFormProps) {
         throw new Error(result.message || 'Something went wrong');
       }
 
-      // Step 2: Get the product ID and save custom fields
       const productId = product?.id || result.product.id;
 
       if (data.customFields && data.customFields.length > 0) {
         for (const cf of data.customFields) {
-          if (cf.value) { // Only save if there's a value
+          if (cf.value) { 
             const customFieldPayload = {
               master_custom_field_id: parseInt(cf.master_custom_field_id, 10),
               company_id: 1,

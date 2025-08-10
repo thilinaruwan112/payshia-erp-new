@@ -43,7 +43,7 @@ export default function SuppliersPage() {
     async function fetchSuppliers() {
       setIsLoading(true);
       try {
-        const response = await fetch('https://server-erp.payshia.com/suppliers');
+        const response = await fetch('https://server-erp.payshia.com/suppliers/filter/by-company?company_id=1');
         if (!response.ok) {
           throw new Error('Failed to fetch suppliers');
         }
