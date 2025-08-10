@@ -52,6 +52,7 @@ import {
   Fingerprint,
   Star,
   PlusSquare,
+  LogOut,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -403,7 +404,12 @@ function UserMenu() {
         <DropdownMenuItem>Profile</DropdownMenuItem>
         <DropdownMenuItem>Settings</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Log out</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/login">
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Log out</span>
+          </Link>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
