@@ -43,7 +43,7 @@ export default function ColorsPage() {
     async function fetchColors() {
       setIsLoading(true);
       try {
-        const response = await fetch('https://server-erp.payshia.com/colors');
+        const response = await fetch('https://server-erp.payshia.com/product-colors/company?company_id=1');
         if (!response.ok) {
           throw new Error('Failed to fetch colors');
         }
