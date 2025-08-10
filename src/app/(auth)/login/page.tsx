@@ -37,11 +37,13 @@ export default function LoginPage() {
             </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-            <Button className="w-full">Sign in</Button>
+            <Button asChild className="w-full">
+              <Link href="/dashboard">Sign in</Link>
+            </Button>
             <div className="text-center text-sm">
                 Don&apos;t have an account?{' '}
                 <Link href="/register" className="underline">
-                    Create Company
+                    Create Account
                 </Link>
             </div>
         </CardFooter>
