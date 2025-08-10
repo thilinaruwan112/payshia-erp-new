@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,10 +24,14 @@ export default function RegisterPage() {
         <CardHeader>
           <CardTitle className="text-xl">Create your Account</CardTitle>
           <CardDescription>
-            Enter your information to create your user account.
+            Enter your information to create an account and set up your company.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="company-name">Company Name</Label>
+              <Input id="company-name" placeholder="Acme Inc." required />
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="full-name">Full Name</Label>
               <Input id="full-name" placeholder="John Doe" required />
