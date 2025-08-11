@@ -1,7 +1,8 @@
 
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote } from 'lucide-react';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, Terminal, LayoutGrid, Calculator } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -33,6 +34,36 @@ const features = [
     description: 'Manage your employees, payroll, and attendance all in one place.',
   },
 ];
+
+const solutions = [
+    {
+        name: "ERP",
+        icon: <LayoutGrid className="h-10 w-10" />,
+        className: "top-0 left-1/2 -translate-x-1/2"
+    },
+    {
+        name: "POS",
+        icon: <Terminal className="h-10 w-10" />,
+        className: "top-1/4 right-0 translate-x-1/4"
+    },
+    {
+        name: "CRM",
+        icon: <Users className="h-10 w-10" />,
+        className: "bottom-1/4 right-0 translate-x-1/4"
+    },
+    {
+        name: "HRM",
+        icon: <Briefcase className="h-10 w-10" />,
+        className: "bottom-0 left-1/2 -translate-x-1/2"
+    },
+     {
+        name: "Accounting",
+        icon: <Calculator className="h-10 w-10" />,
+        className: "bottom-1/4 left-0 -translate-x-1/4"
+    },
+
+];
+
 
 const testimonials = [
     {
@@ -101,12 +132,12 @@ export default function LandingPage() {
               </div>
                <div className="flex items-center justify-center">
                  <img
-                    src="https://images.unsplash.com/photo-1556740738-b6a63e27c4df?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxFUlAlMjBzb2Z0d2FyZXxlbnwwfHx8fDE3NTQ5MTQ3ODJ8MA&ixlib=rb-4.1.0&q=80&w=1080"
+                    src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxidXNpbmVzc3xlbnwwfHx8fDE3NTQ5MTQ3MzR8MA&ixlib=rb-4.1.0&q=80&w=1080"
                     width="600"
                     height="400"
                     alt="Hero"
                     className="mx-auto aspect-video overflow-hidden rounded-xl object-cover"
-                    data-ai-hint="erp software"
+                    data-ai-hint="business dashboard"
                   />
                </div>
             </div>
@@ -140,7 +171,42 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
+
+        <section id="solutions" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
+            <div className="container mx-auto px-4 md:px-6 text-center">
+                 <div className="space-y-2 mb-16">
+                    <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Our Solutions</div>
+                    <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">A Complete Business Ecosystem</h2>
+                    <p className="max-w-[900px] mx-auto text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                    From point-of-sale to human resources, our integrated modules work together to give you a seamless experience.
+                    </p>
+                </div>
+
+                 <div className="relative h-96 w-96 mx-auto">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="h-64 w-64 rounded-full bg-primary/5 flex items-center justify-center text-center p-8">
+                            <h3 className="text-2xl font-bold text-primary">Payshia ERP Solutions</h3>
+                        </div>
+                    </div>
+
+                    {solutions.map((solution, index) => (
+                        <div key={index} className={`absolute flex flex-col items-center gap-2 text-foreground ${solution.className}`}>
+                            <div className="bg-background text-primary p-4 rounded-full shadow-lg border">
+                                {solution.icon}
+                            </div>
+                            <span className="font-semibold text-sm">{solution.name}</span>
+                        </div>
+                    ))}
+                 </div>
+                 
+                 <div className="flex justify-center gap-4 mt-16">
+                    <Button size="lg" variant="outline">Explore Products</Button>
+                    <Button size="lg">Contact Sales</Button>
+                </div>
+            </div>
+        </section>
+
+        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
