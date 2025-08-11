@@ -233,7 +233,7 @@ export default function LandingPage() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-7xl items-start gap-8 mt-12 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
+            <div className="mx-auto grid max-w-7xl items-start gap-8 mt-12 sm:grid-cols-1 lg:grid-cols-3">
               {/* Free Plan */}
               <Card>
                 <CardHeader>
@@ -310,31 +310,15 @@ export default function LandingPage() {
                   </Button>
                 </CardFooter>
               </Card>
-
-                {/* Enterprise Plan */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Enterprise</CardTitle>
-                        <CardDescription>For large-scale operations with custom needs.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                         <div className="flex items-baseline">
-                            <span className="text-4xl font-bold">Custom</span>
-                        </div>
-                        <ul className="space-y-2 text-sm">
-                            <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Everything in Pro</li>
-                            <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Dedicated Account Manager</li>
-                            <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Custom Integrations</li>
-                            <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />24/7 Phone Support</li>
-                        </ul>
-                         <p className="text-xs text-muted-foreground pt-4">Contact us at <br/> <a href="mailto:sales@payshia.com" className="underline">sales@payshia.com</a> or <br/> <a href="tel:+94770481363" className="underline">+94 770 481 363</a></p>
-                    </CardContent>
-                    <CardFooter>
-                        <Button asChild className="w-full" variant="outline">
-                           <a href="mailto:sales@payshia.com">Contact Sales</a>
-                        </Button>
-                    </CardFooter>
-                </Card>
+            </div>
+            <div className="text-center mt-12">
+                <h3 className="text-xl font-bold">Enterprise Solution</h3>
+                <p className="text-muted-foreground max-w-2xl mx-auto mt-2">
+                    For large-scale operations with custom needs, we offer a tailored Enterprise plan. Get everything in Pro, plus a dedicated account manager, custom integrations, and 24/7 phone support.
+                </p>
+                <p className="mt-4">
+                    Contact us at <a href="mailto:sales@payshia.com" className="font-semibold text-primary underline">sales@payshia.com</a> or <a href="tel:+94770481363" className="font-semibold text-primary underline">+94 770 481 363</a> to get a custom quote.
+                </p>
             </div>
           </div>
         </section>
