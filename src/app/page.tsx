@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, Terminal, LayoutGrid, Calculator, Inventory } from 'lucide-react';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, Terminal, LayoutGrid, Calculator, Boxes } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -63,7 +63,7 @@ const solutions = [
     },
     {
         name: 'Inventory',
-        icon: <Package className="h-10 w-10" />,
+        icon: <Boxes className="h-10 w-10" />,
         className: 'top-1/4 -translate-y-1/4 left-0 -translate-x-1/4',
     },
 ];
@@ -92,7 +92,7 @@ const testimonials = [
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen landing-page-aurora">
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center px-4 lg:px-6">
           <Link href="/" className="flex items-center justify-center gap-2">
@@ -136,7 +136,7 @@ export default function LandingPage() {
               </div>
                <div className="flex items-center justify-center">
                  <img
-                    src="https://images.unsplash.com/photo-1581089787571-e2358b118e7a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxFUlB8ZW58MHx8fHwxNzU0OTE0NjU1fDA&ixlib=rb-4.1.0&q=80&w=1080"
+                    src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxidXNpbmVzc3xlbnwwfHx8fDE3NTQ5MTQ3MzR8MA&ixlib=rb-4.1.0&q=80&w=1080"
                     width="600"
                     height="400"
                     alt="Hero"
