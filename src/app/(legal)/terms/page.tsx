@@ -1,27 +1,27 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function TermsPage() {
-  return (
-    <Card className="max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-3xl">Terms and Conditions</CardTitle>
-      </CardHeader>
-      <CardContent className="prose dark:prose-invert max-w-none">
-        <p>Last updated: July 30, 2024</p>
-        <p>
-          Please read these terms and conditions carefully before using Our
-          Service.
-        </p>
-
-        <h2>Interpretation and Definitions</h2>
+  const sections = [
+    {
+      title: 'Interpretation and Definitions',
+      content: `
         <p>
           The words of which the initial letter is capitalized have meanings
           defined under the following conditions. The following definitions shall
           have the same meaning regardless of whether they appear in singular or in
           plural.
         </p>
-
-        <h2>Acknowledgment</h2>
+      `,
+    },
+    {
+      title: 'Acknowledgment',
+      content: `
         <p>
           These are the Terms and Conditions governing the use of this Service and
           the agreement that operates between You and the Company. These Terms and
@@ -34,16 +34,22 @@ export default function TermsPage() {
           Conditions apply to all visitors, users and others who access or use
           the Service.
         </p>
-
-        <h2>Links to Other Websites</h2>
+      `,
+    },
+    {
+      title: 'Links to Other Websites',
+      content: `
         <p>
           Our Service may contain links to third-party web sites or services that
           are not owned or controlled by the Company. The Company has no control
           over, and assumes no responsibility for, the content, privacy policies,
           or practices of any third party web sites or services.
         </p>
-
-        <h2>Changes to These Terms and Conditions</h2>
+      `,
+    },
+    {
+      title: 'Changes to These Terms and Conditions',
+      content: `
         <p>
           We reserve the right, at Our sole discretion, to modify or replace
           these Terms at any time. If a revision is material We will make
@@ -51,8 +57,11 @@ export default function TermsPage() {
           terms taking effect. What constitutes a material change will be
           determined at Our sole discretion.
         </p>
-
-        <h2>Contact Us</h2>
+      `,
+    },
+    {
+      title: 'Contact Us',
+      content: `
         <p>
           If you have any questions about these Terms and Conditions, You can
           contact us:
@@ -60,6 +69,35 @@ export default function TermsPage() {
         <ul>
             <li>By email: contact@payshia.com</li>
         </ul>
+      `,
+    },
+  ];
+
+  return (
+    <Card className="max-w-4xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-3xl">Terms and Conditions</CardTitle>
+        <p className="text-muted-foreground pt-2">Last updated: July 30, 2024</p>
+      </CardHeader>
+      <CardContent>
+         <p className="pb-4">
+          Please read these terms and conditions carefully before using Our
+          Service.
+        </p>
+        <Accordion type="single" collapsible className="w-full">
+           {sections.map((section, index) => (
+            <AccordionItem key={index} value={`item-${index}`}>
+              <AccordionTrigger className="text-xl hover:no-underline">
+                {section.title}
+              </AccordionTrigger>
+              <AccordionContent>
+                  <div className="prose dark:prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: section.content }}
+                  />
+              </AccordionContent>
+            </AccordionItem>
+           ))}
+        </Accordion>
       </CardContent>
     </Card>
   );
