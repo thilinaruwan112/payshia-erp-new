@@ -1,8 +1,8 @@
 
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, Terminal, LayoutGrid, Calculator, Boxes } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, Terminal, LayoutGrid, Calculator, Boxes, Badge } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -220,6 +220,95 @@ export default function LandingPage() {
                     <Button size="lg">Contact Sales</Button>
                 </div>
             </div>
+        </section>
+
+        <section id="pricing" className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Pricing</div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Choose the Right Plan for Your Business</h2>
+                <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Affordable pricing that scales with your needs. Get started for free.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto grid max-w-5xl items-stretch gap-8 sm:grid-cols-1 md:grid-cols-3 md:gap-12 mt-12">
+              {/* Free Plan */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Free</CardTitle>
+                  <CardDescription>Perfect for getting started and exploring the platform.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-baseline">
+                    <span className="text-4xl font-bold">Rs.0</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />1 User</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />1 Location</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Community Support</li>
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button asChild className="w-full">
+                    <Link href="/register">Get Started</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+
+              {/* Standard Plan */}
+              <Card className="border-primary ring-2 ring-primary relative overflow-hidden">
+                <Badge className="absolute top-4 right-4">Most Popular</Badge>
+                <CardHeader>
+                  <CardTitle>Standard</CardTitle>
+                  <CardDescription>For growing businesses that need more power.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-bold">Rs.3500</span>
+                    <span className="text-muted-foreground line-through">Rs.5000</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                   <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 10 Users</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />5 Locations</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Email Support</li>
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button asChild className="w-full">
+                    <Link href="/register">Choose Plan</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              {/* Pro Plan */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pro</CardTitle>
+                  <CardDescription>Advanced features for scaling businesses.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-baseline">
+                    <span className="text-4xl font-bold">Rs.10000</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                   <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Users</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Locations</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Priority Support</li>
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button asChild className="w-full" variant="outline">
+                    <Link href="/register">Choose Plan</Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          </div>
         </section>
 
         <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
