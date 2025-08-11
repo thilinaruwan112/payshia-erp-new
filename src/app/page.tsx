@@ -44,12 +44,12 @@ const solutions = [
     {
         name: "POS",
         icon: <Terminal className="h-10 w-10" />,
-        className: "top-1/4 right-0 translate-x-1/4"
+        className: "top-1/4 -translate-y-1/2 right-0 translate-x-1/2"
     },
     {
         name: "CRM",
         icon: <Users className="h-10 w-10" />,
-        className: "bottom-1/4 right-0 translate-x-1/4"
+        className: "bottom-1/4 translate-y-1/2 right-0 translate-x-1/2"
     },
     {
         name: "HRM",
@@ -59,9 +59,8 @@ const solutions = [
      {
         name: "Accounting",
         icon: <Calculator className="h-10 w-10" />,
-        className: "bottom-1/4 left-0 -translate-x-1/4"
+        className: "bottom-1/4 translate-y-1/2 left-0 -translate-x-1/2"
     },
-
 ];
 
 
