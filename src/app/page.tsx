@@ -1,8 +1,10 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle } from 'lucide-react';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote } from 'lucide-react';
 import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 const features = [
   {
@@ -31,6 +33,27 @@ const features = [
     description: 'Manage your employees, payroll, and attendance all in one place.',
   },
 ];
+
+const testimonials = [
+    {
+        name: 'Sarah L.',
+        role: 'CEO, TechGadgets Inc.',
+        avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026704d',
+        review: "Payshia ERP has revolutionized how we manage our inventory across multiple locations. The AI forecasting is a game-changer for us. Highly recommended!"
+    },
+    {
+        name: 'David C.',
+        role: 'Operations Manager, Fashion Hub',
+        avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026705e',
+        review: "The unified dashboard gives me a complete overview of my business at a glance. It's incredibly intuitive and has saved us countless hours."
+    },
+    {
+        name: 'Michael P.',
+        role: 'Founder, Urban Homewares',
+        avatar: 'https://i.pravatar.cc/150?u=a042581f4e29026706f',
+        review: "The CRM and sales modules are fantastic. We've been able to streamline our customer communication and boost our sales by 20% in just one quarter."
+    }
+]
 
 export default function LandingPage() {
   return (
@@ -111,6 +134,41 @@ export default function LandingPage() {
                   </CardHeader>
                   <CardContent className="p-0 flex-1">
                     <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Testimonials</div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">What Our Customers Are Saying</h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Hear from business owners who have transformed their operations with Payshia ERP.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto grid max-w-5xl items-stretch gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-3 mt-12">
+              {testimonials.map((testimonial) => (
+                <Card key={testimonial.name} className="flex flex-col">
+                  <CardContent className="p-6 flex-1 flex flex-col justify-between">
+                    <div>
+                        <Quote className="w-8 h-8 text-primary mb-4" />
+                        <p className="text-muted-foreground italic">&quot;{testimonial.review}&quot;</p>
+                    </div>
+                    <div className="flex items-center gap-4 pt-6 mt-4 border-t">
+                        <Avatar>
+                            <AvatarImage src={testimonial.avatar} alt={testimonial.name} data-ai-hint="profile photo"/>
+                            <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="font-semibold">{testimonial.name}</p>
+                            <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                        </div>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
