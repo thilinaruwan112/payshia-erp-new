@@ -1,15 +1,10 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function TermsPage() {
   const sections = [
     {
-      title: 'Interpretation and Definitions',
+      title: '1. Interpretation and Definitions',
       content: `
         <p>
           The words of which the initial letter is capitalized have meanings
@@ -20,7 +15,7 @@ export default function TermsPage() {
       `,
     },
     {
-      title: 'Acknowledgment',
+      title: '2. Acknowledgment',
       content: `
         <p>
           These are the Terms and Conditions governing the use of this Service and
@@ -37,7 +32,7 @@ export default function TermsPage() {
       `,
     },
     {
-      title: 'Links to Other Websites',
+      title: '3. Links to Other Websites',
       content: `
         <p>
           Our Service may contain links to third-party web sites or services that
@@ -48,7 +43,7 @@ export default function TermsPage() {
       `,
     },
     {
-      title: 'Changes to These Terms and Conditions',
+      title: '4. Changes to These Terms and Conditions',
       content: `
         <p>
           We reserve the right, at Our sole discretion, to modify or replace
@@ -60,13 +55,13 @@ export default function TermsPage() {
       `,
     },
     {
-      title: 'Contact Us',
+      title: '5. Contact Us',
       content: `
         <p>
           If you have any questions about these Terms and Conditions, You can
           contact us:
         </p>
-        <ul>
+        <ul class="list-disc pl-6">
             <li>By email: contact@payshia.com</li>
         </ul>
       `,
@@ -79,25 +74,20 @@ export default function TermsPage() {
         <CardTitle className="text-3xl">Terms and Conditions</CardTitle>
         <p className="text-muted-foreground pt-2">Last updated: July 30, 2024</p>
       </CardHeader>
-      <CardContent>
-         <p className="pb-4">
+      <CardContent className="space-y-8">
+        <p className="pb-4">
           Please read these terms and conditions carefully before using Our
           Service.
         </p>
-        <Accordion type="single" collapsible className="w-full">
-           {sections.map((section, index) => (
-            <AccordionItem key={index} value={`item-${index}`}>
-              <AccordionTrigger className="text-xl hover:no-underline">
-                {section.title}
-              </AccordionTrigger>
-              <AccordionContent>
-                  <div className="prose dark:prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ __html: section.content }}
-                  />
-              </AccordionContent>
-            </AccordionItem>
-           ))}
-        </Accordion>
+        {sections.map((section, index) => (
+          <div key={index}>
+            <h2 className="text-2xl font-bold mb-4">{section.title}</h2>
+            <div
+              className="prose prose-lg dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: section.content }}
+            />
+          </div>
+        ))}
       </CardContent>
     </Card>
   );
