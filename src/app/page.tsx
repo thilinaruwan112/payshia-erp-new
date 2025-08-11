@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, Terminal, LayoutGrid, Calculator } from 'lucide-react';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, Terminal, LayoutGrid, Calculator, Inventory } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -92,7 +92,7 @@ const testimonials = [
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-transparent landing-page-aurora">
+    <div className="flex flex-col min-h-screen">
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center px-4 lg:px-6">
           <Link href="/" className="flex items-center justify-center gap-2">
@@ -114,7 +114,7 @@ export default function LandingPage() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-transparent">
+        <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
               <div className="flex flex-col justify-center space-y-4">
@@ -147,11 +147,11 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-transparent">
+        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Key Features</div>
+                <div className="inline-block rounded-lg bg-background px-3 py-1 text-sm">Key Features</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need. Nothing You Don’t.</h2>
                 <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                   Our comprehensive suite of tools is designed to streamline your operations and help you make smarter decisions.
@@ -176,7 +176,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="solutions" className="w-full py-12 md:py-24 lg:py-32 bg-transparent">
+        <section id="solutions" className="w-full py-12 md:py-24 lg:py-32">
             <div className="container mx-auto px-4 md:px-6 text-center">
                  <div className="space-y-2 mb-16">
                     <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Our Solutions</div>
@@ -222,11 +222,11 @@ export default function LandingPage() {
             </div>
         </section>
 
-        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-transparent">
+        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Testimonials</div>
+                <div className="inline-block rounded-lg bg-background px-3 py-1 text-sm">Testimonials</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">What Our Customers Are Saying</h2>
                 <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                   Hear from business owners who have transformed their operations with Payshia ERP.
