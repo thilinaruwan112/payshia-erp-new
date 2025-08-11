@@ -147,35 +147,7 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-background px-3 py-1 text-sm">Key Features</div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need. Nothing You Don’t.</h2>
-                <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our comprehensive suite of tools is designed to streamline your operations and help you make smarter decisions.
-                </p>
-              </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl items-stretch gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-3 mt-12">
-              {features.map((feature) => (
-                <Card key={feature.name} className="p-6 flex flex-col hover:shadow-lg transition-shadow duration-300">
-                  <CardHeader className="p-0 mb-4">
-                    <div className="flex items-center justify-center h-16 w-16 bg-primary/10 rounded-full mb-4">
-                       {feature.icon}
-                    </div>
-                    <CardTitle>{feature.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0 flex-1">
-                    <p className="text-sm text-muted-foreground">{feature.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-
+        
         <section id="solutions" className="w-full py-12 md:py-24 lg:py-32">
             <div className="container mx-auto px-4 md:px-6 text-center">
                  <div className="space-y-2 mb-16">
@@ -220,6 +192,35 @@ export default function LandingPage() {
                     <Button size="lg">Contact Sales</Button>
                 </div>
             </div>
+        </section>
+
+        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-background px-3 py-1 text-sm">Key Features</div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need. Nothing You Don’t.</h2>
+                <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Our comprehensive suite of tools is designed to streamline your operations and help you make smarter decisions.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto grid max-w-5xl items-stretch gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-3 mt-12">
+              {features.map((feature) => (
+                <Card key={feature.name} className="p-6 flex flex-col hover:shadow-lg transition-shadow duration-300">
+                  <CardHeader className="p-0 mb-4">
+                    <div className="flex items-center justify-center h-16 w-16 bg-primary/10 rounded-full mb-4">
+                       {feature.icon}
+                    </div>
+                    <CardTitle>{feature.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0 flex-1">
+                    <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </section>
 
         <section id="pricing" className="w-full py-12 md:py-24 lg:py-32">
