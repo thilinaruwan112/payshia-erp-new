@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, Terminal, LayoutGrid, Calculator } from 'lucide-react';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, Terminal, LayoutGrid, Calculator, Boxes } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -63,7 +63,7 @@ const solutions = [
     },
     {
         name: 'Inventory',
-        icon: <Package className="h-10 w-10" />,
+        icon: <Boxes className="h-10 w-10" />,
         className: 'top-1/4 -translate-y-1/4 left-0 -translate-x-1/4',
     },
 ];
@@ -92,7 +92,7 @@ const testimonials = [
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen landing-page-aurora">
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center px-4 lg:px-6">
           <Link href="/" className="flex items-center justify-center gap-2">
@@ -114,15 +114,15 @@ export default function LandingPage() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
+        <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-4">
-                  <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
+                  <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-foreground">
                     The All-In-One Platform to Run Your Business
                   </h1>
-                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
+                  <p className="max-w-[600px] text-foreground/80 md:text-xl">
                     Payshia ERP gives you the tools to manage everything from sales and inventory to accounting and human resources, all in one place.
                   </p>
                 </div>
@@ -136,7 +136,7 @@ export default function LandingPage() {
               </div>
                <div className="flex items-center justify-center">
                  <img
-                    src="https://images.unsplash.com/photo-1581089787571-e2358b118e7a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxFUlB8ZW58MHx8fHwxNzU0OTE0NjU1fDA&ixlib=rb-4.1.0&q=80&w=1080"
+                    src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxidXNpbmVzc3xlbnwwfHx8fDE3NTQ5MTQ3MzR8MA&ixlib=rb-4.1.0&q=80&w=1080"
                     width="600"
                     height="400"
                     alt="Hero"
@@ -147,13 +147,13 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-        <section id="features" className="w-full py-12 md:py-24 lg:py-32">
+        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Key Features</div>
+                <div className="inline-block rounded-lg bg-background px-3 py-1 text-sm">Key Features</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need. Nothing You Don’t.</h2>
-                <p className="max-w-[900px] mx-auto text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                   Our comprehensive suite of tools is designed to streamline your operations and help you make smarter decisions.
                 </p>
               </div>
@@ -176,12 +176,12 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section id="solutions" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
+        <section id="solutions" className="w-full py-12 md:py-24 lg:py-32">
             <div className="container mx-auto px-4 md:px-6 text-center">
                  <div className="space-y-2 mb-16">
                     <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Our Solutions</div>
                     <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">A Complete Business Ecosystem</h2>
-                    <p className="max-w-[900px] mx-auto text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                    <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                     From point-of-sale to human resources, our integrated modules work together to give you a seamless experience.
                     </p>
                 </div>
@@ -222,13 +222,13 @@ export default function LandingPage() {
             </div>
         </section>
 
-        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32">
+        <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
-                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Testimonials</div>
+                <div className="inline-block rounded-lg bg-background px-3 py-1 text-sm">Testimonials</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">What Our Customers Are Saying</h2>
-                <p className="max-w-[900px] mx-auto text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                   Hear from business owners who have transformed their operations with Payshia ERP.
                 </p>
               </div>
@@ -277,14 +277,14 @@ export default function LandingPage() {
           </div>
         </section>
       </main>
-      <footer className="w-full border-t">
+      <footer className="w-full border-t border-border/20">
         <div className="container mx-auto flex flex-col gap-2 sm:flex-row py-6 shrink-0 items-center px-4 md:px-6">
-          <p className="text-xs text-muted-foreground">&copy; 2024 Payshia Software Solutions. All rights reserved.</p>
+          <p className="text-xs text-foreground/60">&copy; 2024 Payshia Software Solutions. All rights reserved.</p>
           <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-            <Link href="/terms" className="text-xs hover:underline underline-offset-4">
+            <Link href="/terms" className="text-xs hover:underline underline-offset-4 text-foreground/60 hover:text-foreground">
               Terms of Service
             </Link>
-            <Link href="/privacy" className="text-xs hover:underline underline-offset-4">
+            <Link href="/privacy" className="text-xs hover:underline underline-offset-4 text-foreground/60 hover:text-foreground">
               Privacy
             </Link>
           </nav>
