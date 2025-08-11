@@ -233,7 +233,7 @@ export default function LandingPage() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl items-stretch gap-8 sm:grid-cols-1 md:grid-cols-3 md:gap-12 mt-12">
+            <div className="mx-auto grid max-w-7xl items-start gap-8 mt-12 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
               {/* Free Plan */}
               <Card>
                 <CardHeader>
@@ -248,6 +248,7 @@ export default function LandingPage() {
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />1 User</li>
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />1 Location</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 25 Products</li>
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Community Support</li>
                   </ul>
                 </CardContent>
@@ -273,7 +274,8 @@ export default function LandingPage() {
                   </div>
                    <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 10 Users</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />5 Locations</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 5 Locations</li>
+                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 1000 Products</li>
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Email Support</li>
                   </ul>
                 </CardContent>
@@ -298,6 +300,7 @@ export default function LandingPage() {
                    <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Users</li>
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Locations</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Products</li>
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Priority Support</li>
                   </ul>
                 </CardContent>
@@ -307,6 +310,31 @@ export default function LandingPage() {
                   </Button>
                 </CardFooter>
               </Card>
+
+                {/* Enterprise Plan */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Enterprise</CardTitle>
+                        <CardDescription>For large-scale operations with custom needs.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                         <div className="flex items-baseline">
+                            <span className="text-4xl font-bold">Custom</span>
+                        </div>
+                        <ul className="space-y-2 text-sm">
+                            <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Everything in Pro</li>
+                            <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Dedicated Account Manager</li>
+                            <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Custom Integrations</li>
+                            <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />24/7 Phone Support</li>
+                        </ul>
+                         <p className="text-xs text-muted-foreground pt-4">Contact us at <br/> <a href="mailto:sales@payshia.com" className="underline">sales@payshia.com</a> or <br/> <a href="tel:+94770481363" className="underline">+94 770 481 363</a></p>
+                    </CardContent>
+                    <CardFooter>
+                        <Button asChild className="w-full" variant="outline">
+                           <a href="mailto:sales@payshia.com">Contact Sales</a>
+                        </Button>
+                    </CardFooter>
+                </Card>
             </div>
           </div>
         </section>
