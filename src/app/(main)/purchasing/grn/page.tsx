@@ -5,6 +5,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -17,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -34,6 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const getStatusText = (status: string) => {
@@ -69,6 +71,8 @@ export default function GrnReceivablePage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   useEffect(() => {
     async function fetchData() {
@@ -88,10 +92,7 @@ export default function GrnReceivablePage() {
         const suppliersData: Supplier[] = await suppliersResponse.json();
         const grnData: GoodsReceivedNote[] = await grnResponse.json();
         
-        // Filter for pending or approved POs
-        const filteredPOs = poData.filter(po => po.po_status === '0' || po.po_status === '1');
-
-        setReceivablePOs(filteredPOs);
+        setReceivablePOs(poData);
         setSuppliers(suppliersData);
         setGrns(grnData || []);
 
@@ -112,6 +113,11 @@ export default function GrnReceivablePage() {
   const getSupplierName = (supplierId: string) => {
     return suppliers.find(s => s.supplier_id === supplierId)?.supplier_name || `ID: ${supplierId}`;
   }
+
+  const indexOfLastGrn = currentPage * itemsPerPage;
+  const indexOfFirstGrn = indexOfLastGrn - itemsPerPage;
+  const currentGrns = grns.slice(indexOfFirstGrn, indexOfLastGrn);
+  const totalGrnPages = Math.ceil(grns.length / itemsPerPage);
 
   return (
     <div className="flex flex-col gap-6">
@@ -218,72 +224,99 @@ export default function GrnReceivablePage() {
                 </CardDescription>
                 </CardHeader>
                 <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>GRN Number</TableHead>
-                            <TableHead>Supplier</TableHead>
-                            <TableHead className="hidden sm:table-cell">Status</TableHead>
-                            <TableHead className="hidden md:table-cell">Date</TableHead>
-                            <TableHead className="text-right">Total</TableHead>
-                            <TableHead>
-                            <span className="sr-only">Actions</span>
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {isLoading ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                            <TableRow key={i}>
-                                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                                <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
-                                <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
-                                <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                  <ScrollArea className="h-[calc(100vh-450px)]">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>GRN Number</TableHead>
+                                <TableHead>Supplier</TableHead>
+                                <TableHead className="hidden sm:table-cell">Status</TableHead>
+                                <TableHead className="hidden md:table-cell">Date</TableHead>
+                                <TableHead className="text-right">Total</TableHead>
+                                <TableHead>
+                                <span className="sr-only">Actions</span>
+                                </TableHead>
                             </TableRow>
-                        ))
-                    ) : (
-                        grns.map((grn) => (
-                        <TableRow key={grn.id}>
-                            <TableCell className="font-medium">{grn.grn_number}</TableCell>
-                            <TableCell>{getSupplierName(grn.supplier_id)}</TableCell>
-                            <TableCell className="hidden sm:table-cell">
-                            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                {grn.grn_status}
-                            </Badge>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">{format(new Date(grn.created_at), 'dd MMM, yyyy')}</TableCell>
-                            <TableCell className="text-right">${parseFloat(grn.grand_total).toFixed(2)}</TableCell>
-                            <TableCell className="text-right">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem asChild>
-                                    <Link href={`/purchasing/grn/${grn.id}`}>View Details</Link>
-                                </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                        ))
-                    )}
-                    {!isLoading && grns.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={6} className="h-24 text-center">
-                                No GRNs found.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                    </TableBody>
-                </Table>
+                        </TableHeader>
+                        <TableBody>
+                        {isLoading ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                                    <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            currentGrns.map((grn) => (
+                            <TableRow key={grn.id}>
+                                <TableCell className="font-medium">{grn.grn_number}</TableCell>
+                                <TableCell>{getSupplierName(grn.supplier_id)}</TableCell>
+                                <TableCell className="hidden sm:table-cell">
+                                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    {grn.grn_status}
+                                </Badge>
+                                </TableCell>
+                                <TableCell className="hidden md:table-cell">{format(new Date(grn.created_at), 'dd MMM, yyyy')}</TableCell>
+                                <TableCell className="text-right">${parseFloat(grn.grand_total).toFixed(2)}</TableCell>
+                                <TableCell className="text-right">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                    <Button size="icon" variant="ghost">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem asChild>
+                                        <Link href={`/purchasing/grn/${grn.id}`}>View Details</Link>
+                                    </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                            ))
+                        )}
+                        {!isLoading && grns.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={6} className="h-24 text-center">
+                                    No GRNs found.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                  </ScrollArea>
                 </CardContent>
+                 <CardFooter className="flex justify-end items-center gap-4">
+                    <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalGrnPages}
+                    </span>
+                    <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="sr-only">Previous Page</span>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalGrnPages))}
+                        disabled={currentPage === totalGrnPages}
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                        <span className="sr-only">Next Page</span>
+                    </Button>
+                    </div>
+                </CardFooter>
             </Card>
         </TabsContent>
       </Tabs>

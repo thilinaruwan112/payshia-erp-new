@@ -1,10 +1,12 @@
 
+
 'use client';
 
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -17,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -33,6 +35,7 @@ import type { PurchaseOrder, Supplier } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const getStatusText = (status: string) => {
   switch (status) {
@@ -69,6 +72,8 @@ export default function PurchaseOrdersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   useEffect(() => {
     async function fetchData() {
@@ -109,6 +114,11 @@ export default function PurchaseOrdersPage() {
   const getSupplierName = (supplierId: string) => {
     return suppliers.find(s => s.supplier_id === supplierId)?.supplier_name || `ID: ${supplierId}`;
   }
+  
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = purchaseOrders.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(purchaseOrders.length / itemsPerPage);
 
   return (
     <div className="flex flex-col gap-6">
@@ -135,70 +145,97 @@ export default function PurchaseOrdersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>PO Number</TableHead>
-                <TableHead>Supplier</TableHead>
-                <TableHead className="hidden sm:table-cell">Status</TableHead>
-                <TableHead className="hidden md:table-cell">Date</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
-                    </TableRow>
-                ))
-              ) : (
-                purchaseOrders.map((po) => (
-                  <TableRow key={po.id}>
-                    <TableCell className="font-medium">{po.po_number}</TableCell>
-                    <TableCell>{getSupplierName(po.supplier_id)}</TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Badge variant="secondary" className={cn(getStatusColor(po.po_status))}>
-                        {getStatusText(po.po_status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">{new Date(po.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">${parseFloat(po.sub_total).toFixed(2)}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/purchasing/purchase-orders/${po.id}`}>View Details</Link>
-                          </DropdownMenuItem>
-                          {po.po_status === '1' && ( // Only show if Approved
+          <ScrollArea className="h-[calc(100vh-350px)]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>PO Number</TableHead>
+                  <TableHead>Supplier</TableHead>
+                  <TableHead className="hidden sm:table-cell">Status</TableHead>
+                  <TableHead className="hidden md:table-cell">Date</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                          <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                          <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                      </TableRow>
+                  ))
+                ) : (
+                  currentItems.map((po) => (
+                    <TableRow key={po.id}>
+                      <TableCell className="font-medium">{po.po_number}</TableCell>
+                      <TableCell>{getSupplierName(po.supplier_id)}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant="secondary" className={cn(getStatusColor(po.po_status))}>
+                          {getStatusText(po.po_status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">{new Date(po.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">${parseFloat(po.sub_total).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem asChild>
-                              <Link href={`/purchasing/grn/new?poId=${po.id}`}>Create GRN</Link>
+                              <Link href={`/purchasing/purchase-orders/${po.id}`}>View Details</Link>
                             </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                            {po.po_status === '1' && ( // Only show if Approved
+                              <DropdownMenuItem asChild>
+                                <Link href={`/purchasing/grn/new?poId=${po.id}`}>Create GRN</Link>
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
         </CardContent>
+         <CardFooter className="flex justify-end items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Previous Page</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+                 <span className="sr-only">Next Page</span>
+              </Button>
+            </div>
+          </CardFooter>
       </Card>
     </div>
   );

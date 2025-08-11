@@ -1,6 +1,7 @@
 
 
 
+
 'use client';
 
 import {
@@ -57,7 +58,7 @@ export default function StockTransfersPage() {
     const [locations, setLocations] = useState<Location[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 10;
+    const itemsPerPage = 15;
 
     useEffect(() => {
         async function fetchData() {
@@ -124,7 +125,7 @@ export default function StockTransfersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[450px]">
+          <ScrollArea className="h-[calc(100vh-350px)]">
             <Table>
               <TableHeader>
                 <TableRow>

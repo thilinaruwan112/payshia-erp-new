@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,7 +24,7 @@ export default function RegisterPage() {
         <CardHeader>
           <CardTitle className="text-xl">Create your Account</CardTitle>
           <CardDescription>
-            Enter your information to create your user account.
+            Enter your information to create a user account. You will create your company in the next step.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
