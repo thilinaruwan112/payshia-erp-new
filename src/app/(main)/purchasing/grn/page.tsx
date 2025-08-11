@@ -92,10 +92,7 @@ export default function GrnReceivablePage() {
         const suppliersData: Supplier[] = await suppliersResponse.json();
         const grnData: GoodsReceivedNote[] = await grnResponse.json();
         
-        // Filter for pending or approved POs
-        const filteredPOs = poData.filter(po => po.po_status === '0' || po.po_status === '1');
-
-        setReceivablePOs(filteredPOs);
+        setReceivablePOs(poData);
         setSuppliers(suppliersData);
         setGrns(grnData || []);
 
