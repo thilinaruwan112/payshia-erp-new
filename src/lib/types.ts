@@ -101,6 +101,7 @@ export type Order = {
 
 export type User = {
   id: string;
+  customer_id: string;
   name: string;
   role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer';
   avatar?: string;
@@ -108,14 +109,6 @@ export type User = {
   email?: string;
   phone?: string;
   address?: string;
-  // Fields from the new customer API
-  customer_id: string;
-  customer_first_name: string;
-  customer_last_name: string;
-  phone_number: string;
-  address_line1?: string;
-  city_id?: string;
-  email_address?: string;
 };
 
 export type Collection = {
