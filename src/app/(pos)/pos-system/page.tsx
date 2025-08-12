@@ -385,25 +385,6 @@ export default function POSPage() {
             cashier={currentCashier}
           />
            <div className="flex-1 flex">
-            {/* Category Sidebar */}
-            <aside className="hidden md:block w-48 border-r border-border">
-                <ScrollArea className="h-[calc(100vh-140px)] p-2">
-                    <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
-                    <div className="flex flex-col gap-1">
-                        {categories.map(cat => (
-                            <Button
-                                key={cat}
-                                variant={category === cat ? 'secondary' : 'ghost'}
-                                className="justify-start"
-                                onClick={() => setCategory(cat)}
-                            >
-                                {cat}
-                            </Button>
-                        ))}
-                    </div>
-                </ScrollArea>
-            </aside>
-
             {/* Main Content */}
             <main className="flex-1 p-4">
               <div className="flex justify-end gap-2 mb-4">
@@ -430,6 +411,24 @@ export default function POSPage() {
                   <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
               )}
             </main>
+            {/* Category Sidebar */}
+            <aside className="hidden md:block w-48 border-l border-border">
+                <ScrollArea className="h-[calc(100vh-140px)] p-2">
+                    <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
+                    <div className="flex flex-col gap-1">
+                        {categories.map(cat => (
+                            <Button
+                                key={cat}
+                                variant={category === cat ? 'secondary' : 'ghost'}
+                                className="justify-start"
+                                onClick={() => setCategory(cat)}
+                            >
+                                {cat}
+                            </Button>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </aside>
            </div>
         </div>
 
