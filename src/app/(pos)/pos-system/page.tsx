@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -256,7 +257,7 @@ export default function POSPage() {
     setIsSubmittingPayment(true);
     
     const payload = {
-        type: paymentMethod,
+        type: paymentMethod === 'Cash' ? '0' : paymentMethod === 'Card' ? '1' : '2',
         is_active: 1,
         date: format(new Date(), 'yyyy-MM-dd'),
         amount: parseFloat(paymentAmount),
@@ -612,7 +613,7 @@ export default function POSPage() {
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                <div className="border rounded-md h-96 overflow-y-auto">
+                                <ScrollArea className="h-96">
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
@@ -645,7 +646,7 @@ export default function POSPage() {
                                             )}
                                         </TableBody>
                                     </Table>
-                                </div>
+                                </ScrollArea>
                             </div>
                             <Card className="h-full">
                                 {selectedInvoiceForPayment ? (
