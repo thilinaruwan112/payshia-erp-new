@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { users } from '@/lib/data';
-import type { Product, User, ProductVariant } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -55,18 +55,25 @@ interface ProductWithVariants {
     variants: ProductVariant[];
 }
 
+interface CollectionProductLink {
+    product_id: string;
+}
+
 
 let orderCounter = 1;
 
 export default function POSPage() {
   const { toast } = useToast();
   const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [category, setCategory] = useState('All');
+  const [activeFilter, setActiveFilter] = useState<{type: 'category' | 'collection', value: string}>({type: 'category', value: 'All'});
+
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isHeldOrdersOpen, setHeldOrdersOpen] = useState(false);
 
@@ -77,17 +84,23 @@ export default function POSPage() {
   const { currentLocation, isLoading: isLocationLoading } = useLocation();
 
   useEffect(() => {
-    async function fetchProducts() {
+    async function fetchPosData() {
         setIsLoadingProducts(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/products/with-variants`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch products');
+            const [productsResponse, collectionsResponse] = await Promise.all([
+                fetch(`https://server-erp.payshia.com/products/with-variants`),
+                fetch(`https://server-erp.payshia.com/collections/company?company_id=1`)
+            ]);
+
+            if (!productsResponse.ok || !collectionsResponse.ok) {
+                throw new Error('Failed to fetch POS data');
             }
-            const data: { products: ProductWithVariants[] } = await response.json();
+            const productsData: { products: ProductWithVariants[] } = await productsResponse.json();
+            const collectionsData: Collection[] = await collectionsResponse.json();
             
-            // Flatten products into PosProduct[]
-            const flattenedProducts = (data.products || []).flatMap(p => {
+            setCollections(collectionsData || []);
+            
+            const flattenedProducts = (productsData.products || []).flatMap(p => {
               if (!p.variants || p.variants.length === 0) {
                  return [{
                   ...p.product,
@@ -122,15 +135,31 @@ export default function POSPage() {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not fetch products from the server.',
+                description: 'Could not fetch data from the server.',
             });
             setPosProducts([]);
+            setCollections([]);
         } finally {
             setIsLoadingProducts(false);
         }
     }
-    fetchProducts();
+    fetchPosData();
   }, [toast]);
+  
+  const handleFilterChange = async (type: 'category' | 'collection', value: string) => {
+    setActiveFilter({ type, value });
+    if (type === 'collection' && !collectionProducts[value]) {
+        // Fetch products for this collection if not already fetched
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/collection-products/collection/${value}`);
+            if (!response.ok) throw new Error('Failed to fetch collection products');
+            const data: CollectionProductLink[] = await response.json();
+            setCollectionProducts(prev => ({ ...prev, [value]: data.map(p => p.product_id) }));
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load products for this collection.' });
+        }
+    }
+  }
 
 
   const currentOrder = useMemo(
@@ -278,12 +307,23 @@ export default function POSPage() {
   }
 
   const filteredProducts = useMemo(() => {
-    return posProducts.filter(
-      (product) =>
-        (category === 'All' || product.category === category) &&
-        product.variantName.toLowerCase().includes(searchTerm.toLowerCase())
+    let productsToFilter = posProducts;
+
+    if (activeFilter.type === 'collection') {
+        const productIdsInCollection = collectionProducts[activeFilter.value];
+        if (productIdsInCollection) {
+            productsToFilter = posProducts.filter(p => productIdsInCollection.includes(p.id));
+        } else {
+             return []; // Or show loading state
+        }
+    } else if (activeFilter.type === 'category' && activeFilter.value !== 'All') {
+        productsToFilter = posProducts.filter(p => p.category === activeFilter.value);
+    }
+    
+    return productsToFilter.filter(product =>
+      product.variantName.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, category, posProducts]);
+  }, [searchTerm, activeFilter, posProducts, collectionProducts]);
   
   const totalItems = useMemo(() => {
     if (!currentOrder) return 0;
@@ -419,11 +459,24 @@ export default function POSPage() {
                         {categories.map(cat => (
                             <Button
                                 key={cat}
-                                variant={category === cat ? 'secondary' : 'ghost'}
+                                variant={activeFilter.type === 'category' && activeFilter.value === cat ? 'secondary' : 'ghost'}
                                 className="justify-start"
-                                onClick={() => setCategory(cat)}
+                                onClick={() => handleFilterChange('category', cat)}
                             >
                                 {cat}
+                            </Button>
+                        ))}
+                    </div>
+                     <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 my-2 pt-2 border-t">Collections</h3>
+                    <div className="flex flex-col gap-1">
+                        {collections.map(col => (
+                            <Button
+                                key={col.id}
+                                variant={activeFilter.type === 'collection' && activeFilter.value === col.id ? 'secondary' : 'ghost'}
+                                className="justify-start"
+                                onClick={() => handleFilterChange('collection', col.id)}
+                            >
+                                {col.title}
                             </Button>
                         ))}
                     </div>
