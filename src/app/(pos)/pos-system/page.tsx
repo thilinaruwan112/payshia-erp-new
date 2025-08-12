@@ -8,7 +8,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -22,6 +22,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -77,6 +79,9 @@ export default function POSPage() {
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isHeldOrdersOpen, setHeldOrdersOpen] = useState(false);
+  const [isReceiptsViewOpen, setReceiptsViewOpen] = useState(false);
+  const [selectedReceiptsCustomer, setSelectedReceiptsCustomer] = useState<string | null>(null);
+
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
 
@@ -91,7 +96,7 @@ export default function POSPage() {
             const [productsResponse, collectionsResponse, brandsResponse] = await Promise.all([
                 fetch(`https://server-erp.payshia.com/products/with-variants`),
                 fetch(`https://server-erp.payshia.com/collections/company?company_id=1`),
-                fetch(`https://server-erp.payshia.com/brands/company?company_id=1`)
+                fetch(`https://server-erp.payshia.com/brands/company?company_id=1`),
             ]);
 
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok) {
@@ -322,7 +327,7 @@ export default function POSPage() {
         const productIdsInCollection = collectionProducts[activeFilter.value];
         if (productIdsInCollection) {
             productsToFilter = posProducts.filter(p => productIdsInCollection.includes(p.id));
-        } else {
+        } else if (activeFilter.value !== 'All') {
              return []; // Or show loading state
         }
     } else if (activeFilter.type === 'category' && activeFilter.value !== 'All') {
@@ -435,7 +440,10 @@ export default function POSPage() {
           />
           <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm"><History className="mr-2 h-4 w-4" /> Receipts</Button>
+              <Button variant="outline" size="sm" onClick={() => setReceiptsViewOpen(prev => !prev)}>
+                {isReceiptsViewOpen ? <ArrowLeft className="mr-2 h-4 w-4" /> : <History className="mr-2 h-4 w-4" />} 
+                {isReceiptsViewOpen ? 'Back to Sale' : 'Receipts'}
+              </Button>
               <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Refund</Button>
               <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Return</Button>
             </div>
@@ -446,28 +454,71 @@ export default function POSPage() {
            <div className="flex-1 flex">
             {/* Main Content */}
             <main className="flex-1 p-4">
-              <div className="flex justify-end gap-2 mb-4">
-                <Drawer open={isHeldOrdersOpen} onOpenChange={setHeldOrdersOpen}>
-                    <DrawerTrigger asChild>
-                        <Button variant="outline" size="lg">
-                            <NotebookPen className="mr-2 h-4 w-4" />
-                            Held Orders ({activeOrders.filter(o => o.id !== currentOrderId).length})
-                        </Button>
-                    </DrawerTrigger>
-                    <DrawerContent>
-                        {heldOrdersList}
-                    </DrawerContent>
-                </Drawer>
-                <Button onClick={createNewOrder} size="lg">
-                    <Plus className="mr-2 h-4 w-4" /> New Order
-                </Button>
-              </div>
-              {isLoadingProducts ? (
-                <div className="flex items-center justify-center h-[calc(100vh-250px)]">
-                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                </div>
+              {isReceiptsViewOpen ? (
+                 <Card>
+                    <CardHeader>
+                      <CardTitle>View Past Receipts</CardTitle>
+                      <CardDescription>Select a customer to view their receipt history.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Select onValueChange={setSelectedReceiptsCustomer}>
+                            <SelectTrigger className="w-full md:w-1/2">
+                                <SelectValue placeholder="Select a customer..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {users.filter(u => u.role === 'Customer').map(c => (
+                                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {selectedReceiptsCustomer && (
+                            <div className="border rounded-md">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Receipt ID</TableHead>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead className="text-right">Amount</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                                                Receipt history for this customer will be shown here.
+                                            </TableCell>
+                                        </TableRow>
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        )}
+                    </CardContent>
+                 </Card>
               ) : (
-                  <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
+                <>
+                  <div className="flex justify-end gap-2 mb-4">
+                    <Drawer open={isHeldOrdersOpen} onOpenChange={setHeldOrdersOpen}>
+                        <DrawerTrigger asChild>
+                            <Button variant="outline" size="lg">
+                                <NotebookPen className="mr-2 h-4 w-4" />
+                                Held Orders ({activeOrders.filter(o => o.id !== currentOrderId).length})
+                            </Button>
+                        </DrawerTrigger>
+                        <DrawerContent>
+                            {heldOrdersList}
+                        </DrawerContent>
+                    </Drawer>
+                    <Button onClick={createNewOrder} size="lg">
+                        <Plus className="mr-2 h-4 w-4" /> New Order
+                    </Button>
+                  </div>
+                  {isLoadingProducts ? (
+                    <div className="flex items-center justify-center h-[calc(100vh-250px)]">
+                      <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                      <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
+                  )}
+                </>
               )}
             </main>
             {/* Category Sidebar */}
@@ -488,6 +539,13 @@ export default function POSPage() {
                     </div>
                      <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 my-2 pt-2 border-t">Collections</h3>
                     <div className="flex flex-col gap-1">
+                        <Button
+                            variant={activeFilter.type === 'collection' && activeFilter.value === 'All' ? 'secondary' : 'ghost'}
+                            className="justify-start"
+                            onClick={() => handleFilterChange('collection', 'All')}
+                        >
+                            All Collections
+                        </Button>
                         {collections.map(col => (
                             <Button
                                 key={col.id}
@@ -557,4 +615,3 @@ export default function POSPage() {
     </>
   );
 }
-
