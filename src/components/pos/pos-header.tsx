@@ -10,8 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { User, Product } from '@/lib/types';
-import type { PosProduct } from '@/app/(pos)/pos-system/page';
+import type { User } from '@/lib/types';
 import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock, ChevronDown } from 'lucide-react';
 import { ThemeToggle } from '../theme-toggle';
 import Link from 'next/link';
@@ -34,10 +33,7 @@ import { Skeleton } from '../ui/skeleton';
 interface PosHeaderProps {
   searchTerm: string;
   setSearchTerm: (value: string) => void;
-  category: string;
-  setCategory: (value: string) => void;
   cashier: User;
-  products: PosProduct[];
 }
 
 function DateTimeLocation() {
@@ -104,12 +100,8 @@ function DateTimeLocation() {
 export function PosHeader({
   searchTerm,
   setSearchTerm,
-  category,
-  setCategory,
   cashier,
-  products
 }: PosHeaderProps) {
-  const categories = ['All', ...new Set(products.map((p) => p.category))];
 
   return (
     <header className="p-4 border-b border-border flex flex-wrap items-center gap-4 sticky top-0 bg-background z-10">
@@ -125,20 +117,6 @@ export function PosHeader({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-      </div>
-      <div className="flex-grow sm:flex-grow-0 order-4 sm:order-4">
-        <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-full sm:w-[180px] h-11">
-            <SelectValue placeholder="Select a category" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
       <div className="flex items-center gap-2 order-1 sm:order-5 ml-auto sm:ml-0">
         <ThemeToggle />

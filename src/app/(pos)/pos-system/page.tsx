@@ -20,6 +20,8 @@ import { AddToCartDialog } from '@/components/pos/add-to-cart-dialog';
 import { useLocation } from '@/components/location-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -365,6 +367,8 @@ export default function POSPage() {
         )}
     </div>
   );
+  
+  const categories = ['All', ...new Set(posProducts.map((p) => p.category))];
 
   return (
     <>
@@ -378,36 +382,55 @@ export default function POSPage() {
           <PosHeader
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
-            category={category}
-            setCategory={setCategory}
             cashier={currentCashier}
-            products={posProducts}
           />
-          <main className="flex-1 p-4">
-            <div className="flex justify-end gap-2 mb-4">
-              <Drawer open={isHeldOrdersOpen} onOpenChange={setHeldOrdersOpen}>
-                  <DrawerTrigger asChild>
-                      <Button variant="outline" size="lg">
-                          <NotebookPen className="mr-2 h-4 w-4" />
-                          Held Orders ({activeOrders.filter(o => o.id !== currentOrderId).length})
-                      </Button>
-                  </DrawerTrigger>
-                  <DrawerContent>
-                      {heldOrdersList}
-                  </DrawerContent>
-              </Drawer>
-              <Button onClick={createNewOrder} size="lg">
-                  <Plus className="mr-2 h-4 w-4" /> New Order
-              </Button>
-            </div>
-             {isLoadingProducts ? (
-              <div className="flex items-center justify-center h-[calc(100vh-250px)]">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+           <div className="flex-1 flex">
+            {/* Category Sidebar */}
+            <aside className="hidden md:block w-48 border-r border-border">
+                <ScrollArea className="h-[calc(100vh-140px)] p-2">
+                    <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
+                    <div className="flex flex-col gap-1">
+                        {categories.map(cat => (
+                            <Button
+                                key={cat}
+                                variant={category === cat ? 'secondary' : 'ghost'}
+                                className="justify-start"
+                                onClick={() => setCategory(cat)}
+                            >
+                                {cat}
+                            </Button>
+                        ))}
+                    </div>
+                </ScrollArea>
+            </aside>
+
+            {/* Main Content */}
+            <main className="flex-1 p-4">
+              <div className="flex justify-end gap-2 mb-4">
+                <Drawer open={isHeldOrdersOpen} onOpenChange={setHeldOrdersOpen}>
+                    <DrawerTrigger asChild>
+                        <Button variant="outline" size="lg">
+                            <NotebookPen className="mr-2 h-4 w-4" />
+                            Held Orders ({activeOrders.filter(o => o.id !== currentOrderId).length})
+                        </Button>
+                    </DrawerTrigger>
+                    <DrawerContent>
+                        {heldOrdersList}
+                    </DrawerContent>
+                </Drawer>
+                <Button onClick={createNewOrder} size="lg">
+                    <Plus className="mr-2 h-4 w-4" /> New Order
+                </Button>
               </div>
-            ) : (
-                <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
-            )}
-          </main>
+              {isLoadingProducts ? (
+                <div className="flex items-center justify-center h-[calc(100vh-250px)]">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                </div>
+              ) : (
+                  <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
+              )}
+            </main>
+           </div>
         </div>
 
         {/* Desktop Order Panel - always visible on large screens */}
