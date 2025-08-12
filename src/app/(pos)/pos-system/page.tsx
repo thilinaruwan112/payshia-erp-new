@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { format } from 'date-fns';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -61,6 +62,22 @@ interface CollectionProductLink {
     product_id: string;
 }
 
+type Receipt = {
+    id: string;
+    rec_number: string;
+    type: string;
+    is_active: string;
+    date: string;
+    amount: string;
+    created_by: string;
+    ref_id: string;
+    location_id: string;
+    customer_id: string;
+    today_invoice: string;
+    company_id: string;
+    now_time: string;
+};
+
 
 let orderCounter = 1;
 
@@ -81,6 +98,8 @@ export default function POSPage() {
   const [isHeldOrdersOpen, setHeldOrdersOpen] = useState(false);
   const [isReceiptsViewOpen, setReceiptsViewOpen] = useState(false);
   const [selectedReceiptsCustomer, setSelectedReceiptsCustomer] = useState<string | null>(null);
+  const [receipts, setReceipts] = useState<Receipt[]>([]);
+  const [isReceiptsLoading, setIsReceiptsLoading] = useState(false);
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -156,6 +175,35 @@ export default function POSPage() {
     fetchPosData();
   }, [toast]);
   
+  useEffect(() => {
+    const fetchReceipts = async () => {
+        if (!selectedReceiptsCustomer) {
+            setReceipts([]);
+            return;
+        }
+        setIsReceiptsLoading(true);
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/receipts/customer/${selectedReceiptsCustomer}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch receipts');
+            }
+            const data = await response.json();
+            setReceipts(data);
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not fetch receipts for this customer.',
+            });
+            setReceipts([]);
+        } finally {
+            setIsReceiptsLoading(false);
+        }
+    };
+
+    fetchReceipts();
+}, [selectedReceiptsCustomer, toast]);
+
   const handleFilterChange = async (type: 'category' | 'collection' | 'brand', value: string) => {
     setActiveFilter({ type, value });
     if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
@@ -467,7 +515,7 @@ export default function POSPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 {users.filter(u => u.role === 'Customer').map(c => (
-                                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                    <SelectItem key={c.id} value={c.customer_id}>{c.name}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -482,11 +530,27 @@ export default function POSPage() {
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        <TableRow>
-                                            <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                                                Receipt history for this customer will be shown here.
-                                            </TableCell>
-                                        </TableRow>
+                                        {isReceiptsLoading ? (
+                                             <TableRow>
+                                                <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                                                    <Loader2 className="h-6 w-6 animate-spin inline-block" />
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : receipts.length > 0 ? (
+                                            receipts.map(receipt => (
+                                                 <TableRow key={receipt.id}>
+                                                    <TableCell className="font-medium">{receipt.rec_number}</TableCell>
+                                                    <TableCell>{format(new Date(receipt.date), 'dd MMM yyyy')}</TableCell>
+                                                    <TableCell className="text-right font-mono">${parseFloat(receipt.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                                                    No receipts found for this customer.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
                                     </TableBody>
                                 </Table>
                             </div>
