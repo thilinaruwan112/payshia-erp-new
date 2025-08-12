@@ -14,6 +14,14 @@ import {
   DrawerContent,
   DrawerTrigger,
 } from '@/components/ui/drawer';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AddToCartDialog } from '@/components/pos/add-to-cart-dialog';
 import { useLocation } from '@/components/location-provider';
@@ -88,8 +96,7 @@ export default function POSPage() {
   const [activeFilter, setActiveFilter] = useState<{type: 'category' | 'collection' | 'brand', value: string}>({type: 'category', value: 'All'});
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const [isHeldOrdersOpen, setHeldOrdersOpen] = useState(false);
-  const [isPendingInvoicesViewOpen, setPendingInvoicesViewOpen] = useState(false);
+  const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
   const [selectedReceiptsCustomer, setSelectedReceiptsCustomer] = useState<string | null>(null);
   const [pendingInvoices, setPendingInvoices] = useState<Invoice[]>([]);
   const [isPendingInvoicesLoading, setIsPendingInvoicesLoading] = useState(false);
@@ -203,9 +210,11 @@ export default function POSPage() {
             setIsPendingInvoicesLoading(false);
         }
     };
-
-    fetchPendingInvoices();
-  }, [selectedReceiptsCustomer, toast, company_id]);
+    
+    if (isPendingInvoicesDialogOpen) {
+      fetchPendingInvoices();
+    }
+  }, [selectedReceiptsCustomer, toast, company_id, isPendingInvoicesDialogOpen]);
 
   const handleInvoiceSelect = async (invoice: Invoice) => {
     setSelectedInvoiceForPayment(invoice);
@@ -485,7 +494,7 @@ export default function POSPage() {
         {activeOrders.filter(o => o.id !== currentOrderId).map(order => (
             <Button key={order.id} variant="outline" className='w-full justify-between' onClick={() => {
                 setCurrentOrderId(order.id);
-                setHeldOrdersOpen(false);
+                setDrawerOpen(false); // also close held orders drawer if open
             }}>
                 <span>{order.name}</span>
                 <Badge>{order.cart.reduce((acc, item) => acc + item.quantity, 0)}</Badge>
@@ -515,14 +524,115 @@ export default function POSPage() {
           />
           <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => {
-                  setPendingInvoicesViewOpen(prev => !prev);
-                  setSelectedInvoiceForPayment(null);
-                  setInvoiceBalance(null);
-                }}>
-                {isPendingInvoicesViewOpen ? <ArrowLeft className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />} 
-                {isPendingInvoicesViewOpen ? 'Back to Sale' : 'Pending Invoices'}
-              </Button>
+                <Dialog open={isPendingInvoicesDialogOpen} onOpenChange={setPendingInvoicesDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                            <FileText className="mr-2 h-4 w-4" />
+                            Pending Invoices
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                        <DialogHeader>
+                          <DialogTitle>View Pending Invoices</DialogTitle>
+                          <DialogDescription>Select a customer to view their pending invoices and record payments.</DialogDescription>
+                        </DialogHeader>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                            <div className="space-y-4">
+                                <Select onValueChange={setSelectedReceiptsCustomer}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a customer..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {customers.map(c => (
+                                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <div className="border rounded-md h-96 overflow-y-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Invoice ID</TableHead>
+                                                <TableHead>Date</TableHead>
+                                                <TableHead className="text-right">Amount</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {isPendingInvoicesLoading ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                                                        <Loader2 className="h-6 w-6 animate-spin inline-block" />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : pendingInvoices.length > 0 ? (
+                                                pendingInvoices.map(invoice => (
+                                                    <TableRow key={invoice.id} onClick={() => handleInvoiceSelect(invoice)} className="cursor-pointer hover:bg-muted">
+                                                        <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                                                        <TableCell>{format(new Date(invoice.invoice_date), 'dd MMM yyyy')}</TableCell>
+                                                        <TableCell className="text-right font-mono">${parseFloat(invoice.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                                                        No pending invoices found for this customer.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </div>
+                            <Card className="h-full">
+                                {selectedInvoiceForPayment ? (
+                                    <>
+                                    <CardHeader>
+                                        <CardTitle>Payment for {selectedInvoiceForPayment.invoice_number}</CardTitle>
+                                        {isBalanceLoading && <CardDescription>Loading balance details...</CardDescription>}
+                                    </CardHeader>
+                                    <CardContent>
+                                        {isBalanceLoading ? (
+                                            <div className="flex justify-center items-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                                        ) : invoiceBalance ? (
+                                            <div className="space-y-4">
+                                                 <div className="grid grid-cols-2 gap-4">
+                                                    <div className="text-center p-2 bg-muted/50 rounded-lg">
+                                                        <p className="text-xs text-muted-foreground">Paid Amount</p>
+                                                        <p className="text-lg font-bold text-green-600">${parseFloat(invoiceBalance.total_paid_amount).toFixed(2)}</p>
+                                                    </div>
+                                                    <div className="text-center p-2 bg-destructive/10 rounded-lg">
+                                                        <p className="text-xs text-destructive/80">Due Amount</p>
+                                                        <p className="text-lg font-bold text-destructive">${invoiceBalance.balance.toFixed(2)}</p>
+                                                    </div>
+                                                 </div>
+                                                 <div className="space-y-4 pt-4 border-t">
+                                                    <Select>
+                                                        <SelectTrigger><SelectValue placeholder="Select Payment Method" /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="cash">Cash</SelectItem>
+                                                            <SelectItem value="card">Card</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <Input placeholder="Amount" type="number" defaultValue={invoiceBalance.balance.toFixed(2)} />
+                                                 </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-destructive text-center py-12">Could not load balance information.</p>
+                                        )}
+                                    </CardContent>
+                                     <CardFooter>
+                                        <Button className="w-full" disabled={isBalanceLoading || !invoiceBalance}>Proceed</Button>
+                                    </CardFooter>
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col h-full items-center justify-center text-center text-muted-foreground p-8">
+                                        <p>Select an invoice to view payment details.</p>
+                                    </div>
+                                )}
+                            </Card>
+                        </div>
+                    </DialogContent>
+                </Dialog>
               <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Refund</Button>
               <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Return</Button>
             </div>
@@ -530,115 +640,12 @@ export default function POSPage() {
                <Button variant="outline" size="sm"><Settings className="mr-2 h-4 w-4" /> Settings</Button>
             </div>
           </div>
-           <div className="flex-1 flex">
+           <div className="flex-1 flex overflow-hidden">
             {/* Main Content */}
-            <main className="flex-1 p-4">
-              {isPendingInvoicesViewOpen ? (
-                 <Card>
-                    <CardHeader>
-                      <CardTitle>View Pending Invoices</CardTitle>
-                      <CardDescription>Select a customer to view their pending invoices.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <Select onValueChange={setSelectedReceiptsCustomer}>
-                                <SelectTrigger className="w-full md:w-1/2">
-                                    <SelectValue placeholder="Select a customer..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {customers.map(c => (
-                                        <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                             {selectedInvoiceForPayment && (
-                                <Button variant="outline" onClick={() => setSelectedInvoiceForPayment(null)}>
-                                    <ArrowLeft className="mr-2 h-4 w-4" />
-                                    Back to Invoices
-                                </Button>
-                            )}
-                        </div>
-                        
-                        {selectedInvoiceForPayment ? (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Payment for {selectedInvoiceForPayment.invoice_number}</CardTitle>
-                                    {isBalanceLoading && <CardDescription>Loading balance details...</CardDescription>}
-                                </CardHeader>
-                                <CardContent>
-                                    {isBalanceLoading ? (
-                                        <div className="flex justify-center items-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                                    ) : invoiceBalance ? (
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-4">
-                                                <div className="text-center p-4 bg-muted/50 rounded-lg">
-                                                    <p className="text-sm text-muted-foreground">Paid Amount</p>
-                                                    <p className="text-xl font-bold text-green-600">LKR {parseFloat(invoiceBalance.total_paid_amount).toFixed(2)}</p>
-                                                </div>
-                                                 <div className="text-center p-4 bg-destructive/10 rounded-lg">
-                                                    <p className="text-sm text-destructive/80">Due Amount</p>
-                                                    <p className="text-3xl font-bold text-destructive">LKR {invoiceBalance.balance.toFixed(2)}</p>
-                                                </div>
-                                            </div>
-                                            <div className="space-y-4">
-                                                <Select>
-                                                    <SelectTrigger><SelectValue placeholder="Select Payment Method" /></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="cash">Cash</SelectItem>
-                                                        <SelectItem value="card">Card</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <Input placeholder="Amount" type="number" defaultValue={invoiceBalance.balance.toFixed(2)} />
-                                                <Button className="w-full">Proceed</Button>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <p className="text-destructive">Could not load balance information.</p>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        ) : (
-                            <div className="border rounded-md">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Invoice ID</TableHead>
-                                            <TableHead>Date</TableHead>
-                                            <TableHead className="text-right">Amount</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {isPendingInvoicesLoading ? (
-                                             <TableRow>
-                                                <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                                                    <Loader2 className="h-6 w-6 animate-spin inline-block" />
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : pendingInvoices.length > 0 ? (
-                                            pendingInvoices.map(invoice => (
-                                                 <TableRow key={invoice.id} onClick={() => handleInvoiceSelect(invoice)} className="cursor-pointer hover:bg-muted">
-                                                    <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                                                    <TableCell>{format(new Date(invoice.invoice_date), 'dd MMM yyyy')}</TableCell>
-                                                    <TableCell className="text-right font-mono">${parseFloat(invoice.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</TableCell>
-                                                </TableRow>
-                                            ))
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                                                    No pending invoices found for this customer.
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        )}
-                    </CardContent>
-                 </Card>
-              ) : (
+            <main className="flex-1 p-4 overflow-y-auto">
                 <>
                   <div className="flex justify-end gap-2 mb-4">
-                    <Drawer open={isHeldOrdersOpen} onOpenChange={setHeldOrdersOpen}>
+                    <Drawer>
                         <DrawerTrigger asChild>
                             <Button variant="outline" size="lg">
                                 <NotebookPen className="mr-2 h-4 w-4" />
@@ -661,10 +668,9 @@ export default function POSPage() {
                       <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
                   )}
                 </>
-              )}
             </main>
             {/* Category Sidebar */}
-            <aside className="hidden md:block w-48 border-l border-border">
+            <aside className="hidden md:block w-48 border-l border-border overflow-y-auto">
                 <ScrollArea className="h-full p-2">
                     <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
                     <div className="flex flex-col gap-1">
@@ -757,5 +763,3 @@ export default function POSPage() {
     </>
   );
 }
-
-    
