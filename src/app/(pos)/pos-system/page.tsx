@@ -8,7 +8,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2 } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -433,6 +433,16 @@ export default function POSPage() {
             setSearchTerm={setSearchTerm}
             cashier={currentCashier}
           />
+          <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm"><History className="mr-2 h-4 w-4" /> Receipts</Button>
+              <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Refund</Button>
+              <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Return</Button>
+            </div>
+            <div className="flex items-center gap-2">
+               <Button variant="outline" size="sm"><Settings className="mr-2 h-4 w-4" /> Settings</Button>
+            </div>
+          </div>
            <div className="flex-1 flex">
             {/* Main Content */}
             <main className="flex-1 p-4">
@@ -462,7 +472,7 @@ export default function POSPage() {
             </main>
             {/* Category Sidebar */}
             <aside className="hidden md:block w-48 border-l border-border">
-                <ScrollArea className="h-[calc(100vh-140px)] p-2">
+                <ScrollArea className="h-full p-2">
                     <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
                     <div className="flex flex-col gap-1">
                         {categories.map(cat => (
@@ -547,3 +557,4 @@ export default function POSPage() {
     </>
   );
 }
+

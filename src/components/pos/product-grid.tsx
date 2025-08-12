@@ -13,7 +13,7 @@ interface ProductGridProps {
 
 export function ProductGrid({ products, onProductSelect }: ProductGridProps) {
   return (
-    <ScrollArea className="h-[calc(100vh-220px)]">
+    <ScrollArea className="h-full">
         {products.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pr-4">
                 {products.map((product) => (
@@ -32,3 +32,4 @@ export function ProductGrid({ products, onProductSelect }: ProductGridProps) {
     </ScrollArea>
   );
 }
+
