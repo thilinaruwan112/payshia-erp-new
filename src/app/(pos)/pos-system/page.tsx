@@ -33,6 +33,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -103,6 +104,9 @@ export default function POSPage() {
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<Invoice | null>(null);
   const [invoiceBalance, setInvoiceBalance] = useState<BalanceDetails | null>(null);
   const [isBalanceLoading, setIsBalanceLoading] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Card');
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -227,6 +231,7 @@ export default function POSPage() {
       }
       const data: BalanceDetails = await response.json();
       setInvoiceBalance(data);
+      setPaymentAmount(data.balance.toFixed(2));
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -236,6 +241,65 @@ export default function POSPage() {
       setInvoiceBalance(null);
     } finally {
         setIsBalanceLoading(false);
+    }
+  };
+
+  const handleCreateReceipt = async () => {
+    if (!selectedInvoiceForPayment || !currentLocation || !invoiceBalance) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Information',
+        description: 'Please ensure an invoice is selected and all details are available.'
+      });
+      return;
+    }
+    setIsSubmittingPayment(true);
+    
+    const payload = {
+        type: paymentMethod,
+        is_active: 1,
+        date: format(new Date(), 'yyyy-MM-dd'),
+        amount: parseFloat(paymentAmount),
+        created_by: parseInt(currentCashier.customer_id, 10),
+        ref_id: selectedInvoiceForPayment.invoice_number,
+        location_id: parseInt(currentLocation.location_id, 10),
+        customer_id: parseInt(selectedInvoiceForPayment.customer_code, 10),
+        today_invoice: selectedInvoiceForPayment.invoice_number,
+        company_id: company_id,
+    };
+    
+    try {
+        const response = await fetch('https://server-erp.payshia.com/receipts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to create receipt.");
+        }
+
+        toast({
+            title: 'Receipt Created!',
+            description: `Payment of $${paymentAmount} recorded successfully.`
+        });
+        setPendingInvoicesDialogOpen(false); // Close dialog on success
+        // Reset state
+        setSelectedInvoiceForPayment(null);
+        setInvoiceBalance(null);
+        setPaymentAmount('');
+        setSelectedReceiptsCustomer(null);
+
+    } catch (error) {
+         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+         toast({
+            variant: 'destructive',
+            title: 'Error Creating Receipt',
+            description: errorMessage
+        });
+    } finally {
+        setIsSubmittingPayment(false);
     }
   };
 
@@ -515,7 +579,7 @@ export default function POSPage() {
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
       />
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] h-screen w-screen bg-background text-foreground overflow-hidden">
+      <div className="flex h-screen w-screen overflow-hidden">
         <div className="flex-1 flex flex-col overflow-y-auto">
           <PosHeader
             searchTerm={searchTerm}
@@ -606,14 +670,23 @@ export default function POSPage() {
                                                     </div>
                                                  </div>
                                                  <div className="space-y-4 pt-4 border-t">
-                                                    <Select>
-                                                        <SelectTrigger><SelectValue placeholder="Select Payment Method" /></SelectTrigger>
+                                                    <Label htmlFor="payment-method">Payment Method</Label>
+                                                    <Select onValueChange={setPaymentMethod} defaultValue={paymentMethod}>
+                                                        <SelectTrigger id="payment-method"><SelectValue placeholder="Select Payment Method" /></SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="cash">Cash</SelectItem>
-                                                            <SelectItem value="card">Card</SelectItem>
+                                                            <SelectItem value="Cash">Cash</SelectItem>
+                                                            <SelectItem value="Card">Card</SelectItem>
+                                                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                                                         </SelectContent>
                                                     </Select>
-                                                    <Input placeholder="Amount" type="number" defaultValue={invoiceBalance.balance.toFixed(2)} />
+                                                     <Label htmlFor="payment-amount">Amount</Label>
+                                                    <Input 
+                                                        id="payment-amount"
+                                                        placeholder="Amount" 
+                                                        type="number" 
+                                                        value={paymentAmount}
+                                                        onChange={(e) => setPaymentAmount(e.target.value)}
+                                                    />
                                                  </div>
                                             </div>
                                         ) : (
@@ -621,7 +694,10 @@ export default function POSPage() {
                                         )}
                                     </CardContent>
                                      <CardFooter>
-                                        <Button className="w-full" disabled={isBalanceLoading || !invoiceBalance}>Proceed</Button>
+                                        <Button className="w-full" onClick={handleCreateReceipt} disabled={isBalanceLoading || !invoiceBalance || isSubmittingPayment}>
+                                            {isSubmittingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Proceed
+                                        </Button>
                                     </CardFooter>
                                     </>
                                 ) : (
