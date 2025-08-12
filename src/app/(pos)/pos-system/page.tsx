@@ -17,13 +17,14 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { AddToCartDialog } from '@/components/pos/add-to-cart-dialog';
 import { useLocation } from '@/components/location-provider';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
+import { Input } from '@/components/ui/input';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -61,6 +62,15 @@ interface CollectionProductLink {
     product_id: string;
 }
 
+interface BalanceDetails {
+    grand_total: string;
+    total_paid_amount: string;
+    balance: number;
+    company_id: string;
+    customer_id: string;
+    ref_id: string;
+}
+
 let orderCounter = 1;
 
 export default function POSPage() {
@@ -80,9 +90,12 @@ export default function POSPage() {
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isHeldOrdersOpen, setHeldOrdersOpen] = useState(false);
   const [isPendingInvoicesViewOpen, setPendingInvoicesViewOpen] = useState(false);
-  const [selectedInvoicesCustomer, setSelectedInvoicesCustomer] = useState<string | null>(null);
+  const [selectedReceiptsCustomer, setSelectedReceiptsCustomer] = useState<string | null>(null);
   const [pendingInvoices, setPendingInvoices] = useState<Invoice[]>([]);
   const [isPendingInvoicesLoading, setIsPendingInvoicesLoading] = useState(false);
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<Invoice | null>(null);
+  const [invoiceBalance, setInvoiceBalance] = useState<BalanceDetails | null>(null);
+  const [isBalanceLoading, setIsBalanceLoading] = useState(false);
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -91,7 +104,7 @@ export default function POSPage() {
 
   const [currentCashier, setCurrentCashier] = useState<User>(defaultCashier);
   
-  const { currentLocation, isLoading: isLocationLoading } = useLocation();
+  const { currentLocation, isLoading: isLocationLoading, company_id } = useLocation();
 
   useEffect(() => {
     async function fetchPosData() {
@@ -167,13 +180,13 @@ export default function POSPage() {
   
   useEffect(() => {
     const fetchPendingInvoices = async () => {
-        if (!selectedInvoicesCustomer) {
+        if (!selectedReceiptsCustomer) {
             setPendingInvoices([]);
             return;
         }
         setIsPendingInvoicesLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedInvoicesCustomer}`);
+            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedReceiptsCustomer}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch pending invoices');
             }
@@ -192,7 +205,31 @@ export default function POSPage() {
     };
 
     fetchPendingInvoices();
-}, [selectedInvoicesCustomer, toast]);
+  }, [selectedReceiptsCustomer, toast]);
+
+  const handleInvoiceSelect = async (invoice: Invoice) => {
+    setSelectedInvoiceForPayment(invoice);
+    setIsBalanceLoading(true);
+    setInvoiceBalance(null);
+    try {
+      const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=${company_id}&customer_id=${invoice.customer_code}&ref_id=${invoice.invoice_number}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch invoice balance');
+      }
+      const data: BalanceDetails = await response.json();
+      setInvoiceBalance(data);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not fetch invoice balance details.',
+      });
+      setInvoiceBalance(null);
+    } finally {
+        setIsBalanceLoading(false);
+    }
+  };
+
 
   const handleFilterChange = async (type: 'category' | 'collection' | 'brand', value: string) => {
     setActiveFilter({ type, value });
@@ -478,7 +515,11 @@ export default function POSPage() {
           />
           <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setPendingInvoicesViewOpen(prev => !prev)}>
+              <Button variant="outline" size="sm" onClick={() => {
+                  setPendingInvoicesViewOpen(prev => !prev);
+                  setSelectedInvoiceForPayment(null);
+                  setInvoiceBalance(null);
+                }}>
                 {isPendingInvoicesViewOpen ? <ArrowLeft className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />} 
                 {isPendingInvoicesViewOpen ? 'Back to Sale' : 'Pending Invoices'}
               </Button>
@@ -499,17 +540,58 @@ export default function POSPage() {
                       <CardDescription>Select a customer to view their pending invoices.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Select onValueChange={setSelectedInvoicesCustomer}>
-                            <SelectTrigger className="w-full md:w-1/2">
-                                <SelectValue placeholder="Select a customer..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {customers.map(c => (
-                                    <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        {selectedInvoicesCustomer && (
+                        <div className="flex items-center gap-2">
+                            <Select onValueChange={setSelectedReceiptsCustomer}>
+                                <SelectTrigger className="w-full md:w-1/2">
+                                    <SelectValue placeholder="Select a customer..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {customers.map(c => (
+                                        <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                             {selectedInvoiceForPayment && (
+                                <Button variant="outline" onClick={() => setSelectedInvoiceForPayment(null)}>
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    Back to Invoices
+                                </Button>
+                            )}
+                        </div>
+                        
+                        {selectedInvoiceForPayment ? (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Payment for {selectedInvoiceForPayment.invoice_number}</CardTitle>
+                                    {isBalanceLoading && <CardDescription>Loading balance details...</CardDescription>}
+                                </CardHeader>
+                                <CardContent>
+                                    {isBalanceLoading ? (
+                                        <div className="flex justify-center items-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                                    ) : invoiceBalance ? (
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="text-center p-4 bg-muted rounded-lg">
+                                                <p className="text-sm text-muted-foreground">Due Amount</p>
+                                                <p className="text-3xl font-bold">LKR {invoiceBalance.balance.toFixed(2)}</p>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <Select>
+                                                    <SelectTrigger><SelectValue placeholder="Select Payment Method" /></SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="cash">Cash</SelectItem>
+                                                        <SelectItem value="card">Card</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <Input placeholder="Amount" type="number" defaultValue={invoiceBalance.balance.toFixed(2)} />
+                                                <Button className="w-full">Proceed</Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-destructive">Could not load balance information.</p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        ) : (
                             <div className="border rounded-md">
                                 <Table>
                                     <TableHeader>
@@ -528,7 +610,7 @@ export default function POSPage() {
                                             </TableRow>
                                         ) : pendingInvoices.length > 0 ? (
                                             pendingInvoices.map(invoice => (
-                                                 <TableRow key={invoice.id}>
+                                                 <TableRow key={invoice.id} onClick={() => handleInvoiceSelect(invoice)} className="cursor-pointer hover:bg-muted">
                                                     <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
                                                     <TableCell>{format(new Date(invoice.invoice_date), 'dd MMM yyyy')}</TableCell>
                                                     <TableCell className="text-right font-mono">${parseFloat(invoice.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</TableCell>
