@@ -186,7 +186,7 @@ export default function POSPage() {
         }
         setIsPendingInvoicesLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedReceiptsCustomer}`);
+            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedReceiptsCustomer}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch pending invoices');
             }
@@ -205,7 +205,7 @@ export default function POSPage() {
     };
 
     fetchPendingInvoices();
-  }, [selectedReceiptsCustomer, toast]);
+  }, [selectedReceiptsCustomer, toast, company_id]);
 
   const handleInvoiceSelect = async (invoice: Invoice) => {
     setSelectedInvoiceForPayment(invoice);
@@ -570,9 +570,15 @@ export default function POSPage() {
                                         <div className="flex justify-center items-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div>
                                     ) : invoiceBalance ? (
                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="text-center p-4 bg-muted rounded-lg">
-                                                <p className="text-sm text-muted-foreground">Due Amount</p>
-                                                <p className="text-3xl font-bold">LKR {invoiceBalance.balance.toFixed(2)}</p>
+                                            <div className="space-y-4">
+                                                <div className="text-center p-4 bg-muted/50 rounded-lg">
+                                                    <p className="text-sm text-muted-foreground">Paid Amount</p>
+                                                    <p className="text-xl font-bold text-green-600">LKR {parseFloat(invoiceBalance.total_paid_amount).toFixed(2)}</p>
+                                                </div>
+                                                 <div className="text-center p-4 bg-destructive/10 rounded-lg">
+                                                    <p className="text-sm text-destructive/80">Due Amount</p>
+                                                    <p className="text-3xl font-bold text-destructive">LKR {invoiceBalance.balance.toFixed(2)}</p>
+                                                </div>
                                             </div>
                                             <div className="space-y-4">
                                                 <Select>
@@ -751,3 +757,5 @@ export default function POSPage() {
     </>
   );
 }
+
+    
