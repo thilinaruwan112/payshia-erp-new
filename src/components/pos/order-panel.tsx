@@ -34,6 +34,7 @@ import {
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { CustomerFormDialog } from '../customer-form-dialog';
 
 interface OrderPanelProps {
   order: ActiveOrder;
@@ -218,14 +219,22 @@ export function OrderPanel({
     });
   }
 
+  const handleCustomerCreated = (newCustomer: User) => {
+    console.log("New customer created:", newCustomer);
+    // Here you would typically update the order's customer state
+    // For now, we just log it.
+  }
+
   return (
     <div className="flex flex-col h-full bg-card">
       <header className="p-4 border-b border-border flex items-center justify-between">
         <h2 className="text-xl font-bold">{orderName}</h2>
         <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="text-muted-foreground">
-                <UserPlus className="h-5 w-5" />
-            </Button>
+            <CustomerFormDialog onCustomerCreated={handleCustomerCreated}>
+                 <Button variant="ghost" size="icon" className="text-muted-foreground">
+                    <UserPlus className="h-5 w-5" />
+                </Button>
+            </CustomerFormDialog>
              {isDrawer && (
                 <Button variant="ghost" size="icon" onClick={onClose}>
                     <X className="h-5 w-5" />
