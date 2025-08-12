@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { users } from '@/lib/data';
-import type { Product, User, ProductVariant, Collection } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -66,13 +66,14 @@ export default function POSPage() {
   const { toast } = useToast();
   const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState<{type: 'category' | 'collection', value: string}>({type: 'category', value: 'All'});
+  const [activeFilter, setActiveFilter] = useState<{type: 'category' | 'collection' | 'brand', value: string}>({type: 'category', value: 'All'});
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isHeldOrdersOpen, setHeldOrdersOpen] = useState(false);
@@ -87,18 +88,21 @@ export default function POSPage() {
     async function fetchPosData() {
         setIsLoadingProducts(true);
         try {
-            const [productsResponse, collectionsResponse] = await Promise.all([
+            const [productsResponse, collectionsResponse, brandsResponse] = await Promise.all([
                 fetch(`https://server-erp.payshia.com/products/with-variants`),
-                fetch(`https://server-erp.payshia.com/collections/company?company_id=1`)
+                fetch(`https://server-erp.payshia.com/collections/company?company_id=1`),
+                fetch(`https://server-erp.payshia.com/brands/company?company_id=1`)
             ]);
 
-            if (!productsResponse.ok || !collectionsResponse.ok) {
+            if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok) {
                 throw new Error('Failed to fetch POS data');
             }
             const productsData: { products: ProductWithVariants[] } = await productsResponse.json();
             const collectionsData: Collection[] = await collectionsResponse.json();
+            const brandsData: Brand[] = await brandsResponse.json();
             
             setCollections(collectionsData || []);
+            setBrands(brandsData || []);
             
             const flattenedProducts = (productsData.products || []).flatMap(p => {
               if (!p.variants || p.variants.length === 0) {
@@ -139,6 +143,7 @@ export default function POSPage() {
             });
             setPosProducts([]);
             setCollections([]);
+            setBrands([]);
         } finally {
             setIsLoadingProducts(false);
         }
@@ -146,9 +151,9 @@ export default function POSPage() {
     fetchPosData();
   }, [toast]);
   
-  const handleFilterChange = async (type: 'category' | 'collection', value: string) => {
+  const handleFilterChange = async (type: 'category' | 'collection' | 'brand', value: string) => {
     setActiveFilter({ type, value });
-    if (type === 'collection' && !collectionProducts[value]) {
+    if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
         // Fetch products for this collection if not already fetched
         try {
             const response = await fetch(`https://server-erp.payshia.com/collection-products/collection/${value}`);
@@ -308,8 +313,12 @@ export default function POSPage() {
 
   const filteredProducts = useMemo(() => {
     let productsToFilter = posProducts;
-
-    if (activeFilter.type === 'collection') {
+    
+    if (activeFilter.type === 'brand') {
+       if (activeFilter.value !== 'All') {
+         productsToFilter = posProducts.filter(p => p.brand_id === activeFilter.value);
+       }
+    } else if (activeFilter.type === 'collection') {
         const productIdsInCollection = collectionProducts[activeFilter.value];
         if (productIdsInCollection) {
             productsToFilter = posProducts.filter(p => productIdsInCollection.includes(p.id));
@@ -477,6 +486,26 @@ export default function POSPage() {
                                 onClick={() => handleFilterChange('collection', col.id)}
                             >
                                 {col.title}
+                            </Button>
+                        ))}
+                    </div>
+                    <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 my-2 pt-2 border-t">Brands</h3>
+                    <div className="flex flex-col gap-1">
+                         <Button
+                            variant={activeFilter.type === 'brand' && activeFilter.value === 'All' ? 'secondary' : 'ghost'}
+                            className="justify-start"
+                            onClick={() => handleFilterChange('brand', 'All')}
+                        >
+                            All Brands
+                        </Button>
+                        {brands.map(brand => (
+                            <Button
+                                key={brand.id}
+                                variant={activeFilter.type === 'brand' && activeFilter.value === brand.id ? 'secondary' : 'ghost'}
+                                className="justify-start"
+                                onClick={() => handleFilterChange('brand', brand.id)}
+                            >
+                                {brand.name}
                             </Button>
                         ))}
                     </div>
