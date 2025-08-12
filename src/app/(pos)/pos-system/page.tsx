@@ -2,7 +2,6 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { users } from '@/lib/data';
 import type { Product, User, ProductVariant, Collection, Brand } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
@@ -86,6 +85,7 @@ export default function POSPage() {
   const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [customers, setCustomers] = useState<User[]>([]);
   const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
@@ -103,8 +103,10 @@ export default function POSPage() {
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
+  const defaultCashier = { id: 'user-3', name: 'Cashier Chloe', role: 'Sales Agent', avatar: 'https://placehold.co/100x100.png?text=CC', email: 'chloe@payshia.com', customer_id: '3' };
+  const walkInCustomer = { id: 'user-4', name: 'Walk-in Customer', role: 'Customer', avatar: 'https://placehold.co/100x100.png?text=WC', loyaltyPoints: 0, email: 'walkin@payshia.com', phone: 'N/A', address: 'N/A', customer_id: '4' };
 
-  const [currentCashier, setCurrentCashier] = useState(users[2]);
+  const [currentCashier, setCurrentCashier] = useState<User>(defaultCashier);
   
   const { currentLocation, isLoading: isLocationLoading } = useLocation();
 
@@ -112,19 +114,24 @@ export default function POSPage() {
     async function fetchPosData() {
         setIsLoadingProducts(true);
         try {
-            const [productsResponse, collectionsResponse, brandsResponse] = await Promise.all([
+            const [productsResponse, collectionsResponse, brandsResponse, customersResponse] = await Promise.all([
                 fetch(`https://server-erp.payshia.com/products/with-variants`),
                 fetch(`https://server-erp.payshia.com/collections/company?company_id=1`),
                 fetch(`https://server-erp.payshia.com/brands/company?company_id=1`),
+                fetch('https://server-erp.payshia.com/customers'),
             ]);
 
-            if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok) {
+            if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !customersResponse.ok) {
                 throw new Error('Failed to fetch POS data');
             }
             const productsData: { products: ProductWithVariants[] } = await productsResponse.json();
             const collectionsData: Collection[] = await collectionsResponse.json();
             const brandsData: Brand[] = await brandsResponse.json();
+            const customersData: User[] = await customersResponse.json();
             
+            const formattedCustomers = customersData.map(c => ({...c, name: `${c.customer_first_name} ${c.customer_last_name}`}));
+            setCustomers([walkInCustomer, ...formattedCustomers]);
+
             setCollections(collectionsData || []);
             setBrands(brandsData || []);
             
@@ -231,7 +238,7 @@ export default function POSPage() {
       name: `Order #${orderCounter++}`,
       cart: [],
       discount: 0,
-      customer: users[3], // Default to a walk-in customer
+      customer: walkInCustomer, // Default to a walk-in customer
     };
     setActiveOrders((prev) => [...prev, newOrder]);
     setCurrentOrderId(newOrder.id);
@@ -514,8 +521,8 @@ export default function POSPage() {
                                 <SelectValue placeholder="Select a customer..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {users.filter(u => u.role === 'Customer').map(c => (
-                                    <SelectItem key={c.id} value={c.customer_id}>{c.name}</SelectItem>
+                                {customers.map(c => (
+                                    <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>

@@ -103,6 +103,9 @@ export type User = {
   id: string;
   customer_id: string;
   name: string;
+  customer_first_name?: string;
+  customer_last_name?: string;
+  email_address?: string;
   role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer';
   avatar?: string;
   loyaltyPoints?: number;

@@ -1,3 +1,4 @@
+
 import type { User } from '@/lib/types';
 
 export const users: User[] = [
