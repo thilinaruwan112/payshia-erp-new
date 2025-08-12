@@ -2,12 +2,12 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand, Invoice } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -61,23 +61,6 @@ interface CollectionProductLink {
     product_id: string;
 }
 
-type Receipt = {
-    id: string;
-    rec_number: string;
-    type: string;
-    is_active: string;
-    date: string;
-    amount: string;
-    created_by: string;
-    ref_id: string;
-    location_id: string;
-    customer_id: string;
-    today_invoice: string;
-    company_id: string;
-    now_time: string;
-};
-
-
 let orderCounter = 1;
 
 export default function POSPage() {
@@ -96,10 +79,10 @@ export default function POSPage() {
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isHeldOrdersOpen, setHeldOrdersOpen] = useState(false);
-  const [isReceiptsViewOpen, setReceiptsViewOpen] = useState(false);
-  const [selectedReceiptsCustomer, setSelectedReceiptsCustomer] = useState<string | null>(null);
-  const [receipts, setReceipts] = useState<Receipt[]>([]);
-  const [isReceiptsLoading, setIsReceiptsLoading] = useState(false);
+  const [isPendingInvoicesViewOpen, setPendingInvoicesViewOpen] = useState(false);
+  const [selectedInvoicesCustomer, setSelectedInvoicesCustomer] = useState<string | null>(null);
+  const [pendingInvoices, setPendingInvoices] = useState<Invoice[]>([]);
+  const [isPendingInvoicesLoading, setIsPendingInvoicesLoading] = useState(false);
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -183,33 +166,33 @@ export default function POSPage() {
   }, [toast]);
   
   useEffect(() => {
-    const fetchReceipts = async () => {
-        if (!selectedReceiptsCustomer) {
-            setReceipts([]);
+    const fetchPendingInvoices = async () => {
+        if (!selectedInvoicesCustomer) {
+            setPendingInvoices([]);
             return;
         }
-        setIsReceiptsLoading(true);
+        setIsPendingInvoicesLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/receipts/customer/${selectedReceiptsCustomer}`);
+            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedInvoicesCustomer}`);
             if (!response.ok) {
-                throw new Error('Failed to fetch receipts');
+                throw new Error('Failed to fetch pending invoices');
             }
             const data = await response.json();
-            setReceipts(data);
+            setPendingInvoices(data);
         } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not fetch receipts for this customer.',
+                description: 'Could not fetch invoices for this customer.',
             });
-            setReceipts([]);
+            setPendingInvoices([]);
         } finally {
-            setIsReceiptsLoading(false);
+            setIsPendingInvoicesLoading(false);
         }
     };
 
-    fetchReceipts();
-}, [selectedReceiptsCustomer, toast]);
+    fetchPendingInvoices();
+}, [selectedInvoicesCustomer, toast]);
 
   const handleFilterChange = async (type: 'category' | 'collection' | 'brand', value: string) => {
     setActiveFilter({ type, value });
@@ -495,9 +478,9 @@ export default function POSPage() {
           />
           <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setReceiptsViewOpen(prev => !prev)}>
-                {isReceiptsViewOpen ? <ArrowLeft className="mr-2 h-4 w-4" /> : <History className="mr-2 h-4 w-4" />} 
-                {isReceiptsViewOpen ? 'Back to Sale' : 'Receipts'}
+              <Button variant="outline" size="sm" onClick={() => setPendingInvoicesViewOpen(prev => !prev)}>
+                {isPendingInvoicesViewOpen ? <ArrowLeft className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />} 
+                {isPendingInvoicesViewOpen ? 'Back to Sale' : 'Pending Invoices'}
               </Button>
               <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Refund</Button>
               <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Return</Button>
@@ -509,14 +492,14 @@ export default function POSPage() {
            <div className="flex-1 flex">
             {/* Main Content */}
             <main className="flex-1 p-4">
-              {isReceiptsViewOpen ? (
+              {isPendingInvoicesViewOpen ? (
                  <Card>
                     <CardHeader>
-                      <CardTitle>View Past Receipts</CardTitle>
-                      <CardDescription>Select a customer to view their receipt history.</CardDescription>
+                      <CardTitle>View Pending Invoices</CardTitle>
+                      <CardDescription>Select a customer to view their pending invoices.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Select onValueChange={setSelectedReceiptsCustomer}>
+                        <Select onValueChange={setSelectedInvoicesCustomer}>
                             <SelectTrigger className="w-full md:w-1/2">
                                 <SelectValue placeholder="Select a customer..." />
                             </SelectTrigger>
@@ -526,35 +509,35 @@ export default function POSPage() {
                                 ))}
                             </SelectContent>
                         </Select>
-                        {selectedReceiptsCustomer && (
+                        {selectedInvoicesCustomer && (
                             <div className="border rounded-md">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Receipt ID</TableHead>
+                                            <TableHead>Invoice ID</TableHead>
                                             <TableHead>Date</TableHead>
                                             <TableHead className="text-right">Amount</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {isReceiptsLoading ? (
+                                        {isPendingInvoicesLoading ? (
                                              <TableRow>
                                                 <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                                                     <Loader2 className="h-6 w-6 animate-spin inline-block" />
                                                 </TableCell>
                                             </TableRow>
-                                        ) : receipts.length > 0 ? (
-                                            receipts.map(receipt => (
-                                                 <TableRow key={receipt.id}>
-                                                    <TableCell className="font-medium">{receipt.rec_number}</TableCell>
-                                                    <TableCell>{format(new Date(receipt.date), 'dd MMM yyyy')}</TableCell>
-                                                    <TableCell className="text-right font-mono">${parseFloat(receipt.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}</TableCell>
+                                        ) : pendingInvoices.length > 0 ? (
+                                            pendingInvoices.map(invoice => (
+                                                 <TableRow key={invoice.id}>
+                                                    <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                                                    <TableCell>{format(new Date(invoice.invoice_date), 'dd MMM yyyy')}</TableCell>
+                                                    <TableCell className="text-right font-mono">${parseFloat(invoice.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</TableCell>
                                                 </TableRow>
                                             ))
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                                                    No receipts found for this customer.
+                                                    No pending invoices found for this customer.
                                                 </TableCell>
                                             </TableRow>
                                         )}

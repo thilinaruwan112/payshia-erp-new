@@ -363,6 +363,8 @@ export type Invoice = {
     tendered_amount: string;
     close_type: string;
     invoice_status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+    payment_status: string;
+    chanel: string;
     current_time: string;
     location_id: string;
     table_id: string;
