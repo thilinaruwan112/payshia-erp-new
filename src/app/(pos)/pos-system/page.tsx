@@ -193,7 +193,7 @@ export default function POSPage() {
 
   const [currentCashier, setCurrentCashier] = useState<User>(defaultCashier);
   
-  const { currentLocation, isLoading: isLocationLoading, company_id } = useLocation();
+  const { currentLocation, isLoading: isLocationLoading, company_id, setCurrentLocation, availableLocations } = useLocation();
 
   useEffect(() => {
     async function fetchPosData() {
@@ -659,20 +659,38 @@ export default function POSPage() {
   }
 
   if (!currentLocation) {
+    const posLocations = availableLocations.filter(loc => loc.pos_status === '1');
     return (
         <div className="flex h-screen w-screen items-center justify-center p-4">
-             <Card className="text-center">
+             <Card className="text-center w-full max-w-lg">
                 <CardHeader>
-                    <CardTitle>No Location Found</CardTitle>
-                    <CardDescription>Could not find a location with POS enabled. Please check your locations settings in the admin dashboard.</CardDescription>
+                    <MapPin className="h-12 w-12 mx-auto text-primary" />
+                    <CardTitle className="mt-4">Select a Location</CardTitle>
+                    <CardDescription>Choose your current Point of Sale location to begin.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Button asChild>
-                        <Link href="/locations" target="_blank">
-                            Go to Locations
+                <CardContent className="space-y-4">
+                    {posLocations.length > 0 ? (
+                        posLocations.map(loc => (
+                            <Button 
+                                key={loc.location_id}
+                                className="w-full h-12 text-lg" 
+                                variant="outline"
+                                onClick={() => setCurrentLocation(loc)}
+                            >
+                                {loc.location_name}
+                            </Button>
+                        ))
+                    ) : (
+                        <p className="text-muted-foreground">No POS-enabled locations found. Please configure one in the admin dashboard.</p>
+                    )}
+                </CardContent>
+                 <CardFooter>
+                    <Button asChild className="w-full" variant="link">
+                        <Link href="/dashboard" target="_blank">
+                            Go to Admin Dashboard
                         </Link>
                     </Button>
-                </CardContent>
+                </CardFooter>
             </Card>
         </div>
     )

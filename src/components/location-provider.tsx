@@ -36,16 +36,10 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         let data: Location[] = await response.json();
         setAvailableLocations(data);
 
-        if (data.length > 0) {
-          let defaultLocation;
-          if (isPos) {
-            // For POS, find the first location with POS enabled
-            defaultLocation = data.find(l => l.pos_status === "1");
-          } else {
-            // For main app, use Downtown Store or first available
-            defaultLocation = data.find(l => l.location_name === 'Downtown Store') || data[0];
-          }
-          setCurrentLocation(defaultLocation || null);
+        if (data.length > 0 && !isPos) {
+            // Only set a default for the main app, not for POS
+            const defaultLocation = data.find(l => l.location_name === 'Downtown Store') || data[0];
+            setCurrentLocation(defaultLocation || null);
         }
       } catch (error) {
         toast({
