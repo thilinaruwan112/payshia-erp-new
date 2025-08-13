@@ -591,7 +591,21 @@ export default function POSPage() {
         )
     );
   };
-
+  
+  const updateOrderDetails = (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => {
+      setActiveOrders(prevOrders => prevOrders.map(order => {
+          if (order.id === orderId) {
+              const updatedOrder = { ...order, ...newDetails };
+              if (newDetails.tableName) {
+                  updatedOrder.name = newDetails.tableName;
+              } else if (newDetails.orderType) {
+                   updatedOrder.name = `${newDetails.orderType} #${order.id.slice(-4)}`;
+              }
+              return updatedOrder;
+          }
+          return order;
+      }));
+  };
 
   const filteredProducts = useMemo(() => {
     let productsToFilter = posProducts;
@@ -671,6 +685,9 @@ export default function POSPage() {
         onClose={() => setDrawerOpen(false)}
         setDiscount={setDiscount}
         setServiceCharge={setServiceCharge}
+        onUpdateDetails={updateOrderDetails}
+        availableTables={tables}
+        availableStewards={users.filter(u => u.role !== 'Customer')}
      />
   ) : (
       <div className="flex flex-col h-full bg-card items-center justify-center text-center p-8">
@@ -882,7 +899,6 @@ export default function POSPage() {
                         )}
                     </DialogContent>
                 </Dialog>
-               <Button variant="outline" size="icon"><Settings className="h-4 w-4" /></Button>
             </div>
           </div>
            <div className="flex-1 flex overflow-hidden">

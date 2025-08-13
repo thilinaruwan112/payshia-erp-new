@@ -4,7 +4,7 @@
 
 import React from 'react';
 import type { CartItem, OrderInfo, ActiveOrder } from '@/app/(pos)/pos-system/page';
-import type { User } from '@/lib/types';
+import type { User, Table as TableType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -21,6 +21,7 @@ import {
   PlusSquare,
   Star,
   UserCheck,
+  Settings,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -32,11 +33,14 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogClose,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { CustomerFormDialog } from '../customer-form-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 
 interface OrderPanelProps {
   order: ActiveOrder;
@@ -51,6 +55,9 @@ interface OrderPanelProps {
   onClose?: () => void;
   setDiscount: (discount: number) => void;
   setServiceCharge: (serviceCharge: number) => void;
+  onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
+  availableTables: TableType[];
+  availableStewards: User[];
 }
 
 const PaymentDialog = ({
@@ -159,6 +166,79 @@ const DiscountDialog = ({
   );
 };
 
+
+const EditOrderDialog = ({ order, onUpdateDetails, availableTables, availableStewards, onClose }: { 
+    order: ActiveOrder;
+    onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
+    availableTables: TableType[];
+    availableStewards: User[];
+    onClose: () => void;
+}) => {
+    const [orderType, setOrderType] = React.useState(order.orderType);
+    const [tableName, setTableName] = React.useState(order.tableName);
+    const [steward, setSteward] = React.useState(order.steward);
+
+    const handleSaveChanges = () => {
+        onUpdateDetails(order.id, {
+            orderType,
+            tableName: orderType === 'Dine-In' ? tableName : undefined,
+            steward: orderType === 'Dine-In' ? steward : undefined,
+        });
+        onClose();
+    }
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Edit Order Details</DialogTitle>
+                <DialogDescription>Change the order type, table, or assigned steward.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                 <div className="space-y-2">
+                    <Label>Order Type</Label>
+                    <RadioGroup value={orderType} onValueChange={(value) => setOrderType(value as ActiveOrder['orderType'])}>
+                        <div className="flex items-center space-x-4">
+                           <div className="flex items-center space-x-2"><RadioGroupItem value="Take Away" id="r-takeaway" /><Label htmlFor="r-takeaway">Take Away</Label></div>
+                           <div className="flex items-center space-x-2"><RadioGroupItem value="Delivery" id="r-delivery" /><Label htmlFor="r-delivery">Delivery</Label></div>
+                           <div className="flex items-center space-x-2"><RadioGroupItem value="Dine-In" id="r-dinein" /><Label htmlFor="r-dinein">Dine-In</Label></div>
+                        </div>
+                    </RadioGroup>
+                </div>
+                {orderType === 'Dine-In' && (
+                    <>
+                     <div className="space-y-2">
+                        <Label>Table</Label>
+                        <Select onValueChange={setTableName} value={tableName}>
+                            <SelectTrigger><SelectValue placeholder="Select a table" /></SelectTrigger>
+                            <SelectContent>
+                                {availableTables.map(table => (
+                                    <SelectItem key={table.id} value={table.table_name}>{table.table_name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Steward</Label>
+                         <Select onValueChange={(id) => setSteward(availableStewards.find(s => s.id === id))} value={steward?.id}>
+                            <SelectTrigger><SelectValue placeholder="Select a steward" /></SelectTrigger>
+                            <SelectContent>
+                                {availableStewards.map(s => (
+                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                )}
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={onClose}>Cancel</Button>
+                <Button onClick={handleSaveChanges}>Save Changes</Button>
+            </DialogFooter>
+        </DialogContent>
+    )
+}
+
 export function OrderPanel({
   order,
   orderTotals,
@@ -172,13 +252,17 @@ export function OrderPanel({
   onClose,
   setDiscount,
   setServiceCharge,
+  onUpdateDetails,
+  availableTables,
+  availableStewards,
 }: OrderPanelProps) {
   const { toast } = useToast();
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
   const [isEditingServiceCharge, setIsEditingServiceCharge] = React.useState(false);
+  const [isEditOrderOpen, setEditOrderOpen] = React.useState(false);
 
-  const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward } = order;
+  const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
 
   const handleSuccessfulPayment = async (paymentMethod: string) => {
     // This is a simplified simulation. A real app would have a robust backend process.
@@ -207,7 +291,21 @@ export function OrderPanel({
     <div className="flex flex-col h-full bg-card">
       <header className="p-4 border-b border-border flex items-center justify-between">
         <h2 className="text-xl font-bold">{orderName}</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+            <Dialog open={isEditOrderOpen} onOpenChange={setEditOrderOpen}>
+                <DialogTrigger asChild>
+                     <Button variant="ghost" size="icon">
+                        <Settings className="h-5 w-5" />
+                    </Button>
+                </DialogTrigger>
+                <EditOrderDialog 
+                    order={order}
+                    onUpdateDetails={onUpdateDetails}
+                    availableTables={availableTables}
+                    availableStewards={availableStewards}
+                    onClose={() => setEditOrderOpen(false)}
+                />
+            </Dialog>
             <CustomerFormDialog onCustomerCreated={handleCustomerCreated}>
                  <Button variant="ghost" size="icon" className="text-muted-foreground">
                     <UserPlus className="h-5 w-5" />
