@@ -8,7 +8,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -35,6 +35,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { CustomerFormDialog } from '@/components/customer-form-dialog';
+
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -49,7 +51,7 @@ export type CartItem = {
 
 export type OrderInfo = {
   subtotal: number;
-  tax: number;
+  serviceCharge: number;
   discount: number; // Order-level discount
   itemDiscounts: number; // Sum of all item-level discounts
   total: number;
@@ -338,6 +340,32 @@ export default function POSPage() {
     setCurrentOrderId(newOrder.id);
   };
   
+  const handleSendToKitchen = () => {
+    if (!currentOrder || currentOrder.cart.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Cart is empty',
+        description: 'Cannot send an empty order to the kitchen.',
+      });
+      return;
+    }
+    const orderData = {
+        orderId: currentOrder.id,
+        orderName: currentOrder.name,
+        cashierName: currentCashier.name,
+        items: currentOrder.cart.map(item => ({ name: item.product.variantName, quantity: item.quantity })),
+    };
+    
+    const encodedData = btoa(JSON.stringify(orderData));
+    window.open(`/pos/kot/${currentOrder.id}?data=${encodedData}`, '_blank');
+    
+    toast({
+      title: 'KOT Sent!',
+      description: `Order for ${currentOrder.name} sent to the kitchen.`,
+      icon: <ChefHat className="h-6 w-6 text-green-500" />,
+    });
+  };
+
   // Start with one order on load
   React.useEffect(() => {
     if (activeOrders.length === 0) {
@@ -440,32 +468,6 @@ export default function POSPage() {
     setDrawerOpen(false); // Close drawer after clearing cart
   };
 
-  const handleSendToKitchen = () => {
-    if (!currentOrder || currentOrder.cart.length === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Cart is empty',
-        description: 'Cannot send an empty order to the kitchen.',
-      });
-      return;
-    }
-    const orderData = {
-        orderId: currentOrder.id,
-        orderName: currentOrder.name,
-        cashierName: currentCashier.name,
-        items: currentOrder.cart.map(item => ({ name: item.product.variantName, quantity: item.quantity })),
-    };
-    
-    const encodedData = btoa(JSON.stringify(orderData));
-    window.open(`/pos/kot/${currentOrder.id}?data=${encodedData}`, '_blank');
-    
-    toast({
-      title: 'KOT Sent!',
-      description: `Order for ${currentOrder.name} sent to the kitchen.`,
-      icon: <ChefHat className="h-6 w-6 text-green-500" />,
-    });
-  };
-
   const setDiscount = (newDiscount: number) => {
     if (!currentOrderId) return;
      setActiveOrders((prevOrders) =>
@@ -504,16 +506,15 @@ export default function POSPage() {
   }, [currentOrder]);
 
   const orderTotals = useMemo((): OrderInfo => {
-     if (!currentOrder) return { subtotal: 0, tax: 0, discount: 0, itemDiscounts: 0, total: 0 };
+     if (!currentOrder) return { subtotal: 0, serviceCharge: 0, discount: 0, itemDiscounts: 0, total: 0 };
      const subtotal = currentOrder.cart.reduce(
         (acc, item) => acc + (item.product.price as number) * item.quantity,
         0
       );
       const itemDiscounts = currentOrder.cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
-      const taxRate = 0.08;
-      const tax = (subtotal - itemDiscounts) * taxRate;
-      const total = subtotal - itemDiscounts + tax - currentOrder.discount;
-      return { subtotal, tax, discount: currentOrder.discount, itemDiscounts, total };
+      const serviceCharge = 0; // Or calculate based on your rules
+      const total = subtotal - itemDiscounts + serviceCharge - currentOrder.discount;
+      return { subtotal, serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
   }, [currentOrder]);
 
    if (isLocationLoading) {

@@ -221,7 +221,7 @@ export function OrderPanel({
         <div className='flex items-center justify-between'>
             <div className='flex items-center gap-3'>
                 <Avatar className='h-12 w-12'>
-                    <AvatarImage src={customer.avatar} alt={customer.name} data-ai-hint="profile picture"/>
+                    <AvatarImage src={customer.avatar} alt={customer.name} data-ai-hint="profile photo"/>
                     <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div>
@@ -318,8 +318,8 @@ export function OrderPanel({
           <span>-${orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span>Tax ({(0.08 * 100).toFixed(0)}%)</span>
-          <span>${orderTotals.tax.toFixed(2)}</span>
+          <span>Service Charge</span>
+          <span>${orderTotals.serviceCharge.toFixed(2)}</span>
         </div>
          <div className="flex justify-between text-sm text-green-600">
           <span>Order Discount</span>
