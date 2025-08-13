@@ -49,6 +49,7 @@ interface OrderPanelProps {
   isDrawer?: boolean;
   onClose?: () => void;
   setDiscount: (discount: number) => void;
+  setServiceCharge: (serviceCharge: number) => void;
 }
 
 const PaymentDialog = ({
@@ -169,12 +170,14 @@ export function OrderPanel({
   isDrawer,
   onClose,
   setDiscount,
+  setServiceCharge,
 }: OrderPanelProps) {
   const { toast } = useToast();
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
+  const [isEditingServiceCharge, setIsEditingServiceCharge] = React.useState(false);
 
-  const { cart, customer, name: orderName, discount, id: orderId } = order;
+  const { cart, customer, name: orderName, discount, serviceCharge, id: orderId } = order;
 
   const handleSuccessfulPayment = async (paymentMethod: string) => {
     // This is a simplified simulation. A real app would have a robust backend process.
@@ -318,7 +321,26 @@ export function OrderPanel({
           <span>-${orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span>Service Charge</span>
+            {isEditingServiceCharge ? (
+                <div className="flex items-center gap-2 w-full">
+                    <Label htmlFor="service-charge-input" className="whitespace-nowrap">Service Charge</Label>
+                    <Input
+                        id="service-charge-input"
+                        type="number"
+                        className="h-8 text-right"
+                        placeholder="0.00"
+                        value={serviceCharge === 0 ? '' : serviceCharge}
+                        onChange={(e) => setServiceCharge(Number(e.target.value) || 0)}
+                        onBlur={() => setIsEditingServiceCharge(false)}
+                        autoFocus
+                    />
+                </div>
+            ) : (
+                <Button variant="ghost" size="sm" className="p-0 h-auto" onClick={() => setIsEditingServiceCharge(true)}>
+                    <PlusSquare className="h-4 w-4 mr-2" />
+                    Service Charge
+                </Button>
+            )}
           <span>${orderTotals.serviceCharge.toFixed(2)}</span>
         </div>
          <div className="flex justify-between text-sm text-green-600">

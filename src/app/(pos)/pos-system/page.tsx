@@ -62,6 +62,7 @@ export type ActiveOrder = {
   name: string;
   cart: CartItem[];
   discount: number; // Order-level discount
+  serviceCharge: number;
   customer: User;
 };
 
@@ -334,6 +335,7 @@ export default function POSPage() {
       name: `Order #${orderCounter++}`,
       cart: [],
       discount: 0,
+      serviceCharge: 0,
       customer: walkInCustomer, // Default to a walk-in customer
     };
     setActiveOrders((prev) => [...prev, newOrder]);
@@ -365,6 +367,7 @@ export default function POSPage() {
       icon: <ChefHat className="h-6 w-6 text-green-500" />,
     });
   };
+
 
   // Start with one order on load
   React.useEffect(() => {
@@ -477,6 +480,16 @@ export default function POSPage() {
     );
   }
 
+  const setServiceCharge = (newServiceCharge: number) => {
+    if (!currentOrderId) return;
+    setActiveOrders((prevOrders) =>
+        prevOrders.map((order) =>
+            order.id === currentOrderId ? { ...order, serviceCharge: newServiceCharge } : order
+        )
+    );
+  };
+
+
   const filteredProducts = useMemo(() => {
     let productsToFilter = posProducts;
     
@@ -512,9 +525,8 @@ export default function POSPage() {
         0
       );
       const itemDiscounts = currentOrder.cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
-      const serviceCharge = 0; // Or calculate based on your rules
-      const total = subtotal - itemDiscounts + serviceCharge - currentOrder.discount;
-      return { subtotal, serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
+      const total = subtotal - itemDiscounts + currentOrder.serviceCharge - currentOrder.discount;
+      return { subtotal, serviceCharge: currentOrder.serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
   }, [currentOrder]);
 
    if (isLocationLoading) {
@@ -555,6 +567,7 @@ export default function POSPage() {
         isDrawer={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
         setDiscount={setDiscount}
+        setServiceCharge={setServiceCharge}
      />
   ) : (
       <div className="flex flex-col h-full bg-card items-center justify-center text-center p-8">
