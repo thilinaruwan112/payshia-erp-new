@@ -483,14 +483,6 @@ export function OrderPanel({
              <Button variant="outline" onClick={onHoldOrder} disabled={cart.length === 0} className="h-12">
                 <Notebook className="mr-2 h-4 w-4" /> Hold
             </Button>
-            <Button
-              variant="outline"
-              onClick={onSendToKitchen}
-              className="col-span-2 h-12"
-              disabled={cart.length === 0}
-            >
-              <ChefHat className="mr-2 h-4 w-4" /> Send KOT/BOT
-            </Button>
         </div>
         <Dialog open={isPaymentOpen} onOpenChange={setPaymentOpen}>
           <DialogTrigger asChild>
