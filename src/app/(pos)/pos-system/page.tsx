@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Invoice, ActiveOrder, CartItem } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand, Invoice, ActiveOrder, CartItem, Table as TableType } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -72,15 +72,24 @@ interface BalanceDetails {
 
 let orderCounter = 1;
 
-const OrderTypeSelection = ({ onSelectOrderType, onSelectTable }: { onSelectOrderType: (type: ActiveOrder['orderType']) => void; onSelectTable: (type: ActiveOrder['orderType'], name: string) => void }) => {
-    const tables = [
-        { name: 'Table 01', status: 'Dine-In', available: false },
-        { name: 'Table 02', status: 'Dine-In', available: false },
-        { name: 'Couple T3', status: 'Dine-In', available: true },
-        { name: 'Outdoor T4', status: 'Dine-In', available: true },
-        { name: 'Table 05', status: 'Dine-In', available: true },
-        { name: 'Table 06', status: 'Dine-In', available: true },
-    ];
+const OrderTypeSelection = ({ 
+    onSelectOrderType, 
+    onSelectTable,
+    tables,
+    isLoadingTables,
+    activeOrders
+}: { 
+    onSelectOrderType: (type: ActiveOrder['orderType']) => void; 
+    onSelectTable: (type: ActiveOrder['orderType'], name: string) => void;
+    tables: TableType[];
+    isLoadingTables: boolean;
+    activeOrders: ActiveOrder[];
+}) => {
+    
+    const isTableInUse = (tableName: string) => {
+        return activeOrders.some(order => order.tableName === tableName);
+    }
+
     return (
         <DialogContent className="max-w-4xl">
             <DialogHeader>
@@ -101,16 +110,22 @@ const OrderTypeSelection = ({ onSelectOrderType, onSelectTable }: { onSelectOrde
                 </div>
                 <div>
                     <h2 className="text-2xl font-bold mb-4">Set Table</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                        {tables.map(table => (
-                            <Card key={table.name} className="p-4 cursor-pointer hover:border-primary" onClick={() => onSelectTable('Dine-In', table.name)}>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Badge>{table.status}</Badge>
-                                    <Badge variant={table.available ? 'default' : 'destructive'} className={cn(table.available && 'bg-green-500')}>{table.available ? 'Available' : 'N/A'}</Badge>
-                                </div>
-                                <p className="text-lg font-bold">{table.name}</p>
-                            </Card>
-                        ))}
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+                        {isLoadingTables ? (
+                            Array.from({length: 8}).map((_, i) => <Card key={i} className="p-4 h-24 animate-pulse bg-muted"></Card>)
+                        ) : (
+                            tables.map(table => {
+                                const inUse = isTableInUse(table.table_name);
+                                return (
+                                <Card key={table.id} className="p-4 cursor-pointer hover:border-primary" onClick={() => onSelectTable('Dine-In', table.table_name)}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Badge>Dine-In</Badge>
+                                        <Badge variant={!inUse ? 'default' : 'destructive'} className={cn(!inUse && 'bg-green-500')}>{!inUse ? 'Available' : 'In Use'}</Badge>
+                                    </div>
+                                    <p className="text-lg font-bold">{table.table_name}</p>
+                                </Card>
+                            )})
+                        )}
                     </div>
                 </div>
             </main>
@@ -124,6 +139,8 @@ export default function POSPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [customers, setCustomers] = useState<User[]>([]);
+  const [tables, setTables] = useState<TableType[]>([]);
+  const [isLoadingTables, setIsLoadingTables] = useState(false);
   const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
@@ -256,6 +273,33 @@ export default function POSPage() {
       fetchPendingInvoices();
     }
   }, [selectedReceiptsCustomer, toast, company_id, isPendingInvoicesDialogOpen]);
+  
+  useEffect(() => {
+    const fetchTables = async () => {
+        setIsLoadingTables(true);
+        try {
+            const response = await fetch('https://server-erp.payshia.com/master-tables');
+            if (!response.ok) {
+                throw new Error('Failed to fetch tables');
+            }
+            const data = await response.json();
+            setTables(data);
+        } catch (error) {
+             toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not fetch tables data.',
+            });
+            setTables([]);
+        } finally {
+            setIsLoadingTables(false);
+        }
+    };
+
+    if(isNewOrderDialogOpen) {
+        fetchTables();
+    }
+  }, [isNewOrderDialogOpen, toast]);
 
   const handleInvoiceSelect = async (invoice: Invoice) => {
     setSelectedInvoiceForPayment(invoice);
@@ -783,7 +827,13 @@ export default function POSPage() {
                             <Plus className="mr-2 h-4 w-4" /> New Order
                         </Button>
                     </DialogTrigger>
-                    <OrderTypeSelection onSelectOrderType={createNewOrder} onSelectTable={createNewOrder} />
+                    <OrderTypeSelection 
+                        onSelectOrderType={createNewOrder} 
+                        onSelectTable={createNewOrder} 
+                        tables={tables}
+                        isLoadingTables={isLoadingTables}
+                        activeOrders={activeOrders}
+                    />
                 </Dialog>
                <Button variant="outline" size="icon"><Settings className="h-4 w-4" /></Button>
             </div>
@@ -893,4 +943,3 @@ export default function POSPage() {
     </>
   );
 }
-

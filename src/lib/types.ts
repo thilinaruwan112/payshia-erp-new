@@ -442,3 +442,13 @@ export type CartItem = {
   quantity: number;
   itemDiscount?: number;
 };
+
+export type Table = {
+    id: string;
+    table_name: string;
+    is_active: string;
+    created_at: string;
+    created_by: string;
+    location_id: string;
+    company_id: string;
+}
