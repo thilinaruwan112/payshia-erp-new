@@ -606,6 +606,12 @@ export default function POSPage() {
           return order;
       }));
   };
+  
+  const updateCustomer = (orderId: string, customer: User) => {
+    setActiveOrders(prevOrders => prevOrders.map(order => 
+        order.id === orderId ? { ...order, customer } : order
+    ));
+  }
 
   const filteredProducts = useMemo(() => {
     let productsToFilter = posProducts;
@@ -688,6 +694,8 @@ export default function POSPage() {
         onUpdateDetails={updateOrderDetails}
         availableTables={tables}
         availableStewards={users.filter(u => u.role !== 'Customer')}
+        customers={customers}
+        onUpdateCustomer={updateCustomer}
      />
   ) : (
       <div className="flex flex-col h-full bg-card items-center justify-center text-center p-8">

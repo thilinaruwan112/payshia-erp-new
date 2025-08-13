@@ -58,6 +58,8 @@ interface OrderPanelProps {
   onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
   availableTables: TableType[];
   availableStewards: User[];
+  customers: User[];
+  onUpdateCustomer: (orderId: string, customer: User) => void;
 }
 
 const PaymentDialog = ({
@@ -255,6 +257,8 @@ export function OrderPanel({
   onUpdateDetails,
   availableTables,
   availableStewards,
+  customers,
+  onUpdateCustomer,
 }: OrderPanelProps) {
   const { toast } = useToast();
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
@@ -282,9 +286,7 @@ export function OrderPanel({
   };
   
   const handleCustomerCreated = (newCustomer: User) => {
-    console.log("New customer created:", newCustomer);
-    // Here you would typically update the order's customer state
-    // For now, we just log it.
+    onUpdateCustomer(orderId, newCustomer);
   }
 
   return (
@@ -306,11 +308,6 @@ export function OrderPanel({
                     onClose={() => setEditOrderOpen(false)}
                 />
             </Dialog>
-            <CustomerFormDialog onCustomerCreated={handleCustomerCreated}>
-                 <Button variant="ghost" size="icon" className="text-muted-foreground">
-                    <UserPlus className="h-5 w-5" />
-                </Button>
-            </CustomerFormDialog>
              {isDrawer && (
                 <Button variant="ghost" size="icon" onClick={onClose}>
                     <X className="h-5 w-5" />
@@ -329,20 +326,33 @@ export function OrderPanel({
       )}
 
       <div className='p-4 border-b border-border'>
-        <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-3'>
-                <Avatar className='h-12 w-12'>
-                    <AvatarImage src={customer.avatar} alt={customer.name} data-ai-hint="profile photo"/>
-                    <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <p className='font-semibold'>{customer.name}</p>
-                    <p className='text-xs text-muted-foreground'>{customer.role}</p>
-                </div>
+        <div className='flex items-center gap-3'>
+            <div className="flex-1">
+                <Select value={customer.customer_id} onValueChange={(customerId) => {
+                    const newCustomer = customers.find(c => c.customer_id === customerId);
+                    if (newCustomer) onUpdateCustomer(orderId, newCustomer);
+                }}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {customers.map(c => (
+                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
-            <div className='flex items-center gap-1.5 text-yellow-500'>
-                <Star className='h-5 w-5' />
-                <span className='font-bold text-lg'>{customer.loyaltyPoints || 0}</span>
+             <CustomerFormDialog onCustomerCreated={handleCustomerCreated}>
+                 <Button variant="outline" size="icon">
+                    <UserPlus className="h-5 w-5" />
+                </Button>
+            </CustomerFormDialog>
+        </div>
+         <div className='flex items-center justify-between mt-2 text-sm'>
+            <p className="text-muted-foreground">Loyalty Points</p>
+             <div className='flex items-center gap-1.5 text-yellow-500'>
+                <Star className='h-4 w-4' />
+                <span className='font-bold'>{customer.loyaltyPoints || 0}</span>
             </div>
         </div>
       </div>
