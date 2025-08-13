@@ -130,7 +130,6 @@ export default function CreateCompanyPage() {
     }
 
     return (
-       <div className="flex justify-center items-center min-h-screen p-4">
         <Card className="w-full max-w-3xl">
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -274,6 +273,5 @@ export default function CreateCompanyPage() {
                 </form>
             </Form>
         </Card>
-       </div>
     );
 }
