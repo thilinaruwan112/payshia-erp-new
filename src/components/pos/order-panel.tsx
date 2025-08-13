@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -44,7 +45,7 @@ interface OrderPanelProps {
   onRemoveItem: (variantId: string) => void;
   onClearCart: (invoiceId: string) => void;
   onHoldOrder: () => void;
-  onSendToKitchen: (orderId: string) => void;
+  onSendToKitchen: () => void;
   isDrawer?: boolean;
   onClose?: () => void;
   setDiscount: (discount: number) => void;
@@ -192,33 +193,6 @@ export function OrderPanel({
     onClearCart(mockInvoiceId); // Pass the new ID to clear the right order
   };
   
-  const handleSendToKitchen = () => {
-    if (!order || cart.length === 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Cart is empty',
-        description: 'Cannot send an empty order to the kitchen.',
-      });
-      return;
-    }
-
-    const orderData = {
-        orderId: order.id,
-        orderName: order.name,
-        cashierName: cashierName,
-        items: cart.map(item => ({ name: item.product.variantName, quantity: item.quantity })),
-    };
-    
-    const encodedData = btoa(JSON.stringify(orderData));
-    window.open(`/pos/kot/${order.id}?data=${encodedData}`, '_blank');
-    
-    toast({
-      title: 'KOT Sent!',
-      description: `Order for ${order.name} sent to the kitchen.`,
-      icon: <ChefHat className="h-6 w-6 text-green-500" />,
-    });
-  }
-
   const handleCustomerCreated = (newCustomer: User) => {
     console.log("New customer created:", newCustomer);
     // Here you would typically update the order's customer state
@@ -371,7 +345,7 @@ export function OrderPanel({
             </Button>
             <Button
               variant="outline"
-              onClick={handleSendToKitchen}
+              onClick={onSendToKitchen}
               className="col-span-2 h-12"
               disabled={cart.length === 0}
             >

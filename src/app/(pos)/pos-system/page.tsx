@@ -440,7 +440,7 @@ export default function POSPage() {
     setDrawerOpen(false); // Close drawer after clearing cart
   };
 
-  const sendToKitchen = () => {
+  const handleSendToKitchen = () => {
     if (!currentOrder || currentOrder.cart.length === 0) {
       toast({
         variant: 'destructive',
@@ -449,6 +449,16 @@ export default function POSPage() {
       });
       return;
     }
+    const orderData = {
+        orderId: currentOrder.id,
+        orderName: currentOrder.name,
+        cashierName: currentCashier.name,
+        items: currentOrder.cart.map(item => ({ name: item.product.variantName, quantity: item.quantity })),
+    };
+    
+    const encodedData = btoa(JSON.stringify(orderData));
+    window.open(`/pos/kot/${currentOrder.id}?data=${encodedData}`, '_blank');
+    
     toast({
       title: 'KOT Sent!',
       description: `Order for ${currentOrder.name} sent to the kitchen.`,
