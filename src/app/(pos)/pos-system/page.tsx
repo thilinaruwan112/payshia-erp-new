@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Invoice } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand, Invoice, ActiveOrder, CartItem } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -43,12 +43,6 @@ export type PosProduct = Product & {
   variantName: string;
 };
 
-export type CartItem = {
-  product: PosProduct;
-  quantity: number;
-  itemDiscount?: number;
-};
-
 export type OrderInfo = {
   subtotal: number;
   serviceCharge: number;
@@ -57,16 +51,6 @@ export type OrderInfo = {
   total: number;
 };
 
-export type ActiveOrder = {
-  id: string;
-  name: string;
-  cart: CartItem[];
-  discount: number; // Order-level discount
-  serviceCharge: number;
-  customer: User;
-  orderType: 'Take Away' | 'Retail' | 'Delivery' | 'Dine-In';
-  tableName?: string;
-};
 
 interface ProductWithVariants {
     product: Product;
@@ -98,21 +82,12 @@ const OrderTypeSelection = ({ onSelectOrderType, onSelectTable }: { onSelectOrde
         { name: 'Table 06', status: 'Dine-In', available: true },
     ];
     return (
-        <div className="flex-1 flex flex-col bg-muted/30">
-            <header className="p-4 flex items-center justify-between bg-card border-b">
-                <div className="flex items-center gap-3">
-                    <Pizza className="h-8 w-8 text-primary" />
-                    <h1 className="text-2xl font-bold">Payshia POS</h1>
-                </div>
-                 <div className="flex items-center gap-2">
-                    <Button variant="outline" className="bg-yellow-400 hover:bg-yellow-500 text-black"><Undo2 className="mr-2 h-4 w-4" />Return</Button>
-                    <Button variant="outline" className="bg-red-500 hover:bg-red-600 text-white"><Receipt className="mr-2 h-4 w-4" />Refund</Button>
-                    <Button variant="outline"><Menu className="mr-2 h-4 w-4" />Hold Bills</Button>
-                    <Button variant="outline" size="icon"><Maximize /></Button>
-                    <Button variant="ghost" size="icon"><RefreshCcw className="h-5 w-5" /></Button>
-                </div>
-            </header>
-            <main className="flex-1 p-8">
+        <DialogContent className="max-w-4xl">
+            <DialogHeader>
+                 <DialogTitle className="text-2xl">Create New Order</DialogTitle>
+                 <DialogDescription>Select an order type or choose a table for dine-in.</DialogDescription>
+            </DialogHeader>
+            <main className="p-2">
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                     <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Take Away')}>
                        Take Away
@@ -139,10 +114,7 @@ const OrderTypeSelection = ({ onSelectOrderType, onSelectTable }: { onSelectOrde
                     </div>
                 </div>
             </main>
-             <footer className="p-4 border-t bg-card">
-                 <Button variant="outline"><MapPin className="mr-2 h-4 w-4" /> Change Location</Button>
-            </footer>
-        </div>
+        </DialogContent>
     )
 }
 
@@ -161,6 +133,7 @@ export default function POSPage() {
   const [activeFilter, setActiveFilter] = useState<{type: 'category' | 'collection' | 'brand', value: string}>({type: 'category', value: 'All'});
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
+  const [isNewOrderDialogOpen, setNewOrderDialogOpen] = useState(false);
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
   const [selectedReceiptsCustomer, setSelectedReceiptsCustomer] = useState<string | null>(null);
   const [pendingInvoices, setPendingInvoices] = useState<Invoice[]>([]);
@@ -171,7 +144,6 @@ export default function POSPage() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Card');
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
-  const [posView, setPosView] = useState<'order-selection' | 'product-grid'>('order-selection');
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -403,7 +375,7 @@ export default function POSPage() {
     };
     setActiveOrders((prev) => [...prev, newOrder]);
     setCurrentOrderId(newOrder.id);
-    setPosView('product-grid');
+    setNewOrderDialogOpen(false);
   };
   
   const handleSendToKitchen = () => {
@@ -523,7 +495,7 @@ export default function POSPage() {
     setActiveOrders((prevOrders) =>
         prevOrders.filter((order) => order.id !== currentOrderId)
     );
-    setPosView('order-selection');
+    setCurrentOrderId(null);
     setDrawerOpen(false); // Close drawer after clearing cart
   };
 
@@ -607,10 +579,6 @@ export default function POSPage() {
             </Card>
         </div>
     )
-  }
-
-  if (posView === 'order-selection') {
-      return <OrderTypeSelection onSelectOrderType={createNewOrder} onSelectTable={createNewOrder} />;
   }
 
   const orderPanelComponent = currentOrder ? (
@@ -809,9 +777,14 @@ export default function POSPage() {
                       {heldOrdersList}
                   </DrawerContent>
               </Drawer>
-              <Button onClick={() => setPosView('order-selection')}>
-                  <Plus className="mr-2 h-4 w-4" /> New Order
-              </Button>
+              <Dialog open={isNewOrderDialogOpen} onOpenChange={setNewOrderDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button>
+                            <Plus className="mr-2 h-4 w-4" /> New Order
+                        </Button>
+                    </DialogTrigger>
+                    <OrderTypeSelection onSelectOrderType={createNewOrder} onSelectTable={createNewOrder} />
+                </Dialog>
                <Button variant="outline" size="icon"><Settings className="h-4 w-4" /></Button>
             </div>
           </div>
@@ -920,3 +893,4 @@ export default function POSPage() {
     </>
   );
 }
+
