@@ -137,7 +137,7 @@ export default function POSPage() {
             const brandsData: Brand[] = await brandsResponse.json();
             const customersData: User[] = await customersResponse.json();
             
-            const formattedCustomers = customersData.map(c => ({...c, name: `${c.customer_first_name} ${c.customer_last_name}`}));
+            const formattedCustomers = customersData.map(c => ({...c, id: c.customer_id, name: `${c.customer_first_name} ${c.customer_last_name}`}));
             setCustomers([walkInCustomer, ...formattedCustomers]);
 
             setCollections(collectionsData || []);
@@ -540,7 +540,7 @@ export default function POSPage() {
         onRemoveItem={removeFromCart}
         onClearCart={() => clearCart()}
         onHoldOrder={holdOrder}
-        onSendToKitchen={sendToKitchen}
+        onSendToKitchen={handleSendToKitchen}
         isDrawer={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
         setDiscount={setDiscount}
@@ -714,38 +714,34 @@ export default function POSPage() {
               <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Return</Button>
             </div>
             <div className="flex items-center gap-2">
-               <Button variant="outline" size="sm"><Settings className="mr-2 h-4 w-4" /> Settings</Button>
+               <Drawer>
+                  <DrawerTrigger asChild>
+                      <Button variant="outline">
+                          <NotebookPen className="mr-2 h-4 w-4" />
+                          Held Orders ({activeOrders.filter(o => o.id !== currentOrderId).length})
+                      </Button>
+                  </DrawerTrigger>
+                  <DrawerContent>
+                      {heldOrdersList}
+                  </DrawerContent>
+              </Drawer>
+              <Button onClick={createNewOrder}>
+                  <Plus className="mr-2 h-4 w-4" /> New Order
+              </Button>
+               <Button variant="outline" size="icon"><Settings className="h-4 w-4" /></Button>
             </div>
           </div>
            <div className="flex-1 flex overflow-hidden">
             {/* Main Content */}
-            <main className="flex-1 p-4 overflow-y-auto">
-                <>
-                  <div className="flex justify-end gap-2 mb-4">
-                    <Drawer>
-                        <DrawerTrigger asChild>
-                            <Button variant="outline" size="lg">
-                                <NotebookPen className="mr-2 h-4 w-4" />
-                                Held Orders ({activeOrders.filter(o => o.id !== currentOrderId).length})
-                            </Button>
-                        </DrawerTrigger>
-                        <DrawerContent>
-                            {heldOrdersList}
-                        </DrawerContent>
-                    </Drawer>
-                    <Button onClick={createNewOrder} size="lg">
-                        <Plus className="mr-2 h-4 w-4" /> New Order
-                    </Button>
-                  </div>
-                  {isLoadingProducts ? (
-                    <div className="flex items-center justify-center h-[calc(100vh-250px)]">
-                      <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                    </div>
-                  ) : (
-                      <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
-                  )}
-                </>
-            </main>
+            <ScrollArea className="flex-1 p-4">
+              {isLoadingProducts ? (
+                <div className="flex items-center justify-center h-[calc(100vh-250px)]">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                </div>
+              ) : (
+                  <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
+              )}
+            </ScrollArea>
             {/* Category Sidebar */}
             <aside className="hidden md:block w-48 border-l border-border overflow-y-auto">
                 <ScrollArea className="h-full p-2">
