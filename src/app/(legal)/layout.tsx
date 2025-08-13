@@ -22,6 +22,11 @@ export default function LegalLayout({
                 Login
               </Link>
             </Button>
+             <Button asChild>
+              <Link href="/register">
+                Sign Up
+              </Link>
+            </Button>
           </nav>
         </div>
       </header>
