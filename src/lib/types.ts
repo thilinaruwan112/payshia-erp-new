@@ -425,3 +425,20 @@ export type Size = {
     id: string;
     value: string;
 }
+
+export type ActiveOrder = {
+  id: string;
+  name: string;
+  cart: CartItem[];
+  discount: number;
+  serviceCharge: number;
+  customer: User;
+  orderType: 'Take Away' | 'Retail' | 'Delivery' | 'Dine-In';
+  tableName?: string;
+};
+
+export type CartItem = {
+  product: Product & { variant: ProductVariant; variantName: string };
+  quantity: number;
+  itemDiscount?: number;
+};

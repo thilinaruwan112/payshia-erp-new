@@ -8,7 +8,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -64,6 +64,8 @@ export type ActiveOrder = {
   discount: number; // Order-level discount
   serviceCharge: number;
   customer: User;
+  orderType: 'Take Away' | 'Retail' | 'Delivery' | 'Dine-In';
+  tableName?: string;
 };
 
 interface ProductWithVariants {
@@ -85,6 +87,64 @@ interface BalanceDetails {
 }
 
 let orderCounter = 1;
+
+const OrderTypeSelection = ({ onSelectOrderType, onSelectTable }: { onSelectOrderType: (type: ActiveOrder['orderType']) => void; onSelectTable: (type: ActiveOrder['orderType'], name: string) => void }) => {
+    const tables = [
+        { name: 'Table 01', status: 'Dine-In', available: false },
+        { name: 'Table 02', status: 'Dine-In', available: false },
+        { name: 'Couple T3', status: 'Dine-In', available: true },
+        { name: 'Outdoor T4', status: 'Dine-In', available: true },
+        { name: 'Table 05', status: 'Dine-In', available: true },
+        { name: 'Table 06', status: 'Dine-In', available: true },
+    ];
+    return (
+        <div className="flex-1 flex flex-col bg-muted/30">
+            <header className="p-4 flex items-center justify-between bg-card border-b">
+                <div className="flex items-center gap-3">
+                    <Pizza className="h-8 w-8 text-primary" />
+                    <h1 className="text-2xl font-bold">Payshia POS</h1>
+                </div>
+                 <div className="flex items-center gap-2">
+                    <Button variant="outline" className="bg-yellow-400 hover:bg-yellow-500 text-black"><Undo2 className="mr-2 h-4 w-4" />Return</Button>
+                    <Button variant="outline" className="bg-red-500 hover:bg-red-600 text-white"><Receipt className="mr-2 h-4 w-4" />Refund</Button>
+                    <Button variant="outline"><Menu className="mr-2 h-4 w-4" />Hold Bills</Button>
+                    <Button variant="outline" size="icon"><Maximize /></Button>
+                    <Button variant="ghost" size="icon"><RefreshCcw className="h-5 w-5" /></Button>
+                </div>
+            </header>
+            <main className="flex-1 p-8">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                    <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Take Away')}>
+                       Take Away
+                    </Card>
+                     <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Retail')}>
+                       Retail
+                    </Card>
+                     <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Delivery')}>
+                       Delivery
+                    </Card>
+                </div>
+                <div>
+                    <h2 className="text-2xl font-bold mb-4">Set Table</h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        {tables.map(table => (
+                            <Card key={table.name} className="p-4 cursor-pointer hover:border-primary" onClick={() => onSelectTable('Dine-In', table.name)}>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Badge>{table.status}</Badge>
+                                    <Badge variant={table.available ? 'default' : 'destructive'} className={cn(table.available && 'bg-green-500')}>{table.available ? 'Available' : 'N/A'}</Badge>
+                                </div>
+                                <p className="text-lg font-bold">{table.name}</p>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            </main>
+             <footer className="p-4 border-t bg-card">
+                 <Button variant="outline"><MapPin className="mr-2 h-4 w-4" /> Change Location</Button>
+            </footer>
+        </div>
+    )
+}
 
 export default function POSPage() {
   const { toast } = useToast();
@@ -111,6 +171,7 @@ export default function POSPage() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Card');
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [posView, setPosView] = useState<'order-selection' | 'product-grid'>('order-selection');
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -329,17 +390,20 @@ export default function POSPage() {
     [activeOrders, currentOrderId]
   );
   
-  const createNewOrder = () => {
+  const createNewOrder = (orderType: ActiveOrder['orderType'], tableName?: string) => {
     const newOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
-      name: `Order #${orderCounter++}`,
+      name: tableName ? tableName : `${orderType} #${orderCounter++}`,
       cart: [],
       discount: 0,
       serviceCharge: 0,
       customer: walkInCustomer, // Default to a walk-in customer
+      orderType,
+      tableName,
     };
     setActiveOrders((prev) => [...prev, newOrder]);
     setCurrentOrderId(newOrder.id);
+    setPosView('product-grid');
   };
   
   const handleSendToKitchen = () => {
@@ -367,14 +431,6 @@ export default function POSPage() {
       icon: <ChefHat className="h-6 w-6 text-green-500" />,
     });
   };
-
-
-  // Start with one order on load
-  React.useEffect(() => {
-    if (activeOrders.length === 0) {
-      createNewOrder();
-    }
-  }, [activeOrders.length]);
 
   const handleProductSelect = (product: PosProduct) => {
     if (!currentOrderId) {
@@ -467,7 +523,7 @@ export default function POSPage() {
     setActiveOrders((prevOrders) =>
         prevOrders.filter((order) => order.id !== currentOrderId)
     );
-    createNewOrder(); // Create a new empty order after clearing the paid one
+    setPosView('order-selection');
     setDrawerOpen(false); // Close drawer after clearing cart
   };
 
@@ -551,6 +607,10 @@ export default function POSPage() {
             </Card>
         </div>
     )
+  }
+
+  if (posView === 'order-selection') {
+      return <OrderTypeSelection onSelectOrderType={createNewOrder} onSelectTable={createNewOrder} />;
   }
 
   const orderPanelComponent = currentOrder ? (
@@ -749,7 +809,7 @@ export default function POSPage() {
                       {heldOrdersList}
                   </DrawerContent>
               </Drawer>
-              <Button onClick={createNewOrder}>
+              <Button onClick={() => setPosView('order-selection')}>
                   <Plus className="mr-2 h-4 w-4" /> New Order
               </Button>
                <Button variant="outline" size="icon"><Settings className="h-4 w-4" /></Button>
