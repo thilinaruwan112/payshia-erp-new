@@ -441,6 +441,7 @@ export default function POSPage() {
       cart: [],
       discount: 0,
       serviceCharge: 0,
+      serviceChargeEnabled: false,
       customer: walkInCustomer,
       orderType,
       tableName,
@@ -583,12 +584,12 @@ export default function POSPage() {
     );
   }
 
-  const setServiceCharge = (newServiceCharge: number) => {
+  const toggleServiceCharge = (enabled: boolean) => {
     if (!currentOrderId) return;
     setActiveOrders((prevOrders) =>
-        prevOrders.map((order) =>
-            order.id === currentOrderId ? { ...order, serviceCharge: newServiceCharge } : order
-        )
+      prevOrders.map((order) =>
+        order.id === currentOrderId ? { ...order, serviceChargeEnabled: enabled } : order
+      )
     );
   };
   
@@ -648,8 +649,9 @@ export default function POSPage() {
         0
       );
       const itemDiscounts = currentOrder.cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
-      const total = subtotal - itemDiscounts + currentOrder.serviceCharge - currentOrder.discount;
-      return { subtotal, serviceCharge: currentOrder.serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
+      const serviceCharge = currentOrder.serviceChargeEnabled ? subtotal * 0.10 : 0;
+      const total = subtotal - itemDiscounts + serviceCharge - currentOrder.discount;
+      return { subtotal, serviceCharge: serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
   }, [currentOrder]);
 
    if (isLocationLoading) {
@@ -690,7 +692,7 @@ export default function POSPage() {
         isDrawer={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
         setDiscount={setDiscount}
-        setServiceCharge={setServiceCharge}
+        toggleServiceCharge={toggleServiceCharge}
         onUpdateDetails={updateOrderDetails}
         availableTables={tables}
         availableStewards={users.filter(u => u.role !== 'Customer')}
