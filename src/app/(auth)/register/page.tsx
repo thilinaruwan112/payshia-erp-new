@@ -17,15 +17,28 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Truck, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const registerFormSchema = z.object({
-  fullName: z.string().min(3, { message: "Full name must be at least 3 characters." }),
+  first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
+  last_name: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email address." }),
+  user_name: z.string().min(3, { message: "Username must be at least 3 characters." }),
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  sex: z.string().min(1, { message: "Please select a gender." }),
+  addressl1: z.string().min(3, { message: "Address is required." }),
+  addressl2: z.string().optional(),
+  city: z.string().min(2, { message: "City is required." }),
+  PNumber: z.string().min(10, { message: "A valid phone number is required." }),
+  WPNumber: z.string().optional(),
+  civil_status: z.string().min(1, { message: "Please select a civil status." }),
+  nic_number: z.string().min(10, { message: "NIC number is required." }),
+  img_path: z.string().url({ message: "Please enter a valid URL." }).optional().or(z.literal('')),
 });
 
 type RegisterFormValues = z.infer<typeof registerFormSchema>;
@@ -38,36 +51,32 @@ export default function RegisterPage() {
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
-      fullName: '',
-      email: '',
-      password: '',
+        email: '',
+        user_name: '',
+        password: '',
+        first_name: '',
+        last_name: '',
+        sex: 'Male',
+        addressl1: '',
+        addressl2: '',
+        city: '',
+        PNumber: '',
+        WPNumber: '',
+        civil_status: 'Single',
+        nic_number: '',
+        img_path: '',
     },
   });
 
   async function onSubmit(data: RegisterFormValues) {
     setIsLoading(true);
-    const [firstName, ...lastNameParts] = data.fullName.split(' ');
-    const lastName = lastNameParts.join(' ');
-    const userName = data.email.split('@')[0] || `user_${Date.now()}`;
-
+    
     const payload = {
-        email: data.email,
-        user_name: userName,
+        ...data,
         pass: data.password,
-        first_name: firstName,
-        last_name: lastName || '',
-        sex: 'Male', // Default value
-        addressl1: 'N/A', // Default value
-        addressl2: '',
-        city: 'N/A', // Default value
-        PNumber: '',
-        WPNumber: '',
         user_status: 'Active',
         acc_type: 'user',
-        img_path: '',
         update_by: 'system',
-        civil_status: 'Single',
-        nic_number: '',
     };
 
     try {
@@ -101,60 +110,93 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-4 py-8">
       <Link href="/" className="flex items-center gap-2 font-bold text-2xl mb-4">
         <Truck className="h-8 w-8 text-primary" />
         <span>Payshia ERP</span>
       </Link>
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-2xl">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardHeader>
               <CardTitle className="text-xl">Create your Account</CardTitle>
               <CardDescription>
-                Enter your information to create a user account. You will create your company in the next step.
+                Enter your information to create a user account.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4">
-              <FormField
-                control={form.control}
-                name="fullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label htmlFor="full-name">Full Name</Label>
-                    <FormControl>
-                      <Input id="full-name" placeholder="John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label htmlFor="email">Email</Label>
-                    <FormControl>
-                      <Input id="email" type="email" placeholder="m@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label htmlFor="password">Password</Label>
-                    <FormControl>
-                      <Input id="password" type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <CardContent>
+             <ScrollArea className="h-[50vh] pr-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="first_name" render={({ field }) => (
+                        <FormItem><FormLabel>First Name</FormLabel><FormControl><Input placeholder="John" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="last_name" render={({ field }) => (
+                        <FormItem><FormLabel>Last Name</FormLabel><FormControl><Input placeholder="Doe" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                </div>
+                 <FormField control={form.control} name="email" render={({ field }) => (
+                    <FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="m@example.com" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <FormField control={form.control} name="user_name" render={({ field }) => (
+                        <FormItem><FormLabel>Username</FormLabel><FormControl><Input placeholder="johndoe" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="password" render={({ field }) => (
+                        <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <FormField control={form.control} name="PNumber" render={({ field }) => (
+                        <FormItem><FormLabel>Phone Number</FormLabel><FormControl><Input placeholder="+94712345678" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="WPNumber" render={({ field }) => (
+                        <FormItem><FormLabel>WhatsApp Number (Optional)</FormLabel><FormControl><Input placeholder="+94712345678" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                </div>
+                <FormField control={form.control} name="addressl1" render={({ field }) => (
+                    <FormItem><FormLabel>Address Line 1</FormLabel><FormControl><Input placeholder="123 Main Street" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="addressl2" render={({ field }) => (
+                        <FormItem><FormLabel>Address Line 2 (Optional)</FormLabel><FormControl><Input placeholder="Apt 4B" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                    <FormField control={form.control} name="city" render={({ field }) => (
+                        <FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Colombo" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="nic_number" render={({ field }) => (
+                        <FormItem><FormLabel>NIC Number</FormLabel><FormControl><Input placeholder="199012345678" {...field} /></FormControl><FormMessage /></FormItem>
+                    )}/>
+                     <FormField control={form.control} name="civil_status" render={({ field }) => (
+                        <FormItem><FormLabel>Civil Status</FormLabel>
+                             <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Single">Single</SelectItem>
+                                    <SelectItem value="Married">Married</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        <FormMessage /></FormItem>
+                    )}/>
+                </div>
+                 <FormField control={form.control} name="sex" render={({ field }) => (
+                    <FormItem><FormLabel>Gender</FormLabel>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                <SelectItem value="Male">Male</SelectItem>
+                                <SelectItem value="Female">Female</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    <FormMessage /></FormItem>
+                )}/>
+                <FormField control={form.control} name="img_path" render={({ field }) => (
+                    <FormItem><FormLabel>Profile Image URL (Optional)</FormLabel><FormControl><Input type="url" placeholder="https://example.com/profile.png" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+              </div>
+              </ScrollArea>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
