@@ -22,7 +22,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 const registerFormSchema = z.object({
   first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
@@ -125,7 +124,6 @@ export default function RegisterPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-             <ScrollArea className="h-[50vh] pr-6">
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="first_name" render={({ field }) => (
@@ -196,7 +194,6 @@ export default function RegisterPage() {
                     <FormItem><FormLabel>Profile Image URL (Optional)</FormLabel><FormControl><Input type="url" placeholder="https://example.com/profile.png" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
               </div>
-              </ScrollArea>
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
