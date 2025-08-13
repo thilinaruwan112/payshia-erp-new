@@ -56,14 +56,38 @@ export default function LoginPage() {
             throw new Error(errorData.message || 'Invalid credentials. Please try again.');
         }
 
-        // Assuming the API returns some user data or token upon success
-        // const userData = await response.json();
+        const userData = await response.json();
+        const userId = userData?.user?.id;
+
+        if (!userId) {
+             throw new Error('Login successful, but user ID was not returned.');
+        }
         
-        toast({
-            title: 'Login Successful!',
-            description: 'Welcome back!',
+        // Check for company association
+        const companyCheckResponse = await fetch('https://server-erp.payshia.com/company-users/filter/by-user', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ user_id: userId })
         });
-        router.push('/dashboard');
+        
+        const companyData = await companyCheckResponse.json();
+
+        if (companyData.status === 'success' && companyData.has_company) {
+            toast({
+                title: 'Login Successful!',
+                description: 'Welcome back!',
+            });
+            router.push('/dashboard');
+        } else {
+             toast({
+                title: 'Login Successful!',
+                description: 'Welcome! Please create a company to continue.',
+            });
+            // Store user ID to associate with company later
+            localStorage.setItem('pendingUserId', userId);
+            router.push('/company/create');
+        }
+
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
