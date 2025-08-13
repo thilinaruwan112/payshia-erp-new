@@ -68,8 +68,9 @@ export default function CreateCompanyPage() {
     async function onSubmit(data: CompanyFormValues) {
         setIsLoading(true);
         const userId = localStorage.getItem('pendingUserId');
+        const userName = localStorage.getItem('pendingUserName');
 
-        if (!userId) {
+        if (!userId || !userName) {
             toast({
                 variant: 'destructive',
                 title: 'Session Error',
@@ -81,12 +82,12 @@ export default function CreateCompanyPage() {
 
         const companyPayload = {
             ...data,
-            is_active: 1,
-            created_by: 'admin'
+            user_id: parseInt(userId, 10),
+            user_name: userName,
         };
 
         try {
-            const companyResponse = await fetch('https://server-erp.payshia.com/companies', {
+            const companyResponse = await fetch('https://server-erp.payshia.com/companies/create-with-user', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(companyPayload),
@@ -96,26 +97,6 @@ export default function CreateCompanyPage() {
                 const errorData = await companyResponse.json();
                 throw new Error(errorData.message || 'Failed to create company.');
             }
-            
-            const companyResult = await companyResponse.json();
-            const companyId = companyResult.data.id;
-
-            const associationPayload = {
-                company_id: companyId,
-                user_id: parseInt(userId, 10),
-                created_by: 'admin',
-            };
-
-            const associationResponse = await fetch('https://server-erp.payshia.com/company-users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(associationPayload),
-            });
-
-            if (!associationResponse.ok) {
-                 const errorData = await associationResponse.json();
-                 throw new Error(errorData.message || 'Company created, but failed to associate user.');
-            }
 
             toast({
                 title: 'Company Created!',
@@ -123,6 +104,7 @@ export default function CreateCompanyPage() {
             });
             
             localStorage.removeItem('pendingUserId');
+            localStorage.removeItem('pendingUserName');
             router.push('/dashboard');
 
         } catch (error) {

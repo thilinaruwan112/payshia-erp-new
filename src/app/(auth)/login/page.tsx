@@ -58,9 +58,10 @@ export default function LoginPage() {
 
         const userData = await response.json();
         const userId = userData?.data?.id;
+        const userName = userData?.data?.user_name;
 
-        if (!userId) {
-             throw new Error('Login successful, but user ID was not returned.');
+        if (!userId || !userName) {
+             throw new Error('Login successful, but user ID or name was not returned.');
         }
         
         // Check for company association
@@ -83,8 +84,9 @@ export default function LoginPage() {
                 title: 'Login Successful!',
                 description: 'Welcome! Please create a company to continue.',
             });
-            // Store user ID to associate with company later
+            // Store user ID and name to associate with company later
             localStorage.setItem('pendingUserId', userId);
+            localStorage.setItem('pendingUserName', userName);
             router.push('/company/create');
         }
 
