@@ -30,14 +30,18 @@ import { Textarea } from "@/components/ui/textarea";
 
 const companyFormSchema = z.object({
   company_name: z.string().min(3, "Company name is required."),
-  company_address_line1: z.string().min(3, "Address is required."),
-  company_address_line2: z.string().optional(),
+  company_address: z.string().min(3, "Address is required."),
+  company_address2: z.string().optional(),
   company_city: z.string().min(2, "City is required."),
+  company_postalcode: z.string().optional(),
   company_email: z.string().email("A valid email is required."),
-  company_phone: z.string().min(10, "A valid phone number is required."),
-  company_crn: z.string().optional(),
-  company_vat_number: z.string().optional(),
+  company_telephone: z.string().min(10, "A valid phone number is required."),
+  company_telephone2: z.string().optional(),
+  owner_name: z.string().optional(),
+  website: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   description: z.string().optional(),
+  vision: z.string().optional(),
+  mission: z.string().optional(),
 });
 
 type CompanyFormValues = z.infer<typeof companyFormSchema>;
@@ -51,9 +55,9 @@ export default function CreateCompanyPage() {
         resolver: zodResolver(companyFormSchema),
         defaultValues: {
             company_name: "",
-            company_address_line1: "",
+            company_address: "",
             company_email: "",
-            company_phone: "",
+            company_telephone: "",
         },
     });
 
@@ -78,7 +82,7 @@ export default function CreateCompanyPage() {
         };
 
         try {
-            const companyResponse = await fetch('https://server-erp.payshia.com/company', {
+            const companyResponse = await fetch('https://server-erp.payshia.com/companies', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(companyPayload),
@@ -155,12 +159,12 @@ export default function CreateCompanyPage() {
                         />
                          <FormField
                             control={form.control}
-                            name="description"
+                            name="owner_name"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Company Description (Optional)</FormLabel>
+                                <FormLabel>Owner Name</FormLabel>
                                 <FormControl>
-                                    <Textarea placeholder="A brief description of your company." {...field} />
+                                    <Input placeholder="e.g. Samantha Perera" {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
@@ -182,12 +186,40 @@ export default function CreateCompanyPage() {
                             />
                              <FormField
                                 control={form.control}
-                                name="company_phone"
+                                name="website"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>Company Phone</FormLabel>
+                                    <FormLabel>Website</FormLabel>
+                                    <FormControl>
+                                        <Input type="url" placeholder="e.g. https://payshia.com" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <FormField
+                                control={form.control}
+                                name="company_telephone"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Primary Phone</FormLabel>
                                     <FormControl>
                                         <Input placeholder="e.g. +94112233445" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="company_telephone2"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Secondary Phone (Optional)</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g. +94771234567" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
@@ -196,7 +228,7 @@ export default function CreateCompanyPage() {
                         </div>
                         <FormField
                             control={form.control}
-                            name="company_address_line1"
+                            name="company_address"
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>Address Line 1</FormLabel>
@@ -207,10 +239,10 @@ export default function CreateCompanyPage() {
                                 </FormItem>
                             )}
                         />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                               <FormField
                                 control={form.control}
-                                name="company_address_line2"
+                                name="company_address2"
                                 render={({ field }) => (
                                     <FormItem>
                                     <FormLabel>Address Line 2 (Optional)</FormLabel>
@@ -234,35 +266,59 @@ export default function CreateCompanyPage() {
                                     </FormItem>
                                 )}
                             />
-                        </div>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <FormField
-                                control={form.control}
-                                name="company_crn"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Company Registration No. (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g. PV00123456" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
                              <FormField
                                 control={form.control}
-                                name="company_vat_number"
+                                name="company_postalcode"
                                 render={({ field }) => (
                                     <FormItem>
-                                    <FormLabel>VAT Number (Optional)</FormLabel>
+                                    <FormLabel>Postal Code</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="e.g. 1122334455-7000" {...field} />
+                                        <Input placeholder="e.g. 10100" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                     </FormItem>
                                 )}
                             />
                         </div>
+                        <FormField
+                            control={form.control}
+                            name="description"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Company Description (Optional)</FormLabel>
+                                <FormControl>
+                                    <Textarea placeholder="A brief description of your company." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="mission"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Mission (Optional)</FormLabel>
+                                <FormControl>
+                                    <Textarea placeholder="Your company's mission." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="vision"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Vision (Optional)</FormLabel>
+                                <FormControl>
+                                    <Textarea placeholder="Your company's vision." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </CardContent>
                     <CardFooter className="flex justify-end">
                         <Button type="submit" className="w-full sm:w-auto" disabled={isLoading}>
