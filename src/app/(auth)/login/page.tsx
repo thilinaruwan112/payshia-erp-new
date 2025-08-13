@@ -64,12 +64,12 @@ export default function LoginPage() {
         }
         
         // Check for company association
-        const companyCheckResponse = await fetch('https://server-erp.payshia.com/company-users/filter/by-user', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ user_id: userId })
-        });
+        const companyCheckResponse = await fetch(`https://server-erp.payshia.com/company-users/filter/by-user?user_id=${userId}`);
         
+        if (!companyCheckResponse.ok) {
+            throw new Error('Failed to check for company association.');
+        }
+
         const companyData = await companyCheckResponse.json();
 
         if (companyData.status === 'success' && companyData.has_company) {
