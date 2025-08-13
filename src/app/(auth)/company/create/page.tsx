@@ -38,10 +38,14 @@ const companyFormSchema = z.object({
   company_telephone: z.string().min(10, "A valid phone number is required."),
   company_telephone2: z.string().optional(),
   owner_name: z.string().optional(),
+  job_position: z.string().optional(),
   website: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
   description: z.string().optional(),
   vision: z.string().optional(),
   mission: z.string().optional(),
+  founder_message: z.string().optional(),
+  org_logo: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
+  founder_photo: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
 });
 
 type CompanyFormValues = z.infer<typeof companyFormSchema>;
@@ -157,19 +161,34 @@ export default function CreateCompanyPage() {
                                 </FormItem>
                             )}
                         />
-                         <FormField
-                            control={form.control}
-                            name="owner_name"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Owner Name</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="e.g. Samantha Perera" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <FormField
+                                control={form.control}
+                                name="owner_name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Owner Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g. Samantha Perera" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="job_position"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Job Position</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g. CEO" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                              <FormField
                                 control={form.control}
@@ -288,6 +307,47 @@ export default function CreateCompanyPage() {
                                 <FormLabel>Company Description (Optional)</FormLabel>
                                 <FormControl>
                                     <Textarea placeholder="A brief description of your company." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <FormField
+                                control={form.control}
+                                name="org_logo"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Company Logo URL</FormLabel>
+                                    <FormControl>
+                                        <Input type="url" placeholder="https://example.com/logo.png" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="founder_photo"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Founder Photo URL</FormLabel>
+                                    <FormControl>
+                                        <Input type="url" placeholder="https://example.com/founder.png" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                         <FormField
+                            control={form.control}
+                            name="founder_message"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Founder's Message (Optional)</FormLabel>
+                                <FormControl>
+                                    <Textarea placeholder="A message from the founder." {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
