@@ -57,7 +57,7 @@ export default function LoginPage() {
         }
 
         const userData = await response.json();
-        const userId = userData?.user?.id;
+        const userId = userData?.data?.id;
 
         if (!userId) {
              throw new Error('Login successful, but user ID was not returned.');
