@@ -98,7 +98,7 @@ export default function CreateCompanyPage() {
             }
             
             const companyResult = await companyResponse.json();
-            const companyId = companyResult.company.id;
+            const companyId = companyResult.data.id;
 
             const associationPayload = {
                 company_id: companyId,
