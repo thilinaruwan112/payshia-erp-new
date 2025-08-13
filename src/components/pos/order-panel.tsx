@@ -20,6 +20,7 @@ import {
   Notebook,
   PlusSquare,
   Star,
+  UserCheck,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -177,7 +178,7 @@ export function OrderPanel({
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
   const [isEditingServiceCharge, setIsEditingServiceCharge] = React.useState(false);
 
-  const { cart, customer, name: orderName, discount, serviceCharge, id: orderId } = order;
+  const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward } = order;
 
   const handleSuccessfulPayment = async (paymentMethod: string) => {
     // This is a simplified simulation. A real app would have a robust backend process.
@@ -219,6 +220,15 @@ export function OrderPanel({
             )}
         </div>
       </header>
+      
+      {steward && (
+           <div className='p-2 px-4 border-b border-border bg-muted/30'>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <UserCheck className="h-4 w-4" />
+                    <span>Steward: <span className="font-semibold text-foreground">{steward.name}</span></span>
+                </div>
+            </div>
+      )}
 
       <div className='p-4 border-b border-border'>
         <div className='flex items-center justify-between'>

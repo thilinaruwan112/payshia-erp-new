@@ -8,7 +8,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -36,6 +36,8 @@ import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CustomerFormDialog } from '@/components/customer-form-dialog';
+import { users } from '@/lib/data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
 export type PosProduct = Product & {
@@ -80,7 +82,7 @@ const OrderTypeSelection = ({
     activeOrders
 }: { 
     onSelectOrderType: (type: ActiveOrder['orderType']) => void; 
-    onSelectTable: (type: ActiveOrder['orderType'], name: string) => void;
+    onSelectTable: (tableName: string) => void;
     tables: TableType[];
     isLoadingTables: boolean;
     activeOrders: ActiveOrder[];
@@ -91,47 +93,66 @@ const OrderTypeSelection = ({
     }
 
     return (
-        <DialogContent className="max-w-4xl">
-            <DialogHeader>
-                 <DialogTitle className="text-2xl">Create New Order</DialogTitle>
-                 <DialogDescription>Select an order type or choose a table for dine-in.</DialogDescription>
-            </DialogHeader>
-            <main className="p-2">
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                    <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Take Away')}>
-                       Take Away
-                    </Card>
-                     <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Retail')}>
-                       Retail
-                    </Card>
-                     <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Delivery')}>
-                       Delivery
-                    </Card>
+        <main className="p-2">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Take Away')}>
+                   Take Away
+                </Card>
+                 <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Retail')}>
+                   Retail
+                </Card>
+                 <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Delivery')}>
+                   Delivery
+                </Card>
+            </div>
+            <div>
+                <h2 className="text-2xl font-bold mb-4">Set Table</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
+                    {isLoadingTables ? (
+                        Array.from({length: 8}).map((_, i) => <Card key={i} className="p-4 h-24 animate-pulse bg-muted"></Card>)
+                    ) : (
+                        tables.map(table => {
+                            const inUse = isTableInUse(table.table_name);
+                            return (
+                            <Card key={table.id} className="p-4 cursor-pointer hover:border-primary" onClick={() => onSelectTable(table.table_name)}>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Badge>Dine-In</Badge>
+                                    <Badge variant={!inUse ? 'default' : 'destructive'} className={cn(!inUse && 'bg-green-500')}>{!inUse ? 'Available' : 'In Use'}</Badge>
+                                </div>
+                                <p className="text-lg font-bold">{table.table_name}</p>
+                            </Card>
+                        )})
+                    )}
                 </div>
-                <div>
-                    <h2 className="text-2xl font-bold mb-4">Set Table</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                        {isLoadingTables ? (
-                            Array.from({length: 8}).map((_, i) => <Card key={i} className="p-4 h-24 animate-pulse bg-muted"></Card>)
-                        ) : (
-                            tables.map(table => {
-                                const inUse = isTableInUse(table.table_name);
-                                return (
-                                <Card key={table.id} className="p-4 cursor-pointer hover:border-primary" onClick={() => onSelectTable('Dine-In', table.table_name)}>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <Badge>Dine-In</Badge>
-                                        <Badge variant={!inUse ? 'default' : 'destructive'} className={cn(!inUse && 'bg-green-500')}>{!inUse ? 'Available' : 'In Use'}</Badge>
-                                    </div>
-                                    <p className="text-lg font-bold">{table.table_name}</p>
-                                </Card>
-                            )})
-                        )}
-                    </div>
-                </div>
-            </main>
-        </DialogContent>
+            </div>
+        </main>
     )
 }
+
+const StewardSelection = ({ onSelectSteward, onBack }: { onSelectSteward: (steward: User) => void; onBack: () => void; }) => {
+    const stewards = users.filter(u => u.role !== 'Customer');
+    return (
+        <main className="p-2">
+             <Button variant="ghost" onClick={onBack} className="mb-4">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Order Type
+            </Button>
+            <h2 className="text-2xl font-bold mb-4">Select Steward</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {stewards.map(steward => (
+                    <Card key={steward.id} className="p-4 text-center cursor-pointer hover:border-primary" onClick={() => onSelectSteward(steward)}>
+                        <Avatar className="h-20 w-20 mx-auto">
+                            <AvatarImage src={steward.avatar} alt={steward.name} data-ai-hint="profile photo" />
+                            <AvatarFallback>{steward.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <p className="mt-2 font-semibold">{steward.name}</p>
+                        <p className="text-xs text-muted-foreground">{steward.role}</p>
+                    </Card>
+                ))}
+            </div>
+        </main>
+    )
+};
+
 
 export default function POSPage() {
   const { toast } = useToast();
@@ -151,6 +172,9 @@ export default function POSPage() {
 
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isNewOrderDialogOpen, setNewOrderDialogOpen] = useState(false);
+  const [newOrderDialogStep, setNewOrderDialogStep] = useState<'type' | 'steward'>('type');
+  const [selectedTable, setSelectedTable] = useState<string | null>(null);
+
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
   const [selectedReceiptsCustomer, setSelectedReceiptsCustomer] = useState<string | null>(null);
   const [pendingInvoices, setPendingInvoices] = useState<Invoice[]>([]);
@@ -406,20 +430,27 @@ export default function POSPage() {
     [activeOrders, currentOrderId]
   );
   
-  const createNewOrder = (orderType: ActiveOrder['orderType'], tableName?: string) => {
+  const createNewOrder = (
+    orderType: ActiveOrder['orderType'], 
+    steward?: User,
+    tableName?: string,
+) => {
     const newOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
       name: tableName ? tableName : `${orderType} #${orderCounter++}`,
       cart: [],
       discount: 0,
       serviceCharge: 0,
-      customer: walkInCustomer, // Default to a walk-in customer
+      customer: walkInCustomer,
       orderType,
       tableName,
+      steward,
     };
     setActiveOrders((prev) => [...prev, newOrder]);
     setCurrentOrderId(newOrder.id);
     setNewOrderDialogOpen(false);
+    setNewOrderDialogStep('type');
+    setSelectedTable(null);
   };
   
   const handleSendToKitchen = () => {
@@ -827,13 +858,29 @@ export default function POSPage() {
                             <Plus className="mr-2 h-4 w-4" /> New Order
                         </Button>
                     </DialogTrigger>
-                    <OrderTypeSelection 
-                        onSelectOrderType={createNewOrder} 
-                        onSelectTable={createNewOrder} 
-                        tables={tables}
-                        isLoadingTables={isLoadingTables}
-                        activeOrders={activeOrders}
-                    />
+                    <DialogContent className="max-w-4xl">
+                        <DialogHeader>
+                            <DialogTitle className="text-2xl">Create New Order</DialogTitle>
+                            <DialogDescription>Select an order type or choose a table for dine-in.</DialogDescription>
+                        </DialogHeader>
+                        {newOrderDialogStep === 'type' ? (
+                            <OrderTypeSelection 
+                                onSelectOrderType={(type) => createNewOrder(type)} 
+                                onSelectTable={(tableName) => {
+                                    setSelectedTable(tableName);
+                                    setNewOrderDialogStep('steward');
+                                }} 
+                                tables={tables}
+                                isLoadingTables={isLoadingTables}
+                                activeOrders={activeOrders}
+                            />
+                        ) : (
+                             <StewardSelection
+                                onBack={() => setNewOrderDialogStep('type')}
+                                onSelectSteward={(steward) => createNewOrder('Dine-In', steward, selectedTable!)}
+                            />
+                        )}
+                    </DialogContent>
                 </Dialog>
                <Button variant="outline" size="icon"><Settings className="h-4 w-4" /></Button>
             </div>
