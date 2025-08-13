@@ -105,11 +105,6 @@ export default function LandingPage() {
                 Login
               </Link>
             </Button>
-            <Button asChild>
-              <Link href="/register">
-                Get Started
-              </Link>
-            </Button>
           </nav>
         </div>
       </header>
@@ -128,8 +123,8 @@ export default function LandingPage() {
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                    <Button size="lg" asChild>
-                     <Link href="/register">
-                      Get Started for Free
+                     <Link href="/login">
+                      Login to Your Account
                     </Link>
                    </Button>
                 </div>
@@ -254,8 +249,8 @@ export default function LandingPage() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button asChild className="w-full">
-                    <Link href="/register">Get Started</Link>
+                  <Button className="w-full" disabled>
+                    Current Plan
                   </Button>
                 </CardFooter>
               </Card>
@@ -281,8 +276,8 @@ export default function LandingPage() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button asChild className="w-full">
-                    <Link href="/register">Choose Plan</Link>
+                  <Button className="w-full">
+                    Choose Plan
                   </Button>
                 </CardFooter>
               </Card>
@@ -306,8 +301,8 @@ export default function LandingPage() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button asChild className="w-full" variant="outline">
-                    <Link href="/register">Choose Plan</Link>
+                  <Button className="w-full" variant="outline">
+                    Choose Plan
                   </Button>
                 </CardFooter>
               </Card>
@@ -371,8 +366,8 @@ export default function LandingPage() {
             </div>
             <div className="mx-auto w-full max-w-sm space-y-2">
                <Button size="lg" variant="secondary" asChild className="w-full">
-                 <Link href="/register">
-                  Sign Up Now
+                 <Link href="/login">
+                  Login Now
                 </Link>
                </Button>
             </div>

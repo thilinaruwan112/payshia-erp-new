@@ -1,3 +1,4 @@
+
 import { Truck } from "lucide-react";
 import Link from "next/link";
 import { Button } from '@/components/ui/button';
@@ -19,11 +20,6 @@ export default function LegalLayout({
             <Button variant="ghost" asChild>
               <Link href="/login">
                 Login
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link href="/register">
-                Get Started
               </Link>
             </Button>
           </nav>
