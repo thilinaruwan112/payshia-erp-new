@@ -33,7 +33,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,8 +76,17 @@ interface BalanceDetails {
     ref_id: string;
 }
 
+type TransactionReturnItem = {
+    id: string;
+    product_id: string;
+    productName: string; // Assuming API provides this
+    return_qty: string;
+    return_amount: string;
+}
+
 type TransactionReturn = {
     id: string;
+    rtn_number: string;
     customer_id: string;
     location_id: string;
     created_at: string;
@@ -89,7 +98,7 @@ type TransactionReturn = {
     return_amount: string;
     settled_invoice: string;
     company_id: string;
-    items?: any[]; // Add items if your API provides them
+    items?: TransactionReturnItem[];
 }
 
 let orderCounter = 1;
@@ -421,10 +430,10 @@ export default function POSPage() {
         setIsReturnsLoading(false);
       }
     }
-    if (isRefundDialogOpen) {
+    if (isRefundDialogOpen && !selectedReturnForRefund) {
         fetchReturns();
     }
-  }, [isRefundDialogOpen, toast]);
+  }, [isRefundDialogOpen, selectedReturnForRefund, toast]);
 
   const handleInvoiceSelectForAction = async (invoice: Invoice) => {
     setSelectedInvoiceForAction(invoice);
@@ -466,6 +475,22 @@ export default function POSPage() {
         setIsBalanceLoading(false);
     }
   };
+  
+  const handleReturnSelectForAction = async (returnData: TransactionReturn) => {
+    setIsReturnsLoading(true);
+    try {
+      const response = await fetch(`https://server-erp.payshia.com/transaction-returns/${returnData.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch return details');
+      }
+      const data: TransactionReturn = await response.json();
+      setSelectedReturnForRefund(data);
+    } catch (error) {
+       toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch return details.' });
+    } finally {
+        setIsReturnsLoading(false);
+    }
+  }
 
   const handleCreateReceipt = async () => {
     if (!selectedInvoiceForAction || !currentLocation) {
@@ -1147,7 +1172,7 @@ export default function POSPage() {
                             Refund
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+                     <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
                         <DialogHeader className="flex-row items-center justify-between border-b pb-4">
                             <div className="flex items-center gap-4">
                                 {selectedReturnForRefund && <Button variant="ghost" onClick={() => setSelectedReturnForRefund(null)}><ArrowLeft className="h-5 w-5 mr-2"/> Back</Button>}
@@ -1166,18 +1191,23 @@ export default function POSPage() {
                             <div className="grid grid-cols-2 gap-8 p-6">
                                 <div>
                                     <Badge>{customers.find(c => c.customer_id === selectedReturnForRefund.customer_id)?.name || 'Walk-in'}</Badge>
-                                    <p className="text-2xl font-bold mt-1">RTN{selectedReturnForRefund.id.padStart(4, '0')}</p>
+                                    <p className="text-2xl font-bold mt-1">{selectedReturnForRefund.rtn_number}</p>
                                     <p className="text-4xl font-bold text-green-600">${parseFloat(selectedReturnForRefund.return_amount).toFixed(2)}</p>
                                     <Badge variant="secondary" className="mt-1 text-sm font-normal">{format(new Date(selectedReturnForRefund.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
                                     <Table className="mt-4">
                                         <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
                                         <TableBody>
-                                            {/* This is mock data, as items are not in the return payload */}
-                                            <TableRow>
-                                                <TableCell>Burger Bun</TableCell>
-                                                <TableCell className="text-right">1.000</TableCell>
-                                                <TableCell className="text-right">650.00</TableCell>
-                                            </TableRow>
+                                            {selectedReturnForRefund.items?.map(item => (
+                                                <TableRow key={item.id}>
+                                                    <TableCell>{item.productName}</TableCell>
+                                                    <TableCell className="text-right">{parseFloat(item.return_qty).toFixed(2)}</TableCell>
+                                                    <TableCell className="text-right">{parseFloat(item.return_amount).toFixed(2)}</TableCell>
+                                                </TableRow>
+                                            )) || (
+                                                 <TableRow>
+                                                    <TableCell colSpan={3} className="text-center text-muted-foreground">No item details available.</TableCell>
+                                                </TableRow>
+                                            )}
                                         </TableBody>
                                     </Table>
                                 </div>
@@ -1198,10 +1228,10 @@ export default function POSPage() {
                                         {transactionReturns.map(ret => {
                                             const customer = customers.find(c => c.customer_id === ret.customer_id)
                                             return (
-                                                <Card key={ret.id} className="cursor-pointer hover:border-primary p-2" onClick={() => setSelectedReturnForRefund(ret)}>
+                                                <Card key={ret.id} className="cursor-pointer hover:border-primary p-2" onClick={() => handleReturnSelectForAction(ret)}>
                                                     <CardHeader className="p-2">
                                                         <Badge className="w-fit mb-1 text-xs">{customer?.name || 'Walk-in'}</Badge>
-                                                        <CardTitle className="text-sm">RTN{ret.id.padStart(4,'0')}</CardTitle>
+                                                        <CardTitle className="text-sm">{ret.rtn_number}</CardTitle>
                                                     </CardHeader>
                                                     <CardContent className="p-2">
                                                         <p className="text-xl font-bold">${parseFloat(ret.return_amount).toFixed(2)}</p>
