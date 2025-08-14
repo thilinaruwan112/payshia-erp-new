@@ -331,7 +331,7 @@ export default function POSPage() {
       }
       setIsPastInvoicesLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedCustomerForAction}`);
+        const response = await fetch(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomerForAction}&company_id=1`);
         if (!response.ok) {
           throw new Error('Failed to fetch invoices');
         }
@@ -1163,18 +1163,18 @@ export default function POSPage() {
                              {isReturnsLoading ? (
                                 <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>
                              ) : (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-4">
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 py-4">
                                     {transactionReturns.map(ret => {
                                         const customer = customers.find(c => c.customer_id === ret.customer_id)
                                         return (
                                             <Card key={ret.id} className="cursor-pointer hover:border-primary">
-                                                <CardHeader>
-                                                    <Badge className="w-fit mb-2">{customer?.name || 'Walk-in'}</Badge>
-                                                    <CardTitle className="text-lg">RTN{ret.id.padStart(4,'0')}</CardTitle>
+                                                <CardHeader className="p-3">
+                                                    <Badge className="w-fit mb-1">{customer?.name || 'Walk-in'}</Badge>
+                                                    <CardTitle className="text-base">RTN{ret.id.padStart(4,'0')}</CardTitle>
                                                 </CardHeader>
-                                                <CardContent>
-                                                    <p className="text-3xl font-bold">${parseFloat(ret.return_amount).toFixed(2)}</p>
-                                                    <Badge variant="secondary" className="mt-2 bg-green-200 text-green-800">{format(new Date(ret.created_at), 'yyyy-MM-dd HH:mm:ss')}</Badge>
+                                                <CardContent className="p-3">
+                                                    <p className="text-2xl font-bold">${parseFloat(ret.return_amount).toFixed(2)}</p>
+                                                    <Badge variant="secondary" className="mt-1 text-xs">{format(new Date(ret.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
                                                 </CardContent>
                                             </Card>
                                         )
