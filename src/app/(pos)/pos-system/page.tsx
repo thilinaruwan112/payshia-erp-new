@@ -7,7 +7,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck, Minus, CheckCircle } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck, Minus, CheckCircle, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -159,6 +159,15 @@ const StewardSelection = ({ onSelectSteward, onBack, stewards, isLoading }: { on
     )
 };
 
+type ReturnItem = {
+    id: string;
+    name: string;
+    unit: string;
+    rate: number;
+    quantity: number;
+    amount: number;
+};
+
 
 export default function POSPage() {
   const { toast } = useToast();
@@ -190,7 +199,12 @@ export default function POSPage() {
   const [isPastInvoicesLoading, setIsPastInvoicesLoading] = useState(false);
   const [selectedInvoiceForAction, setSelectedInvoiceForAction] = useState<Invoice | null>(null);
 
-  const [returnItems, setReturnItems] = useState<Record<string, { quantity: number; reason: string }>>({});
+  // Return dialog state
+  const [returnReason, setReturnReason] = useState("");
+  const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
+  const [currentReturnProduct, setCurrentReturnProduct] = useState<PosProduct | null>(null);
+  const [currentReturnQty, setCurrentReturnQty] = useState(1);
+
 
   const [isBalanceLoading, setIsBalanceLoading] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -226,7 +240,7 @@ export default function POSPage() {
             const brandsData: Brand[] = await brandsResponse.json();
             const customersData: User[] = await customersResponse.json();
             
-            const formattedCustomers = customersData.map(c => ({
+             const formattedCustomers = customersData.map(c => ({
                 ...c,
                 id: c.customer_id,
                 name: `${c.customer_first_name} ${c.customer_last_name}`,
@@ -286,14 +300,13 @@ export default function POSPage() {
   }, [toast]);
   
   useEffect(() => {
-    const fetchInvoicesForAction = async () => {
+    async function fetchInvoicesForAction() {
         if (!selectedCustomerForAction) {
             setPastInvoices([]);
             return;
         }
         setIsPastInvoicesLoading(true);
         try {
-            // This endpoint can be the same for both pending and all past invoices, or you can have a separate one.
             const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedCustomerForAction}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch invoices');
@@ -363,7 +376,7 @@ export default function POSPage() {
 
   const handleInvoiceSelectForAction = async (invoice: Invoice) => {
     setSelectedInvoiceForAction(invoice);
-    if(isReturnDialogOpen) return; // No balance check needed for returns
+    if(isReturnDialogOpen) return;
 
     setIsBalanceLoading(true);
     try {
@@ -424,7 +437,7 @@ export default function POSPage() {
             title: 'Receipt Created!',
             description: `Payment of $${paymentAmount} recorded successfully.`
         });
-        setPendingInvoicesDialogOpen(false); // Close dialog on success
+        setPendingInvoicesDialogOpen(false);
         setSelectedInvoiceForAction(null);
         setPaymentAmount('');
         setSelectedCustomerForAction(null);
@@ -445,7 +458,6 @@ export default function POSPage() {
   const handleFilterChange = async (type: 'category' | 'collection' | 'brand', value: string) => {
     setActiveFilter({ type, value });
     if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
-        // Fetch products for this collection if not already fetched
         try {
             const response = await fetch(`https://server-erp.payshia.com/collection-products/collection/${value}`);
             if (!response.ok) throw new Error('Failed to fetch collection products');
@@ -547,7 +559,7 @@ export default function POSPage() {
         return { ...order, cart: newCart };
       })
     );
-    setSelectedProduct(null); // Close the dialog
+    setSelectedProduct(null);
   };
 
   const updateQuantity = (variantId: string, newQuantity: number) => {
@@ -604,7 +616,7 @@ export default function POSPage() {
         prevOrders.filter((order) => order.id !== currentOrderId)
     );
     setCurrentOrderId(null);
-    setDrawerOpen(false); // Close drawer after clearing cart
+    setDrawerOpen(false);
   };
 
   const setDiscount = (newDiscount: number) => {
@@ -658,7 +670,7 @@ export default function POSPage() {
         if (productIdsInCollection) {
             productsToFilter = posProducts.filter(p => productIdsInCollection.includes(p.id));
         } else if (activeFilter.value !== 'All') {
-             return []; // Or show loading state
+             return [];
         }
     } else if (activeFilter.type === 'category' && activeFilter.value !== 'All') {
         productsToFilter = posProducts.filter(p => p.category === activeFilter.value);
@@ -684,22 +696,27 @@ export default function POSPage() {
       const total = subtotal - itemDiscounts + currentOrder.serviceCharge - currentOrder.discount;
       return { subtotal, serviceCharge: currentOrder.serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
   }, [currentOrder]);
-
-  const handleReturnItemChange = (itemId: string, field: 'quantity' | 'reason', value: string | number) => {
-    setReturnItems(prev => ({
-      ...prev,
-      [itemId]: {
-        ...prev[itemId],
-        [field]: value
-      }
-    }));
+  
+  const handleAddReturnItem = () => {
+    if (!currentReturnProduct) return;
+    const newItem: ReturnItem = {
+      id: currentReturnProduct.variant.id,
+      name: currentReturnProduct.variantName,
+      unit: currentReturnProduct.stock_unit || 'Nos',
+      rate: currentReturnProduct.price as number,
+      quantity: currentReturnQty,
+      amount: (currentReturnProduct.price as number) * currentReturnQty,
+    };
+    setReturnItems(prev => [...prev, newItem]);
+    setCurrentReturnProduct(null);
+    setCurrentReturnQty(1);
   };
 
   const handleProcessReturn = () => {
-    // In a real app, this would submit the return data to the backend
     console.log("Processing return for:", {
         customer: selectedCustomerForAction,
         invoice: selectedInvoiceForAction?.invoice_number,
+        reason: returnReason,
         items: returnItems
     });
     toast({
@@ -709,8 +726,10 @@ export default function POSPage() {
     setReturnDialogOpen(false);
     setSelectedCustomerForAction(null);
     setSelectedInvoiceForAction(null);
-    setReturnItems({});
-  }
+    setReturnItems([]);
+    setReturnReason("");
+  };
+
 
    if (isLocationLoading) {
     return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
@@ -789,7 +808,7 @@ export default function POSPage() {
         {activeOrders.filter(o => o.id !== currentOrderId).map(order => (
             <Button key={order.id} variant="outline" className='w-full justify-between' onClick={() => {
                 setCurrentOrderId(order.id);
-                setDrawerOpen(false); // also close held orders drawer if open
+                setDrawerOpen(false);
             }}>
                 <span>{order.name}</span>
                 <Badge>{order.cart.reduce((acc, item) => acc + item.quantity, 0)}</Badge>
@@ -823,8 +842,8 @@ export default function POSPage() {
                 <Dialog open={isPendingInvoicesDialogOpen} onOpenChange={setPendingInvoicesDialogOpen}>
                     <DialogTrigger asChild>
                         <Button variant="outline" size="sm">
-                            <FileText className="mr-2 h-4 w-4" />
-                            Pending Invoices
+                            <Receipt className="mr-2 h-4 w-4" />
+                            Refund
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
@@ -855,7 +874,7 @@ export default function POSPage() {
                                     ))}
                                 </RadioGroup>
                             )}
-                             {selectedInvoiceForAction && !isReturnDialogOpen && (
+                             {selectedInvoiceForAction && (
                                 <Card>
                                     <CardContent className="pt-4">
                                         <div className="space-y-2">
@@ -887,76 +906,82 @@ export default function POSPage() {
                     </DialogContent>
                 </Dialog>
                 <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Undo2 className="mr-2 h-4 w-4" />
-                      Return
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Select Return Products</DialogTitle>
-                      <DialogDescription>Note : A La Carte Items cannot be Returned!</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <Select onValueChange={setSelectedCustomerForAction}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Customer" />
-                          </SelectTrigger>
-                          <SelectContent>{customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find((i) => i.invoice_number === invNumber)!)} disabled={!selectedCustomerForAction || isPastInvoicesLoading}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Invoice (If Available)" />
-                          </SelectTrigger>
-                          <SelectContent>{pastInvoices.map((inv) => <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                      {selectedInvoiceForAction && (
-                        <>
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Item</TableHead>
-                                <TableHead className="w-[100px]">Qty</TableHead>
-                                <TableHead className="w-[200px]">Reason</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {selectedInvoiceForAction.items?.map((item) => (
-                                <TableRow key={item.id}>
-                                  <TableCell>{item.productName}</TableCell>
-                                  <TableCell>
-                                    <div className="flex items-center gap-2">
-                                      <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', Math.max(0, (returnItems[item.id!]?.quantity || 0) - 1))}>
-                                        <Minus className="h-4 w-4" />
-                                      </Button>
-                                      <span>{returnItems[item.id!]?.quantity || 0}</span>
-                                      <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', ((returnItems[item.id!]?.quantity || 0) + 1))}>
-                                        <Plus className="h-4 w-4" />
-                                      </Button>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                            <Undo2 className="mr-2 h-4 w-4" />
+                            Return
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl">
+                        <DialogHeader>
+                            <DialogTitle>Select Return Products</DialogTitle>
+                            <DialogDescription>Note : A La Carte Items cannot be Returned!</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                             <Select onValueChange={setSelectedCustomerForAction}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a customer..."/>
+                                </SelectTrigger>
+                                <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                            </Select>
+                            {selectedCustomerForAction && (
+                                <>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invNumber)!)} disabled={isPastInvoicesLoading}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select Invoice (If Available)"/>
+                                            </SelectTrigger>
+                                            <SelectContent>{pastInvoices.map(inv => <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number}</SelectItem>)}</SelectContent>
+                                        </Select>
+                                        <Input placeholder="Enter Reason for Return" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
                                     </div>
-                                  </TableCell>
-                                  <TableCell>
-                                     <Input
-                                        placeholder="Reason for return"
-                                        value={returnItems[item.id!]?.reason || ''}
-                                        onChange={(e) => handleReturnItemChange(item.id!, 'reason', e.target.value)}
-                                    />
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </>
-                      )}
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
-                      <Button onClick={handleProcessReturn}>Process Return</Button>
-                    </DialogFooter>
-                  </DialogContent>
+                                    <div className="grid grid-cols-5 gap-2 items-end">
+                                        <div className="col-span-2">
+                                            <Label>Select Product</Label>
+                                            <Select onValueChange={(productId) => setCurrentReturnProduct(posProducts.find(p => p.id === productId) || null)}>
+                                                <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
+                                                <SelectContent>{posProducts.map(p => <SelectItem key={p.id} value={p.id}>{p.variantName}</SelectItem>)}</SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div><Label>Unit</Label><Input value={currentReturnProduct?.stock_unit || 'Nos'} readOnly /></div>
+                                        <div><Label>Rate</Label><Input value={(currentReturnProduct?.price as number || 0).toFixed(2)} readOnly /></div>
+                                        <div><Label>Quantity</Label><Input type="number" value={currentReturnQty} onChange={(e) => setCurrentReturnQty(parseInt(e.target.value, 10))} /></div>
+                                        <Button onClick={handleAddReturnItem} disabled={!currentReturnProduct}><Plus className="h-4 w-4" /></Button>
+                                    </div>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>ID</TableHead><TableHead>Item Name</TableHead><TableHead>Qty</TableHead><TableHead>Rate</TableHead><TableHead>Amount</TableHead><TableHead>Action</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {returnItems.map((item, index) => (
+                                                <TableRow key={item.id}>
+                                                    <TableCell>{index+1}</TableCell>
+                                                    <TableCell>{item.name}</TableCell>
+                                                    <TableCell>{item.quantity}</TableCell>
+                                                    <TableCell>{item.rate.toFixed(2)}</TableCell>
+                                                    <TableCell>{item.amount.toFixed(2)}</TableCell>
+                                                    <TableCell><Button variant="ghost" size="icon" onClick={() => setReturnItems(prev => prev.filter(p => p.id !== item.id))}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                        <TableFooter>
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="text-right font-bold">Total</TableCell>
+                                                <TableCell className="font-bold">{(returnItems.reduce((acc, item) => acc + item.amount, 0)).toFixed(2)}</TableCell>
+                                                <TableCell></TableCell>
+                                            </TableRow>
+                                        </TableFooter>
+                                    </Table>
+                                </>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleProcessReturn} disabled={returnItems.length === 0}>Save Return</Button>
+                        </DialogFooter>
+                    </DialogContent>
                 </Dialog>
             </div>
             <div className="flex items-center gap-2">
@@ -1006,7 +1031,6 @@ export default function POSPage() {
             </div>
           </div>
            <div className="flex-1 flex overflow-hidden">
-            {/* Main Content */}
             <ScrollArea className="flex-1 p-4">
               {isLoadingProducts ? (
                 <div className="flex items-center justify-center h-[calc(100vh-250px)]">
@@ -1016,7 +1040,6 @@ export default function POSPage() {
                   <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
               )}
             </ScrollArea>
-            {/* Category Sidebar */}
             <aside className="hidden md:block w-48 border-l border-border overflow-y-auto">
                 <ScrollArea className="h-full p-2">
                     <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
@@ -1077,12 +1100,10 @@ export default function POSPage() {
            </div>
         </div>
 
-        {/* Desktop Order Panel - always visible on large screens */}
         <aside className="w-full lg:w-[380px] xl:w-[420px] flex-shrink-0 bg-card border-t lg:border-t-0 lg:border-l border-border flex-col hidden lg:flex">
           {orderPanelComponent}
         </aside>
 
-        {/* Mobile "View Order" button and Drawer - only on small screens */}
           <div className="lg:hidden">
             {currentOrder && currentOrder.cart.length > 0 && (
               <div className="fixed bottom-4 left-4 right-4 z-20">
