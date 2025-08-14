@@ -939,8 +939,23 @@ export default function POSPage() {
                             <DialogDescription>Note : A La Carte Items cannot be Returned!</DialogDescription>
                         </DialogHeader>
                          <div className="space-y-4">
-                            {selectedCustomerForAction && (
+                            {!selectedCustomerForAction ? (
+                                <Select onValueChange={setSelectedCustomerForAction}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a customer..."/>
+                                    </SelectTrigger>
+                                    <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                             ) : (
                                 <>
+                                    <div className="flex justify-between items-center bg-muted p-2 rounded-md">
+                                        <p>Customer: <span className="font-semibold">{customers.find(c => c.id === selectedCustomerForAction)?.name}</span></p>
+                                        <Button variant="ghost" size="sm" onClick={() => {
+                                            setSelectedCustomerForAction(null);
+                                            setSelectedInvoiceForAction(null);
+                                            setReturnItems([]);
+                                        }}>Change</Button>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invNumber)!)} disabled={isPastInvoicesLoading}>
                                             <SelectTrigger>
@@ -953,9 +968,9 @@ export default function POSPage() {
                                      <div className="grid grid-cols-5 gap-2 items-end">
                                         <div className="col-span-2">
                                             <Label>Select Product</Label>
-                                            <Select onValueChange={(productId) => setCurrentReturnProduct(posProducts.find(p => p.id === productId) || null)} disabled={!!selectedInvoiceForAction}>
+                                            <Select onValueChange={(variantId) => setCurrentReturnProduct(posProducts.find(p => p.variant.id === variantId) || null)} disabled={!!selectedInvoiceForAction}>
                                                 <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
-                                                <SelectContent>{posProducts.map(p => <SelectItem key={p.id} value={p.id}>{p.variantName}</SelectItem>)}</SelectContent>
+                                                <SelectContent>{posProducts.map(p => <SelectItem key={p.variant.id} value={p.variant.id}>{p.variantName}</SelectItem>)}</SelectContent>
                                             </Select>
                                         </div>
                                         <div><Label>Unit</Label><Input value={currentReturnProduct?.stock_unit || 'Nos'} readOnly /></div>
@@ -1008,18 +1023,10 @@ export default function POSPage() {
                                     </Table>
                                 </>
                             )}
-                             {!selectedCustomerForAction && (
-                                <Select onValueChange={setSelectedCustomerForAction}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a customer..."/>
-                                    </SelectTrigger>
-                                    <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                                </Select>
-                            )}
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
-                            <Button onClick={handleProcessReturn} disabled={returnItems.length === 0}>Process Return</Button>
+                            <Button onClick={handleProcessReturn} disabled={returnItems.length === 0}>Save Return</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
