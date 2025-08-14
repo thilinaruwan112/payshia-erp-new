@@ -40,7 +40,7 @@ import { users } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 
 export type PosProduct = Product & {
@@ -226,7 +226,11 @@ export default function POSPage() {
             const brandsData: Brand[] = await brandsResponse.json();
             const customersData: User[] = await customersResponse.json();
             
-            const formattedCustomers = customersData.map(c => ({...c, id: c.customer_id, name: `${c.customer_first_name} ${c.customer_last_name}`}));
+            const formattedCustomers = customersData.map(c => ({
+                ...c,
+                id: c.customer_id,
+                name: `${c.customer_first_name} ${c.customer_last_name}`,
+            }));
             setCustomers([walkInCustomer, ...formattedCustomers]);
 
             setCollections(collectionsData || []);
@@ -916,6 +920,7 @@ export default function POSPage() {
                               <TableRow>
                                 <TableHead>Item</TableHead>
                                 <TableHead className="w-[100px]">Qty</TableHead>
+                                <TableHead className="w-[200px]">Reason</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -924,20 +929,26 @@ export default function POSPage() {
                                   <TableCell>{item.productName}</TableCell>
                                   <TableCell>
                                     <div className="flex items-center gap-2">
-                                      <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', (returnItems[item.id!]?.quantity || 0) - 1)}>
+                                      <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', Math.max(0, (returnItems[item.id!]?.quantity || 0) - 1))}>
                                         <Minus className="h-4 w-4" />
                                       </Button>
                                       <span>{returnItems[item.id!]?.quantity || 0}</span>
-                                      <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', (returnItems[item.id!]?.quantity || 0) + 1)}>
+                                      <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', ((returnItems[item.id!]?.quantity || 0) + 1))}>
                                         <Plus className="h-4 w-4" />
                                       </Button>
                                     </div>
+                                  </TableCell>
+                                  <TableCell>
+                                     <Input
+                                        placeholder="Reason for return"
+                                        value={returnItems[item.id!]?.reason || ''}
+                                        onChange={(e) => handleReturnItemChange(item.id!, 'reason', e.target.value)}
+                                    />
                                   </TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
                           </Table>
-                          <Textarea placeholder="Reason" onChange={(e) => handleReturnItemChange(selectedInvoiceForAction.items![0].id!, 'reason', e.target.value)} />
                         </>
                       )}
                     </div>
