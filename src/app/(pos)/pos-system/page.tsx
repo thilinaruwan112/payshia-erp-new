@@ -33,7 +33,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,12 +76,11 @@ interface BalanceDetails {
     ref_id: string;
 }
 
-type TransactionReturnItem = {
+type StockEntry = {
     id: string;
     product_id: string;
-    productName: string; // Assuming API provides this
-    return_qty: string;
-    return_amount: string;
+    quantity: string;
+    product: Product;
 }
 
 type TransactionReturn = {
@@ -98,8 +97,9 @@ type TransactionReturn = {
     return_amount: string;
     settled_invoice: string;
     company_id: string;
-    items?: TransactionReturnItem[];
+    stock_entries?: StockEntry[];
 }
+
 
 let orderCounter = 1;
 
@@ -479,12 +479,12 @@ export default function POSPage() {
   const handleReturnSelectForAction = async (returnData: TransactionReturn) => {
     setIsReturnsLoading(true);
     try {
-      const response = await fetch(`https://server-erp.payshia.com/transaction-returns/${returnData.id}`);
+      const response = await fetch(`https://server-erp.payshia.com/transaction-returns/full/${returnData.id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch return details');
       }
-      const data: TransactionReturn = await response.json();
-      setSelectedReturnForRefund(data);
+      const data = await response.json();
+      setSelectedReturnForRefund(data.data);
     } catch (error) {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch return details.' });
     } finally {
@@ -983,7 +983,7 @@ export default function POSPage() {
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
       />
-      <div className="flex h-screen w-screen overflow-hidden">
+       <div className="flex h-screen w-screen overflow-hidden">
         <div className="flex-1 flex flex-col overflow-y-auto">
           <PosHeader
             searchTerm={searchTerm}
@@ -1197,11 +1197,11 @@ export default function POSPage() {
                                     <Table className="mt-4">
                                         <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
                                         <TableBody>
-                                            {selectedReturnForRefund.items?.map(item => (
+                                            {selectedReturnForRefund.stock_entries?.map(item => (
                                                 <TableRow key={item.id}>
-                                                    <TableCell>{item.productName}</TableCell>
-                                                    <TableCell className="text-right">{parseFloat(item.return_qty).toFixed(2)}</TableCell>
-                                                    <TableCell className="text-right">{parseFloat(item.return_amount).toFixed(2)}</TableCell>
+                                                    <TableCell>{item.product.name}</TableCell>
+                                                    <TableCell className="text-right">{parseFloat(item.quantity).toFixed(2)}</TableCell>
+                                                    <TableCell className="text-right">${(parseFloat(item.product.price as string) * parseFloat(item.quantity)).toFixed(2)}</TableCell>
                                                 </TableRow>
                                             )) || (
                                                  <TableRow>
