@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -376,7 +377,23 @@ export default function POSPage() {
 
   const handleInvoiceSelectForAction = async (invoice: Invoice) => {
     setSelectedInvoiceForAction(invoice);
-    if(isReturnDialogOpen) return;
+    
+    if (isReturnDialogOpen && invoice.items) {
+      const itemsFromInvoice: ReturnItem[] = invoice.items.map(item => {
+        const product = posProducts.find(p => p.id === String(item.product_id));
+        return {
+          id: String(item.id) || `${item.product_id}-${item.product_variant_id}`,
+          name: item.productName || product?.name || `Product ID: ${item.product_id}`,
+          unit: product?.stock_unit || 'Nos',
+          rate: parseFloat(String(item.item_price)),
+          quantity: parseFloat(String(item.quantity)),
+          amount: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)),
+          reason: ''
+        }
+      });
+      setReturnItems(itemsFromInvoice);
+      return;
+    }
 
     setIsBalanceLoading(true);
     try {
@@ -928,7 +945,7 @@ export default function POSPage() {
                                     <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                                 </Select>
                             )}
-                            {selectedCustomerForAction && (
+                             {selectedCustomerForAction && (
                                 <>
                                     <div className="grid grid-cols-2 gap-4">
                                         <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invNumber)!)} disabled={isPastInvoicesLoading}>
@@ -942,7 +959,7 @@ export default function POSPage() {
                                     <div className="grid grid-cols-5 gap-2 items-end">
                                         <div className="col-span-2">
                                             <Label>Select Product</Label>
-                                            <Select onValueChange={(productId) => setCurrentReturnProduct(posProducts.find(p => p.id === productId) || null)}>
+                                            <Select onValueChange={(productId) => setCurrentReturnProduct(posProducts.find(p => p.id === productId) || null)} disabled={!!selectedInvoiceForAction}>
                                                 <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
                                                 <SelectContent>{posProducts.map(p => <SelectItem key={p.id} value={p.id}>{p.variantName}</SelectItem>)}</SelectContent>
                                             </Select>
@@ -950,7 +967,7 @@ export default function POSPage() {
                                         <div><Label>Unit</Label><Input value={currentReturnProduct?.stock_unit || 'Nos'} readOnly /></div>
                                         <div><Label>Rate</Label><Input value={(currentReturnProduct?.price as number || 0).toFixed(2)} readOnly /></div>
                                         <div><Label>Quantity</Label><Input type="number" value={currentReturnQty} onChange={(e) => setCurrentReturnQty(parseInt(e.target.value, 10))} /></div>
-                                        <Button onClick={handleAddReturnItem} disabled={!currentReturnProduct}><Plus className="h-4 w-4" /></Button>
+                                        <Button onClick={handleAddReturnItem} disabled={!currentReturnProduct || !!selectedInvoiceForAction}><Plus className="h-4 w-4" /></Button>
                                     </div>
                                     <Table>
                                         <TableHeader>
@@ -966,7 +983,12 @@ export default function POSPage() {
                                                     <TableCell>{item.quantity}</TableCell>
                                                     <TableCell>{item.rate.toFixed(2)}</TableCell>
                                                     <TableCell>{item.amount.toFixed(2)}</TableCell>
-                                                    <TableCell>{item.reason}</TableCell>
+                                                    <TableCell>
+                                                        <Input 
+                                                            value={item.reason} 
+                                                            onChange={(e) => setReturnItems(prev => prev.map(p => p.id === item.id ? {...p, reason: e.target.value} : p))}
+                                                        />
+                                                    </TableCell>
                                                     <TableCell><Button variant="ghost" size="icon" onClick={() => setReturnItems(prev => prev.filter(p => p.id !== item.id))}><Trash2 className="h-4 w-4" /></Button></TableCell>
                                                 </TableRow>
                                             ))}
@@ -1137,3 +1159,4 @@ export default function POSPage() {
     </>
   );
 }
+
