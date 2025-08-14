@@ -8,7 +8,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck, Minus, CheckCircle, Trash2 } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck, Minus, CheckCircle, Trash2, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -32,7 +32,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -146,7 +146,7 @@ const StewardSelection = ({ onSelectSteward, onBack, stewards, isLoading }: { on
                     stewards.map(steward => (
                         <Card key={steward.id} className="p-4 text-center cursor-pointer hover:border-primary" onClick={() => onSelectSteward(steward)}>
                             <Avatar className="h-20 w-20 mx-auto">
-                                <AvatarImage src={steward.avatar} alt={steward.name} data-ai-hint="profile photo" />
+                                <AvatarImage src={steward.avatar} alt={steward.name} data-ai-hint="profile picture" />
                                 <AvatarFallback>{steward.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                             </Avatar>
                             <p className="mt-2 font-semibold">{steward.name}</p>
@@ -160,13 +160,16 @@ const StewardSelection = ({ onSelectSteward, onBack, stewards, isLoading }: { on
 };
 
 type ReturnItem = {
-    id: string;
+    id: string; // This will be the variant ID
     name: string;
     unit: string;
     rate: number;
     quantity: number;
     amount: number;
     reason: string;
+    // Data needed for submission
+    productId: string;
+    productVariantId: string;
 };
 
 
@@ -211,6 +214,7 @@ export default function POSPage() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Card');
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -308,9 +312,7 @@ export default function POSPage() {
       }
       setIsPastInvoicesLoading(true);
       try {
-        const response = await fetch(
-          `https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomerForAction}&company_id=1`
-        );
+        const response = await fetch(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomerForAction}&company_id=1`);
         if (!response.ok) {
           throw new Error('Failed to fetch invoices');
         }
@@ -384,13 +386,15 @@ export default function POSPage() {
       const itemsFromInvoice: ReturnItem[] = invoice.items.map(item => {
         const product = posProducts.find(p => p.id === String(item.product_id));
         return {
-          id: String(item.id) || `${item.product_id}-${item.product_variant_id}`,
+          id: String(item.product_variant_id || item.product_id),
           name: item.productName || product?.name || `Product ID: ${item.product_id}`,
           unit: product?.stock_unit || 'Nos',
           rate: parseFloat(String(item.item_price)),
-          quantity: parseFloat(String(item.quantity)),
-          amount: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)),
-          reason: ''
+          quantity: 0,
+          amount: 0,
+          reason: '',
+          productId: String(item.product_id),
+          productVariantId: String(item.product_variant_id),
         }
       });
       setReturnItems(itemsFromInvoice);
@@ -726,29 +730,88 @@ export default function POSPage() {
       quantity: currentReturnQty,
       amount: (currentReturnProduct.price as number) * currentReturnQty,
       reason: returnReason,
+      productId: currentReturnProduct.id,
+      productVariantId: currentReturnProduct.variant.id,
     };
     setReturnItems(prev => [...prev, newItem]);
     setCurrentReturnProduct(null);
     setCurrentReturnQty(1);
-    setReturnReason('');
+    // Keep the general reason
   };
+  
+  const handleProcessReturn = async () => {
+    if (!currentLocation || !selectedCustomerForAction || returnItems.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Missing Information",
+        description: "Please select a customer, and add at least one item to return.",
+      });
+      return;
+    }
+    setIsSubmittingReturn(true);
+    
+    const totalReturnAmount = returnItems.reduce((acc, item) => acc + item.amount, 0);
 
-  const handleProcessReturn = () => {
-    console.log("Processing return for:", {
-        customer: selectedCustomerForAction,
-        invoice: selectedInvoiceForAction?.invoice_number,
-        reason: returnReason,
-        items: returnItems
-    });
-    toast({
-      title: "Return Processed",
-      description: "The return has been successfully processed."
-    });
-    setReturnDialogOpen(false);
-    setSelectedCustomerForAction(null);
-    setSelectedInvoiceForAction(null);
-    setReturnItems([]);
-    setReturnReason("");
+    const payload = {
+      customer_id: parseInt(selectedCustomerForAction, 10),
+      location_id: parseInt(currentLocation.location_id, 10),
+      created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+      updated_by: currentCashier.name,
+      reason: returnReason || "POS Return",
+      refund_id: `REF-${Date.now()}`,
+      is_active: 1,
+      ref_invoice: selectedInvoiceForAction?.invoice_number || "N/A",
+      return_amount: totalReturnAmount,
+      settled_invoice: "N/A", 
+      company_id: company_id,
+      stock_entries: returnItems.map(item => ({
+        type: "IN",
+        quantity: item.quantity,
+        product_id: parseInt(item.productId, 10),
+        location_id: currentLocation.location_id,
+        ref_id: selectedInvoiceForAction?.invoice_number || `RET-${Date.now()}`,
+        transaction_type: "return",
+        product_variant_id: parseInt(item.productVariantId, 10),
+        // These fields might not be available on client side without more lookups.
+        // Sending placeholders or fetching them would be needed.
+        patch_code: "UNKNOWN",
+        manufacture_date: format(new Date(), 'yyyy-MM-dd'),
+        expire_date: format(new Date(), 'yyyy-MM-dd'),
+      }))
+    };
+    
+    try {
+        const response = await fetch('https://server-erp.payshia.com/transaction-returns', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to process return.");
+        }
+        
+        toast({
+            title: "Return Processed",
+            description: "The return has been successfully processed."
+        });
+        setReturnDialogOpen(false);
+        setSelectedCustomerForAction(null);
+        setSelectedInvoiceForAction(null);
+        setReturnItems([]);
+        setReturnReason("");
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: "destructive",
+            title: "Error Processing Return",
+            description: errorMessage
+        });
+    } finally {
+        setIsSubmittingReturn(false);
+    }
   };
 
 
@@ -809,7 +872,7 @@ export default function POSPage() {
         onClose={() => setDrawerOpen(false)}
         setDiscount={setDiscount}
         setServiceCharge={setServiceCharge}
-        onUpdateDetails={updateOrderDetails}
+        onUpdateDetails={onUpdateDetails}
         availableTables={tables}
         availableStewards={stewards}
         customers={customers}
@@ -883,7 +946,7 @@ export default function POSPage() {
                                 </SelectContent>
                             </Select>
                             {isPastInvoicesLoading ? <Loader2 className="mx-auto h-6 w-6 animate-spin" /> : (
-                                <RadioGroup onValueChange={(invoiceNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invoiceNumber)!)}>
+                                 <RadioGroup onValueChange={(invoiceNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invoiceNumber)!)}>
                                     {pastInvoices.map(invoice => (
                                         <div key={invoice.id} className="flex items-center space-x-2">
                                             <RadioGroupItem value={invoice.invoice_number} id={invoice.id} />
@@ -1026,7 +1089,10 @@ export default function POSPage() {
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
-                            <Button onClick={handleProcessReturn} disabled={returnItems.length === 0}>Save Return</Button>
+                            <Button onClick={handleProcessReturn} disabled={returnItems.length === 0 || isSubmittingReturn}>
+                                {isSubmittingReturn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Save Return
+                            </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
