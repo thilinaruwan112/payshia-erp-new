@@ -432,7 +432,6 @@ export type ActiveOrder = {
   cart: CartItem[];
   discount: number;
   serviceCharge: number;
-  serviceChargeEnabled: boolean;
   customer: User;
   orderType: 'Take Away' | 'Retail' | 'Delivery' | 'Dine-In';
   tableName?: string;

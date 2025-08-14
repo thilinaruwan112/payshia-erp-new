@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -55,7 +54,7 @@ interface OrderPanelProps {
   isDrawer?: boolean;
   onClose?: () => void;
   setDiscount: (discount: number) => void;
-  toggleServiceCharge: (enabled: boolean) => void;
+  setServiceCharge: (serviceCharge: number) => void;
   onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
   availableTables: TableType[];
   availableStewards: User[];
@@ -169,6 +168,47 @@ const DiscountDialog = ({
   );
 };
 
+const ServiceChargeDialog = ({
+  currentValue,
+  setServiceCharge,
+  onClose,
+}: {
+  currentValue: number;
+  setServiceCharge: (d: number) => void;
+  onClose: () => void;
+}) => {
+  const [chargeValue, setChargeValue] = React.useState(currentValue.toString());
+
+  const applyCharge = () => {
+    setServiceCharge(Number(chargeValue));
+    onClose();
+  };
+
+  return (
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Apply Service Charge</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-2">
+        <Label htmlFor="charge-value">Service Charge Amount ($)</Label>
+        <Input
+          id="charge-value"
+          type="number"
+          placeholder="e.g. 10.00"
+          value={chargeValue}
+          onChange={(e) => setChargeValue(e.target.value)}
+        />
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={applyCharge}>Apply</Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
+
 
 const EditOrderDialog = ({ order, onUpdateDetails, availableTables, availableStewards, onClose }: { 
     order: ActiveOrder;
@@ -254,7 +294,7 @@ export function OrderPanel({
   isDrawer,
   onClose,
   setDiscount,
-  toggleServiceCharge,
+  setServiceCharge,
   onUpdateDetails,
   availableTables,
   availableStewards,
@@ -264,9 +304,10 @@ export function OrderPanel({
   const { toast } = useToast();
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
+  const [isServiceChargeOpen, setServiceChargeOpen] = React.useState(false);
   const [isEditOrderOpen, setEditOrderOpen] = React.useState(false);
 
-  const { cart, customer, name: orderName, discount, serviceChargeEnabled, id: orderId, steward, orderType } = order;
+  const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
 
   const handleSuccessfulPayment = async (paymentMethod: string) => {
     // This is a simplified simulation. A real app would have a robust backend process.
@@ -438,19 +479,21 @@ export function OrderPanel({
           <span>Item Discounts</span>
           <span>-${orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between items-center text-sm">
-          <Label htmlFor="service-charge-switch" className="flex items-center gap-2 cursor-pointer">
-            <PlusSquare className="h-4 w-4" /> Service Charge (10%)
-          </Label>
-          <div className="flex items-center gap-2">
-            <span>${orderTotals.serviceCharge.toFixed(2)}</span>
-            <Switch
-              id="service-charge-switch"
-              checked={serviceChargeEnabled}
-              onCheckedChange={toggleServiceCharge}
-            />
-          </div>
-        </div>
+        <Dialog open={isServiceChargeOpen} onOpenChange={setServiceChargeOpen}>
+          <DialogTrigger asChild>
+            <div className="flex justify-between items-center text-sm cursor-pointer hover:text-primary">
+              <span className="flex items-center gap-2">
+                <PlusSquare className="h-4 w-4" /> Service Charge
+              </span>
+              <span>${orderTotals.serviceCharge.toFixed(2)}</span>
+            </div>
+          </DialogTrigger>
+          <ServiceChargeDialog
+            currentValue={serviceCharge}
+            setServiceCharge={setServiceCharge}
+            onClose={() => setServiceChargeOpen(false)}
+          />
+        </Dialog>
          <div className="flex justify-between text-sm text-green-600">
           <span>Order Discount</span>
           <span>-${discount.toFixed(2)}</span>
