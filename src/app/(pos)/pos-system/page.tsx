@@ -40,6 +40,7 @@ import { users } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 
 export type PosProduct = Product & {
@@ -881,57 +882,70 @@ export default function POSPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-                 <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                            <Undo2 className="mr-2 h-4 w-4" />
-                            Return
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>Select Return Products</DialogTitle>
-                          <DialogDescription>Note : A La Carte Items cannot be Returned!</DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <Select onValueChange={setSelectedCustomerForAction}>
-                                    <SelectTrigger><SelectValue placeholder="Select Customer" /></SelectTrigger>
-                                    <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                                </Select>
-                                 <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invNumber)!)} disabled={!selectedCustomerForAction || isPastInvoicesLoading}>
-                                    <SelectTrigger><SelectValue placeholder="Select Invoice (If Available)" /></SelectTrigger>
-                                    <SelectContent>{pastInvoices.map(inv => <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number}</SelectItem>)}</SelectContent>
-                                </Select>
-                            </div>
-                            {selectedInvoiceForAction && (
-                                <>
-                                 <Table>
-                                    <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="w-[100px]">Qty</TableHead></TableRow></TableHeader>
-                                    <TableBody>
-                                        {selectedInvoiceForAction.items?.map(item => (
-                                            <TableRow key={item.id}>
-                                                <TableCell>{item.productName}</TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                        <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', (returnItems[item.id!]?.quantity || 0) - 1)}><Minus className="h-4 w-4"/></Button>
-                                                        <span>{returnItems[item.id!]?.quantity || 0}</span>
-                                                        <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', (returnItems[item.id!]?.quantity || 0) + 1)}><Plus className="h-4 w-4"/></Button>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                                <Textarea placeholder="Reason" onChange={(e) => handleReturnItemChange(selectedInvoiceForAction.items![0].id!, 'reason', e.target.value)} />
-                                </>
-                            )}
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
-                            <Button onClick={handleProcessReturn}>Process Return</Button>
-                        </DialogFooter>
-                    </DialogContent>
+                <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Undo2 className="mr-2 h-4 w-4" />
+                      Return
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Select Return Products</DialogTitle>
+                      <DialogDescription>Note : A La Carte Items cannot be Returned!</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <Select onValueChange={setSelectedCustomerForAction}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Customer" />
+                          </SelectTrigger>
+                          <SelectContent>{customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find((i) => i.invoice_number === invNumber)!)} disabled={!selectedCustomerForAction || isPastInvoicesLoading}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Invoice (If Available)" />
+                          </SelectTrigger>
+                          <SelectContent>{pastInvoices.map((inv) => <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      {selectedInvoiceForAction && (
+                        <>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Item</TableHead>
+                                <TableHead className="w-[100px]">Qty</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {selectedInvoiceForAction.items?.map((item) => (
+                                <TableRow key={item.id}>
+                                  <TableCell>{item.productName}</TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', (returnItems[item.id!]?.quantity || 0) - 1)}>
+                                        <Minus className="h-4 w-4" />
+                                      </Button>
+                                      <span>{returnItems[item.id!]?.quantity || 0}</span>
+                                      <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', (returnItems[item.id!]?.quantity || 0) + 1)}>
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                          <Textarea placeholder="Reason" onChange={(e) => handleReturnItemChange(selectedInvoiceForAction.items![0].id!, 'reason', e.target.value)} />
+                        </>
+                      )}
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
+                      <Button onClick={handleProcessReturn}>Process Return</Button>
+                    </DialogFooter>
+                  </DialogContent>
                 </Dialog>
             </div>
             <div className="flex items-center gap-2">
