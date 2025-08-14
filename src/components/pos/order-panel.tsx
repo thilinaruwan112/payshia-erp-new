@@ -473,29 +473,27 @@ export function OrderPanel({
              <Button variant="outline" onClick={onHoldOrder} disabled={cart.length === 0} className="h-12">
                 <Notebook className="mr-2 h-4 w-4" /> Hold
             </Button>
-             <Button variant="destructive" onClick={() => onClearCart(orderId)} disabled={cart.length === 0} className="h-12 col-span-2">
+             <Button variant="secondary" onClick={onSendToKitchen} disabled={cart.length === 0} className="h-12">
+              <ChefHat className="mr-2 h-4 w-4" /> Send to Kitchen
+            </Button>
+            <Button variant="destructive" onClick={() => onClearCart(orderId)} disabled={cart.length === 0} className="h-12">
                 <Trash2 className="mr-2 h-4 w-4" /> Clear Cart
             </Button>
         </div>
-        <div className="grid grid-cols-2 gap-2">
-           <Button variant="secondary" onClick={onSendToKitchen} disabled={cart.length === 0} className="h-16 text-base">
-              <ChefHat className="mr-2 h-5 w-5" /> Send to Kitchen
+        <Dialog open={isPaymentOpen} onOpenChange={setPaymentOpen}>
+        <DialogTrigger asChild>
+            <Button
+            className="w-full h-16 text-lg bg-green-600 hover:bg-green-700 text-white"
+            disabled={cart.length === 0}
+            >
+            <CreditCard className="mr-2 h-5 w-5" /> Proceed
             </Button>
-            <Dialog open={isPaymentOpen} onOpenChange={setPaymentOpen}>
-            <DialogTrigger asChild>
-                <Button
-                className="w-full h-16 text-lg bg-green-600 hover:bg-green-700 text-white"
-                disabled={cart.length === 0}
-                >
-                <CreditCard className="mr-2 h-5 w-5" /> Proceed
-                </Button>
-            </DialogTrigger>
-            <PaymentDialog
-                orderTotals={orderTotals}
-                onSuccessfulPayment={handleSuccessfulPayment}
-            />
-            </Dialog>
-        </div>
+        </DialogTrigger>
+        <PaymentDialog
+            orderTotals={orderTotals}
+            onSuccessfulPayment={handleSuccessfulPayment}
+        />
+        </Dialog>
       </footer>
     </div>
   );

@@ -208,9 +208,9 @@ export default function POSPage() {
         try {
             const [productsResponse, collectionsResponse, brandsResponse, customersResponse] = await Promise.all([
                 fetch(`https://server-erp.payshia.com/products/with-variants`),
-                fetch(`https://server-erp.payshia.com/collections/company?company_id=1`),
-                fetch(`https://server-erp.payshia.com/brands/company?company_id=1`),
-                fetch('https://server-erp.payshia.com/customers'),
+                fetch(`https://server-erp.payshia.com/collections/company?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
             ]);
 
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !customersResponse.ok) {
@@ -271,8 +271,10 @@ export default function POSPage() {
             setIsLoadingProducts(false);
         }
     }
-    fetchPosData();
-  }, [toast]);
+    if (company_id) {
+        fetchPosData();
+    }
+  }, [toast, company_id]);
   
   useEffect(() => {
     const fetchPendingInvoices = async () => {
@@ -939,7 +941,6 @@ export default function POSPage() {
                 <Button variant="outline" size="sm" onClick={() => setRefundDialogOpen(true)}>
                     <Undo2 className="mr-2 h-4 w-4" /> Refund
                 </Button>
-              <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Return</Button>
             </div>
             <div className="flex items-center gap-2">
                <Drawer>
