@@ -912,7 +912,7 @@ export default function POSPage() {
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
-      />,
+      />
       
       <div className="flex h-screen w-screen overflow-hidden">
         <div className="flex-1 flex flex-col overflow-y-auto">
@@ -1049,7 +1049,7 @@ export default function POSPage() {
                                         </TableHeader>
                                         <TableBody>
                                             {returnItems.map((item, index) => (
-                                                <TableRow key={item.id}>
+                                                <TableRow key={`${item.id}-${index}`}>
                                                     <TableCell>{index+1}</TableCell>
                                                     <TableCell>{item.name}</TableCell>
                                                      <TableCell>
