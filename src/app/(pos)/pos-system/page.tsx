@@ -8,7 +8,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck, Minus, CheckCircle, Trash2, Info } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck, Minus, CheckCircle, Trash2, Info, Banknote } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -198,6 +198,7 @@ export default function POSPage() {
   
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
   const [isReturnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [isRefundDialogOpen, setRefundDialogOpen] = useState(false);
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState<string | null>(null);
   const [pastInvoices, setPastInvoices] = useState<Invoice[]>([]);
   const [isPastInvoicesLoading, setIsPastInvoicesLoading] = useState(false);
@@ -384,11 +385,11 @@ export default function POSPage() {
     
     if (isReturnDialogOpen && invoice.items) {
       const itemsFromInvoice: ReturnItem[] = invoice.items.map(item => {
-        const product = posProducts.find(p => p.id === String(item.product_id));
+        const productDetails = posProducts.find(p => p.id === String(item.product_id));
         return {
           id: String(item.product_variant_id || item.product_id),
-          name: item.productName || product?.name || `Product ID: ${item.product_id}`,
-          unit: product?.stock_unit || 'Nos',
+          name: item.productName || productDetails?.name || `Product ID: ${item.product_id}`,
+          unit: productDetails?.stock_unit || 'Nos',
           rate: parseFloat(String(item.item_price)),
           quantity: 0,
           amount: 0,
@@ -772,8 +773,6 @@ export default function POSPage() {
         ref_id: selectedInvoiceForAction?.invoice_number || `RET-${Date.now()}`,
         transaction_type: "return",
         product_variant_id: parseInt(item.productVariantId, 10),
-        // These fields might not be available on client side without more lookups.
-        // Sending placeholders or fetching them would be needed.
         patch_code: "UNKNOWN",
         manufacture_date: format(new Date(), 'yyyy-MM-dd'),
         expire_date: format(new Date(), 'yyyy-MM-dd'),
@@ -989,7 +988,7 @@ export default function POSPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-                <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
+                 <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
                     <DialogTrigger asChild>
                         <Button variant="outline" size="sm">
                             <Undo2 className="mr-2 h-4 w-4" />
@@ -1001,7 +1000,7 @@ export default function POSPage() {
                             <DialogTitle>Select Return Products</DialogTitle>
                             <DialogDescription>Note : A La Carte Items cannot be Returned!</DialogDescription>
                         </DialogHeader>
-                         <div className="space-y-4">
+                        <div className="space-y-4">
                             {!selectedCustomerForAction ? (
                                 <Select onValueChange={setSelectedCustomerForAction}>
                                     <SelectTrigger>
@@ -1009,7 +1008,7 @@ export default function POSPage() {
                                     </SelectTrigger>
                                     <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                                 </Select>
-                             ) : (
+                            ) : (
                                 <>
                                     <div className="flex justify-between items-center bg-muted p-2 rounded-md">
                                         <p>Customer: <span className="font-semibold">{customers.find(c => c.id === selectedCustomerForAction)?.name}</span></p>
@@ -1028,7 +1027,7 @@ export default function POSPage() {
                                         </Select>
                                         <Input placeholder="Enter Reason for Return" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
                                     </div>
-                                     <div className="grid grid-cols-5 gap-2 items-end">
+                                    <div className="grid grid-cols-5 gap-2 items-end">
                                         <div className="col-span-2">
                                             <Label>Select Product</Label>
                                             <Select onValueChange={(variantId) => setCurrentReturnProduct(posProducts.find(p => p.variant.id === variantId) || null)} disabled={!!selectedInvoiceForAction}>
@@ -1050,28 +1049,28 @@ export default function POSPage() {
                                         <TableBody>
                                             {returnItems.map((item, index) => (
                                                 <TableRow key={`${item.id}-${index}`}>
-                                                    <TableCell>{index+1}</TableCell>
+                                                    <TableCell>{index + 1}</TableCell>
                                                     <TableCell>{item.name}</TableCell>
-                                                     <TableCell>
-                                                      <Input 
-                                                          type="number"
-                                                          value={item.quantity}
-                                                          onChange={(e) => {
-                                                            const newQty = parseInt(e.target.value, 10) || 0;
-                                                            setReturnItems(prev => prev.map(p => p.id === item.id ? {...p, quantity: newQty, amount: newQty * p.rate } : p));
-                                                          }}
-                                                          className="w-20"
-                                                      />
+                                                    <TableCell>
+                                                        <Input
+                                                            type="number"
+                                                            value={item.quantity}
+                                                            onChange={(e) => {
+                                                                const newQty = parseInt(e.target.value, 10) || 0;
+                                                                setReturnItems(prev => prev.map(p => p.id === item.id ? { ...p, quantity: newQty, amount: newQty * p.rate } : p));
+                                                            }}
+                                                            className="w-20"
+                                                        />
                                                     </TableCell>
                                                     <TableCell>{item.rate.toFixed(2)}</TableCell>
                                                     <TableCell>{item.amount.toFixed(2)}</TableCell>
                                                     <TableCell>
-                                                        <Input 
-                                                            value={item.reason} 
-                                                            onChange={(e) => setReturnItems(prev => prev.map(p => p.id === item.id ? {...p, reason: e.target.value} : p))}
+                                                        <Input
+                                                            value={item.reason}
+                                                            onChange={(e) => setReturnItems(prev => prev.map(p => p.id === item.id ? { ...p, reason: e.target.value } : p))}
                                                         />
                                                     </TableCell>
-                                                    <TableCell><Button variant="ghost" size="icon" onClick={() => setReturnItems(prev => prev.filter(p => p.id !== item.id))}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                                                    <TableCell><Button variant="ghost" size="icon" onClick={() => setReturnItems(prev => prev.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4" /></Button></TableCell>
                                                 </TableRow>
                                             ))}
                                         </TableBody>
@@ -1091,8 +1090,25 @@ export default function POSPage() {
                             <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
                             <Button onClick={handleProcessReturn} disabled={returnItems.length === 0 || isSubmittingReturn}>
                                 {isSubmittingReturn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Save Return
+                                Process Return
                             </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+                <Dialog open={isRefundDialogOpen} onOpenChange={setRefundDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                            <Banknote className="mr-2 h-4 w-4" />
+                            Refund
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Process Refund</DialogTitle>
+                            <DialogDescription>This feature is coming soon.</DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setRefundDialogOpen(false)}>Close</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
