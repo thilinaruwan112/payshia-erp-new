@@ -89,6 +89,7 @@ type TransactionReturn = {
     return_amount: string;
     settled_invoice: string;
     company_id: string;
+    items?: any[]; // Add items if your API provides them
 }
 
 let orderCounter = 1;
@@ -221,6 +222,7 @@ export default function POSPage() {
   const [pastInvoices, setPastInvoices] = useState<Invoice[]>([]);
   const [isPastInvoicesLoading, setIsPastInvoicesLoading] = useState(false);
   const [selectedInvoiceForAction, setSelectedInvoiceForAction] = useState<Invoice | null>(null);
+  const [selectedReturnForRefund, setSelectedReturnForRefund] = useState<TransactionReturn | null>(null);
 
   // Return dialog state
   const [returnReason, setReturnReason] = useState("");
@@ -1140,7 +1142,7 @@ export default function POSPage() {
                 </Dialog>
                 <Dialog open={isRefundDialogOpen} onOpenChange={setRefundDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
+                         <Button variant="outline" size="sm">
                             <Banknote className="mr-2 h-4 w-4" />
                             Refund
                         </Button>
@@ -1148,10 +1150,11 @@ export default function POSPage() {
                     <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
                         <DialogHeader className="flex-row items-center justify-between border-b pb-4">
                             <div className="flex items-center gap-4">
+                                {selectedReturnForRefund && <Button variant="ghost" onClick={() => setSelectedReturnForRefund(null)}><ArrowLeft className="h-5 w-5 mr-2"/> Back</Button>}
                                 <img src="https://i.imgur.com/kS4S17L.png" alt="Payshia POS" className="h-8"/>
                                 <div className="text-left">
-                                    <DialogTitle className="text-2xl">Select Return to Make Refund</DialogTitle>
-                                    <DialogDescription>Note : A La Carte Items cannot be Returned of Refunded!</DialogDescription>
+                                    <DialogTitle className="text-2xl">{selectedReturnForRefund ? 'Refund Confirmation' : 'Select Return to Make Refund'}</DialogTitle>
+                                    {!selectedReturnForRefund && <DialogDescription>Note : A La Carte Items cannot be Returned of Refunded!</DialogDescription>}
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -1159,29 +1162,58 @@ export default function POSPage() {
                                 <DialogClose asChild><Button variant="ghost" size="icon"><X className="h-5 w-5" /></Button></DialogClose>
                             </div>
                         </DialogHeader>
-                        <ScrollArea className="flex-1 -mx-6 px-6">
-                             {isReturnsLoading ? (
-                                <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                             ) : (
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 py-4">
-                                    {transactionReturns.map(ret => {
-                                        const customer = customers.find(c => c.customer_id === ret.customer_id)
-                                        return (
-                                            <Card key={ret.id} className="cursor-pointer hover:border-primary">
-                                                <CardHeader className="p-2">
-                                                    <Badge className="w-fit mb-1 text-xs">{customer?.name || 'Walk-in'}</Badge>
-                                                    <CardTitle className="text-sm">RTN{ret.id.padStart(4,'0')}</CardTitle>
-                                                </CardHeader>
-                                                <CardContent className="p-2">
-                                                    <p className="text-xl font-bold">${parseFloat(ret.return_amount).toFixed(2)}</p>
-                                                    <Badge variant="secondary" className="mt-1 text-xs font-normal">{format(new Date(ret.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
-                                                </CardContent>
-                                            </Card>
-                                        )
-                                    })}
+                        {selectedReturnForRefund ? (
+                            <div className="grid grid-cols-2 gap-8 p-6">
+                                <div>
+                                    <Badge>{customers.find(c => c.customer_id === selectedReturnForRefund.customer_id)?.name || 'Walk-in'}</Badge>
+                                    <p className="text-2xl font-bold mt-1">RTN{selectedReturnForRefund.id.padStart(4, '0')}</p>
+                                    <p className="text-4xl font-bold text-green-600">${parseFloat(selectedReturnForRefund.return_amount).toFixed(2)}</p>
+                                    <Badge variant="secondary" className="mt-1 text-sm font-normal">{format(new Date(selectedReturnForRefund.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
+                                    <Table className="mt-4">
+                                        <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+                                        <TableBody>
+                                            {/* This is mock data, as items are not in the return payload */}
+                                            <TableRow>
+                                                <TableCell>Burger Bun</TableCell>
+                                                <TableCell className="text-right">1.000</TableCell>
+                                                <TableCell className="text-right">650.00</TableCell>
+                                            </TableRow>
+                                        </TableBody>
+                                    </Table>
                                 </div>
-                             )}
-                        </ScrollArea>
+                                <div className="bg-muted/50 p-6 rounded-lg flex flex-col justify-center">
+                                    <div className="space-y-4">
+                                        <h3 className="text-lg font-semibold text-center">Enter PIN</h3>
+                                        <Input type="password" placeholder="****" className="h-12 text-center text-2xl tracking-widest" />
+                                        <Button className="w-full h-12 text-lg">Refund</Button>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <ScrollArea className="flex-1 -mx-6 px-6">
+                                {isReturnsLoading ? (
+                                    <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                                ) : (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 py-4">
+                                        {transactionReturns.map(ret => {
+                                            const customer = customers.find(c => c.customer_id === ret.customer_id)
+                                            return (
+                                                <Card key={ret.id} className="cursor-pointer hover:border-primary p-2" onClick={() => setSelectedReturnForRefund(ret)}>
+                                                    <CardHeader className="p-2">
+                                                        <Badge className="w-fit mb-1 text-xs">{customer?.name || 'Walk-in'}</Badge>
+                                                        <CardTitle className="text-sm">RTN{ret.id.padStart(4,'0')}</CardTitle>
+                                                    </CardHeader>
+                                                    <CardContent className="p-2">
+                                                        <p className="text-xl font-bold">${parseFloat(ret.return_amount).toFixed(2)}</p>
+                                                        <Badge variant="secondary" className="mt-1 text-xs font-normal">{format(new Date(ret.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
+                                                    </CardContent>
+                                                </Card>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </ScrollArea>
+                        )}
                     </DialogContent>
                 </Dialog>
             </div>
