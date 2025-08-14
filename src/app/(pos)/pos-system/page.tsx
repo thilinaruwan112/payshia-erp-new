@@ -7,7 +7,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck, Minus, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -38,6 +38,8 @@ import { Label } from '@/components/ui/label';
 import { CustomerFormDialog } from '@/components/customer-form-dialog';
 import { users } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 
 
 export type PosProduct = Product & {
@@ -181,11 +183,14 @@ export default function POSPage() {
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
-  const [selectedReceiptsCustomer, setSelectedReceiptsCustomer] = useState<string | null>(null);
-  const [pendingInvoices, setPendingInvoices] = useState<Invoice[]>([]);
-  const [isPendingInvoicesLoading, setIsPendingInvoicesLoading] = useState(false);
-  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<Invoice | null>(null);
-  const [invoiceBalance, setInvoiceBalance] = useState<BalanceDetails | null>(null);
+  const [isReturnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [selectedCustomerForAction, setSelectedCustomerForAction] = useState<string | null>(null);
+  const [pastInvoices, setPastInvoices] = useState<Invoice[]>([]);
+  const [isPastInvoicesLoading, setIsPastInvoicesLoading] = useState(false);
+  const [selectedInvoiceForAction, setSelectedInvoiceForAction] = useState<Invoice | null>(null);
+
+  const [returnItems, setReturnItems] = useState<Record<string, { quantity: number; reason: string }>>({});
+
   const [isBalanceLoading, setIsBalanceLoading] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('Card');
@@ -276,35 +281,36 @@ export default function POSPage() {
   }, [toast]);
   
   useEffect(() => {
-    const fetchPendingInvoices = async () => {
-        if (!selectedReceiptsCustomer) {
-            setPendingInvoices([]);
+    const fetchInvoicesForAction = async () => {
+        if (!selectedCustomerForAction) {
+            setPastInvoices([]);
             return;
         }
-        setIsPendingInvoicesLoading(true);
+        setIsPastInvoicesLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedReceiptsCustomer}`);
+            // This endpoint can be the same for both pending and all past invoices, or you can have a separate one.
+            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedCustomerForAction}`);
             if (!response.ok) {
-                throw new Error('Failed to fetch pending invoices');
+                throw new Error('Failed to fetch invoices');
             }
             const data = await response.json();
-            setPendingInvoices(data);
+            setPastInvoices(data);
         } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
                 description: 'Could not fetch invoices for this customer.',
             });
-            setPendingInvoices([]);
+            setPastInvoices([]);
         } finally {
-            setIsPendingInvoicesLoading(false);
+            setIsPastInvoicesLoading(false);
         }
     };
     
-    if (isPendingInvoicesDialogOpen) {
-      fetchPendingInvoices();
+    if (isPendingInvoicesDialogOpen || isReturnDialogOpen) {
+      fetchInvoicesForAction();
     }
-  }, [selectedReceiptsCustomer, toast, isPendingInvoicesDialogOpen]);
+  }, [selectedCustomerForAction, toast, isPendingInvoicesDialogOpen, isReturnDialogOpen]);
   
   useEffect(() => {
     async function fetchPosDialogData() {
@@ -350,17 +356,17 @@ export default function POSPage() {
     }
   }, [isNewOrderDialogOpen, toast]);
 
-  const handleInvoiceSelect = async (invoice: Invoice) => {
-    setSelectedInvoiceForPayment(invoice);
+  const handleInvoiceSelectForAction = async (invoice: Invoice) => {
+    setSelectedInvoiceForAction(invoice);
+    if(isReturnDialogOpen) return; // No balance check needed for returns
+
     setIsBalanceLoading(true);
-    setInvoiceBalance(null);
     try {
       const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=1&customer_id=${invoice.customer_code}&ref_id=${invoice.invoice_number}`);
       if (!response.ok) {
         throw new Error('Failed to fetch invoice balance');
       }
       const data: BalanceDetails = await response.json();
-      setInvoiceBalance(data);
       setPaymentAmount(data.balance.toFixed(2));
     } catch (error) {
       toast({
@@ -368,14 +374,13 @@ export default function POSPage() {
         title: 'Error',
         description: 'Could not fetch invoice balance details.',
       });
-      setInvoiceBalance(null);
     } finally {
         setIsBalanceLoading(false);
     }
   };
 
   const handleCreateReceipt = async () => {
-    if (!selectedInvoiceForPayment || !currentLocation || !invoiceBalance) {
+    if (!selectedInvoiceForAction || !currentLocation) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
@@ -391,10 +396,10 @@ export default function POSPage() {
         date: format(new Date(), 'yyyy-MM-dd'),
         amount: parseFloat(paymentAmount),
         created_by: parseInt(currentCashier.customer_id, 10),
-        ref_id: selectedInvoiceForPayment.invoice_number,
+        ref_id: selectedInvoiceForAction.invoice_number,
         location_id: parseInt(currentLocation.location_id, 10),
-        customer_id: parseInt(selectedInvoiceForPayment.customer_code, 10),
-        today_invoice: selectedInvoiceForPayment.invoice_number,
+        customer_id: parseInt(selectedInvoiceForAction.customer_code, 10),
+        today_invoice: selectedInvoiceForAction.invoice_number,
         company_id: 1,
     };
     
@@ -415,11 +420,9 @@ export default function POSPage() {
             description: `Payment of $${paymentAmount} recorded successfully.`
         });
         setPendingInvoicesDialogOpen(false); // Close dialog on success
-        // Reset state
-        setSelectedInvoiceForPayment(null);
-        setInvoiceBalance(null);
+        setSelectedInvoiceForAction(null);
         setPaymentAmount('');
-        setSelectedReceiptsCustomer(null);
+        setSelectedCustomerForAction(null);
 
     } catch (error) {
          const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -677,6 +680,33 @@ export default function POSPage() {
       return { subtotal, serviceCharge: currentOrder.serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
   }, [currentOrder]);
 
+  const handleReturnItemChange = (itemId: string, field: 'quantity' | 'reason', value: string | number) => {
+    setReturnItems(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleProcessReturn = () => {
+    // In a real app, this would submit the return data to the backend
+    console.log("Processing return for:", {
+        customer: selectedCustomerForAction,
+        invoice: selectedInvoiceForAction?.invoice_number,
+        items: returnItems
+    });
+    toast({
+      title: "Return Processed",
+      description: "The return has been successfully processed."
+    });
+    setReturnDialogOpen(false);
+    setSelectedCustomerForAction(null);
+    setSelectedInvoiceForAction(null);
+    setReturnItems({});
+  }
+
    if (isLocationLoading) {
     return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
   }
@@ -792,118 +822,115 @@ export default function POSPage() {
                             Pending Invoices
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
+                    <DialogContent className="max-w-md">
                         <DialogHeader>
-                          <DialogTitle>View Pending Invoices</DialogTitle>
-                          <DialogDescription>Select a customer to view their pending invoices and record payments.</DialogDescription>
+                          <DialogTitle>Pay Pending Invoices</DialogTitle>
                         </DialogHeader>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-                            <div className="space-y-4">
-                                <Select onValueChange={setSelectedReceiptsCustomer}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a customer..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {customers.map(c => (
-                                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <ScrollArea className="h-96">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Invoice ID</TableHead>
-                                                <TableHead>Date</TableHead>
-                                                <TableHead className="text-right">Amount</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {isPendingInvoicesLoading ? (
-                                                <TableRow>
-                                                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                                                        <Loader2 className="h-6 w-6 animate-spin inline-block" />
-                                                    </TableCell>
-                                                </TableRow>
-                                            ) : pendingInvoices.length > 0 ? (
-                                                pendingInvoices.map(invoice => (
-                                                    <TableRow key={invoice.id} onClick={() => handleInvoiceSelect(invoice)} className="cursor-pointer hover:bg-muted">
-                                                        <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                                                        <TableCell>{format(new Date(invoice.invoice_date), 'dd MMM yyyy')}</TableCell>
-                                                        <TableCell className="text-right font-mono">${parseFloat(invoice.grand_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
-                                                        No pending invoices found for this customer.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </ScrollArea>
-                            </div>
-                            <Card className="h-full">
-                                {selectedInvoiceForPayment ? (
-                                    <>
-                                    <CardHeader>
-                                        <CardTitle>Payment for {selectedInvoiceForPayment.invoice_number}</CardTitle>
-                                        {isBalanceLoading && <CardDescription>Loading balance details...</CardDescription>}
-                                    </CardHeader>
-                                    <CardContent>
-                                        {isBalanceLoading ? (
-                                            <div className="flex justify-center items-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                                        ) : invoiceBalance ? (
-                                            <div className="space-y-4">
-                                                 <div className="grid grid-cols-2 gap-4">
-                                                    <div className="text-center p-2 bg-muted/50 rounded-lg">
-                                                        <p className="text-xs text-muted-foreground">Paid Amount</p>
-                                                        <p className="text-lg font-bold text-green-600">${parseFloat(invoiceBalance.total_paid_amount).toFixed(2)}</p>
-                                                    </div>
-                                                    <div className="text-center p-2 bg-destructive/10 rounded-lg">
-                                                        <p className="text-xs text-destructive/80">Due Amount</p>
-                                                        <p className="text-lg font-bold text-destructive">${invoiceBalance.balance.toFixed(2)}</p>
-                                                    </div>
-                                                 </div>
-                                                 <div className="space-y-4 pt-4 border-t">
-                                                    <Label htmlFor="payment-method">Payment Method</Label>
-                                                    <Select onValueChange={setPaymentMethod} defaultValue={paymentMethod}>
-                                                        <SelectTrigger id="payment-method"><SelectValue placeholder="Select Payment Method" /></SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="Cash">Cash</SelectItem>
-                                                            <SelectItem value="Card">Card</SelectItem>
-                                                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                     <Label htmlFor="payment-amount">Amount</Label>
-                                                    <Input 
-                                                        id="payment-amount"
-                                                        placeholder="Amount" 
-                                                        type="number" 
-                                                        value={paymentAmount}
-                                                        onChange={(e) => setPaymentAmount(e.target.value)}
-                                                    />
-                                                 </div>
-                                            </div>
-                                        ) : (
-                                            <p className="text-destructive text-center py-12">Could not load balance information.</p>
-                                        )}
+                        <div className="space-y-4">
+                            <Select onValueChange={setSelectedCustomerForAction}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a customer..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {customers.map(c => (
+                                        <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {isPastInvoicesLoading ? <Loader2 className="mx-auto h-6 w-6 animate-spin" /> : (
+                                <RadioGroup onValueChange={(invoiceNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invoiceNumber)!)}>
+                                    {pastInvoices.map(invoice => (
+                                        <div key={invoice.id} className="flex items-center space-x-2">
+                                            <RadioGroupItem value={invoice.invoice_number} id={invoice.id} />
+                                            <Label htmlFor={invoice.id} className="flex justify-between w-full">
+                                                <span>{invoice.invoice_number} ({format(new Date(invoice.invoice_date), 'dd/MM/yy')})</span>
+                                                <span>${parseFloat(invoice.grand_total).toFixed(2)}</span>
+                                            </Label>
+                                        </div>
+                                    ))}
+                                </RadioGroup>
+                            )}
+                             {selectedInvoiceForAction && !isReturnDialogOpen && (
+                                <Card>
+                                    <CardContent className="pt-4">
+                                        <div className="space-y-2">
+                                            <Select onValueChange={setPaymentMethod} defaultValue={paymentMethod}>
+                                                <SelectTrigger><SelectValue placeholder="Payment Method" /></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="Cash">Cash</SelectItem>
+                                                    <SelectItem value="Card">Card</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <Input 
+                                                placeholder="Amount" 
+                                                type="number" 
+                                                value={paymentAmount}
+                                                onChange={(e) => setPaymentAmount(e.target.value)}
+                                            />
+                                        </div>
                                     </CardContent>
-                                     <CardFooter>
-                                        <Button className="w-full" onClick={handleCreateReceipt} disabled={isBalanceLoading || !invoiceBalance || isSubmittingPayment}>
-                                            {isSubmittingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Proceed
-                                        </Button>
-                                    </CardFooter>
-                                    </>
-                                ) : (
-                                    <div className="flex flex-col h-full items-center justify-center text-center text-muted-foreground p-8">
-                                        <p>Select an invoice to view payment details.</p>
-                                    </div>
-                                )}
-                            </Card>
+                                </Card>
+                            )}
                         </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setPendingInvoicesDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleCreateReceipt} disabled={isBalanceLoading || !selectedInvoiceForAction || isSubmittingPayment}>
+                                {isSubmittingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Record Payment
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+                 <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" size="sm">
+                            <Undo2 className="mr-2 h-4 w-4" />
+                            Return
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Select Return Products</DialogTitle>
+                          <DialogDescription>Note : A La Carte Items cannot be Returned!</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <Select onValueChange={setSelectedCustomerForAction}>
+                                    <SelectTrigger><SelectValue placeholder="Select Customer" /></SelectTrigger>
+                                    <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                                 <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invNumber)!)} disabled={!selectedCustomerForAction || isPastInvoicesLoading}>
+                                    <SelectTrigger><SelectValue placeholder="Select Invoice (If Available)" /></SelectTrigger>
+                                    <SelectContent>{pastInvoices.map(inv => <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number}</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                            {selectedInvoiceForAction && (
+                                <>
+                                 <Table>
+                                    <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="w-[100px]">Qty</TableHead></TableRow></TableHeader>
+                                    <TableBody>
+                                        {selectedInvoiceForAction.items?.map(item => (
+                                            <TableRow key={item.id}>
+                                                <TableCell>{item.productName}</TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', (returnItems[item.id!]?.quantity || 0) - 1)}><Minus className="h-4 w-4"/></Button>
+                                                        <span>{returnItems[item.id!]?.quantity || 0}</span>
+                                                        <Button variant="ghost" size="icon" onClick={() => handleReturnItemChange(item.id!, 'quantity', (returnItems[item.id!]?.quantity || 0) + 1)}><Plus className="h-4 w-4"/></Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                                <Textarea placeholder="Reason" onChange={(e) => handleReturnItemChange(selectedInvoiceForAction.items![0].id!, 'reason', e.target.value)} />
+                                </>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
+                            <Button onClick={handleProcessReturn}>Process Return</Button>
+                        </DialogFooter>
                     </DialogContent>
                 </Dialog>
             </div>
