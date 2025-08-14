@@ -75,6 +75,21 @@ interface BalanceDetails {
     ref_id: string;
 }
 
+type TransactionReturn = {
+    id: string;
+    customer_id: string;
+    location_id: string;
+    created_at: string;
+    updated_by: string;
+    reason: string;
+    refund_id: string;
+    is_active: string;
+    ref_invoice: string;
+    return_amount: string;
+    settled_invoice: string;
+    company_id: string;
+}
+
 let orderCounter = 1;
 
 const OrderTypeSelection = ({ 
@@ -199,6 +214,8 @@ export default function POSPage() {
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
   const [isReturnDialogOpen, setReturnDialogOpen] = useState(false);
   const [isRefundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [isReturnsLoading, setIsReturnsLoading] = useState(false);
+  const [transactionReturns, setTransactionReturns] = useState<TransactionReturn[]>([]);
   const [selectedCustomerForAction, setSelectedCustomerForAction] = useState<string | null>(null);
   const [pastInvoices, setPastInvoices] = useState<Invoice[]>([]);
   const [isPastInvoicesLoading, setIsPastInvoicesLoading] = useState(false);
@@ -379,6 +396,32 @@ export default function POSPage() {
         fetchPosDialogData();
     }
   }, [isNewOrderDialogOpen, toast]);
+  
+   useEffect(() => {
+    async function fetchReturns() {
+      setIsReturnsLoading(true);
+      try {
+        const response = await fetch(`https://server-erp.payshia.com/transaction-returns`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch returns');
+        }
+        const data: TransactionReturn[] = await response.json();
+        setTransactionReturns(data || []);
+      } catch (error) {
+         toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not fetch recent returns.',
+        });
+        setTransactionReturns([]);
+      } finally {
+        setIsReturnsLoading(false);
+      }
+    }
+    if (isRefundDialogOpen) {
+        fetchReturns();
+    }
+  }, [isRefundDialogOpen, toast]);
 
   const handleInvoiceSelectForAction = async (invoice: Invoice) => {
     setSelectedInvoiceForAction(invoice);
@@ -1102,14 +1145,43 @@ export default function POSPage() {
                             Refund
                         </Button>
                     </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Process Refund</DialogTitle>
-                            <DialogDescription>This feature is coming soon.</DialogDescription>
+                    <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+                        <DialogHeader className="flex-row items-center justify-between border-b pb-4">
+                            <div className="flex items-center gap-4">
+                                <img src="https://i.imgur.com/kS4S17L.png" alt="Payshia POS" className="h-8"/>
+                                <div className="text-left">
+                                    <DialogTitle className="text-2xl">Select Return to Make Refund</DialogTitle>
+                                    <DialogDescription>Note : A La Carte Items cannot be Returned of Refunded!</DialogDescription>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="icon"><RefreshCcw className="h-5 w-5" /></Button>
+                                <DialogClose asChild><Button variant="ghost" size="icon"><X className="h-5 w-5" /></Button></DialogClose>
+                            </div>
                         </DialogHeader>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setRefundDialogOpen(false)}>Close</Button>
-                        </DialogFooter>
+                        <ScrollArea className="flex-1 -mx-6 px-6">
+                             {isReturnsLoading ? (
+                                <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                             ) : (
+                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 py-4">
+                                    {transactionReturns.map(ret => {
+                                        const customer = customers.find(c => c.customer_id === ret.customer_id)
+                                        return (
+                                            <Card key={ret.id} className="cursor-pointer hover:border-primary">
+                                                <CardHeader>
+                                                    <Badge className="w-fit mb-2">{customer?.name || 'Walk-in'}</Badge>
+                                                    <CardTitle className="text-lg">RTN{ret.id.padStart(4,'0')}</CardTitle>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <p className="text-3xl font-bold">${parseFloat(ret.return_amount).toFixed(2)}</p>
+                                                    <Badge variant="secondary" className="mt-2 bg-green-200 text-green-800">{format(new Date(ret.created_at), 'yyyy-MM-dd HH:mm:ss')}</Badge>
+                                                </CardContent>
+                                            </Card>
+                                        )
+                                    })}
+                                </div>
+                             )}
+                        </ScrollArea>
                     </DialogContent>
                 </Dialog>
             </div>
