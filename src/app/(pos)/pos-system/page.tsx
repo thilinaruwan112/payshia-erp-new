@@ -129,8 +129,7 @@ const OrderTypeSelection = ({
     )
 }
 
-const StewardSelection = ({ onSelectSteward, onBack }: { onSelectSteward: (steward: User) => void; onBack: () => void; }) => {
-    const stewards = users.filter(u => u.role !== 'Customer');
+const StewardSelection = ({ onSelectSteward, onBack, stewards, isLoading }: { onSelectSteward: (steward: User) => void; onBack: () => void; stewards: User[], isLoading: boolean; }) => {
     return (
         <main className="p-2">
              <Button variant="ghost" onClick={onBack} className="mb-4">
@@ -138,16 +137,20 @@ const StewardSelection = ({ onSelectSteward, onBack }: { onSelectSteward: (stewa
             </Button>
             <h2 className="text-2xl font-bold mb-4">Select Steward</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {stewards.map(steward => (
-                    <Card key={steward.id} className="p-4 text-center cursor-pointer hover:border-primary" onClick={() => onSelectSteward(steward)}>
-                        <Avatar className="h-20 w-20 mx-auto">
-                            <AvatarImage src={steward.avatar} alt={steward.name} data-ai-hint="profile photo" />
-                            <AvatarFallback>{steward.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                        </Avatar>
-                        <p className="mt-2 font-semibold">{steward.name}</p>
-                        <p className="text-xs text-muted-foreground">{steward.role}</p>
-                    </Card>
-                ))}
+                 {isLoading ? (
+                    Array.from({length: 4}).map((_, i) => <Card key={i} className="p-4 h-40 animate-pulse bg-muted"></Card>)
+                ) : (
+                    stewards.map(steward => (
+                        <Card key={steward.id} className="p-4 text-center cursor-pointer hover:border-primary" onClick={() => onSelectSteward(steward)}>
+                            <Avatar className="h-20 w-20 mx-auto">
+                                <AvatarImage src={steward.avatar} alt={steward.name} data-ai-hint="profile photo" />
+                                <AvatarFallback>{steward.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                            </Avatar>
+                            <p className="mt-2 font-semibold">{steward.name}</p>
+                            <p className="text-xs text-muted-foreground">{steward.role}</p>
+                        </Card>
+                    ))
+                )}
             </div>
         </main>
     )
@@ -161,7 +164,9 @@ export default function POSPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [customers, setCustomers] = useState<User[]>([]);
   const [tables, setTables] = useState<TableType[]>([]);
+  const [stewards, setStewards] = useState<User[]>([]);
   const [isLoadingTables, setIsLoadingTables] = useState(false);
+  const [isLoadingStewards, setIsLoadingStewards] = useState(false);
   const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
@@ -299,29 +304,46 @@ export default function POSPage() {
   }, [selectedReceiptsCustomer, toast, company_id, isPendingInvoicesDialogOpen]);
   
   useEffect(() => {
-    const fetchTables = async () => {
+    async function fetchPosDialogData() {
         setIsLoadingTables(true);
+        setIsLoadingStewards(true);
         try {
-            const response = await fetch('https://server-erp.payshia.com/master-tables');
-            if (!response.ok) {
-                throw new Error('Failed to fetch tables');
-            }
-            const data = await response.json();
-            setTables(data);
+            const [tablesResponse, stewardsResponse] = await Promise.all([
+                fetch('https://server-erp.payshia.com/master-tables'),
+                fetch('https://server-erp.payshia.com/filter/users?user_status=3')
+            ]);
+            
+            if (!tablesResponse.ok) throw new Error('Failed to fetch tables');
+            const tablesData = await tablesResponse.json();
+            setTables(tablesData);
+
+            if (!stewardsResponse.ok) throw new Error('Failed to fetch stewards');
+            const stewardsData = await stewardsResponse.json();
+            const formattedStewards = stewardsData.data.map((s: any) => ({
+                id: s.id,
+                name: `${s.first_name} ${s.last_name}`,
+                role: s.acc_type,
+                avatar: s.img_path,
+                customer_id: s.id,
+            }));
+            setStewards(formattedStewards);
+
         } catch (error) {
              toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not fetch tables data.',
+                description: 'Could not fetch POS data.',
             });
             setTables([]);
+            setStewards([]);
         } finally {
             setIsLoadingTables(false);
+            setIsLoadingStewards(false);
         }
     };
 
     if(isNewOrderDialogOpen) {
-        fetchTables();
+        fetchPosDialogData();
     }
   }, [isNewOrderDialogOpen, toast]);
 
@@ -713,7 +735,7 @@ export default function POSPage() {
         toggleServiceCharge={toggleServiceCharge}
         onUpdateDetails={updateOrderDetails}
         availableTables={tables}
-        availableStewards={users.filter(u => u.role !== 'Customer')}
+        availableStewards={stewards}
         customers={customers}
         onUpdateCustomer={updateCustomer}
      />
@@ -923,6 +945,8 @@ export default function POSPage() {
                              <StewardSelection
                                 onBack={() => setNewOrderDialogStep('type')}
                                 onSelectSteward={(steward) => createNewOrder('Dine-In', steward, selectedTable!)}
+                                stewards={stewards}
+                                isLoading={isLoadingStewards}
                             />
                         )}
                     </DialogContent>
