@@ -302,29 +302,31 @@ export default function POSPage() {
   
   useEffect(() => {
     async function fetchInvoicesForAction() {
-        if (!selectedCustomerForAction) {
-            setPastInvoices([]);
-            return;
+      if (!selectedCustomerForAction) {
+        setPastInvoices([]);
+        return;
+      }
+      setIsPastInvoicesLoading(true);
+      try {
+        const response = await fetch(
+          `https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomerForAction}&company_id=1`
+        );
+        if (!response.ok) {
+          throw new Error('Failed to fetch invoices');
         }
-        setIsPastInvoicesLoading(true);
-        try {
-            const response = await fetch(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomerForAction}&company_id=1`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch invoices');
-            }
-            const data: Invoice[] = await response.json();
-            setPastInvoices(data || []);
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'Could not fetch invoices for this customer.',
-            });
-            setPastInvoices([]);
-        } finally {
-            setIsPastInvoicesLoading(false);
-        }
-    };
+        const data: Invoice[] = await response.json();
+        setPastInvoices(data || []);
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not fetch invoices for this customer.',
+        });
+        setPastInvoices([]);
+      } finally {
+        setIsPastInvoicesLoading(false);
+      }
+    }
     
     if (isPendingInvoicesDialogOpen || isReturnDialogOpen) {
       fetchInvoicesForAction();
@@ -924,7 +926,7 @@ export default function POSPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-                 <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
+                <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
                     <DialogTrigger asChild>
                         <Button variant="outline" size="sm">
                             <Undo2 className="mr-2 h-4 w-4" />
@@ -936,16 +938,8 @@ export default function POSPage() {
                             <DialogTitle>Select Return Products</DialogTitle>
                             <DialogDescription>Note : A La Carte Items cannot be Returned!</DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4">
-                            {!selectedCustomerForAction && (
-                                <Select onValueChange={setSelectedCustomerForAction}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a customer..."/>
-                                    </SelectTrigger>
-                                    <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                                </Select>
-                            )}
-                             {selectedCustomerForAction && (
+                         <div className="space-y-4">
+                            {selectedCustomerForAction && (
                                 <>
                                     <div className="grid grid-cols-2 gap-4">
                                         <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invNumber)!)} disabled={isPastInvoicesLoading}>
@@ -956,7 +950,7 @@ export default function POSPage() {
                                         </Select>
                                         <Input placeholder="Enter Reason for Return" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
                                     </div>
-                                    <div className="grid grid-cols-5 gap-2 items-end">
+                                     <div className="grid grid-cols-5 gap-2 items-end">
                                         <div className="col-span-2">
                                             <Label>Select Product</Label>
                                             <Select onValueChange={(productId) => setCurrentReturnProduct(posProducts.find(p => p.id === productId) || null)} disabled={!!selectedInvoiceForAction}>
@@ -980,7 +974,17 @@ export default function POSPage() {
                                                 <TableRow key={item.id}>
                                                     <TableCell>{index+1}</TableCell>
                                                     <TableCell>{item.name}</TableCell>
-                                                    <TableCell>{item.quantity}</TableCell>
+                                                     <TableCell>
+                                                      <Input 
+                                                          type="number"
+                                                          value={item.quantity}
+                                                          onChange={(e) => {
+                                                            const newQty = parseInt(e.target.value, 10) || 0;
+                                                            setReturnItems(prev => prev.map(p => p.id === item.id ? {...p, quantity: newQty, amount: newQty * p.rate } : p));
+                                                          }}
+                                                          className="w-20"
+                                                      />
+                                                    </TableCell>
                                                     <TableCell>{item.rate.toFixed(2)}</TableCell>
                                                     <TableCell>{item.amount.toFixed(2)}</TableCell>
                                                     <TableCell>
@@ -1003,6 +1007,14 @@ export default function POSPage() {
                                         </TableFooter>
                                     </Table>
                                 </>
+                            )}
+                             {!selectedCustomerForAction && (
+                                <Select onValueChange={setSelectedCustomerForAction}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a customer..."/>
+                                    </SelectTrigger>
+                                    <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                                </Select>
                             )}
                         </div>
                         <DialogFooter>
@@ -1159,4 +1171,3 @@ export default function POSPage() {
     </>
   );
 }
-
