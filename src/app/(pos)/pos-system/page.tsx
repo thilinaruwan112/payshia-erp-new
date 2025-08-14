@@ -1168,13 +1168,13 @@ export default function POSPage() {
                                         const customer = customers.find(c => c.customer_id === ret.customer_id)
                                         return (
                                             <Card key={ret.id} className="cursor-pointer hover:border-primary">
-                                                <CardHeader className="p-3">
-                                                    <Badge className="w-fit mb-1">{customer?.name || 'Walk-in'}</Badge>
-                                                    <CardTitle className="text-base">RTN{ret.id.padStart(4,'0')}</CardTitle>
+                                                <CardHeader className="p-2">
+                                                    <Badge className="w-fit mb-1 text-xs">{customer?.name || 'Walk-in'}</Badge>
+                                                    <CardTitle className="text-sm">RTN{ret.id.padStart(4,'0')}</CardTitle>
                                                 </CardHeader>
-                                                <CardContent className="p-3">
-                                                    <p className="text-2xl font-bold">${parseFloat(ret.return_amount).toFixed(2)}</p>
-                                                    <Badge variant="secondary" className="mt-1 text-xs">{format(new Date(ret.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
+                                                <CardContent className="p-2">
+                                                    <p className="text-xl font-bold">${parseFloat(ret.return_amount).toFixed(2)}</p>
+                                                    <Badge variant="secondary" className="mt-1 text-xs font-normal">{format(new Date(ret.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
                                                 </CardContent>
                                             </Card>
                                         )
