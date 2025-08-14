@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+    DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AddToCartDialog } from '@/components/pos/add-to-cart-dialog';
@@ -179,6 +180,7 @@ export default function POSPage() {
   const [isNewOrderDialogOpen, setNewOrderDialogOpen] = useState(false);
   const [newOrderDialogStep, setNewOrderDialogStep] = useState<'type' | 'steward'>('type');
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [isRefundDialogOpen, setRefundDialogOpen] = useState(false);
 
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
   const [selectedReceiptsCustomer, setSelectedReceiptsCustomer] = useState<string | null>(null);
@@ -774,6 +776,36 @@ export default function POSPage() {
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
       />
+       <Dialog open={isRefundDialogOpen} onOpenChange={setRefundDialogOpen}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <div className="flex items-center justify-between">
+                         <h2 className="text-2xl font-bold">Select Return Products</h2>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Note : A La Carte Items cannot be Returned!</p>
+                </DialogHeader>
+                <div className="grid grid-cols-2 gap-4">
+                     <div className="space-y-2">
+                        <Label>Select Customer</Label>
+                        <Select><SelectTrigger><SelectValue placeholder="Select Customer" /></SelectTrigger><SelectContent></SelectContent></Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Select Invoice (If Available)</Label>
+                        <Select><SelectTrigger><SelectValue placeholder="Select Invoice" /></SelectTrigger><SelectContent></SelectContent></Select>
+                    </div>
+                     <div className="col-span-2 space-y-2">
+                        <Label>Reason</Label>
+                        <Input placeholder="Enter Reason for Return" />
+                    </div>
+                </div>
+                 {/* TODO: Add product selection list here */}
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setRefundDialogOpen(false)}>Cancel</Button>
+                    <Button>Process Return</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
       <div className="flex h-screen w-screen overflow-hidden">
         <div className="flex-1 flex flex-col overflow-y-auto">
           <PosHeader
@@ -904,7 +936,9 @@ export default function POSPage() {
                         </div>
                     </DialogContent>
                 </Dialog>
-              <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Refund</Button>
+                <Button variant="outline" size="sm" onClick={() => setRefundDialogOpen(true)}>
+                    <Undo2 className="mr-2 h-4 w-4" /> Refund
+                </Button>
               <Button variant="outline" size="sm"><Undo2 className="mr-2 h-4 w-4" /> Return</Button>
             </div>
             <div className="flex items-center gap-2">
