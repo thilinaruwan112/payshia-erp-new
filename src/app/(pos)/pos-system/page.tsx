@@ -208,9 +208,9 @@ export default function POSPage() {
         try {
             const [productsResponse, collectionsResponse, brandsResponse, customersResponse] = await Promise.all([
                 fetch(`https://server-erp.payshia.com/products/with-variants`),
-                fetch(`https://server-erp.payshia.com/collections/company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/collections/company?company_id=1`),
+                fetch(`https://server-erp.payshia.com/brands/company?company_id=1`),
+                fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=1`),
             ]);
 
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !customersResponse.ok) {
@@ -271,20 +271,20 @@ export default function POSPage() {
             setIsLoadingProducts(false);
         }
     }
-    if (company_id) {
-        fetchPosData();
-    }
-  }, [toast, company_id]);
+    
+    fetchPosData();
+    
+  }, [toast]);
   
   useEffect(() => {
     const fetchPendingInvoices = async () => {
-        if (!selectedReceiptsCustomer || !company_id) {
+        if (!selectedReceiptsCustomer) {
             setPendingInvoices([]);
             return;
         }
         setIsPendingInvoicesLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedReceiptsCustomer}`);
+            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedReceiptsCustomer}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch pending invoices');
             }
@@ -305,7 +305,7 @@ export default function POSPage() {
     if (isPendingInvoicesDialogOpen) {
       fetchPendingInvoices();
     }
-  }, [selectedReceiptsCustomer, toast, company_id, isPendingInvoicesDialogOpen]);
+  }, [selectedReceiptsCustomer, toast, isPendingInvoicesDialogOpen]);
   
   useEffect(() => {
     async function fetchPosDialogData() {
@@ -356,7 +356,7 @@ export default function POSPage() {
     setIsBalanceLoading(true);
     setInvoiceBalance(null);
     try {
-      const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=${company_id}&customer_id=${invoice.customer_code}&ref_id=${invoice.invoice_number}`);
+      const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=1&customer_id=${invoice.customer_code}&ref_id=${invoice.invoice_number}`);
       if (!response.ok) {
         throw new Error('Failed to fetch invoice balance');
       }
@@ -396,7 +396,7 @@ export default function POSPage() {
         location_id: parseInt(currentLocation.location_id, 10),
         customer_id: parseInt(selectedInvoiceForPayment.customer_code, 10),
         today_invoice: selectedInvoiceForPayment.invoice_number,
-        company_id: company_id,
+        company_id: 1,
     };
     
     try {
@@ -1093,3 +1093,4 @@ export default function POSPage() {
     </>
   );
 }
+
