@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -200,7 +199,8 @@ export default function POSPage() {
 
   const [currentCashier, setCurrentCashier] = useState<User>(defaultCashier);
   
-  const { currentLocation, isLoading: isLocationLoading, company_id, setCurrentLocation, availableLocations } = useLocation();
+  const { currentLocation, isLoading: isLocationLoading, setCurrentLocation, availableLocations } = useLocation();
+  const company_id = 1;
 
   useEffect(() => {
     async function fetchPosData() {
@@ -1094,3 +1094,4 @@ export default function POSPage() {
   );
 }
 
+    
