@@ -8,7 +8,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck, Minus, CheckCircle, Trash2, Info, Banknote } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck, Minus, CheckCircle, Trash2, Info, Banknote, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogTrigger,
     DialogFooter,
+    DialogClose,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AddToCartDialog } from '@/components/pos/add-to-cart-dialog';
@@ -330,7 +331,7 @@ export default function POSPage() {
       }
       setIsPastInvoicesLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomerForAction}&company_id=1`);
+        const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedCustomerForAction}`);
         if (!response.ok) {
           throw new Error('Failed to fetch invoices');
         }
@@ -918,7 +919,7 @@ export default function POSPage() {
         availableTables={tables}
         availableStewards={stewards}
         customers={customers}
-        onUpdateCustomer={updateCustomer}
+        onUpdateCustomer={onUpdateCustomer}
      />
   ) : (
       <div className="flex flex-col h-full bg-card items-center justify-center text-center p-8">
@@ -955,7 +956,6 @@ export default function POSPage() {
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
       />
-      
       <div className="flex h-screen w-screen overflow-hidden">
         <div className="flex-1 flex flex-col overflow-y-auto">
           <PosHeader
@@ -1091,7 +1091,7 @@ export default function POSPage() {
                                         </TableHeader>
                                         <TableBody>
                                             {returnItems.map((item, index) => (
-                                                <TableRow key={`${item.id}-${index}`}>
+                                                <TableRow key={index}>
                                                     <TableCell>{index + 1}</TableCell>
                                                     <TableCell>{item.name}</TableCell>
                                                     <TableCell>
@@ -1100,7 +1100,7 @@ export default function POSPage() {
                                                             value={item.quantity}
                                                             onChange={(e) => {
                                                                 const newQty = parseInt(e.target.value, 10) || 0;
-                                                                setReturnItems(prev => prev.map(p => p.id === item.id ? { ...p, quantity: newQty, amount: newQty * p.rate } : p));
+                                                                setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, quantity: newQty, amount: newQty * p.rate } : p));
                                                             }}
                                                             className="w-20"
                                                         />
@@ -1110,7 +1110,7 @@ export default function POSPage() {
                                                     <TableCell>
                                                         <Input
                                                             value={item.reason}
-                                                            onChange={(e) => setReturnItems(prev => prev.map(p => p.id === item.id ? { ...p, reason: e.target.value } : p))}
+                                                            onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, reason: e.target.value } : p))}
                                                         />
                                                     </TableCell>
                                                     <TableCell><Button variant="ghost" size="icon" onClick={() => setReturnItems(prev => prev.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4" /></Button></TableCell>
