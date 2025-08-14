@@ -307,12 +307,12 @@ export default function POSPage() {
         }
         setIsPastInvoicesLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedCustomerForAction}`);
+            const response = await fetch(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomerForAction}&company_id=1`);
             if (!response.ok) {
                 throw new Error('Failed to fetch invoices');
             }
-            const data = await response.json();
-            setPastInvoices(data);
+            const data: Invoice[] = await response.json();
+            setPastInvoices(data || []);
         } catch (error) {
             toast({
                 variant: 'destructive',
