@@ -31,12 +31,11 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CustomerFormDialog } from '@/components/customer-form-dialog';
-import { users } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
@@ -166,6 +165,7 @@ type ReturnItem = {
     rate: number;
     quantity: number;
     amount: number;
+    reason: string;
 };
 
 
@@ -240,7 +240,7 @@ export default function POSPage() {
             const brandsData: Brand[] = await brandsResponse.json();
             const customersData: User[] = await customersResponse.json();
             
-             const formattedCustomers = customersData.map(c => ({
+            const formattedCustomers = customersData.map(c => ({
                 ...c,
                 id: c.customer_id,
                 name: `${c.customer_first_name} ${c.customer_last_name}`,
@@ -706,10 +706,12 @@ export default function POSPage() {
       rate: currentReturnProduct.price as number,
       quantity: currentReturnQty,
       amount: (currentReturnProduct.price as number) * currentReturnQty,
+      reason: returnReason,
     };
     setReturnItems(prev => [...prev, newItem]);
     setCurrentReturnProduct(null);
     setCurrentReturnQty(1);
+    setReturnReason('');
   };
 
   const handleProcessReturn = () => {
@@ -843,7 +845,7 @@ export default function POSPage() {
                     <DialogTrigger asChild>
                         <Button variant="outline" size="sm">
                             <Receipt className="mr-2 h-4 w-4" />
-                            Refund
+                            Pending Invoices
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-md">
@@ -905,25 +907,27 @@ export default function POSPage() {
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
-                <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
+                 <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
                     <DialogTrigger asChild>
                         <Button variant="outline" size="sm">
                             <Undo2 className="mr-2 h-4 w-4" />
                             Return
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
+                    <DialogContent className="max-w-2xl">
                         <DialogHeader>
                             <DialogTitle>Select Return Products</DialogTitle>
                             <DialogDescription>Note : A La Carte Items cannot be Returned!</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
-                             <Select onValueChange={setSelectedCustomerForAction}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a customer..."/>
-                                </SelectTrigger>
-                                <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                            </Select>
+                            {!selectedCustomerForAction && (
+                                <Select onValueChange={setSelectedCustomerForAction}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a customer..."/>
+                                    </SelectTrigger>
+                                    <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                                </Select>
+                            )}
                             {selectedCustomerForAction && (
                                 <>
                                     <div className="grid grid-cols-2 gap-4">
@@ -951,7 +955,7 @@ export default function POSPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>ID</TableHead><TableHead>Item Name</TableHead><TableHead>Qty</TableHead><TableHead>Rate</TableHead><TableHead>Amount</TableHead><TableHead>Action</TableHead>
+                                                <TableHead>ID</TableHead><TableHead>Item Name</TableHead><TableHead>Qty</TableHead><TableHead>Rate</TableHead><TableHead>Amount</TableHead><TableHead>Reason</TableHead><TableHead>Action</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -962,6 +966,7 @@ export default function POSPage() {
                                                     <TableCell>{item.quantity}</TableCell>
                                                     <TableCell>{item.rate.toFixed(2)}</TableCell>
                                                     <TableCell>{item.amount.toFixed(2)}</TableCell>
+                                                    <TableCell>{item.reason}</TableCell>
                                                     <TableCell><Button variant="ghost" size="icon" onClick={() => setReturnItems(prev => prev.filter(p => p.id !== item.id))}><Trash2 className="h-4 w-4" /></Button></TableCell>
                                                 </TableRow>
                                             ))}
@@ -971,6 +976,7 @@ export default function POSPage() {
                                                 <TableCell colSpan={4} className="text-right font-bold">Total</TableCell>
                                                 <TableCell className="font-bold">{(returnItems.reduce((acc, item) => acc + item.amount, 0)).toFixed(2)}</TableCell>
                                                 <TableCell></TableCell>
+                                                <TableCell></TableCell>
                                             </TableRow>
                                         </TableFooter>
                                     </Table>
@@ -979,7 +985,7 @@ export default function POSPage() {
                         </div>
                         <DialogFooter>
                             <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
-                            <Button onClick={handleProcessReturn} disabled={returnItems.length === 0}>Save Return</Button>
+                            <Button onClick={handleProcessReturn} disabled={returnItems.length === 0}>Process Return</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
