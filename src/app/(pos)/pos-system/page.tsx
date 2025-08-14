@@ -278,7 +278,7 @@ export default function POSPage() {
   
   useEffect(() => {
     const fetchPendingInvoices = async () => {
-        if (!selectedReceiptsCustomer) {
+        if (!selectedReceiptsCustomer || !company_id) {
             setPendingInvoices([]);
             return;
         }
