@@ -239,6 +239,10 @@ export default function POSPage() {
   
   const [isHeldOrdersLoading, setIsHeldOrdersLoading] = useState(false);
   const [heldOrders, setHeldOrders] = useState<Invoice[]>([]);
+  const [selectedHeldOrderDetails, setSelectedHeldOrderDetails] = useState<Invoice | null>(null);
+  const [isHeldOrderDetailsOpen, setIsHeldOrderDetailsOpen] = useState(false);
+  const [isHeldOrderDetailsLoading, setIsHeldOrderDetailsLoading] = useState(false);
+
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
   const [isReturnDialogOpen, setReturnDialogOpen] = useState(false);
   const [isRefundDialogOpen, setRefundDialogOpen] = useState(false);
@@ -964,7 +968,27 @@ export default function POSPage() {
         fetchHeldOrders();
     }, [isDrawerOpen, toast]);
     
-    const handleSelectHeldOrder = (invoice: Invoice) => {
+    const handleSelectHeldOrder = async (invoice: Invoice) => {
+        setIsHeldOrderDetailsLoading(true);
+        setIsHeldOrderDetailsOpen(true);
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/pos-invoices/${invoice.id}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch held order details');
+            }
+            const data: Invoice = await response.json();
+            setSelectedHeldOrderDetails(data);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load order details.' });
+            setIsHeldOrderDetailsOpen(false);
+        } finally {
+            setIsHeldOrderDetailsLoading(false);
+        }
+    };
+    
+    const loadHeldOrder = (invoice: Invoice | null) => {
+        if (!invoice) return;
+
         const customerForOrder = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
 
         const cartItems: CartItem[] = (invoice.items || []).map(item => {
@@ -996,10 +1020,11 @@ export default function POSPage() {
             steward: stewards.find(s => s.id === invoice.steward_id),
         };
         
-        setActiveOrders(prev => [...prev, heldOrder]);
+        setActiveOrders(prev => [...prev.filter(o => o.id !== invoice.id), heldOrder]);
         setCurrentOrderId(heldOrder.id);
+        setIsHeldOrderDetailsOpen(false);
         setDrawerOpen(false);
-    };
+    }
 
     const orderPanelComponent = currentOrder ? (
      <OrderPanel
@@ -1011,7 +1036,7 @@ export default function POSPage() {
         onUpdateQuantity={updateQuantity}
         onRemoveItem={removeFromCart}
         onClearCart={() => clearCart()}
-        onHoldOrder={holdOrder}
+        onHoldOrder={onHoldOrder}
         onSendToKitchen={handleSendToKitchen}
         isDrawer={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
@@ -1470,6 +1495,50 @@ export default function POSPage() {
             )}
           </div>
       </div>
+      <Dialog open={isHeldOrderDetailsOpen} onOpenChange={setIsHeldOrderDetailsOpen}>
+        <DialogContent className="max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>Held Order Details</DialogTitle>
+                <DialogDescription>Review the details of the held order before loading it.</DialogDescription>
+            </DialogHeader>
+            {isHeldOrderDetailsLoading ? (
+                 <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
+            ) : selectedHeldOrderDetails ? (
+                <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div><p className="text-muted-foreground">Invoice #</p><p className="font-semibold">{selectedHeldOrderDetails.invoice_number}</p></div>
+                        <div><p className="text-muted-foreground">Customer</p><p className="font-semibold">{customers.find(c => c.customer_id === selectedHeldOrderDetails.customer_code)?.name}</p></div>
+                        <div><p className="text-muted-foreground">Date</p><p className="font-semibold">{format(new Date(selectedHeldOrderDetails.invoice_date), 'PPP')}</p></div>
+                    </div>
+                     <Table>
+                        <TableHeader>
+                            <TableRow><TableHead>Item</TableHead><TableHead>Qty</TableHead><TableHead className="text-right">Total</TableHead></TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {selectedHeldOrderDetails.items?.map(item => (
+                                <TableRow key={item.id}>
+                                    <TableCell>{item.productName}</TableCell>
+                                    <TableCell>{item.quantity}</TableCell>
+                                    <TableCell className="text-right">${(parseFloat(item.item_price as string) * parseFloat(item.quantity as string)).toFixed(2)}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                        <TableFooter>
+                            <TableRow>
+                                <TableCell colSpan={2} className="text-right font-bold">Grand Total</TableCell>
+                                <TableCell className="text-right font-bold">${parseFloat(selectedHeldOrderDetails.grand_total).toFixed(2)}</TableCell>
+                            </TableRow>
+                        </TableFooter>
+                    </Table>
+                </div>
+            ) : <p>Could not load order details.</p>}
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsHeldOrderDetailsOpen(false)}>Cancel</Button>
+                <Button onClick={() => loadHeldOrder(selectedHeldOrderDetails)} disabled={!selectedHeldOrderDetails}>Load This Order</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
+
