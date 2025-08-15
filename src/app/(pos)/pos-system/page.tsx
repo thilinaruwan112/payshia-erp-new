@@ -14,6 +14,7 @@ import {
   Drawer,
   DrawerContent,
   DrawerTrigger,
+  DrawerTitle,
 } from '@/components/ui/drawer';
 import {
   Dialog,
@@ -968,8 +969,9 @@ export default function POSPage() {
 
         const cartItems: CartItem[] = (invoice.items || []).map(item => {
             const product = posProducts.find(p => p.id === String(item.product_id));
-            const variant = product?.variants.find(v => v.id === String(item.product_variant_id));
-            if (!product || !variant) {
+            if (!product) return null;
+            const variant = product.variants && product.variants.find(v => v.id === String(item.product_variant_id));
+            if (!variant) {
                 return null;
             }
             
@@ -1005,7 +1007,7 @@ export default function POSPage() {
         order={currentOrder}
         orderTotals={orderTotals}
         cashierName={currentCashier.name}
-        currentLocation={currentLocation}
+        currentLocation={currentLocation!}
         onUpdateQuantity={updateQuantity}
         onRemoveItem={removeFromCart}
         onClearCart={() => clearCart()}
@@ -1331,6 +1333,7 @@ export default function POSPage() {
                       </Button>
                   </DrawerTrigger>
                   <DrawerContent>
+                      <DrawerTitle className="sr-only">Held Orders</DrawerTitle>
                       {heldOrdersList}
                   </DrawerContent>
               </Drawer>
@@ -1459,6 +1462,7 @@ export default function POSPage() {
                         </Button>
                     </DrawerTrigger>
                     <DrawerContent className='h-[90vh]'>
+                        <DrawerTitle className="sr-only">Order Details</DrawerTitle>
                         {orderPanelComponent}
                     </DrawerContent>
                 </Drawer>
