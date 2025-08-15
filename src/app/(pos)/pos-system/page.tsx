@@ -698,22 +698,88 @@ export default function POSPage() {
     );
   };
 
-  const holdOrder = () => {
+  const onHoldOrder = async () => {
     if (!currentOrder || currentOrder.cart.length === 0) {
-        toast({
-            variant: 'default',
-            title: 'Cannot Hold Empty Order',
-            description: 'Add items to the cart before holding.',
-        });
-        return;
+      toast({
+        variant: 'default',
+        title: 'Cannot Hold Empty Order',
+        description: 'Add items to the cart before holding.',
+      });
+      return;
     }
-    toast({
+    const payload = createInvoicePayload('2');
+
+    try {
+      const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to hold order.');
+      }
+      toast({
         title: 'Order Held',
-        description: `${currentOrder.name} has been put on hold.`,
-    });
-    setCurrentOrderId(null);
-    setDrawerOpen(false);
-  }
+        description: `${currentOrder.name} has been put on hold as Invoice #${result.invoice_number}.`,
+      });
+      onClearCart(currentOrderId);
+    } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+       toast({
+        variant: 'destructive',
+        title: 'Error Holding Order',
+        description: errorMessage,
+      });
+    }
+  };
+  
+   const createInvoicePayload = (status: '1' | '2', paymentMethod = 'N/A', tenderedAmount = 0) => {
+    if (!currentOrder || !currentLocation) return null;
+
+    const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
+    const costValue = currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
+
+    return {
+        invoice_date: format(new Date(), 'yyyy-MM-dd'),
+        inv_amount: orderTotals.subtotal,
+        grand_total: orderTotals.total,
+        discount_amount: totalDiscount,
+        discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
+        customer_code: currentOrder.customer.customer_id,
+        service_charge: orderTotals.serviceCharge,
+        tendered_amount: tenderedAmount,
+        close_type: paymentMethod,
+        invoice_status: status,
+        current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+        location_id: parseInt(currentLocation.location_id, 10),
+        table_id: 0,
+        order_ready_status: 1,
+        created_by: currentCashier.name,
+        is_active: 1,
+        steward_id: currentOrder.steward?.id || "N/A",
+        cost_value: costValue,
+        remark: `${currentOrder.orderType} order`,
+        ref_hold: null,
+        company_id: "1",
+        chanel: "POS",
+        items: currentOrder.cart.map(item => ({
+            user_id: parseInt(currentOrder.customer.customer_id, 10),
+            product_id: parseInt(item.product.id, 10),
+            item_price: item.product.price,
+            item_discount: item.itemDiscount || 0,
+            quantity: item.quantity,
+            customer_id: parseInt(currentOrder.customer.customer_id, 10),
+            table_id: 0,
+            cost_price: item.product.costPrice || 0,
+            is_active: 1,
+            hold_status: 0,
+            printed_status: 1,
+            product_variant_id: parseInt(item.product.variant.id, 10),
+        })),
+    };
+  };
 
   const clearCart = () => {
     if (!currentOrderId) return;
@@ -1026,7 +1092,7 @@ export default function POSPage() {
         setDrawerOpen(false);
     }
 
-    const orderPanelComponent = currentOrder ? (
+  const orderPanelComponent = currentOrder ? (
      <OrderPanel
         key={currentOrder.id}
         order={currentOrder}
@@ -1541,4 +1607,3 @@ export default function POSPage() {
     </>
   );
 }
-
