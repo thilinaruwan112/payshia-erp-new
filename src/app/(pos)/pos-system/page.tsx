@@ -293,6 +293,7 @@ export default function POSPage() {
   const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
   const [currentReturnProduct, setCurrentReturnProduct] = useState<PosProduct | null>(null);
   const [currentReturnQty, setCurrentReturnQty] = useState(1);
+  const [refundQuantities, setRefundQuantities] = useState<Record<string, number>>({});
 
 
   const [isBalanceLoading, setIsBalanceLoading] = useState(false);
@@ -531,6 +532,13 @@ export default function POSPage() {
       }
       const data = await response.json();
       setSelectedReturnForRefund(data.data);
+      // Initialize refund quantities
+      const initialQuantities: Record<string, number> = {};
+      (data.data.stock_entries || []).forEach((entry: StockEntry) => {
+          initialQuantities[entry.id] = parseFloat(entry.quantity);
+      });
+      setRefundQuantities(initialQuantities);
+
     } catch (error) {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch return details.' });
     } finally {
@@ -1010,10 +1018,21 @@ export default function POSPage() {
         }
 
         setIsSubmittingRefund(true);
-        const refundPromises = (selectedReturnForRefund.stock_entries || []).map(entry => {
+        const itemsToRefund = (selectedReturnForRefund.stock_entries || []).filter(entry => refundQuantities[entry.id] > 0);
+        
+        if (itemsToRefund.length === 0) {
+            toast({ variant: "destructive", title: "No Items to Refund", description: "Please enter a quantity for at least one item."});
+            setIsSubmittingRefund(false);
+            return;
+        }
+
+        const refundPromises = itemsToRefund.map(entry => {
+            const refundQty = refundQuantities[entry.id];
+            const productPrice = entry.product ? parseFloat(entry.product.price as string) : 0;
+
             const payload = {
                 rtn_number: selectedReturnForRefund.rtn_number,
-                refund_amount: parseFloat(selectedReturnForRefund.return_amount), // Use the total refund amount for the whole transaction
+                refund_amount: productPrice * refundQty,
                 refund_datetime: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
                 is_active: 1,
                 update_by: currentCashier.name,
@@ -1023,6 +1042,7 @@ export default function POSPage() {
                 company_id: company_id,
                 product_id: parseInt(entry.product_id, 10),
                 product_variant_id: parseInt(entry.product_variant_id, 10),
+                refund_qty: refundQty,
             };
             return fetch('https://server-erp.payshia.com/transaction-refunds', {
                 method: 'POST',
@@ -1100,7 +1120,7 @@ export default function POSPage() {
 
         const customerForOrder = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
         
-        const cartItems: CartItem[] = invoice.items.map(item => {
+        const cartItems: CartItem[] = (invoice.items || []).map(item => {
             const productDetails = posProducts.find(p => p.id === String(item.product_id));
             if (!productDetails) return null;
 
@@ -1157,10 +1177,10 @@ export default function POSPage() {
         order={currentOrder}
         orderTotals={orderTotals}
         cashierName={currentCashier.name}
-        currentLocation={currentLocation!}
+        currentLocation={currentLocation}
         onUpdateQuantity={updateQuantity}
         onRemoveItem={removeFromCart}
-        onClearCart={() => clearCart()}
+        onClearCart={onClearCart}
         onHoldOrder={onHoldOrder}
         onSendToKitchen={handleSendToKitchen}
         isDrawer={isDrawerOpen}
@@ -1431,22 +1451,34 @@ export default function POSPage() {
                             </div>
                         </DialogHeader>
                         {selectedReturnForRefund ? (
-                            <div className="grid grid-cols-2 gap-8 p-6">
+                            <div className="grid grid-cols-2 gap-8 p-6 flex-1 overflow-y-auto">
                                 <div>
                                     <Badge>{customers.find(c => c.customer_id === selectedReturnForRefund.customer_id)?.name || 'Walk-in'}</Badge>
                                     <p className="text-2xl font-bold mt-1">{selectedReturnForRefund.rtn_number}</p>
                                     <p className="text-4xl font-bold text-green-600">${parseFloat(selectedReturnForRefund.return_amount).toFixed(2)}</p>
                                     <Badge variant="secondary" className="mt-1 text-sm font-normal">{format(new Date(selectedReturnForRefund.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
                                     <Table className="mt-4">
-                                        <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="text-right">Qty</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+                                        <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="w-24">Return Qty</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
                                         <TableBody>
-                                            {selectedReturnForRefund.stock_entries?.map(item => (
+                                            {selectedReturnForRefund.stock_entries?.map(item => {
+                                                const maxQty = parseFloat(item.quantity);
+                                                return (
                                                 <TableRow key={item.id}>
                                                     <TableCell>{item.product ? item.product.name : 'Product not found'}</TableCell>
-                                                    <TableCell className="text-right">{parseFloat(item.quantity).toFixed(2)}</TableCell>
-                                                    <TableCell className="text-right">${item.product ? (parseFloat(item.product.price as string) * parseFloat(item.quantity)).toFixed(2) : '0.00'}</TableCell>
+                                                    <TableCell>
+                                                        <Input
+                                                            type="number"
+                                                            value={refundQuantities[item.id] || ''}
+                                                            onChange={(e) => {
+                                                                const newQty = Math.min(parseFloat(e.target.value) || 0, maxQty);
+                                                                setRefundQuantities(prev => ({...prev, [item.id]: newQty}));
+                                                            }}
+                                                            max={maxQty}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="text-right">${item.product ? (parseFloat(item.product.price as string) * (refundQuantities[item.id] || 0)).toFixed(2) : '0.00'}</TableCell>
                                                 </TableRow>
-                                            )) || (
+                                            )}) || (
                                                  <TableRow>
                                                     <TableCell colSpan={3} className="text-center text-muted-foreground">No item details available.</TableCell>
                                                 </TableRow>
