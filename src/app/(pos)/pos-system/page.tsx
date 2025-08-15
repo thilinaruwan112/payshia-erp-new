@@ -1059,45 +1059,51 @@ export default function POSPage() {
         }
     };
     
-    const loadHeldOrder = (invoice: Invoice | null) => {
-      if (!invoice) return;
-  
-      const customerForOrder = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
-  
-      const cartItems: CartItem[] = (invoice.items || []).map(item => {
-          const productDetails = posProducts.find(p => p.id === String(item.product_id));
-          if (!productDetails) return null;
-  
-          const variantDetails = productDetails.variants?.find(v => v.id === String(item.product_variant_id));
-          if (!variantDetails) return null;
-  
-          const variantName = [productDetails.name, variantDetails.color, variantDetails.size].filter(Boolean).join(' - ');
-  
-          return {
-              product: { ...productDetails, variant: variantDetails, variantName },
-              quantity: parseFloat(String(item.quantity)),
-              itemDiscount: parseFloat(String(item.item_discount)),
-          };
-      }).filter((item): item is CartItem => item !== null);
-      
-      const itemDiscounts = cartItems.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
-      
-      const heldOrder: ActiveOrder = {
-          id: invoice.id,
-          name: invoice.remark || `Order ${invoice.invoice_number}`,
-          cart: cartItems,
-          discount: parseFloat(invoice.discount_amount) - itemDiscounts,
-          serviceCharge: parseFloat(invoice.service_charge),
-          customer: customerForOrder,
-          orderType: 'Take Away', // Default, can be improved
-          steward: stewards.find(s => s.id === invoice.steward_id),
-      };
-      
-      setActiveOrders(prev => [...prev.filter(o => o.id !== invoice.id), heldOrder]);
-      setCurrentOrderId(heldOrder.id);
-      setIsHeldOrderDetailsOpen(false);
-      setDrawerOpen(false);
-  }
+     const loadHeldOrder = (invoice: Invoice | null) => {
+        if (!invoice || !invoice.items) return;
+
+        const customerForOrder = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
+        
+        const cartItems: CartItem[] = invoice.items.map(item => {
+            const product = posProducts.find(p => p.variant.id === String(item.product_variant_id));
+            if (!product) return null;
+            
+            return {
+                product: {
+                    ...product,
+                    price: parseFloat(String(item.item_price)), // Use price from invoice
+                },
+                quantity: parseFloat(String(item.quantity)),
+                itemDiscount: parseFloat(String(item.item_discount)),
+            };
+        }).filter((item): item is CartItem => item !== null);
+        
+        if (cartItems.length !== invoice.items.length) {
+            toast({
+                variant: 'destructive',
+                title: 'Product Mismatch',
+                description: 'Some products in the held order could not be found and were not loaded.',
+            });
+        }
+        
+        const itemDiscounts = cartItems.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
+        
+        const heldOrder: ActiveOrder = {
+            id: invoice.id,
+            name: invoice.remark || `Order ${invoice.invoice_number}`,
+            cart: cartItems,
+            discount: parseFloat(invoice.discount_amount) - itemDiscounts,
+            serviceCharge: parseFloat(invoice.service_charge),
+            customer: customerForOrder,
+            orderType: 'Take Away', // Default, can be improved
+            steward: stewards.find(s => s.id === invoice.steward_id),
+        };
+        
+        setActiveOrders(prev => [...prev.filter(o => o.id !== invoice.id), heldOrder]);
+        setCurrentOrderId(heldOrder.id);
+        setIsHeldOrderDetailsOpen(false);
+        setDrawerOpen(false);
+    }
 
   const orderPanelComponent = currentOrder ? (
      <OrderPanel
@@ -1614,3 +1620,4 @@ export default function POSPage() {
     </>
   );
 }
+
