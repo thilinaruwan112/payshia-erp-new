@@ -293,7 +293,7 @@ export function OrderPanel({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
-  onHoldOrder,
+  onHoldOrder: holdOrderCallback,
   onSendToKitchen,
   isDrawer,
   onClose,
@@ -313,16 +313,11 @@ export function OrderPanel({
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
 
-  const handleSuccessfulPayment = async (paymentMethod: string, tenderedAmount: number) => {
-    toast({
-      title: 'Payment Processing...',
-      description: `Processing $${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
-    });
-
+  const createInvoicePayload = (status: '1' | '2', paymentMethod = 'N/A', tenderedAmount = 0) => {
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
     const costValue = cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
 
-    const payload = {
+    return {
         invoice_date: format(new Date(), 'yyyy-MM-dd'),
         inv_amount: orderTotals.subtotal,
         grand_total: orderTotals.total,
@@ -332,8 +327,8 @@ export function OrderPanel({
         service_charge: orderTotals.serviceCharge,
         tendered_amount: tenderedAmount,
         close_type: paymentMethod,
-        invoice_status: "2",
-        payment_status: "Paid",
+        invoice_status: status,
+        payment_status: status === '1' ? "Paid" : "Pending",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
         table_id: 0,
@@ -347,13 +342,13 @@ export function OrderPanel({
         company_id: "1",
         chanel: "POS",
         items: cart.map(item => ({
-            user_id: 1, // Assuming a default user ID for now
+            user_id: parseInt(customer.customer_id, 10),
             product_id: parseInt(item.product.id, 10),
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0,
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
-            table_id: 0, // Placeholder
+            table_id: 0,
             cost_price: item.product.costPrice || 0,
             is_active: 1,
             hold_status: 0,
@@ -361,6 +356,15 @@ export function OrderPanel({
             product_variant_id: parseInt(item.product.variant.id, 10),
         })),
     };
+  };
+
+  const handleSuccessfulPayment = async (paymentMethod: string, tenderedAmount: number) => {
+    toast({
+      title: 'Payment Processing...',
+      description: `Processing $${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
+    });
+
+    const payload = createInvoicePayload('1', paymentMethod, tenderedAmount);
 
     try {
         const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
@@ -377,10 +381,10 @@ export function OrderPanel({
         
         toast({
             title: 'Payment Successful!',
-            description: `Invoice #${result.invoice.invoice_number} created.`
+            description: `Invoice #${result.invoice_number} created.`
         });
         
-        window.open(`/pos/invoice/${result.invoice.id}`, '_blank');
+        window.open(`/pos/invoice/${result.invoice_id}`, '_blank');
         
         setPaymentOpen(false);
         onClearCart(orderId);
@@ -392,6 +396,43 @@ export function OrderPanel({
             title: "Payment Failed",
             description: errorMessage,
         });
+    }
+  };
+
+  const onHoldOrder = async () => {
+    if (!order || cart.length === 0) {
+      toast({
+        variant: 'default',
+        title: 'Cannot Hold Empty Order',
+        description: 'Add items to the cart before holding.',
+      });
+      return;
+    }
+    const payload = createInvoicePayload('2');
+
+    try {
+      const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to hold order.');
+      }
+      toast({
+        title: 'Order Held',
+        description: `${order.name} has been put on hold as Invoice #${result.invoice_number}.`,
+      });
+      onClearCart(orderId);
+    } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+       toast({
+        variant: 'destructive',
+        title: 'Error Holding Order',
+        description: errorMessage,
+      });
     }
   };
   
