@@ -33,7 +33,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,27 +78,41 @@ interface BalanceDetails {
 
 type StockEntry = {
     id: string;
-    product_id: string;
+    type: "IN" | "OUT";
     quantity: string;
+    patch_code: string;
+    manufacture_date: string;
+    expire_date: string;
+    product_id: string;
+    reference: string;
+    location_id: string;
+    created_by: string;
+    created_at: string;
+    is_active: string;
+    ref_id: string;
+    company_id: string;
+    transaction_type: string;
+    product_variant_id: string;
     product: Product;
+    product_variant: ProductVariant;
 }
 
 type TransactionReturn = {
-    id: string;
-    rtn_number: string;
-    customer_id: string;
-    location_id: string;
-    created_at: string;
-    updated_by: string;
-    reason: string;
-    refund_id: string;
-    is_active: string;
-    ref_invoice: string;
-    return_amount: string;
-    settled_invoice: string;
-    company_id: string;
-    stock_entries?: StockEntry[];
-}
+  id: string;
+  rtn_number: string;
+  customer_id: string;
+  location_id: string;
+  created_at: string;
+  updated_by: string;
+  reason: string;
+  refund_id: string;
+  is_active: string;
+  ref_invoice: string;
+  return_amount: string;
+  settled_invoice: string;
+  company_id: string;
+  stock_entries?: StockEntry[];
+};
 
 
 let orderCounter = 1;
@@ -245,6 +259,7 @@ export default function POSPage() {
   const [paymentMethod, setPaymentMethod] = useState('Card');
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
+  const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -884,6 +899,60 @@ export default function POSPage() {
     }
   };
 
+    const handleRefund = async () => {
+        if (!selectedReturnForRefund || !currentLocation) {
+            toast({ variant: "destructive", title: "Error", description: "No return selected or location missing." });
+            return;
+        }
+
+        setIsSubmittingRefund(true);
+        const refundPromises = (selectedReturnForRefund.stock_entries || []).map(entry => {
+            const payload = {
+                rtn_number: selectedReturnForRefund.rtn_number,
+                refund_amount: parseFloat(selectedReturnForRefund.return_amount), // Use the total refund amount for the whole transaction
+                refund_datetime: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
+                is_active: 1,
+                update_by: currentCashier.name,
+                customer_id: parseInt(selectedReturnForRefund.customer_id, 10),
+                rtn_location: parseInt(selectedReturnForRefund.location_id, 10),
+                current_location: parseInt(currentLocation.location_id, 10),
+                company_id: company_id,
+                product_id: parseInt(entry.product_id, 10),
+                product_variant_id: parseInt(entry.product_variant_id, 10),
+            };
+            return fetch('https://server-erp.payshia.com/transaction-refunds', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        });
+
+        try {
+            const responses = await Promise.all(refundPromises);
+            for (const response of responses) {
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'One or more refund requests failed.');
+                }
+            }
+            toast({
+                title: "Refund Processed Successfully",
+                description: `Refund for ${selectedReturnForRefund.rtn_number} has been completed.`,
+            });
+            setRefundDialogOpen(false);
+            setSelectedReturnForRefund(null);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast({
+                variant: "destructive",
+                title: "Refund Failed",
+                description: errorMessage
+            });
+        } finally {
+            setIsSubmittingRefund(false);
+        }
+    };
+
 
    if (isLocationLoading) {
     return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
@@ -983,7 +1052,7 @@ export default function POSPage() {
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
       />
-       <div className="flex h-screen w-screen overflow-hidden">
+      <div className="flex h-screen w-screen overflow-hidden">
         <div className="flex-1 flex flex-col overflow-y-auto">
           <PosHeader
             searchTerm={searchTerm}
@@ -1215,7 +1284,10 @@ export default function POSPage() {
                                     <div className="space-y-4">
                                         <h3 className="text-lg font-semibold text-center">Enter PIN</h3>
                                         <Input type="password" placeholder="****" className="h-12 text-center text-2xl tracking-widest" />
-                                        <Button className="w-full h-12 text-lg">Refund</Button>
+                                        <Button onClick={handleRefund} disabled={isSubmittingRefund} className="w-full h-12 text-lg">
+                                            {isSubmittingRefund && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Refund
+                                        </Button>
                                     </div>
                                 </div>
                             </div>
@@ -1394,3 +1466,4 @@ export default function POSPage() {
     </>
   );
 }
+
