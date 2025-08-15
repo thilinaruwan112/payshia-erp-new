@@ -353,8 +353,8 @@ export function OrderPanel({
             item_discount: item.itemDiscount || 0,
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
-            table_id: 0,
-            cost_price: item.product.costPrice,
+            table_id: 0, // Placeholder
+            cost_price: item.product.costPrice || 0,
             is_active: 1,
             hold_status: 0,
             printed_status: 1,
