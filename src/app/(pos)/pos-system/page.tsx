@@ -790,6 +790,13 @@ export default function POSPage() {
     setDrawerOpen(false);
   };
 
+  const onClearCart = (orderId: string) => {
+    if (orderId === currentOrderId) {
+        setCurrentOrderId(null);
+    }
+    setActiveOrders(prev => prev.filter(o => o.id !== orderId));
+  };
+
   const setDiscount = (newDiscount: number) => {
     if (!currentOrderId) return;
      setActiveOrders((prevOrders) =>
@@ -1053,44 +1060,44 @@ export default function POSPage() {
     };
     
     const loadHeldOrder = (invoice: Invoice | null) => {
-        if (!invoice) return;
-
-        const customerForOrder = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
-
-        const cartItems: CartItem[] = (invoice.items || []).map(item => {
-            const product = posProducts.find(p => p.id === String(item.product_id));
-            if (!product) return null;
-            const variant = product.variants && product.variants.find(v => v.id === String(item.product_variant_id));
-            if (!variant) {
-                return null;
-            }
-            
-            const variantName = [product.name, variant.color, variant.size].filter(Boolean).join(' - ');
-
-            return {
-                product: { ...product, variant, variantName },
-                quantity: parseFloat(String(item.quantity)),
-                itemDiscount: parseFloat(String(item.item_discount)),
-            };
-        }).filter((item): item is CartItem => item !== null);
-        
-        
-        const heldOrder: ActiveOrder = {
-            id: invoice.id,
-            name: invoice.remark || `Order ${invoice.invoice_number}`,
-            cart: cartItems,
-            discount: parseFloat(invoice.discount_amount) - cartItems.reduce((acc, item) => acc + (item.itemDiscount || 0), 0),
-            serviceCharge: parseFloat(invoice.service_charge),
-            customer: customerForOrder,
-            orderType: 'Take Away', // Default, can be improved
-            steward: stewards.find(s => s.id === invoice.steward_id),
-        };
-        
-        setActiveOrders(prev => [...prev.filter(o => o.id !== invoice.id), heldOrder]);
-        setCurrentOrderId(heldOrder.id);
-        setIsHeldOrderDetailsOpen(false);
-        setDrawerOpen(false);
-    }
+      if (!invoice) return;
+  
+      const customerForOrder = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
+  
+      const cartItems: CartItem[] = (invoice.items || []).map(item => {
+          const productDetails = posProducts.find(p => p.id === String(item.product_id));
+          if (!productDetails) return null;
+  
+          const variantDetails = productDetails.variants.find(v => v.id === String(item.product_variant_id));
+          if (!variantDetails) return null;
+  
+          const variantName = [productDetails.name, variantDetails.color, variantDetails.size].filter(Boolean).join(' - ');
+  
+          return {
+              product: { ...productDetails, variant: variantDetails, variantName },
+              quantity: parseFloat(String(item.quantity)),
+              itemDiscount: parseFloat(String(item.item_discount)),
+          };
+      }).filter((item): item is CartItem => item !== null);
+      
+      const itemDiscounts = cartItems.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
+      
+      const heldOrder: ActiveOrder = {
+          id: invoice.id,
+          name: invoice.remark || `Order ${invoice.invoice_number}`,
+          cart: cartItems,
+          discount: parseFloat(invoice.discount_amount) - itemDiscounts,
+          serviceCharge: parseFloat(invoice.service_charge),
+          customer: customerForOrder,
+          orderType: 'Take Away', // Default, can be improved
+          steward: stewards.find(s => s.id === invoice.steward_id),
+      };
+      
+      setActiveOrders(prev => [...prev.filter(o => o.id !== invoice.id), heldOrder]);
+      setCurrentOrderId(heldOrder.id);
+      setIsHeldOrderDetailsOpen(false);
+      setDrawerOpen(false);
+  }
 
   const orderPanelComponent = currentOrder ? (
      <OrderPanel
@@ -1583,7 +1590,7 @@ export default function POSPage() {
                         <TableBody>
                             {selectedHeldOrderDetails.items?.map(item => (
                                 <TableRow key={item.id}>
-                                    <TableCell>{item.productName}</TableCell>
+                                    <TableCell>{posProducts.find(p => p.id === String(item.product_id))?.name}</TableCell>
                                     <TableCell>{item.quantity}</TableCell>
                                     <TableCell className="text-right">${(parseFloat(item.item_price as string) * parseFloat(item.quantity as string)).toFixed(2)}</TableCell>
                                 </TableRow>
