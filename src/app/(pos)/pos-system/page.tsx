@@ -236,6 +236,8 @@ export default function POSPage() {
   const [newOrderDialogStep, setNewOrderDialogStep] = useState<'type' | 'steward'>('type');
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   
+  const [isHeldOrdersLoading, setIsHeldOrdersLoading] = useState(false);
+  const [heldOrders, setHeldOrders] = useState<Invoice[]>([]);
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
   const [isReturnDialogOpen, setReturnDialogOpen] = useState(false);
   const [isRefundDialogOpen, setRefundDialogOpen] = useState(false);
@@ -940,51 +942,64 @@ export default function POSPage() {
             setIsSubmittingRefund(false);
         }
     };
+    
+    useEffect(() => {
+        async function fetchHeldOrders() {
+            if (!isDrawerOpen) return;
+            setIsHeldOrdersLoading(true);
+            try {
+                const response = await fetch(`https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=1&invoice_status=2`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch held orders');
+                }
+                const data: Invoice[] = await response.json();
+                setHeldOrders(data || []);
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch held orders.' });
+            } finally {
+                setIsHeldOrdersLoading(false);
+            }
+        }
+        fetchHeldOrders();
+    }, [isDrawerOpen, toast]);
+    
+    const handleSelectHeldOrder = (invoice: Invoice) => {
+        const customerForOrder = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
 
+        const cartItems: CartItem[] = (invoice.items || []).map(item => {
+            const product = posProducts.find(p => p.id === String(item.product_id));
+            const variant = product?.variants.find(v => v.id === String(item.product_variant_id));
+            if (!product || !variant) {
+                return null;
+            }
+            
+            const variantName = [product.name, variant.color, variant.size].filter(Boolean).join(' - ');
 
-   if (isLocationLoading) {
-    return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
-  }
+            return {
+                product: { ...product, variant, variantName },
+                quantity: parseFloat(String(item.quantity)),
+                itemDiscount: parseFloat(String(item.item_discount)),
+            };
+        }).filter((item): item is CartItem => item !== null);
+        
+        
+        const heldOrder: ActiveOrder = {
+            id: invoice.id,
+            name: invoice.remark || `Order ${invoice.invoice_number}`,
+            cart: cartItems,
+            discount: parseFloat(invoice.discount_amount) - cartItems.reduce((acc, item) => acc + (item.itemDiscount || 0), 0),
+            serviceCharge: parseFloat(invoice.service_charge),
+            customer: customerForOrder,
+            orderType: 'Take Away', // Default, can be improved
+            steward: stewards.find(s => s.id === invoice.steward_id),
+        };
+        
+        setActiveOrders(prev => [...prev, heldOrder]);
+        setCurrentOrderId(heldOrder.id);
+        setDrawerOpen(false);
+    };
 
-  if (!currentLocation) {
-    const posLocations = availableLocations.filter(loc => loc.pos_status === '1');
-    return (
-        <div className="flex h-screen w-screen items-center justify-center p-4">
-             <Card className="text-center w-full max-w-lg">
-                <CardHeader>
-                    <MapPin className="h-12 w-12 mx-auto text-primary" />
-                    <CardTitle className="mt-4">Select a Location</CardTitle>
-                    <CardDescription>Choose your current Point of Sale location to begin.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {posLocations.length > 0 ? (
-                        posLocations.map(loc => (
-                            <Button 
-                                key={loc.location_id}
-                                className="w-full h-12 text-lg" 
-                                variant="outline"
-                                onClick={() => setCurrentLocation(loc)}
-                            >
-                                {loc.location_name}
-                            </Button>
-                        ))
-                    ) : (
-                        <p className="text-muted-foreground">No POS-enabled locations found. Please configure one in the admin dashboard.</p>
-                    )}
-                </CardContent>
-                 <CardFooter>
-                    <Button asChild className="w-full" variant="link">
-                        <Link href="/dashboard" target="_blank">
-                            Go to Admin Dashboard
-                        </Link>
-                    </Button>
-                </CardFooter>
-            </Card>
-        </div>
-    )
-  }
-
-  const orderPanelComponent = currentOrder ? (
+    const orderPanelComponent = currentOrder ? (
      <OrderPanel
         key={currentOrder.id}
         order={currentOrder}
@@ -1017,18 +1032,17 @@ export default function POSPage() {
   const heldOrdersList = (
     <div className='p-4 space-y-2'>
         <h3 className='font-bold text-lg mb-2'>Held Orders</h3>
-        {activeOrders.filter(o => o.id !== currentOrderId).map(order => (
-            <Button key={order.id} variant="outline" className='w-full justify-between' onClick={() => {
-                setCurrentOrderId(order.id);
-                setDrawerOpen(false);
-            }}>
-                <span>{order.name}</span>
-                <Badge>{order.cart.reduce((acc, item) => acc + item.quantity, 0)}</Badge>
+        {isHeldOrdersLoading ? <div className="flex justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div> :
+         heldOrders.length > 0 ? heldOrders.map(order => (
+            <Button key={order.id} variant="outline" className='w-full justify-between' onClick={() => handleSelectHeldOrder(order)}>
+                <div>
+                    <span className="font-semibold">{order.invoice_number}</span>
+                    <span className="text-xs text-muted-foreground ml-2">{customers.find(c => c.customer_id === order.customer_code)?.name}</span>
+                </div>
+                <Badge>{order.items?.length || 0}</Badge>
             </Button>
-        ))}
-         {activeOrders.filter(o => o.id !== currentOrderId).length === 0 && (
-            <p className='text-muted-foreground text-sm'>No orders are currently on hold.</p>
-        )}
+        )) : <p className='text-muted-foreground text-sm'>No orders are currently on hold.</p>
+       }
     </div>
   );
   
@@ -1309,11 +1323,11 @@ export default function POSPage() {
                 </Dialog>
             </div>
             <div className="flex items-center gap-2">
-               <Drawer>
+               <Drawer open={isDrawerOpen} onOpenChange={setDrawerOpen}>
                   <DrawerTrigger asChild>
                       <Button variant="outline">
                           <NotebookPen className="mr-2 h-4 w-4" />
-                          Held Orders ({activeOrders.filter(o => o.id !== currentOrderId).length})
+                          Held Orders ({heldOrders.length})
                       </Button>
                   </DrawerTrigger>
                   <DrawerContent>
