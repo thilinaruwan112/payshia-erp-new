@@ -494,7 +494,7 @@ export default function POSPage() {
   const handleReturnSelectForAction = async (returnData: TransactionReturn) => {
     setIsReturnsLoading(true);
     try {
-      const response = await fetch(`https://server-erp.payshia.com/transaction-returns/full/${returnData.id}?company_id=1`);
+      const response = await fetch(`https://server-erp.payshia.com/transaction-returns/full/${returnData.id}?company_id=${company_id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch return details');
       }
@@ -1268,9 +1268,9 @@ export default function POSPage() {
                                         <TableBody>
                                             {selectedReturnForRefund.stock_entries?.map(item => (
                                                 <TableRow key={item.id}>
-                                                    <TableCell>{item.product.name}</TableCell>
+                                                    <TableCell>{item.product?.name || 'Product not found'}</TableCell>
                                                     <TableCell className="text-right">{parseFloat(item.quantity).toFixed(2)}</TableCell>
-                                                    <TableCell className="text-right">${(parseFloat(item.product.price as string) * parseFloat(item.quantity)).toFixed(2)}</TableCell>
+                                                    <TableCell className="text-right">${item.product ? (parseFloat(item.product.price as string) * parseFloat(item.quantity)).toFixed(2) : '0.00'}</TableCell>
                                                 </TableRow>
                                             )) || (
                                                  <TableRow>
@@ -1466,4 +1466,3 @@ export default function POSPage() {
     </>
   );
 }
-
