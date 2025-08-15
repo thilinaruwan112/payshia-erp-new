@@ -735,7 +735,7 @@ export default function POSPage() {
     );
   };
   
-  const updateOrderDetails = (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => {
+  const onUpdateDetails = (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => {
       setActiveOrders(prevOrders => prevOrders.map(order => {
           if (order.id === orderId) {
               const updatedOrder = { ...order, ...newDetails };
@@ -1003,7 +1003,7 @@ export default function POSPage() {
         availableTables={tables}
         availableStewards={stewards}
         customers={customers}
-        onUpdateCustomer={onUpdateCustomer}
+        onUpdateCustomer={updateCustomer}
      />
   ) : (
       <div className="flex flex-col h-full bg-card items-center justify-center text-center p-8">
