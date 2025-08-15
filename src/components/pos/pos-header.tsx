@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -11,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { User } from '@/lib/types';
-import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock, ChevronDown, Building } from 'lucide-react';
 import { ThemeToggle } from '../theme-toggle';
 import Link from 'next/link';
 import { Button } from '../ui/button';
@@ -57,7 +58,14 @@ function DateTimeLocation() {
     }
 
     if (!currentLocation) {
-        return null;
+        return (
+             <div className="flex items-center gap-4 text-sm text-muted-foreground order-2 sm:order-1 sm:mr-auto">
+                 <Button variant="outline" disabled>
+                    <Building className="mr-2 h-4 w-4" />
+                    No Location Selected
+                </Button>
+            </div>
+        )
     }
     
     const posLocations = availableLocations.filter(loc => loc.pos_status === '1');

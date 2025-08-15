@@ -8,7 +8,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck, Minus, CheckCircle, Trash2, Info, Banknote, X } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Settings, History, ArrowLeft, FileText, UserPlus, RefreshCcw, Maximize, Menu, MapPin, Beer, Utensils, Pizza, UserCheck, Minus, CheckCircle, Trash2, Info, Banknote, X, Building } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Drawer,
@@ -214,6 +214,40 @@ type ReturnItem = {
 };
 
 
+const LocationSelectionDialog = ({ open, locations, onSelectLocation }: { open: boolean, locations: Location[], onSelectLocation: (location: Location) => void }) => {
+    return (
+        <Dialog open={open}>
+            <DialogContent className="sm:max-w-2xl" hideCloseButton>
+                <DialogHeader>
+                    <DialogTitle className="text-2xl">Select Your POS Location</DialogTitle>
+                    <DialogDescription>
+                        Choose the location you are currently operating from to begin sales.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    <ScrollArea className="h-96">
+                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-1">
+                            {locations.map(loc => (
+                                <Card key={loc.location_id} className="hover:border-primary hover:shadow-lg transition-all cursor-pointer" onClick={() => onSelectLocation(loc)}>
+                                    <CardHeader>
+                                        <Building className="h-8 w-8 text-primary mb-2" />
+                                        <CardTitle>{loc.location_name}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="text-sm text-muted-foreground">
+                                        <p>{loc.address_line1}</p>
+                                        <p>{loc.city}</p>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
 export default function POSPage() {
   const { toast } = useToast();
   const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
@@ -352,9 +386,11 @@ export default function POSPage() {
         }
     }
     
-    fetchPosData();
+    if (currentLocation) {
+        fetchPosData();
+    }
     
-  }, [toast]);
+  }, [toast, currentLocation]);
   
   useEffect(() => {
     async function fetchInvoicesForAction() {
@@ -1068,7 +1104,7 @@ export default function POSPage() {
             const productDetails = posProducts.find(p => p.id === String(item.product_id));
             if (!productDetails) return null;
 
-            const variantDetails = productDetails.variants && productDetails.variants.length > 0
+            const variantDetails = (productDetails.variants && productDetails.variants.length > 0)
                 ? productDetails.variants.find(v => v.id === String(item.product_variant_id))
                 : productDetails.variant; // Fallback to main product variant if no variants array
 
@@ -1163,6 +1199,25 @@ export default function POSPage() {
   );
   
   const categories = ['All', ...new Set(posProducts.map((p) => p.category))];
+
+   if (isLocationLoading) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!currentLocation) {
+    const posLocations = availableLocations.filter(loc => loc.pos_status === '1');
+    return (
+      <LocationSelectionDialog
+        open={!currentLocation}
+        locations={posLocations}
+        onSelectLocation={(loc) => setCurrentLocation(loc)}
+      />
+    );
+  }
 
   return (
     <>
