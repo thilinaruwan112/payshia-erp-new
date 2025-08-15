@@ -33,7 +33,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -494,7 +494,7 @@ export default function POSPage() {
   const handleReturnSelectForAction = async (returnData: TransactionReturn) => {
     setIsReturnsLoading(true);
     try {
-      const response = await fetch(`https://server-erp.payshia.com/transaction-returns/full/${returnData.id}`);
+      const response = await fetch(`https://server-erp.payshia.com/transaction-returns/full/${returnData.id}?company_id=1`);
       if (!response.ok) {
         throw new Error('Failed to fetch return details');
       }
