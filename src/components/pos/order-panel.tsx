@@ -342,7 +342,7 @@ export function OrderPanel({
         company_id: "1",
         chanel: "POS",
         items: cart.map(item => ({
-            user_id: parseInt(customer.customer_id, 10),
+            user_id: 1, // Default user_id as per example
             product_id: parseInt(item.product.id, 10),
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0,

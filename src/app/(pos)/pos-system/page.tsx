@@ -1068,7 +1068,7 @@ export default function POSPage() {
           const productDetails = posProducts.find(p => p.id === String(item.product_id));
           if (!productDetails) return null;
   
-          const variantDetails = productDetails.variants.find(v => v.id === String(item.product_variant_id));
+          const variantDetails = productDetails.variants?.find(v => v.id === String(item.product_variant_id));
           if (!variantDetails) return null;
   
           const variantName = [productDetails.name, variantDetails.color, variantDetails.size].filter(Boolean).join(' - ');
