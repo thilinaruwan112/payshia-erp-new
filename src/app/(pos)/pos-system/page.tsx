@@ -1065,13 +1065,23 @@ export default function POSPage() {
         const customerForOrder = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
         
         const cartItems: CartItem[] = invoice.items.map(item => {
-            const product = posProducts.find(p => p.variant.id === String(item.product_variant_id));
-            if (!product) return null;
+            const productDetails = posProducts.find(p => p.id === String(item.product_id));
+            if (!productDetails) return null;
+
+            const variantDetails = productDetails.variants && productDetails.variants.length > 0
+                ? productDetails.variants.find(v => v.id === String(item.product_variant_id))
+                : productDetails.variant; // Fallback to main product variant if no variants array
+
+            if (!variantDetails) return null;
             
+            const variantName = [productDetails.name, variantDetails.color, variantDetails.size].filter(Boolean).join(' - ');
+
             return {
                 product: {
-                    ...product,
+                    ...productDetails,
                     price: parseFloat(String(item.item_price)), // Use price from invoice
+                    variant: variantDetails,
+                    variantName: variantName,
                 },
                 quantity: parseFloat(String(item.quantity)),
                 itemDiscount: parseFloat(String(item.item_discount)),
@@ -1620,4 +1630,3 @@ export default function POSPage() {
     </>
   );
 }
-

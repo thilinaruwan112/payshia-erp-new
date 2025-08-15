@@ -48,7 +48,7 @@ interface OrderPanelProps {
   order: ActiveOrder;
   orderTotals: OrderInfo;
   cashierName: string;
-  currentLocation: Location;
+  currentLocation: Location | null;
   onUpdateQuantity: (variantId: string, newQuantity: number) => void;
   onRemoveItem: (variantId: string) => void;
   onClearCart: (invoiceId: string) => void;
@@ -314,6 +314,14 @@ export function OrderPanel({
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
 
   const createInvoicePayload = (status: '1' | '2', paymentMethod = 'N/A', tenderedAmount = 0) => {
+    if (!currentLocation) {
+        toast({
+            variant: "destructive",
+            title: "Location not selected",
+            description: "Please select a location for the POS."
+        });
+        return null;
+    }
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
     const costValue = cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
 
@@ -365,6 +373,7 @@ export function OrderPanel({
     });
 
     const payload = createInvoicePayload('1', paymentMethod, tenderedAmount);
+    if (!payload) return;
 
     try {
         const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
@@ -409,6 +418,7 @@ export function OrderPanel({
       return;
     }
     const payload = createInvoicePayload('2');
+     if (!payload) return;
 
     try {
       const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
