@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Invoice, ActiveOrder, CartItem, Table as TableType } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand, Invoice, ActiveOrder, CartItem, Table as TableType, Location } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -93,8 +93,8 @@ type StockEntry = {
     company_id: string;
     transaction_type: string;
     product_variant_id: string;
-    product: Product;
-    product_variant: ProductVariant;
+    product?: Product;
+    product_variant?: ProductVariant;
 }
 
 type TransactionReturn = {
@@ -990,6 +990,7 @@ export default function POSPage() {
         order={currentOrder}
         orderTotals={orderTotals}
         cashierName={currentCashier.name}
+        currentLocation={currentLocation}
         onUpdateQuantity={updateQuantity}
         onRemoveItem={removeFromCart}
         onClearCart={() => clearCart()}

@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import React from 'react';
 import type { CartItem, OrderInfo, ActiveOrder } from '@/app/(pos)/pos-system/page';
-import type { User, Table as TableType } from '@/lib/types';
+import type { User, Table as TableType, Location } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -41,11 +42,13 @@ import { CustomerFormDialog } from '../customer-form-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Switch } from '../ui/switch';
+import { format } from 'date-fns';
 
 interface OrderPanelProps {
   order: ActiveOrder;
   orderTotals: OrderInfo;
   cashierName: string;
+  currentLocation: Location;
   onUpdateQuantity: (variantId: string, newQuantity: number) => void;
   onRemoveItem: (variantId: string) => void;
   onClearCart: (invoiceId: string) => void;
@@ -67,7 +70,7 @@ const PaymentDialog = ({
   onSuccessfulPayment,
 }: {
   orderTotals: OrderInfo;
-  onSuccessfulPayment: (paymentMethod: string) => void;
+  onSuccessfulPayment: (paymentMethod: string, tenderedAmount: number) => void;
 }) => {
   const [amountTendered, setAmountTendered] = React.useState('');
   const change = Number(amountTendered) - orderTotals.total;
@@ -86,14 +89,14 @@ const PaymentDialog = ({
           <Button
             variant="outline"
             className="h-20 text-lg"
-            onClick={() => onSuccessfulPayment('Cash')}
+            onClick={() => onSuccessfulPayment('Cash', orderTotals.total)}
           >
             Cash
           </Button>
           <Button
             variant="outline"
             className="h-20 text-lg"
-            onClick={() => onSuccessfulPayment('Card')}
+            onClick={() => onSuccessfulPayment('Card', orderTotals.total)}
           >
             <CreditCard className="mr-2" /> Card
           </Button>
@@ -119,7 +122,7 @@ const PaymentDialog = ({
           <Button variant="outline">Cancel</Button>
         </DialogClose>
         <Button
-          onClick={() => onSuccessfulPayment('Cash')}
+          onClick={() => onSuccessfulPayment('Cash', Number(amountTendered))}
           disabled={!amountTendered || change < 0}
         >
           Confirm Payment
@@ -286,6 +289,7 @@ export function OrderPanel({
   order,
   orderTotals,
   cashierName,
+  currentLocation,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -309,21 +313,86 @@ export function OrderPanel({
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
 
-  const handleSuccessfulPayment = async (paymentMethod: string) => {
-    // This is a simplified simulation. A real app would have a robust backend process.
+  const handleSuccessfulPayment = async (paymentMethod: string, tenderedAmount: number) => {
     toast({
       title: 'Payment Processing...',
       description: `Processing $${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
     });
-    
-    // Simulate creating an invoice record and getting an ID back
-    const mockInvoiceId = `INV-${Date.now()}`;
-    
-    // Open print window with the new invoice ID
-    window.open(`/pos/invoice/${mockInvoiceId}`, '_blank');
 
-    setPaymentOpen(false);
-    onClearCart(mockInvoiceId); // Pass the new ID to clear the right order
+    const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
+    const costValue = cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
+
+    const payload = {
+        invoice_date: format(new Date(), 'yyyy-MM-dd'),
+        inv_amount: orderTotals.subtotal,
+        grand_total: orderTotals.total,
+        discount_amount: totalDiscount,
+        discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
+        customer_code: customer.customer_id,
+        service_charge: orderTotals.serviceCharge,
+        tendered_amount: tenderedAmount,
+        close_type: paymentMethod,
+        invoice_status: "2", // Assuming 2 means Paid/Closed
+        payment_status: "Paid",
+        current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+        location_id: parseInt(currentLocation.location_id, 10),
+        table_id: 0, // This needs to be dynamic if tables are used
+        order_ready_status: 1,
+        created_by: cashierName,
+        is_active: 1,
+        steward_id: steward?.id || "N/A",
+        cost_value: costValue,
+        remark: `${orderType} order`,
+        ref_hold: null,
+        company_id: "1",
+        chanel: "POS",
+        items: cart.map(item => ({
+            user_id: parseInt(customer.id, 10),
+            product_id: parseInt(item.product.id, 10),
+            item_price: item.product.price,
+            item_discount: item.itemDiscount || 0,
+            quantity: item.quantity,
+            customer_id: parseInt(customer.id, 10),
+            table_id: 0,
+            cost_price: item.product.costPrice,
+            is_active: 1,
+            hold_status: 0,
+            printed_status: 1,
+            product_variant_id: parseInt(item.product.variant.id, 10),
+        })),
+    };
+
+    try {
+        const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to create invoice.');
+        }
+        
+        toast({
+            title: 'Payment Successful!',
+            description: `Invoice #${result.invoice.invoice_number} created.`
+        });
+        
+        window.open(`/pos/invoice/${result.invoice.id}`, '_blank');
+        
+        setPaymentOpen(false);
+        onClearCart(orderId);
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: "destructive",
+            title: "Payment Failed",
+            description: errorMessage,
+        });
+    }
   };
   
   const handleCustomerCreated = (newCustomer: User) => {
@@ -419,7 +488,7 @@ export function OrderPanel({
                   <div className="flex-1 flex flex-col">
                     <span className="font-semibold">{item.product.variantName}</span>
                     <span className="text-muted-foreground text-sm">
-                      ${item.product.price.toFixed(2)}
+                      ${(item.product.price as number).toFixed(2)}
                     </span>
                     {item.itemDiscount && item.itemDiscount > 0 ? (
                         <span className="text-xs text-green-600">
@@ -452,7 +521,7 @@ export function OrderPanel({
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="font-bold">
-                      ${(item.product.price * item.quantity).toFixed(2)}
+                      ${((item.product.price as number) * item.quantity).toFixed(2)}
                     </span>
                     <Button
                       size="icon"
