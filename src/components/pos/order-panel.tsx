@@ -332,11 +332,11 @@ export function OrderPanel({
         service_charge: orderTotals.serviceCharge,
         tendered_amount: tenderedAmount,
         close_type: paymentMethod,
-        invoice_status: "2", // Assuming 2 means Paid/Closed
+        invoice_status: "2",
         payment_status: "Paid",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
-        table_id: 0, // This needs to be dynamic if tables are used
+        table_id: 0,
         order_ready_status: 1,
         created_by: cashierName,
         is_active: 1,
@@ -347,12 +347,12 @@ export function OrderPanel({
         company_id: "1",
         chanel: "POS",
         items: cart.map(item => ({
-            user_id: parseInt(customer.id, 10),
+            user_id: 1, // Assuming a default user ID for now
             product_id: parseInt(item.product.id, 10),
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0,
             quantity: item.quantity,
-            customer_id: parseInt(customer.id, 10),
+            customer_id: parseInt(customer.customer_id, 10),
             table_id: 0,
             cost_price: item.product.costPrice,
             is_active: 1,
