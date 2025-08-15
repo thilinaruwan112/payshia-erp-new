@@ -453,41 +453,29 @@ export default function POSPage() {
   const handleInvoiceSelectForAction = async (invoice: Invoice) => {
     setSelectedInvoiceForAction(invoice);
     
-    if (isReturnDialogOpen && invoice.items) {
-      const itemsFromInvoice: ReturnItem[] = invoice.items.map(item => {
-        const productDetails = posProducts.find(p => p.id === String(item.product_id));
-        return {
-          id: String(item.product_variant_id || item.product_id),
-          name: item.productName || productDetails?.name || `Product ID: ${item.product_id}`,
-          unit: productDetails?.stock_unit || 'Nos',
-          rate: parseFloat(String(item.item_price)),
-          quantity: 0,
-          amount: 0,
-          reason: '',
-          productId: String(item.product_id),
-          productVariantId: String(item.product_variant_id),
-        }
-      });
-      setReturnItems(itemsFromInvoice);
-      return;
+    // Clear previous return items when a new invoice is selected for return.
+    if (isReturnDialogOpen) {
+      setReturnItems([]);
     }
 
-    setIsBalanceLoading(true);
-    try {
-      const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=1&customer_id=${invoice.customer_code}&ref_id=${invoice.invoice_number}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch invoice balance');
-      }
-      const data: BalanceDetails = await response.json();
-      setPaymentAmount(data.balance.toFixed(2));
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Could not fetch invoice balance details.',
-      });
-    } finally {
-        setIsBalanceLoading(false);
+    if(isPendingInvoicesDialogOpen) {
+        setIsBalanceLoading(true);
+        try {
+        const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=1&customer_id=${invoice.customer_code}&ref_id=${invoice.invoice_number}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch invoice balance');
+        }
+        const data: BalanceDetails = await response.json();
+        setPaymentAmount(data.balance.toFixed(2));
+        } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not fetch invoice balance details.',
+        });
+        } finally {
+            setIsBalanceLoading(false);
+        }
     }
   };
   
@@ -1169,7 +1157,7 @@ export default function POSPage() {
                                     <div className="grid grid-cols-5 gap-2 items-end">
                                         <div className="col-span-2">
                                             <Label>Select Product</Label>
-                                            <Select onValueChange={(variantId) => setCurrentReturnProduct(posProducts.find(p => p.variant.id === variantId) || null)} disabled={!!selectedInvoiceForAction}>
+                                            <Select onValueChange={(variantId) => setCurrentReturnProduct(posProducts.find(p => p.variant.id === variantId) || null)}>
                                                 <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
                                                 <SelectContent>{posProducts.map(p => <SelectItem key={p.variant.id} value={p.variant.id}>{p.variantName}</SelectItem>)}</SelectContent>
                                             </Select>
@@ -1177,7 +1165,7 @@ export default function POSPage() {
                                         <div><Label>Unit</Label><Input value={currentReturnProduct?.stock_unit || 'Nos'} readOnly /></div>
                                         <div><Label>Rate</Label><Input value={(currentReturnProduct?.price as number || 0).toFixed(2)} readOnly /></div>
                                         <div><Label>Quantity</Label><Input type="number" value={currentReturnQty} onChange={(e) => setCurrentReturnQty(parseInt(e.target.value, 10))} /></div>
-                                        <Button onClick={handleAddReturnItem} disabled={!currentReturnProduct || !!selectedInvoiceForAction}><Plus className="h-4 w-4" /></Button>
+                                        <Button onClick={handleAddReturnItem} disabled={!currentReturnProduct}><Plus className="h-4 w-4" /></Button>
                                     </div>
                                     <Table>
                                         <TableHeader>
@@ -1268,7 +1256,7 @@ export default function POSPage() {
                                         <TableBody>
                                             {selectedReturnForRefund.stock_entries?.map(item => (
                                                 <TableRow key={item.id}>
-                                                    <TableCell>{item.product?.name || 'Product not found'}</TableCell>
+                                                    <TableCell>{item.product ? item.product.name : 'Product not found'}</TableCell>
                                                     <TableCell className="text-right">{parseFloat(item.quantity).toFixed(2)}</TableCell>
                                                     <TableCell className="text-right">${item.product ? (parseFloat(item.product.price as string) * parseFloat(item.quantity)).toFixed(2) : '0.00'}</TableCell>
                                                 </TableRow>
