@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import React from 'react';
 import type { CartItem, OrderInfo, ActiveOrder } from '@/app/(pos)/pos-system/page';
-import type { User } from '@/lib/types';
+import type { User, Table as TableType, Location } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -19,6 +20,8 @@ import {
   Notebook,
   PlusSquare,
   Star,
+  UserCheck,
+  Settings,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -30,23 +33,36 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogClose,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { CustomerFormDialog } from '../customer-form-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Switch } from '../ui/switch';
+import { format } from 'date-fns';
 
 interface OrderPanelProps {
   order: ActiveOrder;
   orderTotals: OrderInfo;
   cashierName: string;
+  currentLocation: Location | null;
   onUpdateQuantity: (variantId: string, newQuantity: number) => void;
   onRemoveItem: (variantId: string) => void;
   onClearCart: (invoiceId: string) => void;
   onHoldOrder: () => void;
-  onSendToKitchen: (orderId: string) => void;
+  onSendToKitchen: () => void;
   isDrawer?: boolean;
   onClose?: () => void;
   setDiscount: (discount: number) => void;
+  setServiceCharge: (serviceCharge: number) => void;
+  onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
+  availableTables: TableType[];
+  availableStewards: User[];
+  customers: User[];
+  onUpdateCustomer: (orderId: string, customer: User) => void;
 }
 
 const PaymentDialog = ({
@@ -54,7 +70,7 @@ const PaymentDialog = ({
   onSuccessfulPayment,
 }: {
   orderTotals: OrderInfo;
-  onSuccessfulPayment: (paymentMethod: string) => void;
+  onSuccessfulPayment: (paymentMethod: string, tenderedAmount: number) => void;
 }) => {
   const [amountTendered, setAmountTendered] = React.useState('');
   const change = Number(amountTendered) - orderTotals.total;
@@ -73,14 +89,14 @@ const PaymentDialog = ({
           <Button
             variant="outline"
             className="h-20 text-lg"
-            onClick={() => onSuccessfulPayment('Cash')}
+            onClick={() => onSuccessfulPayment('Cash', orderTotals.total)}
           >
             Cash
           </Button>
           <Button
             variant="outline"
             className="h-20 text-lg"
-            onClick={() => onSuccessfulPayment('Card')}
+            onClick={() => onSuccessfulPayment('Card', orderTotals.total)}
           >
             <CreditCard className="mr-2" /> Card
           </Button>
@@ -106,7 +122,7 @@ const PaymentDialog = ({
           <Button variant="outline">Cancel</Button>
         </DialogClose>
         <Button
-          onClick={() => onSuccessfulPayment('Cash')}
+          onClick={() => onSuccessfulPayment('Cash', Number(amountTendered))}
           disabled={!amountTendered || change < 0}
         >
           Confirm Payment
@@ -155,77 +171,304 @@ const DiscountDialog = ({
   );
 };
 
+const ServiceChargeDialog = ({
+  currentValue,
+  setServiceCharge,
+  onClose,
+}: {
+  currentValue: number;
+  setServiceCharge: (d: number) => void;
+  onClose: () => void;
+}) => {
+  const [chargeValue, setChargeValue] = React.useState(currentValue.toString());
+
+  const applyCharge = () => {
+    setServiceCharge(Number(chargeValue));
+    onClose();
+  };
+
+  return (
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Apply Service Charge</DialogTitle>
+      </DialogHeader>
+      <div className="space-y-2">
+        <Label htmlFor="charge-value">Service Charge Amount ($)</Label>
+        <Input
+          id="charge-value"
+          type="number"
+          placeholder="e.g. 10.00"
+          value={chargeValue}
+          onChange={(e) => setChargeValue(e.target.value)}
+        />
+      </div>
+      <DialogFooter>
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={applyCharge}>Apply</Button>
+      </DialogFooter>
+    </DialogContent>
+  );
+};
+
+
+const EditOrderDialog = ({ order, onUpdateDetails, availableTables, availableStewards, onClose }: { 
+    order: ActiveOrder;
+    onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
+    availableTables: TableType[];
+    availableStewards: User[];
+    onClose: () => void;
+}) => {
+    const [orderType, setOrderType] = React.useState(order.orderType);
+    const [tableName, setTableName] = React.useState(order.tableName);
+    const [steward, setSteward] = React.useState(order.steward);
+
+    const handleSaveChanges = () => {
+        onUpdateDetails(order.id, {
+            orderType,
+            tableName: orderType === 'Dine-In' ? tableName : undefined,
+            steward: orderType === 'Dine-In' ? steward : undefined,
+        });
+        onClose();
+    }
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Edit Order Details</DialogTitle>
+                <DialogDescription>Change the order type, table, or assigned steward.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                 <div className="space-y-2">
+                    <Label>Order Type</Label>
+                    <RadioGroup value={orderType} onValueChange={(value) => setOrderType(value as ActiveOrder['orderType'])}>
+                        <div className="flex items-center space-x-4">
+                           <div className="flex items-center space-x-2"><RadioGroupItem value="Take Away" id="r-takeaway" /><Label htmlFor="r-takeaway">Take Away</Label></div>
+                           <div className="flex items-center space-x-2"><RadioGroupItem value="Delivery" id="r-delivery" /><Label htmlFor="r-delivery">Delivery</Label></div>
+                           <div className="flex items-center space-x-2"><RadioGroupItem value="Dine-In" id="r-dinein" /><Label htmlFor="r-dinein">Dine-In</Label></div>
+                        </div>
+                    </RadioGroup>
+                </div>
+                {orderType === 'Dine-In' && (
+                    <>
+                     <div className="space-y-2">
+                        <Label>Table</Label>
+                        <Select onValueChange={setTableName} value={tableName}>
+                            <SelectTrigger><SelectValue placeholder="Select a table" /></SelectTrigger>
+                            <SelectContent>
+                                {availableTables.map(table => (
+                                    <SelectItem key={table.id} value={table.table_name}>{table.table_name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Steward</Label>
+                         <Select onValueChange={(id) => setSteward(availableStewards.find(s => s.id === id))} value={steward?.id}>
+                            <SelectTrigger><SelectValue placeholder="Select a steward" /></SelectTrigger>
+                            <SelectContent>
+                                {availableStewards.map(s => (
+                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                      </div>
+                    </>
+                )}
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={onClose}>Cancel</Button>
+                <Button onClick={handleSaveChanges}>Save Changes</Button>
+            </DialogFooter>
+        </DialogContent>
+    )
+}
+
 export function OrderPanel({
   order,
   orderTotals,
   cashierName,
+  currentLocation,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
-  onHoldOrder,
+  onHoldOrder: holdOrderCallback,
   onSendToKitchen,
   isDrawer,
   onClose,
   setDiscount,
+  setServiceCharge,
+  onUpdateDetails,
+  availableTables,
+  availableStewards,
+  customers,
+  onUpdateCustomer,
 }: OrderPanelProps) {
   const { toast } = useToast();
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
+  const [isServiceChargeOpen, setServiceChargeOpen] = React.useState(false);
+  const [isEditOrderOpen, setEditOrderOpen] = React.useState(false);
 
-  const { cart, customer, name: orderName, discount, id: orderId } = order;
+  const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
 
-  const handleSuccessfulPayment = async (paymentMethod: string) => {
-    // This is a simplified simulation. A real app would have a robust backend process.
+  const createInvoicePayload = (status: '1' | '2', paymentMethod = 'N/A', tenderedAmount = 0) => {
+    if (!currentLocation) {
+        toast({
+            variant: "destructive",
+            title: "Location not selected",
+            description: "Please select a location for the POS."
+        });
+        return null;
+    }
+    const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
+    const costValue = cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
+
+    return {
+        invoice_date: format(new Date(), 'yyyy-MM-dd'),
+        inv_amount: orderTotals.subtotal,
+        grand_total: orderTotals.total,
+        discount_amount: totalDiscount,
+        discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
+        customer_code: customer.customer_id,
+        service_charge: orderTotals.serviceCharge,
+        tendered_amount: tenderedAmount,
+        close_type: paymentMethod,
+        invoice_status: status,
+        payment_status: status === '1' ? "Paid" : "Pending",
+        current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+        location_id: parseInt(currentLocation.location_id, 10),
+        table_id: 0,
+        order_ready_status: 1,
+        created_by: cashierName,
+        is_active: 1,
+        steward_id: steward?.id || "N/A",
+        cost_value: costValue,
+        remark: `${orderType} order`,
+        ref_hold: null,
+        company_id: "1",
+        chanel: "POS",
+        items: cart.map(item => ({
+            user_id: 1, // Default user_id as per example
+            product_id: parseInt(item.product.id, 10),
+            item_price: item.product.price,
+            item_discount: item.itemDiscount || 0,
+            quantity: item.quantity,
+            customer_id: parseInt(customer.customer_id, 10),
+            table_id: 0,
+            cost_price: item.product.costPrice || 0,
+            is_active: 1,
+            hold_status: 0,
+            printed_status: 1,
+            product_variant_id: parseInt(item.product.variant.id, 10),
+        })),
+    };
+  };
+
+  const handleSuccessfulPayment = async (paymentMethod: string, tenderedAmount: number) => {
     toast({
       title: 'Payment Processing...',
       description: `Processing $${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
     });
-    
-    // Simulate creating an invoice record and getting an ID back
-    const mockInvoiceId = `INV-${Date.now()}`;
-    
-    // Open print window with the new invoice ID
-    window.open(`/pos/invoice/${mockInvoiceId}`, '_blank');
 
-    setPaymentOpen(false);
-    onClearCart(mockInvoiceId); // Pass the new ID to clear the right order
+    const payload = createInvoicePayload('1', paymentMethod, tenderedAmount);
+    if (!payload) return;
+
+    try {
+        const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to create invoice.');
+        }
+        
+        toast({
+            title: 'Payment Successful!',
+            description: `Invoice #${result.invoice_number} created.`
+        });
+        
+        window.open(`/pos/invoice/${result.invoice_id}`, '_blank');
+        
+        setPaymentOpen(false);
+        onClearCart(orderId);
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: "destructive",
+            title: "Payment Failed",
+            description: errorMessage,
+        });
+    }
   };
-  
-  const handleSendToKitchen = () => {
+
+  const onHoldOrder = async () => {
     if (!order || cart.length === 0) {
       toast({
-        variant: 'destructive',
-        title: 'Cart is empty',
-        description: 'Cannot send an empty order to the kitchen.',
+        variant: 'default',
+        title: 'Cannot Hold Empty Order',
+        description: 'Add items to the cart before holding.',
       });
       return;
     }
+    const payload = createInvoicePayload('2');
+     if (!payload) return;
 
-    const orderData = {
-        orderId: order.id,
-        orderName: order.name,
-        cashierName: cashierName,
-        items: cart.map(item => ({ name: item.product.variantName, quantity: item.quantity })),
-    };
-    
-    const encodedData = btoa(JSON.stringify(orderData));
-    window.open(`/pos/kot/${order.id}?data=${encodedData}`, '_blank');
-    
-    toast({
-      title: 'KOT Sent!',
-      description: `Order for ${order.name} sent to the kitchen.`,
-      icon: <ChefHat className="h-6 w-6 text-green-500" />,
-    });
+    try {
+      const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to hold order.');
+      }
+      toast({
+        title: 'Order Held',
+        description: `${order.name} has been put on hold as Invoice #${result.invoice_number}.`,
+      });
+      onClearCart(orderId);
+    } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+       toast({
+        variant: 'destructive',
+        title: 'Error Holding Order',
+        description: errorMessage,
+      });
+    }
+  };
+  
+  const handleCustomerCreated = (newCustomer: User) => {
+    onUpdateCustomer(orderId, newCustomer);
   }
 
   return (
     <div className="flex flex-col h-full bg-card">
       <header className="p-4 border-b border-border flex items-center justify-between">
         <h2 className="text-xl font-bold">{orderName}</h2>
-        <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="text-muted-foreground">
-                <UserPlus className="h-5 w-5" />
-            </Button>
+        <div className="flex items-center gap-1">
+            <Dialog open={isEditOrderOpen} onOpenChange={setEditOrderOpen}>
+                <DialogTrigger asChild>
+                     <Button variant="ghost" size="icon">
+                        <Settings className="h-5 w-5" />
+                    </Button>
+                </DialogTrigger>
+                <EditOrderDialog 
+                    order={order}
+                    onUpdateDetails={onUpdateDetails}
+                    availableTables={availableTables}
+                    availableStewards={availableStewards}
+                    onClose={() => setEditOrderOpen(false)}
+                />
+            </Dialog>
              {isDrawer && (
                 <Button variant="ghost" size="icon" onClick={onClose}>
                     <X className="h-5 w-5" />
@@ -233,22 +476,44 @@ export function OrderPanel({
             )}
         </div>
       </header>
-
-      <div className='p-4 border-b border-border'>
-        <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-3'>
-                <Avatar className='h-12 w-12'>
-                    <AvatarImage src={customer.avatar} alt={customer.name} data-ai-hint="profile picture"/>
-                    <AvatarFallback>{customer.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div>
-                    <p className='font-semibold'>{customer.name}</p>
-                    <p className='text-xs text-muted-foreground'>{customer.role}</p>
+      
+      {steward && (
+           <div className='p-2 px-4 border-b border-border bg-muted/30'>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <UserCheck className="h-4 w-4" />
+                    <span>Steward: <span className="font-semibold text-foreground">{steward.name}</span></span>
                 </div>
             </div>
-            <div className='flex items-center gap-1.5 text-yellow-500'>
-                <Star className='h-5 w-5' />
-                <span className='font-bold text-lg'>{customer.loyaltyPoints || 0}</span>
+      )}
+
+      <div className='p-4 border-b border-border'>
+        <div className='flex items-center gap-3'>
+            <div className="flex-1">
+                <Select value={customer.customer_id} onValueChange={(customerId) => {
+                    const newCustomer = customers.find(c => c.customer_id === customerId);
+                    if (newCustomer) onUpdateCustomer(orderId, newCustomer);
+                }}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {customers.map(c => (
+                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+             <CustomerFormDialog onCustomerCreated={handleCustomerCreated}>
+                 <Button variant="outline" size="icon">
+                    <UserPlus className="h-5 w-5" />
+                </Button>
+            </CustomerFormDialog>
+        </div>
+         <div className='flex items-center justify-between mt-2 text-sm'>
+            <p className="text-muted-foreground">Loyalty Points</p>
+             <div className='flex items-center gap-1.5 text-yellow-500'>
+                <Star className='h-4 w-4' />
+                <span className='font-bold'>{customer.loyaltyPoints || 0}</span>
             </div>
         </div>
       </div>
@@ -274,7 +539,7 @@ export function OrderPanel({
                   <div className="flex-1 flex flex-col">
                     <span className="font-semibold">{item.product.variantName}</span>
                     <span className="text-muted-foreground text-sm">
-                      ${item.product.price.toFixed(2)}
+                      ${(item.product.price as number).toFixed(2)}
                     </span>
                     {item.itemDiscount && item.itemDiscount > 0 ? (
                         <span className="text-xs text-green-600">
@@ -307,7 +572,7 @@ export function OrderPanel({
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="font-bold">
-                      ${(item.product.price * item.quantity).toFixed(2)}
+                      ${((item.product.price as number) * item.quantity).toFixed(2)}
                     </span>
                     <Button
                       size="icon"
@@ -334,10 +599,21 @@ export function OrderPanel({
           <span>Item Discounts</span>
           <span>-${orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between text-sm">
-          <span>Tax ({(0.08 * 100).toFixed(0)}%)</span>
-          <span>${orderTotals.tax.toFixed(2)}</span>
-        </div>
+        <Dialog open={isServiceChargeOpen} onOpenChange={setServiceChargeOpen}>
+          <DialogTrigger asChild>
+            <div className="flex justify-between items-center text-sm cursor-pointer hover:text-primary">
+              <span className="flex items-center gap-2">
+                <PlusSquare className="h-4 w-4" /> Service Charge
+              </span>
+              <span>${orderTotals.serviceCharge.toFixed(2)}</span>
+            </div>
+          </DialogTrigger>
+          <ServiceChargeDialog
+            currentValue={serviceCharge}
+            setServiceCharge={setServiceCharge}
+            onClose={() => setServiceChargeOpen(false)}
+          />
+        </Dialog>
          <div className="flex justify-between text-sm text-green-600">
           <span>Order Discount</span>
           <span>-${discount.toFixed(2)}</span>
@@ -360,28 +636,26 @@ export function OrderPanel({
              <Button variant="outline" onClick={onHoldOrder} disabled={cart.length === 0} className="h-12">
                 <Notebook className="mr-2 h-4 w-4" /> Hold
             </Button>
-            <Button
-              variant="outline"
-              onClick={handleSendToKitchen}
-              className="col-span-2 h-12"
-              disabled={cart.length === 0}
-            >
-              <ChefHat className="mr-2 h-4 w-4" /> Send KOT/BOT
+             <Button variant="secondary" onClick={onSendToKitchen} disabled={cart.length === 0} className="h-12">
+              <ChefHat className="mr-2 h-4 w-4" /> Send to Kitchen
+            </Button>
+            <Button variant="destructive" onClick={() => onClearCart(orderId)} disabled={cart.length === 0} className="h-12">
+                <Trash2 className="mr-2 h-4 w-4" /> Clear Cart
             </Button>
         </div>
         <Dialog open={isPaymentOpen} onOpenChange={setPaymentOpen}>
-          <DialogTrigger asChild>
+        <DialogTrigger asChild>
             <Button
-              className="w-full h-16 text-lg bg-green-600 hover:bg-green-700 text-white"
-              disabled={cart.length === 0}
+            className="w-full h-16 text-lg bg-green-600 hover:bg-green-700 text-white"
+            disabled={cart.length === 0}
             >
-              <CreditCard className="mr-2 h-5 w-5" /> Pay
+            <CreditCard className="mr-2 h-5 w-5" /> Proceed
             </Button>
-          </DialogTrigger>
-          <PaymentDialog
+        </DialogTrigger>
+        <PaymentDialog
             orderTotals={orderTotals}
             onSuccessfulPayment={handleSuccessfulPayment}
-          />
+        />
         </Dialog>
       </footer>
     </div>

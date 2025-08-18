@@ -107,7 +107,7 @@ export default function LandingPage() {
             </Button>
             <Button asChild>
               <Link href="/register">
-                Get Started
+                Sign Up
               </Link>
             </Button>
           </nav>
@@ -254,8 +254,8 @@ export default function LandingPage() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button asChild className="w-full">
-                    <Link href="/register">Get Started</Link>
+                  <Button className="w-full" disabled>
+                    Current Plan
                   </Button>
                 </CardFooter>
               </Card>
@@ -281,8 +281,8 @@ export default function LandingPage() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button asChild className="w-full">
-                    <Link href="/register">Choose Plan</Link>
+                  <Button className="w-full">
+                    Choose Plan
                   </Button>
                 </CardFooter>
               </Card>
@@ -306,8 +306,8 @@ export default function LandingPage() {
                   </ul>
                 </CardContent>
                 <CardFooter>
-                  <Button asChild className="w-full" variant="outline">
-                    <Link href="/register">Choose Plan</Link>
+                  <Button className="w-full" variant="outline">
+                    Choose Plan
                   </Button>
                 </CardFooter>
               </Card>

@@ -101,21 +101,17 @@ export type Order = {
 
 export type User = {
   id: string;
+  customer_id: string;
   name: string;
+  customer_first_name?: string;
+  customer_last_name?: string;
+  email_address?: string;
   role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer';
   avatar?: string;
   loyaltyPoints?: number;
   email?: string;
   phone?: string;
   address?: string;
-  // Fields from the new customer API
-  customer_id: string;
-  customer_first_name: string;
-  customer_last_name: string;
-  phone_number: string;
-  address_line1?: string;
-  city_id?: string;
-  email_address?: string;
 };
 
 export type Collection = {
@@ -367,6 +363,8 @@ export type Invoice = {
     tendered_amount: string;
     close_type: string;
     invoice_status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+    payment_status: string;
+    chanel: string;
     current_time: string;
     location_id: string;
     table_id: string;
@@ -426,4 +424,32 @@ export type Color = {
 export type Size = {
     id: string;
     value: string;
+}
+
+export type ActiveOrder = {
+  id: string;
+  name: string;
+  cart: CartItem[];
+  discount: number;
+  serviceCharge: number;
+  customer: User;
+  orderType: 'Take Away' | 'Retail' | 'Delivery' | 'Dine-In';
+  tableName?: string;
+  steward?: User;
+};
+
+export type CartItem = {
+  product: Product & { variant: ProductVariant; variantName: string };
+  quantity: number;
+  itemDiscount?: number;
+};
+
+export type Table = {
+    id: string;
+    table_name: string;
+    is_active: string;
+    created_at: string;
+    created_by: string;
+    location_id: string;
+    company_id: string;
 }
