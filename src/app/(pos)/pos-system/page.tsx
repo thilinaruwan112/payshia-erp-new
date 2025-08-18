@@ -472,7 +472,7 @@ export default function POSPage() {
     async function fetchReturns() {
       setIsReturnsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/transaction-returns`);
+        const response = await fetch(`https://server-erp.payshia.com/transaction-returns/filter/by-company?company_id=1`);
         if (!response.ok) {
           throw new Error('Failed to fetch returns');
         }
@@ -492,7 +492,7 @@ export default function POSPage() {
     if (isRefundDialogOpen && !selectedReturnForRefund) {
         fetchReturns();
     }
-  }, [isRefundDialogOpen, selectedReturnForRefund, toast]);
+  }, [isRefundDialogOpen, selectedReturnForRefund, toast, company_id]);
 
   const handleInvoiceSelectForAction = async (invoice: Invoice) => {
     setSelectedInvoiceForAction(invoice);
@@ -752,6 +752,7 @@ export default function POSPage() {
       return;
     }
     const payload = createInvoicePayload('2');
+     if (!payload) return;
 
     try {
       const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
