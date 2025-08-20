@@ -27,6 +27,7 @@ import type { Brand } from "@/lib/types";
 import { useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { Loader2 } from "lucide-react";
+import { useLocation } from "./location-provider";
 
 const brandFormSchema = z.object({
   name: z.string().min(2, "Brand name must be at least 2 characters."),
@@ -43,6 +44,7 @@ export function BrandForm({ brand }: BrandFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { company_id } = useLocation();
 
   const defaultValues: Partial<BrandFormValues> = {
     name: brand?.name || "",
@@ -56,11 +58,15 @@ export function BrandForm({ brand }: BrandFormProps) {
   });
 
   async function onSubmit(data: BrandFormValues) {
+    if (!company_id) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
+      return;
+    }
     setIsLoading(true);
     const url = brand ? `https://server-erp.payshia.com/brands/${brand.id}` : 'https://server-erp.payshia.com/brands';
     const method = brand ? 'PUT' : 'POST';
 
-    const payload = { ...data, company_id: 1 };
+    const payload = { ...data, company_id: company_id };
 
     try {
       const response = await fetch(url, {

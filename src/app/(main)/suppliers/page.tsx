@@ -31,6 +31,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useLocation } from '@/components/location-provider';
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -38,12 +39,17 @@ export default function SuppliersPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const { toast } = useToast();
+  const { company_id } = useLocation();
 
   useEffect(() => {
     async function fetchSuppliers() {
+      if (!company_id) {
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       try {
-        const response = await fetch('https://server-erp.payshia.com/suppliers/filter/by-company?company_id=1');
+        const response = await fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch suppliers');
         }
@@ -61,7 +67,7 @@ export default function SuppliersPage() {
       }
     }
     fetchSuppliers();
-  }, [toast]);
+  }, [toast, company_id]);
 
   const handleDelete = async () => {
     if (!selectedSupplier) return;

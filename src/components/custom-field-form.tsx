@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "./ui/textarea";
+import { useLocation } from "./location-provider";
 
 const customFieldFormSchema = z.object({
   field_name: z.string().min(2, "Field name is required."),
@@ -38,6 +39,7 @@ export function CustomFieldForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { company_id } = useLocation();
 
   const form = useForm<CustomFieldFormValues>({
     resolver: zodResolver(customFieldFormSchema),
@@ -49,11 +51,15 @@ export function CustomFieldForm() {
   });
 
   async function onSubmit(data: CustomFieldFormValues) {
+    if (!company_id) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
+      return;
+    }
     setIsLoading(true);
     const url = 'https://server-erp.payshia.com/custom-fields';
     const method = 'POST';
 
-    const payload = { ...data, company_id: 1, created_by: 'admin', updated_by: 'admin' };
+    const payload = { ...data, company_id: company_id, created_by: 'admin', updated_by: 'admin' };
 
     try {
       const response = await fetch(url, {

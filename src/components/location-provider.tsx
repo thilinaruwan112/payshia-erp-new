@@ -29,6 +29,8 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     const storedCompanyId = localStorage.getItem('companyId');
     if (storedCompanyId) {
       setCompanyId(parseInt(storedCompanyId, 10));
+    } else {
+        setIsLoading(false); // No company ID, so no locations to fetch
     }
   }, []);
 
@@ -41,28 +43,34 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       
       setIsLoading(true);
       try {
-        // This endpoint needs to be updated to filter by company_id if available.
-        // For now, we assume it gets all locations and we filter client-side.
         const response = await fetch('https://server-erp.payshia.com/locations');
         if (!response.ok) {
           throw new Error('Failed to fetch locations');
         }
         let data: Location[] = await response.json();
         
-        // This is a temporary client-side filter. Ideally, the API would handle this.
         const companyLocations = data.filter(loc => loc.company_id == company_id);
 
-        const posEnabledLocations = companyLocations.filter(loc => loc.pos_status === "1");
-        
-        setAvailableLocations(posEnabledLocations.length > 0 ? posEnabledLocations : companyLocations);
+        setAvailableLocations(companyLocations);
 
-        if (companyLocations.length > 0 && !isPos) {
-            const defaultLocation = companyLocations.find(l => l.location_name === 'Downtown Store') || companyLocations[0];
-            setCurrentLocation(defaultLocation || null);
-        } else if (isPos && posEnabledLocations.length === 1) {
-            setCurrentLocation(posEnabledLocations[0]);
+        if (companyLocations.length > 0) {
+            if (isPos) {
+                const posEnabledLocations = companyLocations.filter(loc => loc.pos_status === "1");
+                if (posEnabledLocations.length > 0) {
+                     setAvailableLocations(posEnabledLocations);
+                     // Auto-select if only one POS location is available
+                     if (posEnabledLocations.length === 1) {
+                         setCurrentLocation(posEnabledLocations[0]);
+                     }
+                } else {
+                    // No POS locations, clear available locations for POS
+                    setAvailableLocations([]);
+                }
+            } else {
+                 const defaultLocation = companyLocations.find(l => l.location_name === 'Main Branch') || companyLocations[0];
+                 setCurrentLocation(defaultLocation || null);
+            }
         }
-
 
       } catch (error) {
         toast({

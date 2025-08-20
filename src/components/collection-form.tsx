@@ -31,6 +31,7 @@ import Image from "next/image";
 import { X, UploadCloud, Loader2 } from "lucide-react";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useLocation } from "./location-provider";
 
 const collectionFormSchema = z.object({
   title: z.string().min(3, {
@@ -52,6 +53,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
+  const { company_id } = useLocation();
   
   const [selectedProducts, setSelectedProducts] = React.useState<Product[]>(collection?.products || []);
 
@@ -72,6 +74,10 @@ export function CollectionForm({ collection }: CollectionFormProps) {
   const { setValue } = form;
 
   async function onSubmit(data: CollectionFormValues) {
+    if (!company_id) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
+      return;
+    }
     setIsLoading(true);
     const url = collection ? `https://server-erp.payshia.com/collections/${collection.id}` : 'https://server-erp.payshia.com/collections';
     const method = collection ? 'PUT' : 'POST';
@@ -81,7 +87,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
       description: data.description,
       cover_image_url: data.cover_image_url,
       status: data.status,
-      company_id: 1,
+      company_id: company_id,
     };
     
     try {

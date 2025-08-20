@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import {
@@ -33,6 +32,7 @@ import type { Invoice, User } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLocation } from '@/components/location-provider';
 
 const getStatusColor = (status: Invoice['invoice_status']) => {
   switch (status) {
@@ -55,13 +55,18 @@ export default function InvoicesPage() {
   const [customers, setCustomers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { company_id } = useLocation();
 
   useEffect(() => {
     async function fetchData() {
+        if (!company_id) {
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const [invoiceResponse, customerResponse] = await Promise.all([
-                fetch('https://server-erp.payshia.com/invoices?company_id=1'),
+                fetch(`https://server-erp.payshia.com/invoices?company_id=${company_id}`),
                 fetch('https://server-erp.payshia.com/customers'),
             ]);
 
@@ -84,7 +89,7 @@ export default function InvoicesPage() {
         }
     }
     fetchData();
-  }, [toast]);
+  }, [toast, company_id]);
   
   const getCustomerName = (customerId: string) => {
     const customer = customers.find(c => c.customer_id === customerId);

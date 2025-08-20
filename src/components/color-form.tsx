@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import type { Color } from "@/lib/types";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useLocation } from "./location-provider";
 
 const colorFormSchema = z.object({
   name: z.string().min(2, "Color name must be at least 2 characters."),
@@ -40,6 +41,7 @@ export function ColorForm({ color }: ColorFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { company_id } = useLocation();
 
   const defaultValues: Partial<ColorFormValues> = {
     name: color?.name || "",
@@ -52,11 +54,15 @@ export function ColorForm({ color }: ColorFormProps) {
   });
 
   async function onSubmit(data: ColorFormValues) {
+    if (!company_id) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
+      return;
+    }
     setIsLoading(true);
     const url = color ? `https://server-erp.payshia.com/colors/${color.id}` : 'https://server-erp.payshia.com/colors';
     const method = color ? 'PUT' : 'POST';
 
-    const payload = { ...data, company_id: 1 };
+    const payload = { ...data, company_id: company_id };
 
     try {
       const response = await fetch(url, {
