@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -100,7 +99,7 @@ export default function PurchaseOrdersPage() {
         const poData = await poResponse.json();
         const suppliersData = await suppliersResponse.json();
         
-        setPurchaseOrders(Array.isArray(poData?.data) ? poData.data : []);
+        setPurchaseOrders(Array.isArray(poData) ? poData : []);
         setSuppliers(suppliersData);
 
       } catch (error) {
