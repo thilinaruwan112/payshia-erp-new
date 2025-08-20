@@ -69,7 +69,7 @@ export default function StockTransfersPage() {
             try {
                 const [transfersResponse, locationsResponse] = await Promise.all([
                     fetch(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${company_id}`),
-                    fetch('https://server-erp.payshia.com/locations')
+                    fetch(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`)
                 ]);
 
                 if (!transfersResponse.ok) throw new Error('Failed to fetch stock transfers');
