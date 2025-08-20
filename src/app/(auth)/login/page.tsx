@@ -77,10 +77,21 @@ export default function LoginPage() {
         localStorage.removeItem('companyId');
         localStorage.removeItem('companyName');
 
-        if (companyData.status === 'success' && companyData.has_company && companyData.company) {
-             // Store company info
-            localStorage.setItem('companyId', companyData.company.id);
-            localStorage.setItem('companyName', companyData.company.company_name);
+        if (companyData.status === 'success' && companyData.has_company && companyData.data && companyData.data.length > 0) {
+            const companyLink = companyData.data[0];
+            const companyId = companyLink.company_id;
+
+            // Fetch company details to get the name
+            const companyDetailsResponse = await fetch(`https://server-erp.payshia.com/companies/${companyId}`);
+            if (!companyDetailsResponse.ok) {
+                throw new Error('Found company association, but failed to fetch company details.');
+            }
+            const companyDetails = await companyDetailsResponse.json();
+            const companyName = companyDetails.company_name;
+
+            // Store company info
+            localStorage.setItem('companyId', companyId);
+            localStorage.setItem('companyName', companyName);
 
             toast({
                 title: 'Login Successful!',
