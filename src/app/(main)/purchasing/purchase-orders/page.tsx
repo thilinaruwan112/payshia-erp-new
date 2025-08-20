@@ -100,7 +100,7 @@ export default function PurchaseOrdersPage() {
         const poData = await poResponse.json();
         const suppliersData = await suppliersResponse.json();
         
-        setPurchaseOrders(poData);
+        setPurchaseOrders(Array.isArray(poData?.data) ? poData.data : []);
         setSuppliers(suppliersData);
 
       } catch (error) {
