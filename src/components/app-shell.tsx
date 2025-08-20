@@ -198,6 +198,7 @@ const navItems = [
     label: 'Settings',
     icon: Settings,
     subItems: [
+      { href: '/settings/profile', label: 'Profile', icon: Users },
       { href: '/locations', label: 'Locations', icon: Warehouse },
       { href: '/billing', label: 'Billing & Plans', icon: CreditCard },
       { href: '/settings/currency', label: 'Currency', icon: DollarSign },
@@ -401,8 +402,16 @@ function UserMenu() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>Profile</DropdownMenuItem>
-        <DropdownMenuItem>Settings</DropdownMenuItem>
+        <DropdownMenuItem asChild>
+            <Link href="/settings/profile">
+                <Users className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+            </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/login">

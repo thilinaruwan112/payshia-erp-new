@@ -63,6 +63,10 @@ export default function LoginPage() {
         if (!userId || !userName) {
              throw new Error('Login successful, but user ID or name was not returned.');
         }
+
+        // Store user info in local storage
+        localStorage.setItem('userId', userId);
+        localStorage.setItem('userName', userName);
         
         // Check for company association
         const companyCheckResponse = await fetch(`https://server-erp.payshia.com/company-users/filter/by-user?user_id=${userId}`);
