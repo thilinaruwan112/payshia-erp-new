@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
+import { useLocation } from "./location-provider";
 
 
 const grnBatchSchema = z.object({
@@ -91,6 +92,7 @@ export function GrnForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { company_id } = useLocation();
   const poId = searchParams.get('poId');
 
   const [purchaseOrder, setPurchaseOrder] = useState<PurchaseOrder | null>(null);
@@ -121,14 +123,19 @@ export function GrnForm() {
             setIsLoading(false);
             return;
         };
+        if (!company_id) {
+            toast({ variant: 'destructive', title: 'No Company ID available' });
+            setIsLoading(false);
+            return;
+        }
 
         try {
             const [poResponse, suppliersResponse, productsResponse, variantsResponse, locationsResponse] = await Promise.all([
                  fetch(`https://server-erp.payshia.com/purchase-orders/${poId}`),
-                 fetch('https://server-erp.payshia.com/suppliers'),
+                 fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
                  fetch('https://server-erp.payshia.com/products'),
                  fetch('https://server-erp.payshia.com/product-variants'),
-                 fetch('https://server-erp.payshia.com/locations')
+                 fetch(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`)
             ]);
             
             if (!poResponse.ok) throw new Error('Failed to fetch PO data');
@@ -155,7 +162,7 @@ export function GrnForm() {
                     const product = productsData.find(p => p.id === item.product_id);
                     const variant = variantsData.find(v => v.id === item.product_variant_id);
 
-                    const receivedQtyResponse = await fetch(`https://server-erp.payshia.com/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${poData.po_number}&company_id=1`);
+                    const receivedQtyResponse = await fetch(`https://server-erp.payshia.com/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${poData.po_number}&company_id=${company_id}`);
                     let alreadyReceived = 0;
                     if(receivedQtyResponse.ok) {
                         const receivedQtyData = await receivedQtyResponse.json();
@@ -194,7 +201,7 @@ export function GrnForm() {
 
     }
     fetchInitialData();
-  }, [poId, toast, form, replace]);
+  }, [poId, toast, form, replace, company_id]);
 
 
   async function onSubmit(data: GrnFormValues) {
