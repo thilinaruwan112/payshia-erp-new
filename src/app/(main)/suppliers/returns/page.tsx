@@ -27,30 +27,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supplierReturns } from '@/lib/data';
+import { useLocation } from '@/components/location-provider';
 
 export default function SupplierReturnsPage() {
   const [grns, setGrns] = useState<GoodsReceivedNote[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { company_id } = useLocation();
 
   useEffect(() => {
     async function fetchData() {
-      setIsLoading(true);
-      try {
-        const [grnResponse, suppliersResponse] = await Promise.all([
-          fetch('https://server-erp.payshia.com/grn'),
-          fetch('https://server-erp.payshia.com/suppliers')
-        ]);
+        if (!company_id) {
+            setIsLoading(false);
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const [grnResponse, suppliersResponse] = await Promise.all([
+            fetch(`https://server-erp.payshia.com/grn/company/${company_id}`),
+            fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`)
+            ]);
 
-        if (!grnResponse.ok) throw new Error('Failed to fetch GRNs');
-        if (!suppliersResponse.ok) throw new Error('Failed to fetch suppliers');
+            if (!grnResponse.ok) throw new Error('Failed to fetch GRNs');
+            if (!suppliersResponse.ok) throw new Error('Failed to fetch suppliers');
 
-        const grnData = await grnResponse.json();
-        const suppliersData = await suppliersResponse.json();
-        
-        setGrns(grnData || []);
-        setSuppliers(suppliersData || []);
+            const grnData = await grnResponse.json();
+            const suppliersData = await suppliersResponse.json();
+            
+            setGrns(grnData || []);
+            setSuppliers(suppliersData || []);
 
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -64,7 +70,7 @@ export default function SupplierReturnsPage() {
       }
     }
     fetchData();
-  }, [toast]);
+  }, [toast, company_id]);
 
   const getSupplierName = (supplierId: string) => {
     return suppliers.find(s => s.supplier_id === supplierId)?.supplier_name || `ID: ${supplierId}`;
@@ -197,3 +203,5 @@ export default function SupplierReturnsPage() {
     </div>
   );
 }
+
+    
