@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -85,7 +86,7 @@ export default function GrnReceivablePage() {
       setIsLoading(true);
       try {
         const [poResponse, suppliersResponse, grnResponse] = await Promise.all([
-          fetch(`https://server-erp.payshia.com/purchase-orders/filter/company?company_id=${company_id}`),
+          fetch(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`),
           fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
           fetch(`https://server-erp.payshia.com/grn/company/${company_id}`),
         ]);
