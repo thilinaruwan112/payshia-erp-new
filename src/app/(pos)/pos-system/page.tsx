@@ -315,13 +315,17 @@ export default function POSPage() {
 
   useEffect(() => {
     async function fetchPosData() {
+        if (!company_id) {
+            setIsLoadingProducts(false);
+            return;
+        }
         setIsLoadingProducts(true);
         try {
             const [productsResponse, collectionsResponse, brandsResponse, customersResponse] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/products/with-variants`),
-                fetch(`https://server-erp.payshia.com/collections/company?company_id=1`),
-                fetch(`https://server-erp.payshia.com/brands/company?company_id=1`),
-                fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=1`),
+                fetch(`https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/collections/company?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
             ]);
 
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !customersResponse.ok) {
@@ -391,17 +395,17 @@ export default function POSPage() {
         fetchPosData();
     }
     
-  }, [toast, currentLocation]);
+  }, [toast, currentLocation, company_id]);
   
   useEffect(() => {
     async function fetchInvoicesForAction() {
-      if (!selectedCustomerForAction) {
+      if (!selectedCustomerForAction || !company_id) {
         setPastInvoices([]);
         return;
       }
       setIsPastInvoicesLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomerForAction}&company_id=1`);
+        const response = await fetch(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomerForAction}&company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch invoices');
         }
@@ -422,16 +426,17 @@ export default function POSPage() {
     if (isPendingInvoicesDialogOpen || isReturnDialogOpen) {
       fetchInvoicesForAction();
     }
-  }, [selectedCustomerForAction, toast, isPendingInvoicesDialogOpen, isReturnDialogOpen]);
+  }, [selectedCustomerForAction, toast, isPendingInvoicesDialogOpen, isReturnDialogOpen, company_id]);
   
   useEffect(() => {
     async function fetchPosDialogData() {
+        if (!company_id) return;
         setIsLoadingTables(true);
         setIsLoadingStewards(true);
         try {
             const [tablesResponse, stewardsResponse] = await Promise.all([
-                fetch('https://server-erp.payshia.com/master-tables'),
-                fetch('https://server-erp.payshia.com/filter/users?user_status=3')
+                fetch(`https://server-erp.payshia.com/master-tables/company/${company_id}`),
+                fetch(`https://server-erp.payshia.com/filter/users?user_status=3&company_id=${company_id}`)
             ]);
             
             if (!tablesResponse.ok) throw new Error('Failed to fetch tables');
@@ -466,13 +471,14 @@ export default function POSPage() {
     if(isNewOrderDialogOpen) {
         fetchPosDialogData();
     }
-  }, [isNewOrderDialogOpen, toast]);
+  }, [isNewOrderDialogOpen, toast, company_id]);
   
    useEffect(() => {
     async function fetchReturns() {
+      if (!company_id) return;
       setIsReturnsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/transaction-returns/filter/by-company?company_id=1`);
+        const response = await fetch(`https://server-erp.payshia.com/transaction-returns/filter/by-company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch returns');
         }
@@ -495,6 +501,7 @@ export default function POSPage() {
   }, [isRefundDialogOpen, selectedReturnForRefund, toast, company_id]);
 
   const handleInvoiceSelectForAction = async (invoice: Invoice) => {
+    if (!company_id) return;
     setSelectedInvoiceForAction(invoice);
     
     // Clear previous return items when a new invoice is selected for return.
@@ -505,7 +512,7 @@ export default function POSPage() {
     if(isPendingInvoicesDialogOpen) {
         setIsBalanceLoading(true);
         try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=1&customer_id=${invoice.customer_code}&ref_id=${invoice.invoice_number}`);
+        const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=${company_id}&customer_id=${invoice.customer_code}&ref_id=${invoice.invoice_number}`);
         if (!response.ok) {
             throw new Error('Failed to fetch invoice balance');
         }
@@ -524,6 +531,7 @@ export default function POSPage() {
   };
   
   const handleReturnSelectForAction = async (returnData: TransactionReturn) => {
+    if (!company_id) return;
     setIsReturnsLoading(true);
     try {
       const response = await fetch(`https://server-erp.payshia.com/transaction-returns/full/${returnData.id}?company_id=${company_id}`);
@@ -547,7 +555,7 @@ export default function POSPage() {
   }
 
   const handleCreateReceipt = async () => {
-    if (!selectedInvoiceForAction || !currentLocation) {
+    if (!selectedInvoiceForAction || !currentLocation || !company_id) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
@@ -567,7 +575,7 @@ export default function POSPage() {
         location_id: parseInt(currentLocation.location_id, 10),
         customer_id: parseInt(selectedInvoiceForAction.customer_code, 10),
         today_invoice: selectedInvoiceForAction.invoice_number,
-        company_id: 1,
+        company_id: company_id,
     };
     
     try {
@@ -781,7 +789,7 @@ export default function POSPage() {
   };
   
    const createInvoicePayload = (status: '1' | '2', paymentMethod = 'N/A', tenderedAmount = 0) => {
-    if (!currentOrder || !currentLocation) return null;
+    if (!currentOrder || !currentLocation || !company_id) return null;
 
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
     const costValue = currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
@@ -807,7 +815,7 @@ export default function POSPage() {
         cost_value: costValue,
         remark: `${currentOrder.orderType} order`,
         ref_hold: null,
-        company_id: "1",
+        company_id: company_id,
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
             user_id: parseInt(currentOrder.customer.customer_id, 10),
@@ -940,7 +948,7 @@ export default function POSPage() {
   };
   
   const handleProcessReturn = async () => {
-    if (!currentLocation || !selectedCustomerForAction || returnItems.length === 0) {
+    if (!currentLocation || !selectedCustomerForAction || returnItems.length === 0 || !company_id) {
       toast({
         variant: "destructive",
         title: "Missing Information",
@@ -1013,7 +1021,7 @@ export default function POSPage() {
   };
 
     const handleRefund = async () => {
-        if (!selectedReturnForRefund || !currentLocation) {
+        if (!selectedReturnForRefund || !currentLocation || !company_id) {
             toast({ variant: "destructive", title: "Error", description: "No return selected or location missing." });
             return;
         }
@@ -1080,10 +1088,10 @@ export default function POSPage() {
     
     useEffect(() => {
         async function fetchHeldOrders() {
-            if (!isDrawerOpen) return;
+            if (!isDrawerOpen || !company_id) return;
             setIsHeldOrdersLoading(true);
             try {
-                const response = await fetch(`https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=1&invoice_status=2`);
+                const response = await fetch(`https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch held orders');
                 }
@@ -1096,7 +1104,7 @@ export default function POSPage() {
             }
         }
         fetchHeldOrders();
-    }, [isDrawerOpen, toast]);
+    }, [isDrawerOpen, toast, company_id]);
     
     const handleSelectHeldOrder = async (invoice: Invoice) => {
         setIsHeldOrderDetailsLoading(true);
