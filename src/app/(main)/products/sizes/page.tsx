@@ -31,6 +31,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useLocation } from '@/components/location-provider';
 
 export default function SizesPage() {
   const [sizes, setSizes] = useState<Size[]>([]);
@@ -38,12 +39,17 @@ export default function SizesPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedSize, setSelectedSize] = useState<Size | null>(null);
   const { toast } = useToast();
+  const { company_id } = useLocation();
 
   useEffect(() => {
     async function fetchSizes() {
+      if (!company_id) {
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       try {
-        const response = await fetch('https://server-erp.payshia.com/sizes');
+        const response = await fetch(`https://server-erp.payshia.com/sizes/filter/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch sizes');
         }
@@ -61,7 +67,7 @@ export default function SizesPage() {
       }
     }
     fetchSizes();
-  }, [toast]);
+  }, [toast, company_id]);
 
   const handleDelete = async () => {
     if (!selectedSize) return;
