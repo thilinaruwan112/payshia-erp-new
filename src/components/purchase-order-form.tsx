@@ -76,7 +76,7 @@ interface ProductWithVariants {
 export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const { currentLocation } = useLocation();
+  const { currentLocation, company_id } = useLocation();
   const [availableProducts, setAvailableProducts] = useState<ProductWithVariants[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
@@ -108,14 +108,14 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
 
    useEffect(() => {
     async function fetchProductsBySupplier(supplierId: string) {
-      if (!supplierId) {
+      if (!supplierId || !company_id) {
         setAvailableProducts([]);
         return;
       }
       setIsLoadingProducts(true);
       replace([]); // Clear items when supplier changes
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products/filter/by-supplier?supplier_id=${supplierId}`);
+        const response = await fetch(`https://server-erp.payshia.com/products/filter?supplier_id=${supplierId}&company_id=${company_id}`);
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to fetch products for this supplier');
@@ -136,7 +136,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
       }
     }
     fetchProductsBySupplier(supplierId);
-  }, [supplierId, toast, replace, append]);
+  }, [supplierId, company_id, toast, replace, append]);
   
 
   const subTotal = watchedItems.reduce((total, item) => {
@@ -149,10 +149,10 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const totalAmount = subTotal + taxAmount;
 
   async function onSubmit(data: PurchaseOrderFormValues) {
-    if (!currentLocation) {
+    if (!currentLocation || !company_id) {
         toast({
             variant: "destructive",
-            title: "No Location Selected",
+            title: "No Location or Company Selected",
             description: "Please select a business location before creating a PO.",
         });
         return;
@@ -161,7 +161,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
 
     const poPayload = {
       location_id: parseInt(currentLocation.location_id, 10),
-      company_id: 1, 
+      company_id: company_id, 
       supplier_id: parseInt(data.supplierId, 10),
       total_amount: totalAmount,
       currency: "LKR", 
@@ -546,4 +546,3 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     </Form>
   );
 }
-
