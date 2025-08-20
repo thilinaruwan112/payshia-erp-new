@@ -93,10 +93,22 @@ export default function CreateCompanyPage() {
                 body: JSON.stringify(companyPayload),
             });
 
+            const result = await companyResponse.json();
+
             if (!companyResponse.ok) {
-                const errorData = await companyResponse.json();
-                throw new Error(errorData.message || 'Failed to create company.');
+                throw new Error(result.message || 'Failed to create company.');
             }
+
+            const companyId = result?.company?.id;
+            const companyName = result?.company?.company_name;
+
+            if (!companyId || !companyName) {
+                throw new Error('Company created, but ID or name was not returned.');
+            }
+            
+            // Store company info in local storage
+            localStorage.setItem('companyId', companyId);
+            localStorage.setItem('companyName', companyName);
 
             toast({
                 title: 'Company Created!',

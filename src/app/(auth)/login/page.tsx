@@ -72,8 +72,16 @@ export default function LoginPage() {
         }
 
         const companyData = await companyCheckResponse.json();
+        
+        // Clear any previous company data
+        localStorage.removeItem('companyId');
+        localStorage.removeItem('companyName');
 
-        if (companyData.status === 'success' && companyData.has_company) {
+        if (companyData.status === 'success' && companyData.has_company && companyData.company) {
+             // Store company info
+            localStorage.setItem('companyId', companyData.company.id);
+            localStorage.setItem('companyName', companyData.company.company_name);
+
             toast({
                 title: 'Login Successful!',
                 description: 'Welcome back!',

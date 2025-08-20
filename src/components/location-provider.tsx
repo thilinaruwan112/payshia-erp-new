@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
@@ -12,7 +11,7 @@ interface LocationContextType {
   setCurrentLocation: (location: Location) => void;
   availableLocations: Location[];
   isLoading: boolean;
-  company_id: number;
+  company_id: number | null;
 }
 
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
@@ -21,30 +20,46 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
   const [availableLocations, setAvailableLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [company_id, setCompanyId] = useState(1); // Hardcoded for now
+  const [company_id, setCompanyId] = useState<number | null>(null);
   const { toast } = useToast();
   const pathname = usePathname();
   const isPos = pathname.startsWith('/pos-system');
 
   useEffect(() => {
+    const storedCompanyId = localStorage.getItem('companyId');
+    if (storedCompanyId) {
+      setCompanyId(parseInt(storedCompanyId, 10));
+    }
+  }, []);
+
+  useEffect(() => {
     async function fetchLocations() {
+      if (!company_id) {
+          setIsLoading(false);
+          return;
+      };
+      
       setIsLoading(true);
       try {
+        // This endpoint needs to be updated to filter by company_id if available.
+        // For now, we assume it gets all locations and we filter client-side.
         const response = await fetch('https://server-erp.payshia.com/locations');
         if (!response.ok) {
           throw new Error('Failed to fetch locations');
         }
         let data: Location[] = await response.json();
-        const posEnabledLocations = data.filter(loc => loc.pos_status === "1");
         
-        setAvailableLocations(posEnabledLocations);
+        // This is a temporary client-side filter. Ideally, the API would handle this.
+        const companyLocations = data.filter(loc => loc.company_id == company_id);
 
-        if (data.length > 0 && !isPos) {
-            // Only set a default for the main app, not for POS
-            const defaultLocation = data.find(l => l.location_name === 'Downtown Store') || data[0];
+        const posEnabledLocations = companyLocations.filter(loc => loc.pos_status === "1");
+        
+        setAvailableLocations(posEnabledLocations.length > 0 ? posEnabledLocations : companyLocations);
+
+        if (companyLocations.length > 0 && !isPos) {
+            const defaultLocation = companyLocations.find(l => l.location_name === 'Downtown Store') || companyLocations[0];
             setCurrentLocation(defaultLocation || null);
         } else if (isPos && posEnabledLocations.length === 1) {
-            // If there's only one POS location, select it automatically for the POS
             setCurrentLocation(posEnabledLocations[0]);
         }
 
@@ -60,7 +75,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       }
     }
     fetchLocations();
-  }, [toast, isPos]);
+  }, [toast, isPos, company_id]);
 
 
   const value = useMemo(() => ({
