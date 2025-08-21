@@ -43,6 +43,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ProductPickerDialog } from '@/components/product-picker-dialog';
 
 
 export type PosProduct = Product & {
@@ -294,6 +295,7 @@ export default function POSPage() {
   const [currentReturnProduct, setCurrentReturnProduct] = useState<PosProduct | null>(null);
   const [currentReturnQty, setCurrentReturnQty] = useState(1);
   const [refundQuantities, setRefundQuantities] = useState<Record<string, number>>({});
+  const [returnType, setReturnType] = useState<'invoice' | 'manual'>('invoice');
 
 
   const [isBalanceLoading, setIsBalanceLoading] = useState(false);
@@ -423,10 +425,10 @@ export default function POSPage() {
       }
     }
     
-    if (isPendingInvoicesDialogOpen || isReturnDialogOpen) {
+    if (isPendingInvoicesDialogOpen || (isReturnDialogOpen && returnType === 'invoice')) {
       fetchInvoicesForAction();
     }
-  }, [selectedCustomerForAction, toast, isPendingInvoicesDialogOpen, isReturnDialogOpen, company_id]);
+  }, [selectedCustomerForAction, toast, isPendingInvoicesDialogOpen, isReturnDialogOpen, company_id, returnType]);
   
   useEffect(() => {
     async function fetchPosDialogData() {
@@ -505,7 +507,7 @@ export default function POSPage() {
     setSelectedInvoiceForAction(invoice);
     
     setIsPastInvoicesLoading(true);
-    if (isReturnDialogOpen) {
+    if (isReturnDialogOpen && returnType === 'invoice') {
       try {
         const response = await fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
         if (!response.ok) throw new Error('Failed to fetch invoice items.');
@@ -1361,14 +1363,16 @@ export default function POSPage() {
                     <DialogContent className="max-w-4xl">
                         <DialogHeader>
                             <DialogTitle>Process a Return</DialogTitle>
-                            <DialogDescription>Select an invoice to begin the return process.</DialogDescription>
                         </DialogHeader>
-                        <div className="space-y-4">
+                         <div className="space-y-4">
+                            <RadioGroup value={returnType} onValueChange={(v) => setReturnType(v as any)} className="flex gap-4">
+                                <div><RadioGroupItem value="invoice" id="r-invoice" /><Label htmlFor="r-invoice" className="ml-2">Return with Invoice</Label></div>
+                                <div><RadioGroupItem value="manual" id="r-manual" /><Label htmlFor="r-manual" className="ml-2">Manual Return</Label></div>
+                            </RadioGroup>
+                            
                             {!selectedCustomerForAction ? (
                                 <Select onValueChange={setSelectedCustomerForAction}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a customer..."/>
-                                    </SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder="Select a customer..."/></SelectTrigger>
                                     <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                                 </Select>
                             ) : (
@@ -1381,54 +1385,48 @@ export default function POSPage() {
                                             setReturnItems([]);
                                         }}>Change</Button>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    
+                                    {returnType === 'invoice' ? (
                                         <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invNumber)!)} disabled={isPastInvoicesLoading}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select Invoice to Return From"/>
-                                            </SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder="Select Invoice to Return From"/></SelectTrigger>
                                             <SelectContent>{pastInvoices.map(inv => <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number}</SelectItem>)}</SelectContent>
                                         </Select>
-                                        <Input placeholder="General Reason for Return (Optional)" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
-                                    </div>
+                                    ) : (
+                                        <ProductPickerDialog onProductsSelected={(products) => {
+                                            const newItems = products.map(p => ({
+                                                id: p.variant.id,
+                                                name: p.variantName,
+                                                unit: p.stock_unit || 'Nos',
+                                                rate: p.price as number,
+                                                quantity: 1,
+                                                amount: p.price as number,
+                                                reason: '',
+                                                productId: p.id,
+                                                productVariantId: p.variant.id,
+                                            }));
+                                            setReturnItems(newItems);
+                                        }}>
+                                            <Button variant="outline">Add Products to Return</Button>
+                                        </ProductPickerDialog>
+                                    )}
+
+                                    <Input placeholder="General Reason for Return (Optional)" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
+
                                     <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Item Name</TableHead>
-                                                <TableHead>Return Qty</TableHead>
-                                                <TableHead>Unit Price</TableHead>
-                                                <TableHead>Reason</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
+                                        <TableHeader><TableRow><TableHead>Item</TableHead><TableHead>Return Qty</TableHead><TableHead>Reason</TableHead></TableRow></TableHeader>
                                         <TableBody>
                                             {isPastInvoicesLoading ? (
-                                                <TableRow><TableCell colSpan={4} className="text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
+                                                <TableRow><TableCell colSpan={3} className="text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
                                             ) : returnItems.length > 0 ? (
                                                 returnItems.map((item, index) => (
                                                     <TableRow key={index}>
                                                         <TableCell>{item.name}</TableCell>
-                                                        <TableCell>
-                                                            <Input
-                                                                type="number"
-                                                                value={item.quantity}
-                                                                onChange={(e) => {
-                                                                    const newQty = parseInt(e.target.value, 10) || 0;
-                                                                    setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, quantity: newQty, amount: newQty * p.rate } : p));
-                                                                }}
-                                                                className="w-20"
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell>${item.rate.toFixed(2)}</TableCell>
-                                                        <TableCell>
-                                                            <Input
-                                                                value={item.reason}
-                                                                onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, reason: e.target.value } : p))}
-                                                                placeholder="Reason for this item"
-                                                            />
-                                                        </TableCell>
+                                                        <TableCell><Input type="number" value={item.quantity} onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, quantity: parseInt(e.target.value) || 0, amount: (parseInt(e.target.value) || 0) * p.rate } : p))} className="w-20" /></TableCell>
+                                                        <TableCell><Input value={item.reason} onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, reason: e.target.value } : p))} placeholder="Item-specific reason" /></TableCell>
                                                     </TableRow>
                                                 ))
                                             ) : (
-                                                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Select an invoice to see items.</TableCell></TableRow>
+                                                <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Select an invoice or add products manually.</TableCell></TableRow>
                                             )}
                                         </TableBody>
                                     </Table>
