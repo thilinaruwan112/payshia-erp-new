@@ -64,7 +64,7 @@ interface BalanceDetails {
 export function ReceiptForm({ customers }: ReceiptFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const { currentLocation } = useLocation();
+  const { currentLocation, company_id } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
   const [isFetchingInvoices, setIsFetchingInvoices] = React.useState(false);
   const [isFetchingBalance, setIsFetchingBalance] = React.useState(false);
@@ -88,7 +88,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
 
   React.useEffect(() => {
     async function fetchCustomerInvoices(selectedCustomerId: string) {
-        if (!selectedCustomerId) {
+        if (!selectedCustomerId || !company_id) {
             setCustomerInvoices([]);
             return;
         };
@@ -98,7 +98,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
         form.reset({ ...form.getValues(), invoiceId: '', amount: 0 });
 
         try {
-            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedCustomerId}`);
+            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedCustomerId}`);
             if (!response.ok) {
                 throw new Error("Failed to fetch pending invoices for customer.");
             }
@@ -118,16 +118,17 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
     }
 
     fetchCustomerInvoices(customerId);
-  }, [customerId, toast, form]);
+  }, [customerId, toast, form, company_id]);
   
   const handleInvoiceSelect = async (invoice: Invoice) => {
+    if (!company_id) return;
     setSelectedInvoice(invoice);
     form.setValue('invoiceId', invoice.invoice_number);
     setIsFetchingBalance(true);
     setBalanceDetails(null);
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=1&customer_id=${customerId}&ref_id=${invoice.invoice_number}`);
+        const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=${company_id}&customer_id=${customerId}&ref_id=${invoice.invoice_number}`);
         if (!response.ok) {
             throw new Error("Failed to fetch invoice balance.");
         }
@@ -149,11 +150,11 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
 
 
   async function onSubmit(data: ReceiptFormValues) {
-    if (!currentLocation) {
+    if (!currentLocation || !company_id) {
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'No business location selected. Please select a location from the top bar.',
+            description: 'No business location or company selected.',
         });
         return;
     }
@@ -170,7 +171,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
         location_id: parseInt(currentLocation.location_id, 10),
         customer_id: parseInt(data.customerId, 10),
         today_invoice: data.invoiceId,
-        company_id: 1,
+        company_id: company_id,
     };
 
     try {
