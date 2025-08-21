@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,6 +38,22 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import React from "react";
 import { useLocation } from "./location-provider";
+
+type Receipt = {
+    id: string;
+    rec_number: string;
+    type: string;
+    is_active: string;
+    date: string;
+    amount: string;
+    created_by: string;
+    ref_id: string; // Invoice number
+    location_id: string;
+    customer_id: string;
+    today_invoice: string;
+    company_id: string;
+    now_time: string;
+};
 
 const receiptFormSchema = z.object({
   date: z.date({
@@ -129,24 +144,32 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
     setBalanceDetails(null);
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
-        if (!response.ok) {
-            throw new Error("Failed to fetch invoice balance.");
+        const [invoiceDetailsResponse, receiptsResponse] = await Promise.all([
+             fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`),
+             fetch(`https://server-erp.payshia.com/receipts/invoice/${invoice.invoice_number}`),
+        ]);
+
+        if (!invoiceDetailsResponse.ok) {
+            throw new Error("Failed to fetch invoice details.");
         }
-        const data: Invoice = await response.json();
+        const invoiceData: Invoice = await invoiceDetailsResponse.json();
         
-        // Assuming balance calculation needs to be done client side for now if not in payload
-        const grandTotal = parseFloat(data.grand_total);
-        // This part needs a proper way to get total paid amount. For now, we'll assume the balance needs to be fetched separately or calculated.
-        // Let's use a placeholder for now.
-        const balance = grandTotal; 
+        let totalPaid = 0;
+        if (receiptsResponse.ok) {
+            const receiptsData: Receipt[] = await receiptsResponse.json();
+            totalPaid = receiptsData.reduce((sum, receipt) => sum + parseFloat(receipt.amount), 0);
+        }
+        
+        const grandTotal = parseFloat(invoiceData.grand_total);
+        const balance = grandTotal - totalPaid;
+        
         const balanceDetailPayload = {
-            grand_total: data.grand_total,
-            total_paid_amount: '0.00', // This should come from an API if available
+            grand_total: invoiceData.grand_total,
+            total_paid_amount: totalPaid.toFixed(2),
             balance,
         }
         setBalanceDetails(balanceDetailPayload);
-        form.setValue("amount", balance);
+        form.setValue("amount", balance > 0 ? balance : 0);
 
     } catch (error) {
          const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
