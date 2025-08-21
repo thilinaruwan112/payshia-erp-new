@@ -1109,6 +1109,15 @@ export default function POSPage() {
         }
     };
     
+    const handleReturnTypeChange = (newType: 'invoice' | 'manual') => {
+        setReturnType(newType);
+        // When switching return type, clear any invoice-specific data
+        if (newType === 'manual') {
+            setReturnItems([]);
+            setSelectedInvoiceForAction(null);
+        }
+    };
+    
     useEffect(() => {
         async function fetchHeldOrders() {
             if (!isDrawerOpen || !company_id) return;
@@ -1365,7 +1374,7 @@ export default function POSPage() {
                             <DialogTitle>Process a Return</DialogTitle>
                         </DialogHeader>
                          <div className="space-y-4">
-                            <RadioGroup value={returnType} onValueChange={(v) => setReturnType(v as any)} className="flex gap-4">
+                            <RadioGroup value={returnType} onValueChange={handleReturnTypeChange} className="flex gap-4">
                                 <div><RadioGroupItem value="invoice" id="r-invoice" /><Label htmlFor="r-invoice" className="ml-2">Return with Invoice</Label></div>
                                 <div><RadioGroupItem value="manual" id="r-manual" /><Label htmlFor="r-manual" className="ml-2">Manual Return</Label></div>
                             </RadioGroup>
