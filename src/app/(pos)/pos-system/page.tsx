@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Invoice, ActiveOrder, CartItem, Table as TableType, Location } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand, Invoice, ActiveOrder, CartItem, Table as TableType, Location, InvoiceItem } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -504,9 +504,30 @@ export default function POSPage() {
     if (!company_id) return;
     setSelectedInvoiceForAction(invoice);
     
-    // Clear previous return items when a new invoice is selected for return.
+    setIsPastInvoicesLoading(true);
     if (isReturnDialogOpen) {
-      setReturnItems([]);
+      try {
+        const response = await fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
+        if (!response.ok) throw new Error('Failed to fetch invoice items.');
+        const fullInvoiceData: Invoice = await response.json();
+        const itemsToReturn = (fullInvoiceData.items || []).map((item: InvoiceItem): ReturnItem => ({
+          id: String(item.product_variant_id),
+          name: item.productName || `Product ID: ${item.product_id}`,
+          unit: 'Nos',
+          rate: parseFloat(String(item.item_price)),
+          quantity: 0, // Initial return quantity is 0
+          amount: 0,
+          reason: '',
+          productId: String(item.product_id),
+          productVariantId: String(item.product_variant_id),
+        }));
+        setReturnItems(itemsToReturn);
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load items for this invoice.' });
+        setReturnItems([]);
+      } finally {
+        setIsPastInvoicesLoading(false);
+      }
     }
 
     if(isPendingInvoicesDialogOpen) {
@@ -1337,10 +1358,10 @@ export default function POSPage() {
                             Return
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-4xl">
                         <DialogHeader>
-                            <DialogTitle>Select Return Products</DialogTitle>
-                            <DialogDescription>Note : A La Carte Items cannot be Returned!</DialogDescription>
+                            <DialogTitle>Process a Return</DialogTitle>
+                            <DialogDescription>Select an invoice to begin the return process.</DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4">
                             {!selectedCustomerForAction ? (
@@ -1363,67 +1384,53 @@ export default function POSPage() {
                                     <div className="grid grid-cols-2 gap-4">
                                         <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invNumber)!)} disabled={isPastInvoicesLoading}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select Invoice (If Available)"/>
+                                                <SelectValue placeholder="Select Invoice to Return From"/>
                                             </SelectTrigger>
                                             <SelectContent>{pastInvoices.map(inv => <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number}</SelectItem>)}</SelectContent>
                                         </Select>
-                                        <Input placeholder="Enter Reason for Return" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
-                                    </div>
-                                    <div className="grid grid-cols-5 gap-2 items-end">
-                                        <div className="col-span-2">
-                                            <Label>Select Product</Label>
-                                            <Select onValueChange={(variantId) => setCurrentReturnProduct(posProducts.find(p => p.variant.id === variantId) || null)}>
-                                                <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
-                                                <SelectContent>{posProducts.map(p => <SelectItem key={p.variant.id} value={p.variant.id}>{p.variantName}</SelectItem>)}</SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div><Label>Unit</Label><Input value={currentReturnProduct?.stock_unit || 'Nos'} readOnly /></div>
-                                        <div><Label>Rate</Label><Input value={(currentReturnProduct?.price as number || 0).toFixed(2)} readOnly /></div>
-                                        <div><Label>Quantity</Label><Input type="number" value={currentReturnQty} onChange={(e) => setCurrentReturnQty(parseInt(e.target.value, 10))} /></div>
-                                        <Button onClick={handleAddReturnItem} disabled={!currentReturnProduct}><Plus className="h-4 w-4" /></Button>
+                                        <Input placeholder="General Reason for Return (Optional)" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
                                     </div>
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>ID</TableHead><TableHead>Item Name</TableHead><TableHead>Qty</TableHead><TableHead>Rate</TableHead><TableHead>Amount</TableHead><TableHead>Reason</TableHead><TableHead>Action</TableHead>
+                                                <TableHead>Item Name</TableHead>
+                                                <TableHead>Return Qty</TableHead>
+                                                <TableHead>Unit Price</TableHead>
+                                                <TableHead>Reason</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {returnItems.map((item, index) => (
-                                                <TableRow key={index}>
-                                                    <TableCell>{index + 1}</TableCell>
-                                                    <TableCell>{item.name}</TableCell>
-                                                    <TableCell>
-                                                        <Input
-                                                            type="number"
-                                                            value={item.quantity}
-                                                            onChange={(e) => {
-                                                                const newQty = parseInt(e.target.value, 10) || 0;
-                                                                setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, quantity: newQty, amount: newQty * p.rate } : p));
-                                                            }}
-                                                            className="w-20"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>{item.rate.toFixed(2)}</TableCell>
-                                                    <TableCell>{item.amount.toFixed(2)}</TableCell>
-                                                    <TableCell>
-                                                        <Input
-                                                            value={item.reason}
-                                                            onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, reason: e.target.value } : p))}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell><Button variant="ghost" size="icon" onClick={() => setReturnItems(prev => prev.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4" /></Button></TableCell>
-                                                </TableRow>
-                                            ))}
+                                            {isPastInvoicesLoading ? (
+                                                <TableRow><TableCell colSpan={4} className="text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
+                                            ) : returnItems.length > 0 ? (
+                                                returnItems.map((item, index) => (
+                                                    <TableRow key={index}>
+                                                        <TableCell>{item.name}</TableCell>
+                                                        <TableCell>
+                                                            <Input
+                                                                type="number"
+                                                                value={item.quantity}
+                                                                onChange={(e) => {
+                                                                    const newQty = parseInt(e.target.value, 10) || 0;
+                                                                    setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, quantity: newQty, amount: newQty * p.rate } : p));
+                                                                }}
+                                                                className="w-20"
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>${item.rate.toFixed(2)}</TableCell>
+                                                        <TableCell>
+                                                            <Input
+                                                                value={item.reason}
+                                                                onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, reason: e.target.value } : p))}
+                                                                placeholder="Reason for this item"
+                                                            />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Select an invoice to see items.</TableCell></TableRow>
+                                            )}
                                         </TableBody>
-                                        <TableFooter>
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="text-right font-bold">Total</TableCell>
-                                                <TableCell className="font-bold">{(returnItems.reduce((acc, item) => acc + item.amount, 0)).toFixed(2)}</TableCell>
-                                                <TableCell></TableCell>
-                                                <TableCell></TableCell>
-                                            </TableRow>
-                                        </TableFooter>
                                     </Table>
                                 </>
                             )}
