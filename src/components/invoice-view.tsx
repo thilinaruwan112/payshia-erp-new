@@ -62,9 +62,6 @@ export function InvoiceView({ id }: InvoiceViewProps) {
         }
         const data: Invoice = await response.json();
         setInvoice(data);
-        // Customer data can be extracted if it's included in the new endpoint response
-        // For now, assuming it's part of the response based on your request.
-        // If not, a separate customer fetch would be needed.
         if (data.customer) {
           setCustomer(data.customer);
         }
@@ -92,7 +89,6 @@ export function InvoiceView({ id }: InvoiceViewProps) {
 
   const invoiceItems = invoice.items?.map(item => ({
     ...item,
-    product_name: item.productName || `Product ID ${item.product_id}`, // Use productName from API
     total_cost: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)),
   }));
   
@@ -208,7 +204,7 @@ export function InvoiceView({ id }: InvoiceViewProps) {
                     <TableBody>
                         {invoiceItems?.map((item, index) => (
                            <TableRow key={index}>
-                                <TableCell>{item.product_name}</TableCell>
+                                <TableCell>{item.productName}</TableCell>
                                 <TableCell className="text-right">{parseFloat(String(item.quantity))}</TableCell>
                                 <TableCell className="text-right font-mono">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                 <TableCell className="text-right font-mono text-destructive">-${parseFloat(String(item.item_discount)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>

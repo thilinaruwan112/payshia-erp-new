@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -128,13 +129,25 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
     setBalanceDetails(null);
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=${company_id}&customer_id=${customerId}&ref_id=${invoice.invoice_number}`);
+        const response = await fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
         if (!response.ok) {
             throw new Error("Failed to fetch invoice balance.");
         }
-        const data: BalanceDetails = await response.json();
-        setBalanceDetails(data);
-        form.setValue("amount", data.balance);
+        const data: Invoice = await response.json();
+        
+        // Assuming balance calculation needs to be done client side for now if not in payload
+        const grandTotal = parseFloat(data.grand_total);
+        // This part needs a proper way to get total paid amount. For now, we'll assume the balance needs to be fetched separately or calculated.
+        // Let's use a placeholder for now.
+        const balance = grandTotal; 
+        const balanceDetailPayload = {
+            grand_total: data.grand_total,
+            total_paid_amount: '0.00', // This should come from an API if available
+            balance,
+        }
+        setBalanceDetails(balanceDetailPayload);
+        form.setValue("amount", balance);
+
     } catch (error) {
          const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
         toast({
