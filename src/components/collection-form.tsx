@@ -141,9 +141,10 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     }
   }
 
-  const handleProductsSelected = (newProducts: Product[]) => {
+  const handleProductsSelected = (newlySelected: (Product & { variant: any; variantName: any; })[]) => {
     const updatedProducts = [...selectedProducts];
-    newProducts.forEach(newProduct => {
+    newlySelected.forEach(newProduct => {
+        // Use product id for uniqueness check
         if (!updatedProducts.find(p => p.id === newProduct.id)) {
             updatedProducts.push(newProduct);
         }
