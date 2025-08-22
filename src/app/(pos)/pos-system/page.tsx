@@ -447,7 +447,7 @@ export default function POSPage() {
 
             if (!stewardsResponse.ok) throw new Error('Failed to fetch stewards');
             const stewardsData = await stewardsResponse.json();
-            const formattedStewards = stewardsData.data.map((s: any) => ({
+             const formattedStewards = (stewardsData || []).map((s: any) => ({
                 id: s.id,
                 name: `${s.first_name} ${s.last_name}`,
                 role: s.acc_type,
