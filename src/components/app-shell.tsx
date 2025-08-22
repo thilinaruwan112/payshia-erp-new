@@ -3,7 +3,7 @@
 
 import React, { type ReactNode, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Package,
@@ -94,13 +94,6 @@ import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
-
-const user = {
-  name: 'Admin User',
-  email: 'admin@payshia.com',
-  role: 'Admin',
-  avatar: 'https://placehold.co/100x100.png',
-};
 
 const navItems = [
   {
@@ -381,14 +374,21 @@ function QuickAccessMenu() {
     )
 }
 
-function UserMenu() {
+function UserMenu({ user }: { user: any }) {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push('/login');
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="profile picture" />
-            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+            <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="profile photo" />
+            <AvatarFallback>{user.name ? user.name.charAt(0) : 'U'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -413,11 +413,9 @@ function UserMenu() {
             <span>Settings</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/login">
+        <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>
-          </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -439,7 +437,6 @@ const isPathActive = (pathname: string, href?: string, subItems?: any[]) => {
   }
   if (!href) return false;
   
-  // Exact match for specific top-level pages to avoid multiple highlights
   const exactMatchPaths = ['/dashboard', '/products', '/suppliers', '/reports', '/pos-system', '/help'];
   if (exactMatchPaths.includes(href)) {
     return pathname === href;
@@ -495,9 +492,22 @@ const NavMenu = ({ items, pathname, handleLinkClick }: { items: any[], pathname:
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
+  const [user, setUser] = useState({ name: '', email: '', role: '', avatar: '' });
+
+  useEffect(() => {
+    const userName = localStorage.getItem('userName');
+    // Fetch full user details from an endpoint if needed, for now we use what's in local storage
+    if (userName) {
+      setUser({
+        name: userName,
+        email: `${userName.toLowerCase().replace(' ', '.')}@payshia.com`, // mock email
+        role: 'User', // mock role
+        avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`
+      });
+    }
+  }, []);
 
   const handleLinkClick = (isExternal: boolean | undefined, e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-    // For regular links on mobile, close the sidebar after clicking.
     if (!isExternal) {
        setOpenMobile(false);
     }
@@ -517,8 +527,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         <SidebarFooter>
           <div className="flex items-center gap-2">
             <Avatar className="h-9 w-9">
-              <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="profile picture" />
-              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+              <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="profile photo" />
+              <AvatarFallback>{user.name ? user.name.charAt(0) : 'U'}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
               <span className="text-sm font-semibold">{user.name}</span>
@@ -542,7 +552,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </CalculatorModal>
             <QuickAccessMenu />
             <ThemeToggle />
-            <UserMenu />
+            <UserMenu user={user} />
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
