@@ -439,7 +439,7 @@ export default function POSPage() {
         try {
             const [tablesResponse, stewardsResponse] = await Promise.all([
                 fetch(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/users/company/${company_id}`)
+                fetch(`https://server-erp.payshia.com/filter/users?user_status=3&company_id=${company_id}`)
             ]);
             
             if (!tablesResponse.ok) throw new Error('Failed to fetch tables');
@@ -447,7 +447,8 @@ export default function POSPage() {
             setTables(tablesData || []);
 
             if (!stewardsResponse.ok) throw new Error('Failed to fetch stewards');
-            const stewardsData = await stewardsResponse.json();
+            const stewardsResult = await stewardsResponse.json();
+            const stewardsData = stewardsResult.data || [];
              const formattedStewards = (stewardsData || []).map((s: any) => ({
                 id: s.id,
                 name: `${s.first_name} ${s.last_name}`,
