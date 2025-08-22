@@ -37,8 +37,6 @@ export default function CrmDashboardPage() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [emailCampaigns, setEmailCampaigns] = useState<EmailCampaign[]>([]);
-  const [smsCampaigns, setSmsCampaigns] = useState<SmsCampaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -49,12 +47,9 @@ export default function CrmDashboardPage() {
     async function fetchData() {
         setIsLoading(true);
         try {
-            const [ordersRes, usersRes, emailRes, smsRes] = await Promise.all([
+            const [ordersRes, usersRes] = await Promise.all([
                 fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`),
                 fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
-                // Mocking campaign fetches as endpoints don't exist
-                Promise.resolve({ json: () => import('@/lib/mock-data/email-campaigns').then(m => m.emailCampaigns) }),
-                Promise.resolve({ json: () => import('@/lib/mock-data/sms-campaigns').then(m => m.smsCampaigns) }),
             ]);
 
             if (!ordersRes.ok) throw new Error('Failed to fetch orders');
@@ -62,8 +57,6 @@ export default function CrmDashboardPage() {
             
             setOrders(await ordersRes.json());
             setUsers(await usersRes.json());
-            setEmailCampaigns(await emailRes.json());
-            setSmsCampaigns(await smsRes.json());
 
         } catch (error) {
              toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch CRM dashboard data.' });
@@ -133,7 +126,7 @@ export default function CrmDashboardPage() {
                     <Mail className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{emailCampaigns.length}</div>}
+                    <div className="text-2xl font-bold">0</div>
                     <p className="text-xs text-muted-foreground">
                        <Link href="/crm/email-campaigns" className="hover:underline">
                             View all campaigns
@@ -147,7 +140,7 @@ export default function CrmDashboardPage() {
                     <MessageSquare className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{smsCampaigns.length}</div>}
+                    <div className="text-2xl font-bold">0</div>
                      <p className="text-xs text-muted-foreground">
                         <Link href="/crm/sms-campaigns" className="hover:underline">
                             View all campaigns

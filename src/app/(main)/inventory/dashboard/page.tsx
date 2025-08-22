@@ -26,19 +26,57 @@ import {
   Loader2,
   ArrowRightLeft,
 } from 'lucide-react';
-import { inventory, locations, products, stockTransfers } from '@/lib/data';
 import { useLocation } from '@/components/location-provider';
-import { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { StockChart } from '@/components/stock-chart';
 import Link from 'next/link';
+import type { InventoryItem, Product, StockTransfer } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function InventoryDashboard() {
-  const { currentLocation, isLoading } = useLocation();
+  const { currentLocation, isLoading: isLocationLoading, company_id } = useLocation();
+  const { toast } = useToast();
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [stockTransfers, setStockTransfers] = useState<StockTransfer[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!currentLocation || !company_id) {
+        setIsLoading(false);
+        return;
+    }
+    async function fetchData() {
+        setIsLoading(true);
+        try {
+            const [inventoryRes, productsRes, transfersRes] = await Promise.all([
+                fetch(`https://server-erp.payshia.com/inventory/location/${currentLocation.location_id}`),
+                fetch('https://server-erp.payshia.com/products'),
+                fetch(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${company_id}`)
+            ]);
+            if (!inventoryRes.ok) throw new Error('Failed to fetch inventory');
+            if (!productsRes.ok) throw new Error('Failed to fetch products');
+            if (!transfersRes.ok) throw new Error('Failed to fetch stock transfers');
+
+            setInventory(await inventoryRes.json() || []);
+            setProducts(await productsRes.json() || []);
+            setStockTransfers(await transfersRes.json() || []);
+
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Could not load inventory dashboard data.' });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchData();
+  }, [currentLocation, company_id, toast]);
+
 
   const inventoryStats = useMemo(() => {
-    if (!currentLocation) return { lowStockItems: 0, totalStock: 0, totalSKUs: 0 };
+    if (!currentLocation) return { lowStockItems: 0, totalStock: 0, totalSKUs: 0, totalTransfers: 0 };
     
-    const locationInventory = inventory.filter(item => item.locationId === currentLocation.location_id);
+    const locationInventory = inventory;
     const lowStockItems = locationInventory.filter(item => item.stock > 0 && item.stock <= item.reorderLevel).length;
     const totalStock = locationInventory.reduce((acc, item) => acc + item.stock, 0);
 
@@ -47,11 +85,12 @@ export default function InventoryDashboard() {
                                    .flatMap(p => p.variants)
                                    .filter(v => locationInventory.some(i => i.sku === v.sku));
     const totalSKUs = skusInLocation.length;
+    const totalTransfers = stockTransfers.length;
 
-    return { lowStockItems, totalStock, totalSKUs };
-  }, [currentLocation]);
+    return { lowStockItems, totalStock, totalSKUs, totalTransfers };
+  }, [currentLocation, inventory, products, stockTransfers]);
   
-  if (isLoading) {
+  if (isLocationLoading) {
     return (
         <div className="flex h-full flex-1 items-center justify-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -82,7 +121,7 @@ export default function InventoryDashboard() {
             <Boxes className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{inventoryStats.totalStock.toLocaleString()}</div>
+            {isLoading ? <Skeleton className="h-7 w-20" /> : <div className="text-2xl font-bold">{inventoryStats.totalStock.toLocaleString()}</div>}
             <p className="text-xs text-muted-foreground">Units in this location</p>
           </CardContent>
         </Card>
@@ -92,7 +131,7 @@ export default function InventoryDashboard() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{inventoryStats.totalSKUs}</div>
+            {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{inventoryStats.totalSKUs}</div>}
             <p className="text-xs text-muted-foreground">Unique variants in this location</p>
           </CardContent>
         </Card>
@@ -102,7 +141,7 @@ export default function InventoryDashboard() {
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{inventoryStats.lowStockItems}</div>
+            {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{inventoryStats.lowStockItems}</div>}
             <p className="text-xs text-muted-foreground">Items needing reorder</p>
           </CardContent>
         </Card>
@@ -112,7 +151,7 @@ export default function InventoryDashboard() {
             <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stockTransfers.length}</div>
+            {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{inventoryStats.totalTransfers}</div>}
             <p className="text-xs text-muted-foreground">
                 <Link href="/transfers" className="hover:underline">View all transfers</Link>
             </p>
