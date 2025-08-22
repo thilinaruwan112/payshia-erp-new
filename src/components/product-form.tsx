@@ -36,6 +36,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import type { Product, Supplier } from "@/lib/types";
+import { useLocation } from "./location-provider";
 
 type Category = {
   id: string;
@@ -115,6 +116,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const [sizes, setSizes] = useState<Size[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [customFieldMasters, setCustomFieldMasters] = useState<CustomFieldMaster[]>([]);
+  const { company_id } = useLocation();
 
   useEffect(() => {
     async function fetchData(url: string, setData: Function, type: string) {
@@ -134,13 +136,16 @@ export function ProductForm({ product }: ProductFormProps) {
         });
       }
     }
-    fetchData('https://server-erp.payshia.com/categories', setCategories, 'categories');
-    fetchData('https://server-erp.payshia.com/brands/company?company_id=1', setBrands, 'brands');
-    fetchData('https://server-erp.payshia.com/product-colors/company?company_id=1', setColors, 'colors');
-    fetchData('https://server-erp.payshia.com/sizes', setSizes, 'sizes');
-    fetchData('https://server-erp.payshia.com/suppliers/filter/by-company?company_id=1', setSuppliers, 'suppliers');
-    fetchData('https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=1', setCustomFieldMasters, 'custom fields');
-  }, [toast]);
+    
+    if (company_id) {
+        fetchData('https://server-erp.payshia.com/categories', setCategories, 'categories');
+        fetchData(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`, setBrands, 'brands');
+        fetchData(`https://server-erp.payshia.com/product-colors/company?company_id=${company_id}`, setColors, 'colors');
+        fetchData(`https://server-erp.payshia.com/sizes/filter/company?company_id=${company_id}`, setSizes, 'sizes');
+        fetchData(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`, setSuppliers, 'suppliers');
+        fetchData(`https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=${company_id}`, setCustomFieldMasters, 'custom fields');
+    }
+  }, [toast, company_id]);
   
   const defaultValues: Partial<ProductFormValues> = {
     name: product?.name || "",
@@ -235,6 +240,10 @@ export function ProductForm({ product }: ProductFormProps) {
   };
 
   async function onSubmit(data: ProductFormValues) {
+    if (!company_id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
+        return;
+    }
     setIsLoading(true);
 
     const selectedCategory = categories.find(c => c.id === data.categoryId);
@@ -256,7 +265,7 @@ export function ProductForm({ product }: ProductFormProps) {
       print_name: data.printName || data.name,
       display_name: data.displayName || data.name,
       supplier: data.supplier?.join(',') || "",
-      company_id: 1,
+      company_id: company_id,
       lead_time_days: 0,
       reorder_level_qty: 0,
       item_type: "finished_good",
@@ -301,7 +310,7 @@ export function ProductForm({ product }: ProductFormProps) {
           if (cf.value) { 
             const customFieldPayload = {
               master_custom_field_id: parseInt(cf.master_custom_field_id, 10),
-              company_id: 1,
+              company_id: company_id,
               created_by: "admin",
               updated_by: "admin",
               product_id: parseInt(productId, 10),

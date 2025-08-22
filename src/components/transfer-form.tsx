@@ -189,6 +189,10 @@ export function TransferForm({ locations }: TransferFormProps) {
   }, 0);
 
   async function onSubmit(data: TransferFormValues) {
+    if (!company_id) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
+      return;
+    }
     setIsLoading(true);
 
     const payload = {
@@ -196,7 +200,7 @@ export function TransferForm({ locations }: TransferFormProps) {
       to_location: data.toLocationId,
       transfer_date: format(data.date, 'yyyy-MM-dd'),
       status: 'pending',
-      company_id: 1,
+      company_id: company_id,
       created_by: "admin", 
       items: data.items.map(item => {
         const batchInfo: StockInfo = JSON.parse(item.selectedBatch);

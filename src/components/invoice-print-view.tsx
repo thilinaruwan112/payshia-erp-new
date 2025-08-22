@@ -2,7 +2,7 @@
 
 'use client'
 
-import { type Invoice, type User } from '@/lib/types';
+import { type Invoice, type User, type Product } from '@/lib/types';
 import { notFound, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -72,7 +72,6 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
 
   const invoiceItems = invoice.items?.map(item => ({
     ...item,
-    product_name: item.productName || `Product ID ${item.product_id}`,
     total_cost: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)) - parseFloat(String(item.item_discount)),
   }));
 
@@ -123,7 +122,7 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
           <tbody>
             {invoiceItems?.map((item, index) => (
               <tr key={index} className="border-b border-gray-100">
-                <td className="p-3">{item.product_name}</td>
+                <td className="p-3">{item.productName}</td>
                 <td className="p-3 text-right">{parseFloat(String(item.quantity)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                 <td className="p-3 text-right">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="p-3 text-right">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -192,4 +191,3 @@ function InvoiceViewSkeleton() {
     </div>
   );
 }
-

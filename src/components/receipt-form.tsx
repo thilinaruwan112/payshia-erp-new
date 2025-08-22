@@ -39,6 +39,22 @@ import { format } from "date-fns";
 import React from "react";
 import { useLocation } from "./location-provider";
 
+type Receipt = {
+    id: string;
+    rec_number: string;
+    type: string;
+    is_active: string;
+    date: string;
+    amount: string;
+    created_by: string;
+    ref_id: string; // Invoice number
+    location_id: string;
+    customer_id: string;
+    today_invoice: string;
+    company_id: string;
+    now_time: string;
+};
+
 const receiptFormSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
@@ -64,7 +80,7 @@ interface BalanceDetails {
 export function ReceiptForm({ customers }: ReceiptFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const { currentLocation } = useLocation();
+  const { currentLocation, company_id } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
   const [isFetchingInvoices, setIsFetchingInvoices] = React.useState(false);
   const [isFetchingBalance, setIsFetchingBalance] = React.useState(false);
@@ -88,7 +104,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
 
   React.useEffect(() => {
     async function fetchCustomerInvoices(selectedCustomerId: string) {
-        if (!selectedCustomerId) {
+        if (!selectedCustomerId || !company_id) {
             setCustomerInvoices([]);
             return;
         };
@@ -98,7 +114,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
         form.reset({ ...form.getValues(), invoiceId: '', amount: 0 });
 
         try {
-            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=1&customer_code=${selectedCustomerId}`);
+            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedCustomerId}`);
             if (!response.ok) {
                 throw new Error("Failed to fetch pending invoices for customer.");
             }
@@ -118,22 +134,43 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
     }
 
     fetchCustomerInvoices(customerId);
-  }, [customerId, toast, form]);
+  }, [customerId, toast, form, company_id]);
   
   const handleInvoiceSelect = async (invoice: Invoice) => {
+    if (!company_id) return;
     setSelectedInvoice(invoice);
     form.setValue('invoiceId', invoice.invoice_number);
     setIsFetchingBalance(true);
     setBalanceDetails(null);
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=1&customer_id=${customerId}&ref_id=${invoice.invoice_number}`);
-        if (!response.ok) {
-            throw new Error("Failed to fetch invoice balance.");
+        const [invoiceDetailsResponse, receiptsResponse] = await Promise.all([
+             fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`),
+             fetch(`https://server-erp.payshia.com/receipts/invoice/${invoice.invoice_number}`),
+        ]);
+
+        if (!invoiceDetailsResponse.ok) {
+            throw new Error("Failed to fetch invoice details.");
         }
-        const data: BalanceDetails = await response.json();
-        setBalanceDetails(data);
-        form.setValue("amount", data.balance);
+        const invoiceData: Invoice = await invoiceDetailsResponse.json();
+        
+        let totalPaid = 0;
+        if (receiptsResponse.ok) {
+            const receiptsData: Receipt[] = await receiptsResponse.json();
+            totalPaid = receiptsData.reduce((sum, receipt) => sum + parseFloat(receipt.amount), 0);
+        }
+        
+        const grandTotal = parseFloat(invoiceData.grand_total);
+        const balance = grandTotal - totalPaid;
+        
+        const balanceDetailPayload = {
+            grand_total: invoiceData.grand_total,
+            total_paid_amount: totalPaid.toFixed(2),
+            balance,
+        }
+        setBalanceDetails(balanceDetailPayload);
+        form.setValue("amount", balance > 0 ? balance : 0);
+
     } catch (error) {
          const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
         toast({
@@ -149,11 +186,11 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
 
 
   async function onSubmit(data: ReceiptFormValues) {
-    if (!currentLocation) {
+    if (!currentLocation || !company_id) {
         toast({
             variant: 'destructive',
             title: 'Error',
-            description: 'No business location selected. Please select a location from the top bar.',
+            description: 'No business location or company selected.',
         });
         return;
     }
@@ -170,7 +207,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
         location_id: parseInt(currentLocation.location_id, 10),
         customer_id: parseInt(data.customerId, 10),
         today_invoice: data.invoiceId,
-        company_id: 1,
+        company_id: company_id,
     };
 
     try {

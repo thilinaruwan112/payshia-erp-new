@@ -63,6 +63,10 @@ export default function LoginPage() {
         if (!userId || !userName) {
              throw new Error('Login successful, but user ID or name was not returned.');
         }
+
+        // Store user info in local storage
+        localStorage.setItem('userId', userId);
+        localStorage.setItem('userName', userName);
         
         // Check for company association
         const companyCheckResponse = await fetch(`https://server-erp.payshia.com/company-users/filter/by-user?user_id=${userId}`);
@@ -72,8 +76,27 @@ export default function LoginPage() {
         }
 
         const companyData = await companyCheckResponse.json();
+        
+        // Clear any previous company data
+        localStorage.removeItem('companyId');
+        localStorage.removeItem('companyName');
 
-        if (companyData.status === 'success' && companyData.has_company) {
+        if (companyData.status === 'success' && companyData.has_company && companyData.data && companyData.data.length > 0) {
+            const companyLink = companyData.data[0];
+            const companyId = companyLink.company_id;
+
+            // Fetch company details to get the name
+            const companyDetailsResponse = await fetch(`https://server-erp.payshia.com/companies/${companyId}`);
+            if (!companyDetailsResponse.ok) {
+                throw new Error('Found company association, but failed to fetch company details.');
+            }
+            const companyDetails = await companyDetailsResponse.json();
+            const companyName = companyDetails.company_name;
+
+            // Store company info
+            localStorage.setItem('companyId', companyId);
+            localStorage.setItem('companyName', companyName);
+
             toast({
                 title: 'Login Successful!',
                 description: 'Welcome back!',

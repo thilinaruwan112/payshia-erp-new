@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -35,10 +34,16 @@ import Link from 'next/link';
 import { SalesChart } from '@/components/sales-chart';
 import { StockChart } from '@/components/stock-chart';
 import { useLocation } from '@/components/location-provider';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 
 export default function Dashboard() {
   const { currentLocation, isLoading } = useLocation();
+  const [companyName, setCompanyName] = useState('');
+
+  useEffect(() => {
+    const name = localStorage.getItem('companyName');
+    setCompanyName(name || 'Your Company');
+  }, []);
 
   const locationInventory = useMemo(() => {
     if (!currentLocation) return [];
@@ -94,9 +99,9 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard for <span className="text-primary">{currentLocation.location_name}</span></h1>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard for <span className="text-primary">{companyName}</span></h1>
           <p className="text-muted-foreground">
-            Your business overview at a glance.
+            Showing data for location: <span className="font-semibold">{currentLocation.location_name}</span>
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">

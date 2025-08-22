@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Invoice, ActiveOrder, CartItem, Table as TableType, Location } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand, Invoice, ActiveOrder, CartItem, Table as TableType, Location, InvoiceItem } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -43,6 +43,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ProductPickerDialog } from '@/components/product-picker-dialog';
 
 
 export type PosProduct = Product & {
@@ -294,6 +295,7 @@ export default function POSPage() {
   const [currentReturnProduct, setCurrentReturnProduct] = useState<PosProduct | null>(null);
   const [currentReturnQty, setCurrentReturnQty] = useState(1);
   const [refundQuantities, setRefundQuantities] = useState<Record<string, number>>({});
+  const [returnType, setReturnType] = useState<'invoice' | 'manual'>('invoice');
 
 
   const [isBalanceLoading, setIsBalanceLoading] = useState(false);
@@ -315,13 +317,17 @@ export default function POSPage() {
 
   useEffect(() => {
     async function fetchPosData() {
+        if (!company_id) {
+            setIsLoadingProducts(false);
+            return;
+        }
         setIsLoadingProducts(true);
         try {
             const [productsResponse, collectionsResponse, brandsResponse, customersResponse] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/products/with-variants`),
-                fetch(`https://server-erp.payshia.com/collections/company?company_id=1`),
-                fetch(`https://server-erp.payshia.com/brands/company?company_id=1`),
-                fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=1`),
+                fetch(`https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/collections/company?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
             ]);
 
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !customersResponse.ok) {
@@ -391,17 +397,17 @@ export default function POSPage() {
         fetchPosData();
     }
     
-  }, [toast, currentLocation]);
+  }, [toast, currentLocation, company_id]);
   
   useEffect(() => {
     async function fetchInvoicesForAction() {
-      if (!selectedCustomerForAction) {
+      if (!selectedCustomerForAction || !company_id) {
         setPastInvoices([]);
         return;
       }
       setIsPastInvoicesLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomerForAction}&company_id=1`);
+        const response = await fetch(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomerForAction}&company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch invoices');
         }
@@ -419,19 +425,20 @@ export default function POSPage() {
       }
     }
     
-    if (isPendingInvoicesDialogOpen || isReturnDialogOpen) {
+    if (isPendingInvoicesDialogOpen || (isReturnDialogOpen && returnType === 'invoice')) {
       fetchInvoicesForAction();
     }
-  }, [selectedCustomerForAction, toast, isPendingInvoicesDialogOpen, isReturnDialogOpen]);
+  }, [selectedCustomerForAction, toast, isPendingInvoicesDialogOpen, isReturnDialogOpen, company_id, returnType]);
   
   useEffect(() => {
     async function fetchPosDialogData() {
+        if (!company_id) return;
         setIsLoadingTables(true);
         setIsLoadingStewards(true);
         try {
             const [tablesResponse, stewardsResponse] = await Promise.all([
-                fetch('https://server-erp.payshia.com/master-tables'),
-                fetch('https://server-erp.payshia.com/filter/users?user_status=3')
+                fetch(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/filter/users?user_status=3&company_id=${company_id}`)
             ]);
             
             if (!tablesResponse.ok) throw new Error('Failed to fetch tables');
@@ -440,7 +447,7 @@ export default function POSPage() {
 
             if (!stewardsResponse.ok) throw new Error('Failed to fetch stewards');
             const stewardsData = await stewardsResponse.json();
-            const formattedStewards = stewardsData.data.map((s: any) => ({
+             const formattedStewards = (stewardsData || []).map((s: any) => ({
                 id: s.id,
                 name: `${s.first_name} ${s.last_name}`,
                 role: s.acc_type,
@@ -466,13 +473,14 @@ export default function POSPage() {
     if(isNewOrderDialogOpen) {
         fetchPosDialogData();
     }
-  }, [isNewOrderDialogOpen, toast]);
+  }, [isNewOrderDialogOpen, toast, company_id]);
   
    useEffect(() => {
     async function fetchReturns() {
+      if (!company_id) return;
       setIsReturnsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/transaction-returns/filter/by-company?company_id=1`);
+        const response = await fetch(`https://server-erp.payshia.com/transaction-returns/filter/by-company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch returns');
         }
@@ -495,17 +503,45 @@ export default function POSPage() {
   }, [isRefundDialogOpen, selectedReturnForRefund, toast, company_id]);
 
   const handleInvoiceSelectForAction = async (invoice: Invoice) => {
+    if (!company_id) return;
     setSelectedInvoiceForAction(invoice);
     
-    // Clear previous return items when a new invoice is selected for return.
-    if (isReturnDialogOpen) {
-      setReturnItems([]);
+    setIsPastInvoicesLoading(true);
+    if (isReturnDialogOpen && returnType === 'invoice') {
+      try {
+        const response = await fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
+        if (!response.ok) throw new Error('Failed to fetch invoice items.');
+        const fullInvoiceData: Invoice = await response.json();
+        const itemsToReturn = (fullInvoiceData.items || []).map((item: InvoiceItem): ReturnItem => {
+            const productDetails = posProducts.find(p => p.id === String(item.product_id));
+            const variantDetails = productDetails?.variants?.find(v => v.id === String(item.product_variant_id));
+            const variantName = [productDetails?.name, variantDetails?.color, variantDetails?.size].filter(Boolean).join(' - ');
+
+            return {
+                id: String(item.product_variant_id),
+                name: item.productName || variantName || `Product ID: ${item.product_id}`,
+                unit: 'Nos',
+                rate: parseFloat(String(item.item_price)),
+                quantity: 0, // Initial return quantity is 0
+                amount: 0,
+                reason: '',
+                productId: String(item.product_id),
+                productVariantId: String(item.product_variant_id),
+            }
+        });
+        setReturnItems(itemsToReturn);
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load items for this invoice.' });
+        setReturnItems([]);
+      } finally {
+        setIsPastInvoicesLoading(false);
+      }
     }
 
     if(isPendingInvoicesDialogOpen) {
         setIsBalanceLoading(true);
         try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=1&customer_id=${invoice.customer_code}&ref_id=${invoice.invoice_number}`);
+        const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=${company_id}&customer_id=${invoice.customer_code}&ref_id=${invoice.invoice_number}`);
         if (!response.ok) {
             throw new Error('Failed to fetch invoice balance');
         }
@@ -524,6 +560,7 @@ export default function POSPage() {
   };
   
   const handleReturnSelectForAction = async (returnData: TransactionReturn) => {
+    if (!company_id) return;
     setIsReturnsLoading(true);
     try {
       const response = await fetch(`https://server-erp.payshia.com/transaction-returns/full/${returnData.id}?company_id=${company_id}`);
@@ -547,7 +584,7 @@ export default function POSPage() {
   }
 
   const handleCreateReceipt = async () => {
-    if (!selectedInvoiceForAction || !currentLocation) {
+    if (!selectedInvoiceForAction || !currentLocation || !company_id) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
@@ -567,7 +604,7 @@ export default function POSPage() {
         location_id: parseInt(currentLocation.location_id, 10),
         customer_id: parseInt(selectedInvoiceForAction.customer_code, 10),
         today_invoice: selectedInvoiceForAction.invoice_number,
-        company_id: 1,
+        company_id: company_id,
     };
     
     try {
@@ -781,7 +818,7 @@ export default function POSPage() {
   };
   
    const createInvoicePayload = (status: '1' | '2', paymentMethod = 'N/A', tenderedAmount = 0) => {
-    if (!currentOrder || !currentLocation) return null;
+    if (!currentOrder || !currentLocation || !company_id) return null;
 
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
     const costValue = currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
@@ -807,7 +844,7 @@ export default function POSPage() {
         cost_value: costValue,
         remark: `${currentOrder.orderType} order`,
         ref_hold: null,
-        company_id: "1",
+        company_id: company_id,
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
             user_id: parseInt(currentOrder.customer.customer_id, 10),
@@ -940,7 +977,7 @@ export default function POSPage() {
   };
   
   const handleProcessReturn = async () => {
-    if (!currentLocation || !selectedCustomerForAction || returnItems.length === 0) {
+    if (!currentLocation || !selectedCustomerForAction || returnItems.length === 0 || !company_id) {
       toast({
         variant: "destructive",
         title: "Missing Information",
@@ -1013,7 +1050,7 @@ export default function POSPage() {
   };
 
     const handleRefund = async () => {
-        if (!selectedReturnForRefund || !currentLocation) {
+        if (!selectedReturnForRefund || !currentLocation || !company_id) {
             toast({ variant: "destructive", title: "Error", description: "No return selected or location missing." });
             return;
         }
@@ -1078,12 +1115,21 @@ export default function POSPage() {
         }
     };
     
+    const handleReturnTypeChange = (newType: 'invoice' | 'manual') => {
+        setReturnType(newType);
+        // When switching return type, clear any invoice-specific data
+        if (newType === 'manual') {
+            setReturnItems([]);
+            setSelectedInvoiceForAction(null);
+        }
+    };
+    
     useEffect(() => {
         async function fetchHeldOrders() {
-            if (!isDrawerOpen) return;
+            if (!isDrawerOpen || !company_id) return;
             setIsHeldOrdersLoading(true);
             try {
-                const response = await fetch(`https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=1&invoice_status=2`);
+                const response = await fetch(`https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch held orders');
                 }
@@ -1096,7 +1142,7 @@ export default function POSPage() {
             }
         }
         fetchHeldOrders();
-    }, [isDrawerOpen, toast]);
+    }, [isDrawerOpen, toast, company_id]);
     
     const handleSelectHeldOrder = async (invoice: Invoice) => {
         setIsHeldOrderDetailsLoading(true);
@@ -1329,17 +1375,19 @@ export default function POSPage() {
                             Return
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
+                    <DialogContent className="max-w-4xl">
                         <DialogHeader>
-                            <DialogTitle>Select Return Products</DialogTitle>
-                            <DialogDescription>Note : A La Carte Items cannot be Returned!</DialogDescription>
+                            <DialogTitle>Process a Return</DialogTitle>
                         </DialogHeader>
-                        <div className="space-y-4">
+                         <div className="space-y-4">
+                            <RadioGroup value={returnType} onValueChange={handleReturnTypeChange} className="flex gap-4">
+                                <div><RadioGroupItem value="invoice" id="r-invoice" /><Label htmlFor="r-invoice" className="ml-2">Return with Invoice</Label></div>
+                                <div><RadioGroupItem value="manual" id="r-manual" /><Label htmlFor="r-manual" className="ml-2">Manual Return</Label></div>
+                            </RadioGroup>
+                            
                             {!selectedCustomerForAction ? (
                                 <Select onValueChange={setSelectedCustomerForAction}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a customer..."/>
-                                    </SelectTrigger>
+                                    <SelectTrigger><SelectValue placeholder="Select a customer..."/></SelectTrigger>
                                     <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                                 </Select>
                             ) : (
@@ -1352,70 +1400,50 @@ export default function POSPage() {
                                             setReturnItems([]);
                                         }}>Change</Button>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    
+                                    {returnType === 'invoice' ? (
                                         <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invNumber)!)} disabled={isPastInvoicesLoading}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select Invoice (If Available)"/>
-                                            </SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder="Select Invoice to Return From"/></SelectTrigger>
                                             <SelectContent>{pastInvoices.map(inv => <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number}</SelectItem>)}</SelectContent>
                                         </Select>
-                                        <Input placeholder="Enter Reason for Return" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
-                                    </div>
-                                    <div className="grid grid-cols-5 gap-2 items-end">
-                                        <div className="col-span-2">
-                                            <Label>Select Product</Label>
-                                            <Select onValueChange={(variantId) => setCurrentReturnProduct(posProducts.find(p => p.variant.id === variantId) || null)}>
-                                                <SelectTrigger><SelectValue placeholder="Select Product" /></SelectTrigger>
-                                                <SelectContent>{posProducts.map(p => <SelectItem key={p.variant.id} value={p.variant.id}>{p.variantName}</SelectItem>)}</SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div><Label>Unit</Label><Input value={currentReturnProduct?.stock_unit || 'Nos'} readOnly /></div>
-                                        <div><Label>Rate</Label><Input value={(currentReturnProduct?.price as number || 0).toFixed(2)} readOnly /></div>
-                                        <div><Label>Quantity</Label><Input type="number" value={currentReturnQty} onChange={(e) => setCurrentReturnQty(parseInt(e.target.value, 10))} /></div>
-                                        <Button onClick={handleAddReturnItem} disabled={!currentReturnProduct}><Plus className="h-4 w-4" /></Button>
-                                    </div>
+                                    ) : (
+                                        <ProductPickerDialog onProductsSelected={(products) => {
+                                            const newItems = products.map(p => ({
+                                                id: p.variant.id,
+                                                name: p.variantName,
+                                                unit: p.stock_unit || 'Nos',
+                                                rate: p.price as number,
+                                                quantity: 1,
+                                                amount: p.price as number,
+                                                reason: '',
+                                                productId: p.id,
+                                                productVariantId: p.variant.id,
+                                            }));
+                                            setReturnItems(newItems);
+                                        }}>
+                                            <Button variant="outline">Add Products to Return</Button>
+                                        </ProductPickerDialog>
+                                    )}
+
+                                    <Input placeholder="General Reason for Return (Optional)" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
+
                                     <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>ID</TableHead><TableHead>Item Name</TableHead><TableHead>Qty</TableHead><TableHead>Rate</TableHead><TableHead>Amount</TableHead><TableHead>Reason</TableHead><TableHead>Action</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
+                                        <TableHeader><TableRow><TableHead>Item</TableHead><TableHead>Return Qty</TableHead><TableHead>Reason</TableHead></TableRow></TableHeader>
                                         <TableBody>
-                                            {returnItems.map((item, index) => (
-                                                <TableRow key={index}>
-                                                    <TableCell>{index + 1}</TableCell>
-                                                    <TableCell>{item.name}</TableCell>
-                                                    <TableCell>
-                                                        <Input
-                                                            type="number"
-                                                            value={item.quantity}
-                                                            onChange={(e) => {
-                                                                const newQty = parseInt(e.target.value, 10) || 0;
-                                                                setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, quantity: newQty, amount: newQty * p.rate } : p));
-                                                            }}
-                                                            className="w-20"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>{item.rate.toFixed(2)}</TableCell>
-                                                    <TableCell>{item.amount.toFixed(2)}</TableCell>
-                                                    <TableCell>
-                                                        <Input
-                                                            value={item.reason}
-                                                            onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, reason: e.target.value } : p))}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell><Button variant="ghost" size="icon" onClick={() => setReturnItems(prev => prev.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4" /></Button></TableCell>
-                                                </TableRow>
-                                            ))}
+                                            {isPastInvoicesLoading ? (
+                                                <TableRow><TableCell colSpan={3} className="text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
+                                            ) : returnItems.length > 0 ? (
+                                                returnItems.map((item, index) => (
+                                                    <TableRow key={index}>
+                                                        <TableCell>{item.name}</TableCell>
+                                                        <TableCell><Input type="number" value={item.quantity} onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, quantity: parseInt(e.target.value) || 0, amount: (parseInt(e.target.value) || 0) * p.rate } : p))} className="w-20" /></TableCell>
+                                                        <TableCell><Input value={item.reason} onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, reason: e.target.value } : p))} placeholder="Item-specific reason" /></TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Select an invoice or add products manually.</TableCell></TableRow>
+                                            )}
                                         </TableBody>
-                                        <TableFooter>
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="text-right font-bold">Total</TableCell>
-                                                <TableCell className="font-bold">{(returnItems.reduce((acc, item) => acc + item.amount, 0)).toFixed(2)}</TableCell>
-                                                <TableCell></TableCell>
-                                                <TableCell></TableCell>
-                                            </TableRow>
-                                        </TableFooter>
                                     </Table>
                                 </>
                             )}

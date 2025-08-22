@@ -1,7 +1,4 @@
 
-
-
-
 'use client';
 
 import {
@@ -37,6 +34,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useLocation } from '@/components/location-provider';
 
 
 const getStatusColor = (status: StockTransfer['status']) => {
@@ -58,15 +56,20 @@ export default function StockTransfersPage() {
     const [locations, setLocations] = useState<Location[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
+    const { company_id } = useLocation();
     const itemsPerPage = 15;
 
     useEffect(() => {
         async function fetchData() {
+            if (!company_id) {
+                setIsLoading(false);
+                return;
+            }
             setIsLoading(true);
             try {
                 const [transfersResponse, locationsResponse] = await Promise.all([
-                    fetch('https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=1'),
-                    fetch('https://server-erp.payshia.com/locations')
+                    fetch(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${company_id}`),
+                    fetch(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`)
                 ]);
 
                 if (!transfersResponse.ok) throw new Error('Failed to fetch stock transfers');
@@ -89,7 +92,7 @@ export default function StockTransfersPage() {
             }
         }
         fetchData();
-    }, [toast]);
+    }, [toast, company_id]);
     
     const getLocationName = (id: string) => {
         return locations.find(loc => loc.location_id === id)?.location_name || `ID: ${id}`;

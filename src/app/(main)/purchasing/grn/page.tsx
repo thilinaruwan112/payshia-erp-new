@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -36,6 +37,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useLocation } from '@/components/location-provider';
 
 
 const getStatusText = (status: string) => {
@@ -73,15 +75,20 @@ export default function GrnReceivablePage() {
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
+  const { company_id } = useLocation();
 
   useEffect(() => {
     async function fetchData() {
+       if (!company_id) {
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       try {
         const [poResponse, suppliersResponse, grnResponse] = await Promise.all([
-          fetch('https://server-erp.payshia.com/purchase-orders'),
-          fetch('https://server-erp.payshia.com/suppliers'),
-          fetch('https://server-erp.payshia.com/grn'),
+          fetch(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`),
+          fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
+          fetch(`https://server-erp.payshia.com/grn/company/${company_id}`),
         ]);
 
         if (!poResponse.ok) throw new Error('Failed to fetch purchase orders');
@@ -108,7 +115,7 @@ export default function GrnReceivablePage() {
       }
     }
     fetchData();
-  }, [toast]);
+  }, [toast, company_id]);
 
   const getSupplierName = (supplierId: string) => {
     return suppliers.find(s => s.supplier_id === supplierId)?.supplier_name || `ID: ${supplierId}`;
@@ -323,3 +330,5 @@ export default function GrnReceivablePage() {
     </div>
   );
 }
+
+    

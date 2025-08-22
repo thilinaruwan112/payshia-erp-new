@@ -32,6 +32,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import { useLocation } from '@/components/location-provider';
 
 type Receipt = {
     id: string;
@@ -54,13 +55,18 @@ export default function ReceiptsPage() {
     const [customers, setCustomers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
+    const { company_id } = useLocation();
 
     useEffect(() => {
         async function fetchData() {
+            if (!company_id) {
+                setIsLoading(false);
+                return;
+            }
             setIsLoading(true);
             try {
                 const [receiptResponse, customerResponse] = await Promise.all([
-                    fetch('https://server-erp.payshia.com/receipts/company/1'),
+                    fetch(`https://server-erp.payshia.com/receipts/company/${company_id}`),
                     fetch('https://server-erp.payshia.com/customers'),
                 ]);
 
@@ -84,7 +90,7 @@ export default function ReceiptsPage() {
             }
         }
         fetchData();
-    }, [toast]);
+    }, [toast, company_id]);
     
     const getCustomerName = (customerId: string) => {
         const customer = customers.find(c => c.customer_id === customerId);

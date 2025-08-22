@@ -30,6 +30,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useLocation } from '@/components/location-provider';
 
 interface CustomField {
     id: string;
@@ -43,12 +44,17 @@ export default function CustomFieldsPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedField, setSelectedField] = useState<CustomField | null>(null);
   const { toast } = useToast();
+  const { company_id } = useLocation();
 
   useEffect(() => {
     async function fetchCustomFields() {
+      if (!company_id) {
+        setIsLoading(false);
+        return;
+      };
       setIsLoading(true);
       try {
-        const response = await fetch('https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=1');
+        const response = await fetch(`https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch custom fields');
         }
@@ -66,7 +72,7 @@ export default function CustomFieldsPage() {
       }
     }
     fetchCustomFields();
-  }, [toast]);
+  }, [toast, company_id]);
 
   const handleDelete = async () => {
     if (!selectedField) return;

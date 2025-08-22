@@ -34,6 +34,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Switch } from "./ui/switch";
+import { useLocation } from "./location-provider";
 
 
 const locationFormSchema = z.object({
@@ -57,6 +58,7 @@ export function LocationForm({ location }: LocationFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { company_id } = useLocation();
   
   const defaultValues: Partial<LocationFormValues> = {
     location_name: location?.location_name || "",
@@ -76,6 +78,10 @@ export function LocationForm({ location }: LocationFormProps) {
   });
 
   async function onSubmit(data: LocationFormValues) {
+    if (!company_id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
+        return;
+    }
     setIsLoading(true);
 
     const payload = {
@@ -85,7 +91,7 @@ export function LocationForm({ location }: LocationFormProps) {
       created_by: 'admin',
       logo_path: '/logos/default.png',
       pos_token: 101,
-      company_id: 1,
+      company_id: company_id,
     };
     
     const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';

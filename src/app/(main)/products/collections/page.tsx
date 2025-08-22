@@ -41,11 +41,22 @@ export default function CollectionsPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
   const { toast } = useToast();
+  const [companyId, setCompanyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = localStorage.getItem('companyId');
+    setCompanyId(id);
+  }, []);
 
   useEffect(() => {
     async function fetchCollections() {
+      if (!companyId) {
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
       try {
-        const response = await fetch('https://server-erp.payshia.com/collections/company?company_id=1');
+        const response = await fetch(`https://server-erp.payshia.com/collections/company?company_id=${companyId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch collections');
         }
@@ -65,12 +76,17 @@ export default function CollectionsPage() {
 
       } catch (error) {
         console.error(error);
+        toast({
+            variant: "destructive",
+            title: "Failed to load collections",
+            description: "Could not fetch collections from the server.",
+        });
       } finally {
         setIsLoading(false);
       }
     }
     fetchCollections();
-  }, []);
+  }, [companyId, toast]);
 
   const handleDelete = async () => {
     if (!selectedCollection) return;

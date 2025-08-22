@@ -32,6 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useLocation } from '@/components/location-provider';
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -39,12 +40,17 @@ export default function LocationsPage() {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const { toast } = useToast();
+  const { company_id } = useLocation();
 
   useEffect(() => {
     async function fetchLocations() {
+       if (!company_id) {
+        setIsLoading(false);
+        return;
+      }
       setIsLoading(true);
       try {
-        const response = await fetch('https://server-erp.payshia.com/locations');
+        const response = await fetch(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch locations');
         }
@@ -62,7 +68,7 @@ export default function LocationsPage() {
       }
     }
     fetchLocations();
-  }, [toast]);
+  }, [toast, company_id]);
 
   const handleDelete = async () => {
     if (!selectedLocation) return;

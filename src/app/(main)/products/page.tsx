@@ -34,7 +34,7 @@ import Link from 'next/link';
 import { checkPlanLimit } from '@/lib/plan-limits';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -48,12 +48,22 @@ export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
-  const fetchProducts = async () => {
+  useEffect(() => {
+    const id = localStorage.getItem('companyId');
+    setCompanyId(id);
+  }, []);
+
+  const fetchProducts = useCallback(async () => {
+    if (!companyId) {
+        setIsLoading(false);
+        return;
+    };
     setIsLoading(true);
     try {
       const [productsResponse, limitResponse] = await Promise.all([
-         fetch('https://server-erp.payshia.com/products'),
+         fetch(`https://server-erp.payshia.com/products/get/filter/by-company?company_id=${companyId}`),
          checkPlanLimit('products')
       ]);
       
@@ -76,11 +86,11 @@ export default function ProductsPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [companyId, toast]);
 
   useEffect(() => {
     fetchProducts();
-  }, [toast]);
+  }, [fetchProducts]);
 
   const handleDelete = async () => {
     if (!selectedProduct) return;

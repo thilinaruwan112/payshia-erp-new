@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound } from 'next/navigation';
@@ -20,7 +21,7 @@ export default function POSInvoicePage({ params }: { params: { id: string } }) {
         if (!id) return;
         setIsLoading(true);
         try {
-            const invoiceResponse = await fetch(`https://server-erp.payshia.com/invoices/${id}`);
+            const invoiceResponse = await fetch(`https://server-erp.payshia.com/invoices/full/${id}`);
             if (!invoiceResponse.ok) {
                 if (invoiceResponse.status === 404) notFound();
                 throw new Error('Failed to fetch invoice data');
@@ -28,12 +29,8 @@ export default function POSInvoicePage({ params }: { params: { id: string } }) {
             const invoiceData: Invoice = await invoiceResponse.json();
             setInvoice(invoiceData);
 
-            if (invoiceData.customer_code) {
-                 const customersResponse = await fetch(`https://server-erp.payshia.com/customers`);
-                 if (customersResponse.ok) {
-                    const customersData: User[] = await customersResponse.json();
-                    setCustomer(customersData.find(c => c.customer_id === invoiceData.customer_code) || null);
-                 }
+            if (invoiceData.customer) {
+                setCustomer(invoiceData.customer);
             }
         } catch (error) {
             toast({
@@ -120,7 +117,7 @@ export default function POSInvoicePage({ params }: { params: { id: string } }) {
         </thead>
         <tbody>
           {invoice.items?.map((item) => (
-            <tr key={item.product_id}>
+            <tr key={item.id}>
               <td colSpan={4}>{item.productName || `Product ID: ${item.product_id}`}</td>
             </tr>
           ))}
