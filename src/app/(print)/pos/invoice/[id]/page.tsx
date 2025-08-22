@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { notFound } from 'next/navigation';
@@ -14,9 +13,9 @@ export default function POSInvoicePage({ params }: { params: { id: string } }) {
   const [customer, setCustomer] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { id } = params;
-
+  
   useEffect(() => {
+    const { id } = params;
     async function fetchData() {
         if (!id) return;
         setIsLoading(true);
@@ -43,7 +42,7 @@ export default function POSInvoicePage({ params }: { params: { id: string } }) {
         }
     }
     fetchData();
-  }, [id, toast]);
+  }, [params, toast]);
 
   useEffect(() => {
     if (!isLoading && invoice) {
