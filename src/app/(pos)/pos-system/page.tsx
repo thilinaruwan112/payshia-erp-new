@@ -342,7 +342,7 @@ export default function POSPage() {
             const formattedCustomers = customersData.map(c => ({
                 ...c,
                 id: c.customer_id,
-                name: `${c.customer_first_name} ${c.customer_last_name}`,
+                name: `${'c.customer_first_name'} ${'c.customer_last_name'}`,
             }));
             setCustomers([walkInCustomer, ...formattedCustomers]);
 
@@ -861,7 +861,7 @@ export default function POSPage() {
         steward_id: currentOrder.steward?.id || "N/A",
         cost_value: costValue,
         remark: `${currentOrder.orderType} order`,
-        ref_hold: status === '1' ? order.originalInvoiceNumber || 'direct' : null,
+        ref_hold: status === '1' ? (order.originalInvoiceNumber || "direct") : null,
         company_id: company_id,
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
