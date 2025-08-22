@@ -437,7 +437,7 @@ export default function POSPage() {
         setIsLoadingStewards(true);
         try {
             const [tablesResponse, stewardsResponse] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/master-tables/company/${company_id}`),
+                fetch(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`),
                 fetch(`https://server-erp.payshia.com/filter/users?user_status=3&company_id=${company_id}`)
             ]);
             
@@ -512,17 +512,23 @@ export default function POSPage() {
         const response = await fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
         if (!response.ok) throw new Error('Failed to fetch invoice items.');
         const fullInvoiceData: Invoice = await response.json();
-        const itemsToReturn = (fullInvoiceData.items || []).map((item: InvoiceItem): ReturnItem => ({
-          id: String(item.product_variant_id),
-          name: item.productName || `Product ID: ${item.product_id}`,
-          unit: 'Nos',
-          rate: parseFloat(String(item.item_price)),
-          quantity: 0, // Initial return quantity is 0
-          amount: 0,
-          reason: '',
-          productId: String(item.product_id),
-          productVariantId: String(item.product_variant_id),
-        }));
+        const itemsToReturn = (fullInvoiceData.items || []).map((item: InvoiceItem): ReturnItem => {
+            const productDetails = posProducts.find(p => p.id === String(item.product_id));
+            const variantDetails = productDetails?.variants?.find(v => v.id === String(item.product_variant_id));
+            const variantName = [productDetails?.name, variantDetails?.color, variantDetails?.size].filter(Boolean).join(' - ');
+
+            return {
+                id: String(item.product_variant_id),
+                name: item.productName || variantName || `Product ID: ${item.product_id}`,
+                unit: 'Nos',
+                rate: parseFloat(String(item.item_price)),
+                quantity: 0, // Initial return quantity is 0
+                amount: 0,
+                reason: '',
+                productId: String(item.product_id),
+                productVariantId: String(item.product_variant_id),
+            }
+        });
         setReturnItems(itemsToReturn);
       } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not load items for this invoice.' });
