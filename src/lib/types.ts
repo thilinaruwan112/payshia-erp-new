@@ -79,6 +79,7 @@ export type Location = {
   pos_status: string;
   pos_token: string;
   location_type: 'Retail' | 'Warehouse' | string;
+  company_id: number;
 };
 
 export type InventoryItem = {
@@ -112,6 +113,8 @@ export type User = {
   email?: string;
   phone?: string;
   address?: string;
+  address_line1?: string;
+  city_id?: string;
 };
 
 export type Collection = {
@@ -453,3 +456,15 @@ export type Table = {
     location_id: string;
     company_id: string;
 }
+
+export type Recipe = {
+    id: string;
+    finished_good_id: string;
+    recipe_type: 'A La Carte' | 'Item Recipe';
+    notes?: string;
+    items: {
+        ingredient_id: string;
+        quantity: number;
+        unit: string;
+    }[];
+};

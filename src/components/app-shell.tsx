@@ -53,6 +53,7 @@ import {
   Star,
   PlusSquare,
   LogOut,
+  ClipboardList,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -135,6 +136,13 @@ const navItems = [
       { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
       { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
     ],
+  },
+  {
+    label: 'Production',
+    icon: ClipboardList,
+    subItems: [
+        { href: '/production/bom', label: 'Bill of Materials', icon: FileText },
+    ]
   },
    {
     label: 'Suppliers',
@@ -468,12 +476,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const userName = localStorage.getItem('userName');
-    // Fetch full user details from an endpoint if needed, for now we use what's in local storage
+    const userEmail = localStorage.getItem('userEmail');
     if (userName) {
       setUser({
         name: userName,
-        email: `${userName.toLowerCase().replace(' ', '.')}@payshia.com`, // mock email
-        role: 'User', // mock role
+        email: userEmail || `${userName.toLowerCase().replace(' ', '.')}@payshia.com`,
+        role: 'User',
         avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`
       });
     }
