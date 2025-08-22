@@ -207,6 +207,10 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
             title: "Purchase Order Created",
             description: `PO #${result.po_number} has been created successfully.`,
         });
+        
+        // Open print view in new tab
+        window.open(`/purchasing/purchase-orders/${result.id}/print`, '_blank');
+
         router.push('/purchasing/purchase-orders');
         router.refresh();
 

@@ -20,8 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, PlusCircle, Star, Trash2 } from 'lucide-react';
-import type { Product } from '@/lib/types';
-import { inventory } from '@/lib/data';
+import type { Product, InventoryItem } from '@/lib/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,41 +38,41 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCurrency } from '@/components/currency-provider';
+import { useLocation } from '@/components/location-provider';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [planDetails, setPlanDetails] = useState({ hasAccess: true, limit: Infinity, usage: 0, name: '...' });
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
-  const [companyId, setCompanyId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const id = localStorage.getItem('companyId');
-    setCompanyId(id);
-  }, []);
+  const { company_id } = useLocation();
 
   const fetchProducts = useCallback(async () => {
-    if (!companyId) {
+    if (!company_id) {
         setIsLoading(false);
         return;
     };
     setIsLoading(true);
     try {
-      const [productsResponse, limitResponse] = await Promise.all([
-         fetch(`https://server-erp.payshia.com/products/get/filter/by-company?company_id=${companyId}`),
-         checkPlanLimit('products')
+      const [productsResponse, limitResponse, inventoryResponse] = await Promise.all([
+         fetch(`https://server-erp.payshia.com/products/get/filter/by-company?company_id=${company_id}`),
+         checkPlanLimit('products'),
+         fetch(`https://server-erp.payshia.com/inventory/company/${company_id}`)
       ]);
       
-      if (!productsResponse.ok) {
-        throw new Error('Failed to fetch products');
-      }
+      if (!productsResponse.ok) throw new Error('Failed to fetch products');
+      if (!inventoryResponse.ok) throw new Error('Failed to fetch inventory');
       
-      const data: Product[] = await productsResponse.json();
-      const parsedData = data.map(p => ({...p, price: parseFloat(p.price as any)}));
+      const productsData: Product[] = await productsResponse.json();
+      const inventoryData: InventoryItem[] = await inventoryResponse.json();
+      const parsedData = productsData.map(p => ({...p, price: parseFloat(p.price as any)}));
+
       setProducts(parsedData);
+      setInventory(inventoryData);
       setPlanDetails(limitResponse);
 
     } catch (error) {
@@ -86,7 +85,7 @@ export default function ProductsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [companyId, toast]);
+  }, [company_id, toast]);
 
   useEffect(() => {
     fetchProducts();

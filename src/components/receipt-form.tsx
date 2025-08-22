@@ -224,10 +224,17 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
             throw new Error(errorData.message || 'Failed to create receipt.');
         }
 
+        const result = await response.json();
+
         toast({
           title: "Receipt Created",
           description: `The payment receipt has been saved successfully.`,
         });
+
+        // Open print views
+        window.open(`/sales/receipts/${result.id}/print`, '_blank');
+        window.open(`/pos/receipt/${result.id}/print`, '_blank');
+
         router.push('/sales/receipts');
         router.refresh();
     } catch (error) {

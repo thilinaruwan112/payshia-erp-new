@@ -1,5 +1,5 @@
 
-import { plans } from './data';
+import { plans } from './mock-data/plans';
 import type { Plan, Location } from './types';
 
 // In a real app, you'd get this from the user's session or authentication context.

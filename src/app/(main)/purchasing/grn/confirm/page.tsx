@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -160,11 +159,17 @@ export default function GrnConfirmationPage() {
                 throw new Error(errorData.message || 'Failed to create GRN entry.');
             }
             
+            const result = await response.json();
+
             toast({
                 title: "GRN Created Successfully!",
                 description: `The goods for PO #${data.poNumber} have been recorded.`,
             });
             localStorage.removeItem('grnConfirmationData');
+            
+            // Open print view in new tab
+            window.open(`/purchasing/grn/${result.id}/print`, '_blank');
+            
             router.push('/purchasing/grn');
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';

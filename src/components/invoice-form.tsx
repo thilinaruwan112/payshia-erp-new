@@ -92,7 +92,7 @@ export function InvoiceForm({ productsWithVariants, customers, orders }: Invoice
   const { toast } = useToast();
   const { currentLocation } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
-  const [stockInfo, setStockInfo] = React.useState<Record<string, StockInfo[]>>({});
+  const [stockInfo, setStockInfo] = React.useState<Record<number, StockInfo[]>>({});
 
   const allSkus = productsWithVariants.flatMap(p => (p.variants || []).map(v => ({
       label: `${p.product.name} (${v.sku})`,
@@ -257,6 +257,9 @@ export function InvoiceForm({ productsWithVariants, customers, orders }: Invoice
             title: "Invoice Created Successfully!",
             description: `Invoice #${result.invoice_number} has been created.`,
         });
+        
+        window.open(`/sales/invoices/${result.invoice_number}/print`, '_blank');
+        
         router.push('/sales/invoices');
         router.refresh();
 
