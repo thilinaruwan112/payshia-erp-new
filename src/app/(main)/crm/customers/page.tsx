@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, PlusCircle, Star } from 'lucide-react';
-import { users, orders } from '@/lib/data';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -31,8 +30,12 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { User } from '@/lib/types';
+import type { User, Order } from '@/lib/types';
 import { useCurrency } from '@/components/currency-provider';
+import { useState, useEffect, useMemo } from 'react';
+import { useLocation } from '@/components/location-provider';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getLoyaltyTier = (points: number) => {
   if (points >= 500) return 'Platinum';
@@ -59,24 +62,60 @@ const getTierColor = (tier: LoyaltyTier) => {
 
 export default function CustomersPage() {
   const { currencySymbol } = useCurrency();
-  const customers = users.filter((user) => user.role === 'Customer');
+  const { company_id } = useLocation();
+  const { toast } = useToast();
+  const [customers, setCustomers] = useState<User[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const customerData = customers.map((customer) => {
-    const customerOrders = orders.filter(
-      (order) => order.customerName === customer.name
-    );
-    const totalSpent = customerOrders.reduce(
-      (acc, order) => acc + order.total,
-      0
-    );
-    const loyaltyTier = getLoyaltyTier(customer.loyaltyPoints || 0);
-    return {
-      ...customer,
-      orderCount: customerOrders.length,
-      totalSpent,
-      loyaltyTier,
-    };
-  });
+  useEffect(() => {
+    if (!company_id) {
+      setIsLoading(false);
+      return;
+    }
+    async function fetchData() {
+        setIsLoading(true);
+        try {
+            const [customersRes, ordersRes] = await Promise.all([
+                fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`)
+            ]);
+            if (!customersRes.ok) throw new Error('Failed to fetch customers');
+            if (!ordersRes.ok) throw new Error('Failed to fetch orders');
+            
+            const customersData = await customersRes.json();
+            const ordersData = await ordersRes.json();
+            setCustomers(customersData || []);
+            setOrders(ordersData || []);
+
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customer data.' });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchData();
+  }, [company_id, toast]);
+
+
+  const customerData = useMemo(() => {
+    return customers.map((customer) => {
+      const customerOrders = orders.filter(
+        (order) => order.customerName === customer.customer_id
+      );
+      const totalSpent = customerOrders.reduce(
+        (acc, order) => acc + (order.total || 0),
+        0
+      );
+      const loyaltyTier = getLoyaltyTier(customer.loyaltyPoints || 0);
+      return {
+        ...customer,
+        orderCount: customerOrders.length,
+        totalSpent,
+        loyaltyTier,
+      };
+    });
+  }, [customers, orders]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -122,24 +161,29 @@ export default function CustomersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {customerData.map((customer) => (
+              {isLoading ? (
+                Array.from({length: 5}).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full" /><div className="space-y-2"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-24" /></div></div></TableCell>
+                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-12 rounded-full mx-auto" /></TableCell>
+                        <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                    </TableRow>
+                ))
+              ) : customerData.map((customer) => (
                 <TableRow key={customer.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
                         <AvatarImage src={customer.avatar} alt={customer.name} data-ai-hint="profile picture"/>
                         <AvatarFallback>
-                          {customer.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')}
+                          {customer.customer_first_name?.charAt(0)}{customer.customer_last_name?.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{customer.name}</p>
+                        <p className="font-medium">{customer.customer_first_name} {customer.customer_last_name}</p>
                         <div className="text-sm text-muted-foreground flex items-center gap-2">
-                          <span>{customer.role}</span>
-                           <span className="text-xs">&bull;</span>
                            <span className={cn("font-semibold", getTierColor(customer.loyaltyTier).split(' ')[1])}>{customer.loyaltyTier}</span>
                         </div>
                       </div>
@@ -187,3 +231,5 @@ export default function CustomersPage() {
     </div>
   );
 }
+
+    

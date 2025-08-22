@@ -23,14 +23,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import {
   DollarSign,
   Package,
   ShoppingCart,
   Users,
   AlertTriangle,
-  ArrowUp,
   Star,
 } from 'lucide-react';
 import {
@@ -44,11 +42,55 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { orders, inventory, products, users } from '@/lib/data';
 import { addDays, format, isAfter, subDays } from 'date-fns';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import type { Order, InventoryItem, Product, User } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation } from '@/components/location-provider';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ReportsPage() {
+    const { toast } = useToast();
+    const { company_id } = useLocation();
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!company_id) {
+            setIsLoading(false);
+            return;
+        }
+        async function fetchData() {
+            setIsLoading(true);
+            try {
+                const [ordersRes, inventoryRes, productsRes, usersRes] = await Promise.all([
+                    fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`),
+                    fetch(`https://server-erp.payshia.com/inventory/company/${company_id}`),
+                    fetch('https://server-erp.payshia.com/products'),
+                    fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
+                ]);
+
+                if (!ordersRes.ok || !inventoryRes.ok || !productsRes.ok || !usersRes.ok) {
+                    throw new Error('Failed to fetch report data');
+                }
+
+                setOrders(await ordersRes.json());
+                setInventory(await inventoryRes.json());
+                setProducts(await productsRes.json());
+                setUsers(await usersRes.json());
+
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch report data.' });
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchData();
+    }, [company_id, toast]);
+
   // Sales Data Processing
   const salesData = useMemo(() => {
     const sevenDaysAgo = subDays(new Date(), 7);
@@ -65,7 +107,7 @@ export default function ReportsPage() {
     relevantOrders.forEach((order) => {
       if (order.status !== 'Cancelled') {
         const date = format(new Date(order.date), 'yyyy-MM-dd');
-        dailySales.set(date, (dailySales.get(date) || 0) + order.total);
+        dailySales.set(date, (dailySales.get(date) || 0) + (order.total || 0));
       }
     });
 
@@ -73,11 +115,11 @@ export default function ReportsPage() {
       name: format(new Date(date), 'MMM d'),
       total,
     }));
-  }, []);
+  }, [orders]);
 
   const totalRevenue = orders
     .filter((o) => o.status !== 'Cancelled')
-    .reduce((acc, order) => acc + order.total, 0);
+    .reduce((acc, order) => acc + (order.total || 0), 0);
   const totalOrders = orders.filter((o) => o.status !== 'Cancelled').length;
 
   // Inventory Data Processing
@@ -90,17 +132,17 @@ export default function ReportsPage() {
     .slice(0, 5);
 
   // Customer Data Processing
-  const newCustomers = users.filter((u) => u.role === 'Customer').slice(0, 5); // Mock data
+  const newCustomers = users.slice(0, 5); // Mock data
   const topCustomers = [...orders]
     .reduce((acc, order) => {
       const existing = acc.find((c) => c.name === order.customerName);
       if (existing) {
-        existing.totalSpent += order.total;
+        existing.totalSpent += (order.total || 0);
         existing.orderCount += 1;
       } else {
         acc.push({
           name: order.customerName,
-          totalSpent: order.total,
+          totalSpent: (order.total || 0),
           orderCount: 1,
         });
       }
@@ -139,9 +181,9 @@ export default function ReportsPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                {isLoading ? <Skeleton className="h-7 w-32" /> : <div className="text-2xl font-bold">
                   ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
+                </div>}
                 <p className="text-xs text-muted-foreground">
                   +20.1% from last month
                 </p>
@@ -155,9 +197,9 @@ export default function ReportsPage() {
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                {isLoading ? <Skeleton className="h-7 w-20" /> : <div className="text-2xl font-bold">
                   +{totalOrders.toLocaleString()}
-                </div>
+                </div>}
                 <p className="text-xs text-muted-foreground">
                   +180.1% from last month
                 </p>
@@ -171,9 +213,9 @@ export default function ReportsPage() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
+                {isLoading ? <Skeleton className="h-7 w-24" /> : <div className="text-2xl font-bold">
                   ${(totalRevenue / totalOrders).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
+                </div>}
                 <p className="text-xs text-muted-foreground">
                   +19% from last month
                 </p>
@@ -188,7 +230,7 @@ export default function ReportsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={350}>
+              {isLoading ? <Skeleton className="h-[350px]" /> : <ResponsiveContainer width="100%" height={350}>
                 <BarChart data={salesData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
@@ -218,10 +260,9 @@ export default function ReportsPage() {
                     dataKey="total"
                     fill="hsl(var(--primary))"
                     radius={[4, 4, 0, 0]}
-                    activeBar={<Rectangle fill="hsl(var(--primary) / 0.8)" />}
                   />
                 </BarChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer>}
             </CardContent>
           </Card>
         </TabsContent>
@@ -234,7 +275,7 @@ export default function ReportsPage() {
                     <Package className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{products.flatMap(p => p.variants).length}</div>
+                    {isLoading ? <Skeleton className="h-7 w-20" /> : <div className="text-2xl font-bold">{products.flatMap(p => p.variants).length}</div>}
                     <p className="text-xs text-muted-foreground">Total unique product variants</p>
                 </CardContent>
             </Card>
@@ -244,7 +285,7 @@ export default function ReportsPage() {
                     <AlertTriangle className="h-4 w-4 text-yellow-500" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{lowStockItems.length}</div>
+                    {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{lowStockItems.length}</div>}
                      <p className="text-xs text-muted-foreground">Items nearing reorder level</p>
                 </CardContent>
             </Card>
@@ -254,7 +295,7 @@ export default function ReportsPage() {
                     <AlertTriangle className="h-4 w-4 text-destructive" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{outOfStockItems.length}</div>
+                    {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{outOfStockItems.length}</div>}
                     <p className="text-xs text-muted-foreground">Items with zero stock</p>
                 </CardContent>
             </Card>
@@ -273,7 +314,7 @@ export default function ReportsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mostStockedItems.map(item => {
+                            {isLoading ? Array.from({length: 5}).map((_, i) => <TableRow key={i}><TableCell><Skeleton className="h-4 w-48" /></TableCell><TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell></TableRow>) : mostStockedItems.map(item => {
                                 const product = products.find(p => p.variants.some(v => v.sku === item.sku));
                                 return (
                                     <TableRow key={item.sku}>
@@ -297,12 +338,11 @@ export default function ReportsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                           {newCustomers.map(customer => (
+                           {isLoading ? Array.from({length: 5}).map((_, i) => <div key={i} className="flex items-center gap-4"><Skeleton className="h-10 w-10 rounded-full" /><div className="space-y-2"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-20" /></div></div>) : newCustomers.map(customer => (
                              <div key={customer.id} className="flex items-center">
                                 <Users className="h-4 w-4 mr-4 text-muted-foreground" />
                                 <div className="ml-4 space-y-1">
-                                    <p className="text-sm font-medium leading-none">{customer.name}</p>
-                                    <p className="text-sm text-muted-foreground">{customer.role}</p>
+                                    <p className="text-sm font-medium leading-none">{customer.customer_first_name} {customer.customer_last_name}</p>
                                 </div>
                              </div>
                            ))}
@@ -323,7 +363,7 @@ export default function ReportsPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {topCustomers.map(customer => (
+                                {isLoading ? Array.from({length: 5}).map((_, i) => <TableRow key={i}><TableCell><Skeleton className="h-4 w-32" /></TableCell><TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell></TableRow>) : topCustomers.map(customer => (
                                     <TableRow key={customer.name}>
                                         <TableCell>{customer.name}</TableCell>
                                         <TableCell className="text-right">${customer.totalSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
@@ -347,9 +387,9 @@ export default function ReportsPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {topLoyaltyCustomers.map(customer => (
+                                {isLoading ? Array.from({length: 5}).map((_, i) => <TableRow key={i}><TableCell><Skeleton className="h-4 w-32" /></TableCell><TableCell><Skeleton className="h-4 w-12 ml-auto" /></TableCell></TableRow>) : topLoyaltyCustomers.map(customer => (
                                     <TableRow key={customer.id}>
-                                        <TableCell>{customer.name}</TableCell>
+                                        <TableCell>{customer.customer_first_name} {customer.customer_last_name}</TableCell>
                                         <TableCell className="text-right flex items-center justify-end gap-1">
                                             <Star className="w-4 h-4 text-yellow-400" />
                                             <span className="font-medium">{(customer.loyaltyPoints || 0).toLocaleString()}</span>
@@ -366,3 +406,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+    

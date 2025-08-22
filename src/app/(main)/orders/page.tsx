@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -20,7 +19,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,10 +27,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { orders } from '@/lib/data';
-import type { Order } from '@/lib/types';
+import type { Order, User } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
+import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation } from '@/components/location-provider';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getStatusColor = (status: Order['status']) => {
   switch (status) {
@@ -51,6 +53,56 @@ const getStatusColor = (status: Order['status']) => {
 };
 
 export default function OrdersPage() {
+    const { toast } = useToast();
+    const { company_id } = useLocation();
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [customers, setCustomers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!company_id) {
+            setIsLoading(false);
+            return;
+        }
+
+        async function fetchData() {
+            setIsLoading(true);
+            try {
+                const [ordersResponse, customersResponse] = await Promise.all([
+                    fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`),
+                    fetch('https://server-erp.payshia.com/customers')
+                ]);
+
+                if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
+                if (!customersResponse.ok) throw new Error('Failed to fetch customers');
+
+                const ordersData = await ordersResponse.json();
+                const customersData = await customersResponse.json();
+
+                setOrders(ordersData || []);
+                setCustomers(customersData || []);
+
+            } catch (error) {
+                 const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+                 toast({
+                    variant: 'destructive',
+                    title: 'Failed to load data',
+                    description: errorMessage
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        
+        fetchData();
+    }, [company_id, toast]);
+
+    const getCustomerName = (customerId: string) => {
+        const customer = customers.find(c => c.customer_id === customerId);
+        return customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : customerId;
+    }
+
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -86,11 +138,22 @@ export default function OrdersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orders.map((order) => (
+                {isLoading ? (
+                    Array.from({length: 5}).map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                            <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                            <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                        </TableRow>
+                    ))
+                ) : orders.map((order) => (
                   <TableRow key={order.id}>
                     <TableCell>
                       <div className="font-medium">{order.id}</div>
-                      <div className="text-sm text-muted-foreground">{order.customerName}</div>
+                      <div className="text-sm text-muted-foreground">{getCustomerName(order.customerName)}</div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className={cn(getStatusColor(order.status))}>
@@ -102,7 +165,7 @@ export default function OrdersPage() {
                     </TableCell>
                     <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
-                      ${order.total.toFixed(2)}
+                      ${(order.total || 0).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -127,13 +190,15 @@ export default function OrdersPage() {
 
           {/* Mobile Card View */}
           <div className="sm:hidden space-y-4">
-            {orders.map((order) => (
+             {isLoading ? (
+                 Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)
+            ) : orders.map((order) => (
               <Card key={order.id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-base">{order.id}</CardTitle>
-                      <CardDescription>{order.customerName}</CardDescription>
+                      <CardDescription>{getCustomerName(order.customerName)}</CardDescription>
                     </div>
                      <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -167,7 +232,7 @@ export default function OrdersPage() {
                 <CardFooter className="bg-muted/50 p-4">
                   <div className="flex justify-between w-full font-semibold">
                       <span>Total</span>
-                      <span>${order.total.toFixed(2)}</span>
+                      <span>${(order.total || 0).toFixed(2)}</span>
                   </div>
                 </CardFooter>
               </Card>
@@ -178,3 +243,5 @@ export default function OrdersPage() {
     </div>
   );
 }
+
+    

@@ -28,45 +28,77 @@ import {
   TrendingUp,
   Loader2,
 } from 'lucide-react';
-import { inventory, locations, products, orders } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { SalesChart } from '@/components/sales-chart';
 import { StockChart } from '@/components/stock-chart';
 import { useLocation } from '@/components/location-provider';
 import { useMemo, useEffect, useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import type { InventoryItem, Product } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 export default function Dashboard() {
-  const { currentLocation, isLoading } = useLocation();
+  const { currentLocation, isLoading: isLocationLoading, availableLocations } = useLocation();
   const [companyName, setCompanyName] = useState('');
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     const name = localStorage.getItem('companyName');
     setCompanyName(name || 'Your Company');
   }, []);
+  
+  useEffect(() => {
+    if (!currentLocation) {
+        setIsLoadingData(false);
+        return;
+    }
+    async function fetchData() {
+        setIsLoadingData(true);
+        try {
+            const [inventoryRes, productsRes] = await Promise.all([
+                fetch(`https://server-erp.payshia.com/inventory/location/${currentLocation.location_id}`),
+                fetch('https://server-erp.payshia.com/products')
+            ]);
+            if (!inventoryRes.ok) throw new Error('Failed to fetch inventory');
+            if (!productsRes.ok) throw new Error('Failed to fetch products');
 
-  const locationInventory = useMemo(() => {
-    if (!currentLocation) return [];
-    return inventory.filter(item => item.locationId === currentLocation.location_id);
-  }, [currentLocation]);
+            setInventory(await inventoryRes.json());
+            setProducts(await productsRes.json());
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error fetching dashboard data',
+                description: 'Could not load inventory and product data.'
+            })
+        } finally {
+            setIsLoadingData(false);
+        }
+    }
+    fetchData();
+  }, [currentLocation, toast]);
 
   const dashboardStats = useMemo(() => {
-    const lowStockItems = locationInventory.filter(
+    const lowStockItems = inventory.filter(
       (item) => item.stock > 0 && item.stock <= item.reorderLevel
     ).length;
-    const totalStock = locationInventory.reduce((acc, item) => acc + item.stock, 0);
+    const totalStock = inventory.reduce((acc, item) => acc + item.stock, 0);
 
-    const productIdsInLocation = new Set(locationInventory.map(i => i.productId));
+    const productIdsInLocation = new Set(inventory.map(i => i.productId));
     const skusInLocation = products.filter(p => productIdsInLocation.has(p.id))
                                    .flatMap(p => p.variants)
-                                   .filter(v => locationInventory.some(i => i.sku === v.sku));
+                                   .filter(v => inventory.some(i => i.sku === v.sku));
 
     const totalSKUs = skusInLocation.length;
 
     return { lowStockItems, totalStock, totalSKUs };
-  }, [locationInventory, products]);
+  }, [inventory, products]);
   
-  if (isLoading) {
+  if (isLocationLoading) {
     return (
         <div className="flex h-full flex-1 items-center justify-center">
             <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -120,7 +152,7 @@ export default function Dashboard() {
             <Boxes className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.totalStock.toLocaleString()}</div>
+             {isLoadingData ? <Skeleton className="h-7 w-20" /> : <div className="text-2xl font-bold">{dashboardStats.totalStock.toLocaleString()}</div>}
             <p className="text-xs text-muted-foreground">Units in {currentLocation.location_name}</p>
           </CardContent>
         </Card>
@@ -130,7 +162,7 @@ export default function Dashboard() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.totalSKUs}</div>
+            {isLoadingData ? <Skeleton className="h-7 w-20" /> : <div className="text-2xl font-bold">{dashboardStats.totalSKUs}</div>}
             <p className="text-xs text-muted-foreground">Unique variants in {currentLocation.location_name}</p>
           </CardContent>
         </Card>
@@ -140,7 +172,7 @@ export default function Dashboard() {
             <Warehouse className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{locations.length}</div>
+            <div className="text-2xl font-bold">{availableLocations.length}</div>
             <p className="text-xs text-muted-foreground">Total warehouses and stores</p>
           </CardContent>
         </Card>
@@ -150,7 +182,7 @@ export default function Dashboard() {
             <AlertTriangle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardStats.lowStockItems}</div>
+            {isLoadingData ? <Skeleton className="h-7 w-20" /> : <div className="text-2xl font-bold">{dashboardStats.lowStockItems}</div>}
             <p className="text-xs text-muted-foreground">Items needing reorder in {currentLocation.location_name}</p>
           </CardContent>
         </Card>
@@ -208,3 +240,5 @@ export default function Dashboard() {
     </div>
   );
 }
+
+    

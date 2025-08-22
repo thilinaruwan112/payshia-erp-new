@@ -1,6 +1,8 @@
 
+
 'use client';
 
+import React from 'react';
 import {
   Card,
   CardContent,
@@ -8,38 +10,74 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { DollarSign, Receipt, TrendingUp, TrendingDown, Package, ShoppingCart } from 'lucide-react';
-import { orders, chartOfAccounts } from '@/lib/data';
+import { DollarSign, Receipt, TrendingUp, TrendingDown } from 'lucide-react';
 import { useMemo } from 'react';
-import type { Account } from '@/lib/types';
+import type { Account, Order } from '@/lib/types';
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Legend,
-  Rectangle,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import { useCurrency } from '@/components/currency-provider';
+import { useLocation } from '@/components/location-provider';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AccountingDashboardPage() {
     const { currencySymbol } = useCurrency();
+    const { company_id } = useLocation();
+    const { toast } = useToast();
+    const [orders, setOrders] = React.useState<Order[]>([]);
+    const [accounts, setAccounts] = React.useState<Account[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    React.useEffect(() => {
+      if (!company_id) {
+        setIsLoading(false);
+        return;
+      }
+      async function fetchData() {
+        setIsLoading(true);
+        try {
+            const [ordersRes, accountsRes] = await Promise.all([
+                fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`)
+            ]);
+
+            if (!ordersRes.ok) throw new Error('Failed to fetch orders');
+            if (!accountsRes.ok) throw new Error('Failed to fetch chart of accounts');
+
+            setOrders(await ordersRes.json());
+            setAccounts(await accountsRes.json());
+
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch dashboard data.' });
+        } finally {
+            setIsLoading(false);
+        }
+      }
+      fetchData();
+    }, [company_id, toast]);
+
+
   const financialSummary = useMemo(() => {
     const totalRevenue = orders
       .filter((o) => o.status !== 'Cancelled')
-      .reduce((acc, order) => acc + order.total, 0);
+      .reduce((acc, order) => acc + (order.total || 0), 0);
 
-    const totalExpenses = chartOfAccounts
+    const totalExpenses = accounts
       .filter((acc) => acc.type === 'Expense')
-      .reduce((acc, expense) => acc + expense.balance, 0);
+      .reduce((acc, expense) => acc + (expense.balance || 0), 0);
       
     const netIncome = totalRevenue - totalExpenses;
 
-    const accountsPayable = chartOfAccounts.find(acc => acc.name === 'Accounts Payable')?.balance || 0;
-    const accountsReceivable = chartOfAccounts.find(acc => acc.name === 'Accounts Receivable')?.balance || 0;
+    const accountsPayable = accounts.find(acc => acc.name === 'Accounts Payable')?.balance || 0;
+    const accountsReceivable = accounts.find(acc => acc.name === 'Accounts Receivable')?.balance || 0;
 
     return {
       totalRevenue,
@@ -48,11 +86,26 @@ export default function AccountingDashboardPage() {
       accountsPayable,
       accountsReceivable,
     };
-  }, []);
+  }, [orders, accounts]);
   
   const chartData = [
     { name: 'Financials', Revenue: financialSummary.totalRevenue, Expenses: financialSummary.totalExpenses, 'Net Income': financialSummary.netIncome },
   ];
+
+  if (isLoading) {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-8 w-1/3" />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+            </div>
+            <Skeleton className="h-96" />
+        </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -138,3 +191,5 @@ export default function AccountingDashboardPage() {
     </div>
   );
 }
+
+    

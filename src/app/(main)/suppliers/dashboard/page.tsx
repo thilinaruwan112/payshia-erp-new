@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -23,28 +24,66 @@ import {
   Truck,
   DollarSign
 } from 'lucide-react';
-import { suppliers, purchaseOrders, goodsReceivedNotes, payments } from '@/lib/data';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useCurrency } from '@/components/currency-provider';
 import Link from 'next/link';
+import type { Supplier, PurchaseOrder, GoodsReceivedNote, PaymentReceipt } from '@/lib/types';
+import { useLocation } from '@/components/location-provider';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function SupplierDashboardPage() {
   const { currencySymbol } = useCurrency();
+  const { company_id } = useLocation();
+  const { toast } = useToast();
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [grns, setGrns] = useState<GoodsReceivedNote[]>([]);
+  const [payments, setPayments] = useState<PaymentReceipt[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!company_id) {
+        setIsLoading(false);
+        return;
+    }
+    async function fetchData() {
+        setIsLoading(true);
+        try {
+            const [suppliersRes, poRes, grnRes] = await Promise.all([
+                fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/grn/company/${company_id}`),
+            ]);
+
+            if (!suppliersRes.ok || !poRes.ok || !grnRes.ok) {
+                throw new Error('Failed to fetch supplier dashboard data');
+            }
+
+            setSuppliers(await suppliersRes.json());
+            setPurchaseOrders(await poRes.json());
+            setGrns(await grnRes.json());
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch supplier dashboard data.' });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchData();
+  }, [company_id, toast]);
     
   const supplierStats = useMemo(() => {
     const totalSuppliers = suppliers.length;
     
-    // Assuming PO total represents amount owed until a payment is explicitly made against it.
-    // In a real system, you'd check payment status.
+    // This is a simplified calculation. A real system would have better payment tracking.
     const totalOwed = purchaseOrders
-        .filter(po => po.status !== 'Received') // A proxy for not fully paid/received
-        .reduce((acc, order) => acc + order.total, 0);
+        .filter(po => po.po_status !== '3') // Assuming not cancelled
+        .reduce((acc, order) => acc + parseFloat(order.sub_total || '0'), 0);
 
-    const recentPayments = [...payments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
-    const recentGrns = [...goodsReceivedNotes].sort((a, b) => new Date(b.receivedDate).getTime() - new Date(a.date).getTime()).slice(0, 5);
+    const recentGrns = grns.slice(0, 5);
     
-    return { totalSuppliers, totalOwed, recentPayments, recentGrns };
-  }, []);
+    return { totalSuppliers, totalOwed, recentGrns };
+  }, [suppliers, purchaseOrders, grns]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -61,7 +100,7 @@ export default function SupplierDashboardPage() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{supplierStats.totalSuppliers}</div>
+                    {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{supplierStats.totalSuppliers}</div>}
                     <p className="text-xs text-muted-foreground">
                          <Link href="/suppliers" className="hover:underline">
                             Manage all suppliers
@@ -75,7 +114,7 @@ export default function SupplierDashboardPage() {
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{currencySymbol}{supplierStats.totalOwed.toFixed(2)}</div>
+                    {isLoading ? <Skeleton className="h-7 w-24" /> : <div className="text-2xl font-bold">{currencySymbol}{supplierStats.totalOwed.toFixed(2)}</div>}
                     <p className="text-xs text-muted-foreground">Across all pending purchase orders</p>
                 </CardContent>
             </Card>
@@ -85,9 +124,9 @@ export default function SupplierDashboardPage() {
                     <Truck className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{supplierStats.recentGrns.length}</div>
+                    {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{supplierStats.recentGrns.length}</div>}
                     <p className="text-xs text-muted-foreground">
-                       In the last 7 days
+                       Total Goods Received Notes
                     </p>
                 </CardContent>
             </Card>
@@ -97,7 +136,7 @@ export default function SupplierDashboardPage() {
                     <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{supplierStats.recentPayments.length}</div>
+                     {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{payments.length}</div>}
                     <p className="text-xs text-muted-foreground">
                         <Link href="/accounting/payments" className="hover:underline">
                             View all payments
@@ -122,10 +161,10 @@ export default function SupplierDashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {supplierStats.recentPayments.map(payment => (
+                        {isLoading ? Array.from({length: 5}).map((_, i) => <TableRow key={i}><TableCell><Skeleton className="h-4 w-32" /></TableCell><TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell></TableRow>) : payments.map(payment => (
                             <TableRow key={payment.id}>
                                 <TableCell>
-                                    <div className="font-medium">{payment.supplierName}</div>
+                                    <div className="font-medium">{suppliers.find(s => s.id === payment.id)?.supplier_name}</div>
                                     <div className="text-sm text-muted-foreground">{new Date(payment.date).toLocaleDateString()}</div>
                                 </TableCell>
                                 <TableCell className="text-right font-mono">{currencySymbol}{payment.amount.toFixed(2)}</TableCell>
@@ -149,14 +188,14 @@ export default function SupplierDashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                         {supplierStats.recentGrns.map(grn => (
+                         {isLoading ? Array.from({length: 5}).map((_, i) => <TableRow key={i}><TableCell><Skeleton className="h-4 w-32" /></TableCell><TableCell><Skeleton className="h-6 w-12 rounded-full ml-auto" /></TableCell></TableRow>) : supplierStats.recentGrns.map(grn => (
                             <TableRow key={grn.id}>
                                 <TableCell>
-                                     <div className="font-medium">{grn.supplierName}</div>
-                                    <div className="text-sm text-muted-foreground">{grn.id}</div>
+                                     <div className="font-medium">{suppliers.find(s => s.supplier_id === grn.supplier_id)?.supplier_name}</div>
+                                    <div className="text-sm text-muted-foreground">{grn.grn_number}</div>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                    <Badge variant="secondary">{grn.itemCount}</Badge>
+                                    <Badge variant="secondary">{grn.items?.length || 0}</Badge>
                                 </TableCell>
                             </TableRow>
                         ))}
@@ -168,3 +207,5 @@ export default function SupplierDashboardPage() {
     </div>
   );
 }
+
+    

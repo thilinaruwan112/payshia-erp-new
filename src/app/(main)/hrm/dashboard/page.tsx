@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -14,10 +15,41 @@ import {
   Calendar,
   UserCheck,
 } from 'lucide-react';
-import { users } from '@/lib/data';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import type { User } from '@/lib/types';
+import { useLocation } from '@/components/location-provider';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function HrmDashboardPage() {
+    const { company_id } = useLocation();
+    const { toast } = useToast();
+    const [users, setUsers] = useState<User[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!company_id) {
+            setIsLoading(false);
+            return;
+        }
+        async function fetchUsers() {
+            setIsLoading(true);
+            try {
+                const response = await fetch(`https://server-erp.payshia.com/users/company/${company_id}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch users');
+                }
+                const data = await response.json();
+                setUsers(data);
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch user data.' });
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchUsers();
+    }, [company_id, toast]);
+
     
   const hrmStats = useMemo(() => {
     const totalEmployees = users.filter(u => u.role !== 'Customer').length;
@@ -25,7 +57,7 @@ export default function HrmDashboardPage() {
     const totalRoles = roles.length;
     
     return { totalEmployees, totalRoles };
-  }, []);
+  }, [users]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,7 +74,7 @@ export default function HrmDashboardPage() {
                     <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{hrmStats.totalEmployees}</div>
+                    {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{hrmStats.totalEmployees}</div>}
                     <p className="text-xs text-muted-foreground">Total active employees</p>
                 </CardContent>
             </Card>
@@ -52,7 +84,7 @@ export default function HrmDashboardPage() {
                     <Briefcase className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                    <div className="text-2xl font-bold">{hrmStats.totalRoles}</div>
+                     {isLoading ? <Skeleton className="h-7 w-12" /> : <div className="text-2xl font-bold">{hrmStats.totalRoles}</div>}
                     <p className="text-xs text-muted-foreground">Distinct roles in the company</p>
                 </CardContent>
             </Card>
@@ -95,3 +127,5 @@ export default function HrmDashboardPage() {
     </div>
   );
 }
+
+    
