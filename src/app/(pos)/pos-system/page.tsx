@@ -442,8 +442,8 @@ export default function POSPage() {
             ]);
             
             if (!tablesResponse.ok) throw new Error('Failed to fetch tables');
-            const tablesData = await tablesResponse.json();
-            setTables(tablesData?.data || []);
+            const tablesData: TableType[] = await tablesResponse.json();
+            setTables(tablesData || []);
 
             if (!stewardsResponse.ok) throw new Error('Failed to fetch stewards');
             const stewardsData = await stewardsResponse.json();
