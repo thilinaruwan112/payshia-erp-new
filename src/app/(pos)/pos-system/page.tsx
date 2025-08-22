@@ -304,6 +304,7 @@ export default function POSPage() {
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
   const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
+  const [balanceDetails, setBalanceDetails] = useState<BalanceDetails | null>(null);
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -859,7 +860,7 @@ export default function POSPage() {
         steward_id: currentOrder.steward?.id || "N/A",
         cost_value: costValue,
         remark: `${currentOrder.orderType} order`,
-        ref_hold: status === '1' ? 'direct' : null,
+        ref_hold: status === '1' ? order.originalInvoiceNumber || 'direct' : null,
         company_id: company_id,
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
@@ -875,6 +876,7 @@ export default function POSPage() {
             hold_status: 0,
             printed_status: 1,
             product_variant_id: parseInt(item.product.variant.id, 10),
+            company_id: company_id,
         })),
     };
   };

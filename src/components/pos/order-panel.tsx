@@ -43,6 +43,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Switch } from '../ui/switch';
 import { format } from 'date-fns';
+import { useLocation } from '../location-provider';
 
 interface OrderPanelProps {
   order: ActiveOrder;
@@ -306,6 +307,7 @@ export function OrderPanel({
   onUpdateCustomer,
 }: OrderPanelProps) {
   const { toast } = useToast();
+  const { company_id } = useLocation();
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
   const [isServiceChargeOpen, setServiceChargeOpen] = React.useState(false);
@@ -314,11 +316,11 @@ export function OrderPanel({
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
 
   const createInvoicePayload = (status: '1' | '2', paymentMethod = 'N/A', tenderedAmount = 0) => {
-    if (!currentLocation) {
+    if (!currentLocation || !company_id) {
         toast({
             variant: "destructive",
-            title: "Location not selected",
-            description: "Please select a location for the POS."
+            title: "Location or Company not selected",
+            description: "Please select a location and ensure company is set."
         });
         return null;
     }
@@ -348,7 +350,7 @@ export function OrderPanel({
         cost_value: costValue,
         remark: `${orderType} order`,
         ref_hold: status === '1' ? refHoldValue : null,
-        company_id: "1",
+        company_id: company_id,
         chanel: "POS",
         items: cart.map(item => ({
             user_id: 1, // Default user_id as per example
@@ -363,6 +365,7 @@ export function OrderPanel({
             hold_status: 0,
             printed_status: 1,
             product_variant_id: parseInt(item.product.variant.id, 10),
+            company_id: company_id,
         })),
     };
   };
