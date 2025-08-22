@@ -468,3 +468,11 @@ export type Recipe = {
         unit: string;
     }[];
 };
+
+export type ProductionNote = {
+    id: string;
+    finished_good_id: string;
+    quantity_produced: number;
+    notes?: string;
+    production_date: string;
+};

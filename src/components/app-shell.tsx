@@ -142,6 +142,7 @@ const navItems = [
     icon: ClipboardList,
     subItems: [
         { href: '/production/bom', label: 'Bill of Materials', icon: FileText },
+        { href: '/production/production-note/new', label: 'Production Note', icon: PlusCircle },
     ]
   },
    {
