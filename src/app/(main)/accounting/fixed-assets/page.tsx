@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { fixedAssets } from '@/lib/data';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -42,6 +41,49 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+
+const fixedAssets: FixedAsset[] = [
+    {
+        id: 'asset-001',
+        name: 'MacBook Pro 16"',
+        assetType: 'Electronics',
+        purchaseDate: '2023-01-15',
+        purchaseCost: 2500,
+        accumulatedDepreciation: 500,
+        status: 'In Use',
+        depreciationMethod: 'Straight-Line'
+    },
+    {
+        id: 'asset-002',
+        name: 'Office Desk',
+        assetType: 'Furniture',
+        purchaseDate: '2022-03-20',
+        purchaseCost: 300,
+        accumulatedDepreciation: 120,
+        status: 'In Use',
+        depreciationMethod: 'Straight-Line'
+    },
+    {
+        id: 'asset-003',
+        name: 'Ford Transit Van',
+        assetType: 'Vehicles',
+        purchaseDate: '2021-08-01',
+        purchaseCost: 35000,
+        accumulatedDepreciation: 14000,
+        status: 'Under Maintenance',
+        depreciationMethod: 'Double Declining Balance'
+    },
+     {
+        id: 'asset-004',
+        name: 'Warehouse Forklift',
+        assetType: 'Machinery',
+        purchaseDate: '2020-05-10',
+        purchaseCost: 25000,
+        accumulatedDepreciation: 15000,
+        status: 'In Use',
+        depreciationMethod: 'Double Declining Balance'
+    }
+];
 
 const getStatusColor = (status: FixedAsset['status']) => {
   switch (status) {

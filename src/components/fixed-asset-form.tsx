@@ -36,7 +36,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { fixedAssets } from "@/lib/data";
 import { Combobox } from "./ui/combobox";
 import { useCurrency } from "./currency-provider";
 
@@ -54,6 +53,14 @@ type FixedAssetFormValues = z.infer<typeof fixedAssetFormSchema>;
 interface FixedAssetFormProps {
     asset?: FixedAsset;
 }
+
+const mockAssetTypes = [
+    { value: 'Electronics', label: 'Electronics' },
+    { value: 'Furniture', label: 'Furniture' },
+    { value: 'Vehicles', label: 'Vehicles' },
+    { value: 'Machinery', label: 'Machinery' },
+    { value: 'Buildings', label: 'Buildings' },
+];
 
 export function FixedAssetForm({ asset }: FixedAssetFormProps) {
   const router = useRouter();
@@ -84,7 +91,7 @@ export function FixedAssetForm({ asset }: FixedAssetFormProps) {
     router.push('/accounting/fixed-assets');
   }
 
-  const assetTypeOptions = [...new Set(fixedAssets.map(a => a.assetType))].map(type => ({ value: type, label: type }));
+  const assetTypeOptions = mockAssetTypes;
   const pageTitle = asset ? 'Edit Asset' : 'Create Asset';
 
   return (

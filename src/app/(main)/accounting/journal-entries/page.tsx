@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { journalEntries } from '@/lib/data';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -29,6 +28,44 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useCurrency } from '@/components/currency-provider';
+import type { JournalEntry } from '@/lib/types';
+
+const journalEntries: JournalEntry[] = [
+    {
+        id: 'JE-001',
+        date: '2023-10-01',
+        narration: 'To record monthly office rent for September.',
+        totalDebit: 1200,
+        totalCredit: 1200,
+        lines: [
+            { accountCode: 6100, accountName: 'Rent Expense', debit: 1200, credit: 0 },
+            { accountCode: 1010, accountName: 'Cash', debit: 0, credit: 1200 },
+        ]
+    },
+    {
+        id: 'JE-002',
+        date: '2023-10-05',
+        narration: 'To record purchase of office supplies on credit.',
+        totalDebit: 250,
+        totalCredit: 250,
+        lines: [
+            { accountCode: 6200, accountName: 'Office Supplies Expense', debit: 250, credit: 0 },
+            { accountCode: 2010, accountName: 'Accounts Payable', debit: 0, credit: 250 },
+        ]
+    },
+    {
+        id: 'JE-003',
+        date: '2023-10-15',
+        narration: 'Owner investment into the company.',
+        totalDebit: 5000,
+        totalCredit: 5000,
+        lines: [
+            { accountCode: 1010, accountName: 'Cash', debit: 5000, credit: 0 },
+            { accountCode: 3010, accountName: 'Owner\'s Equity', debit: 0, credit: 5000 },
+        ]
+    },
+];
+
 
 export default function JournalEntriesPage() {
     const { currencySymbol } = useCurrency();

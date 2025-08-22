@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -26,8 +27,32 @@ import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { supplierReturns } from '@/lib/data';
 import { useLocation } from '@/components/location-provider';
+
+const supplierReturns: SupplierReturn[] = [
+    {
+        id: 'RTN-001',
+        grnId: 'GRN-001',
+        supplierId: 'sup-123',
+        supplierName: 'Global Textiles Inc.',
+        date: '2023-10-10',
+        totalValue: 150.00,
+        items: [
+            { sku: 'TS-BLK-M', returnedQty: 10, unitPrice: 15.00, reason: 'Damaged' }
+        ]
+    },
+    {
+        id: 'RTN-002',
+        grnId: 'GRN-003',
+        supplierId: 'sup-456',
+        supplierName: 'Leather Goods Co.',
+        date: '2023-10-12',
+        totalValue: 80.00,
+        items: [
+            { sku: 'LW-BRN-OS', returnedQty: 2, unitPrice: 40.00, reason: 'Wrong item' }
+        ]
+    }
+];
 
 export default function SupplierReturnsPage() {
   const [grns, setGrns] = useState<GoodsReceivedNote[]>([]);
@@ -203,5 +228,3 @@ export default function SupplierReturnsPage() {
     </div>
   );
 }
-
-    

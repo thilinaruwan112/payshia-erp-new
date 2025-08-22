@@ -3,7 +3,6 @@
 
 import { InvoiceForm } from '@/components/invoice-form';
 import { type Product, type User, type Order, type ProductVariant } from '@/lib/types';
-import { orders } from '@/lib/data';
 import { useLocation } from '@/components/location-provider';
 import React, { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -37,20 +36,23 @@ export default function NewInvoicePage() {
         async function getData() {
             setIsLoading(true);
             try {
-                const [productsRes, customersRes] = await Promise.all([
+                const [productsRes, customersRes, ordersRes] = await Promise.all([
                     fetch(`https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`, { cache: 'no-store' }),
                     fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`, { cache: 'no-store' }),
+                    fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`),
                 ]);
 
-                if (!productsRes.ok || !customersRes.ok) {
+                if (!productsRes.ok || !customersRes.ok || !ordersRes.ok) {
                     throw new Error('Failed to fetch initial data for invoice form');
                 }
 
                 const productsData = await productsRes.json();
                 const customersData = await customersRes.json();
+                const ordersData = await ordersRes.json();
 
                 const productsWithVariants: ProductWithVariants[] = Array.isArray(productsData.products) ? productsData.products : [];
                 const customers: User[] = Array.isArray(customersData) ? customersData : [];
+                const orders: Order[] = Array.isArray(ordersData) ? ordersData : [];
                 
                 setFormData({ productsWithVariants, customers, orders });
 
