@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -346,7 +345,7 @@ export function OrderPanel({
         steward_id: steward?.id || "N/A",
         cost_value: costValue,
         remark: `${orderType} order`,
-        ref_hold: null,
+        ref_hold: status === '1' ? 'direct' : null,
         company_id: "1",
         chanel: "POS",
         items: cart.map(item => ({
