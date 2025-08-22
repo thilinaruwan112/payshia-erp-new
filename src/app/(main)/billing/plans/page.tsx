@@ -1,4 +1,5 @@
 
+
 import {
   Card,
   CardContent,
@@ -16,7 +17,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { plans } from '@/lib/data';
+import type { Plan } from '@/lib/types';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -26,7 +27,20 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-export default function ManagePlansPage() {
+
+async function getPlans(): Promise<Plan[]> {
+    try {
+        const { plans } = await import('@/lib/mock-data/plans');
+        return plans;
+    } catch (error) {
+        console.error("Failed to fetch plans", error);
+        return [];
+    }
+}
+
+export default async function ManagePlansPage() {
+  const plans = await getPlans();
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

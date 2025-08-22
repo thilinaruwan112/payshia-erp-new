@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
-import { chartOfAccounts } from '@/lib/data';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -32,6 +31,10 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Account } from '@/lib/types';
 import { useCurrency } from '@/components/currency-provider';
+import React from 'react';
+import { useLocation } from '@/components/location-provider';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const getAccountTypeColor = (type: Account['type']) => {
   switch (type) {
@@ -52,6 +55,38 @@ const getAccountTypeColor = (type: Account['type']) => {
 
 export default function ChartOfAccountsPage() {
   const { currencySymbol } = useCurrency();
+  const { company_id } = useLocation();
+  const { toast } = useToast();
+  const [accounts, setAccounts] = React.useState<Account[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!company_id) {
+        setIsLoading(false);
+        return;
+    };
+    async function fetchAccounts() {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch chart of accounts');
+            }
+            const data = await response.json();
+            setAccounts(data);
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not fetch chart of accounts data.'
+            })
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchAccounts();
+  }, [company_id, toast]);
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -91,7 +126,18 @@ export default function ChartOfAccountsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {chartOfAccounts.map((account) => (
+              {isLoading ? (
+                Array.from({length: 5}).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                        <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-32 rounded-full" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                    </TableRow>
+                ))
+              ) : accounts.map((account) => (
                 <TableRow key={account.code}>
                   <TableCell className="font-mono">{account.code}</TableCell>
                   <TableCell className="font-medium">{account.name}</TableCell>
@@ -103,7 +149,7 @@ export default function ChartOfAccountsPage() {
                   <TableCell className="hidden md:table-cell">
                      <Badge variant="outline">{account.subType}</Badge>
                   </TableCell>
-                  <TableCell className="text-right font-mono">{currencySymbol}{account.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">{currencySymbol}{(account.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

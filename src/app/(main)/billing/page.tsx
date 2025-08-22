@@ -1,4 +1,5 @@
 
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -8,12 +9,30 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { plans } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Check, Settings } from 'lucide-react';
 import Link from 'next/link';
+import type { Plan } from '@/lib/types';
 
-export default function BillingPage() {
+
+async function getPlans(): Promise<Plan[]> {
+    try {
+        // In a real app, this would be a fetch call to your server
+        // const response = await fetch('https://server-erp.payshia.com/plans');
+        // const data = await response.json();
+        // return data;
+        
+        // Simulating fetch for now
+        const { plans } = await import('@/lib/mock-data/plans');
+        return plans;
+    } catch (error) {
+        console.error("Failed to fetch plans", error);
+        return [];
+    }
+}
+
+export default async function BillingPage() {
+  const plans = await getPlans();
   const currentPlanId = 'plan-pro'; // Mock current plan
 
   return (

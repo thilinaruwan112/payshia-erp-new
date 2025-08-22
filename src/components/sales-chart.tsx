@@ -1,34 +1,73 @@
+
 'use client'
 
 import React, { useState, useEffect } from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
-
-const generateChartData = () => [
-  { name: 'Jan', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Feb', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Mar', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Apr', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'May', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Jun', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Jul', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Aug', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Sep', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Oct', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Nov', total: Math.floor(Math.random() * 5000) + 1000 },
-  { name: 'Dec', total: Math.floor(Math.random() * 5000) + 1000 },
-];
+import { subDays, format, addDays, isAfter } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation } from './location-provider';
+import type { Order } from '@/lib/types';
+import { Skeleton } from './ui/skeleton';
 
 export function SalesChart() {
   const [data, setData] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+  const { company_id } = useLocation();
 
   useEffect(() => {
-    setData(generateChartData());
-  }, []);
+    if (!company_id) {
+        setIsLoading(false);
+        return;
+    }
+    async function fetchSalesData() {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`);
+            if (!response.ok) throw new Error('Failed to fetch sales data');
+            const orders: Order[] = await response.json();
+            
+            const sevenDaysAgo = subDays(new Date(), 7);
+            const relevantOrders = orders.filter((order) =>
+                isAfter(new Date(order.date), sevenDaysAgo)
+            );
 
-  if (data.length === 0) {
+            const dailySales = new Map<string, number>();
+            for (let i = 0; i < 7; i++) {
+                const date = format(addDays(sevenDaysAgo, i + 1), 'yyyy-MM-dd');
+                dailySales.set(date, 0);
+            }
+
+            relevantOrders.forEach((order) => {
+                if (order.status !== 'Cancelled') {
+                    const date = format(new Date(order.date), 'yyyy-MM-dd');
+                    dailySales.set(date, (dailySales.get(date) || 0) + (order.total || 0));
+                }
+            });
+
+            const chartData = Array.from(dailySales.entries()).map(([date, total]) => ({
+                name: format(new Date(date), 'MMM d'),
+                total,
+            }));
+            setData(chartData);
+
+        } catch (error) {
+             toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not fetch sales chart data.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchSalesData();
+  }, [company_id, toast]);
+
+  if (isLoading) {
     return (
-      <div style={{ height: 350 }} className="flex items-center justify-center">
-        <p>Loading chart data...</p>
+      <div style={{ height: 350 }}>
+        <Skeleton className="h-full w-full" />
       </div>
     );
   }
