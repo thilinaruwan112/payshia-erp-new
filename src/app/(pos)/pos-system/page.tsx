@@ -138,7 +138,7 @@ const OrderTypeSelection = ({
     }
 
     return (
-        <main className="p-2">
+        <div className="py-4">
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Take Away')}>
                    Take Away
@@ -170,13 +170,13 @@ const OrderTypeSelection = ({
                     )}
                 </div>
             </div>
-        </main>
+        </div>
     )
 }
 
 const StewardSelection = ({ onSelectSteward, onBack, stewards, isLoading }: { onSelectSteward: (steward: User) => void; onBack: () => void; stewards: User[], isLoading: boolean; }) => {
     return (
-        <main className="p-2">
+        <div className="py-4">
              <Button variant="ghost" onClick={onBack} className="mb-4">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Order Type
             </Button>
@@ -197,7 +197,7 @@ const StewardSelection = ({ onSelectSteward, onBack, stewards, isLoading }: { on
                     ))
                 )}
             </div>
-        </main>
+        </div>
     )
 };
 
@@ -851,11 +851,12 @@ export default function POSPage() {
         tendered_amount: tenderedAmount,
         close_type: paymentMethod,
         invoice_status: status,
+        payment_status: "Pending",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
         table_id: 0,
         order_ready_status: 1,
-        created_by: currentCashier.name,
+        created_by: cashierName,
         is_active: 1,
         steward_id: currentOrder.steward?.id || "N/A",
         cost_value: costValue,
@@ -864,7 +865,7 @@ export default function POSPage() {
         company_id: company_id,
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
-            user_id: parseInt(currentOrder.customer.customer_id, 10),
+            user_id: 1, // Default user_id as per example
             product_id: parseInt(item.product.id, 10),
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0,
