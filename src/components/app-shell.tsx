@@ -139,7 +139,6 @@ const navItems = [
       { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
       { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
       { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
-      { href: '/inventory/forecast', label: 'AI Forecast', icon: AreaChart },
     ],
   },
    {

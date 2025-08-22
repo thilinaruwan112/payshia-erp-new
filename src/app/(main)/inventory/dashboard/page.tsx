@@ -158,7 +158,7 @@ export default function InventoryDashboard() {
           </CardContent>
         </Card>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
          <Card>
             <CardHeader>
                 <CardTitle>Top Products by Stock</CardTitle>
@@ -168,19 +168,6 @@ export default function InventoryDashboard() {
                 <StockChart locationId={currentLocation.location_id} />
             </CardContent>
         </Card>
-         <Link href="/inventory/forecast">
-            <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg font-semibold">AI Inventory Forecasting</CardTitle>
-                <TrendingUp className="h-6 w-6 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Predict future stock needs, calculate optimal reorder points, and avoid stockouts using AI-powered demand forecasting.
-                </p>
-              </CardContent>
-            </Card>
-        </Link>
       </div>
     </div>
   );

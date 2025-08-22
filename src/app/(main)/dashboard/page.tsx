@@ -188,7 +188,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+       <div className="grid grid-cols-1 gap-6">
          <Link href="/pos-system" target="_blank" rel="noopener noreferrer">
             <Card className="hover:border-primary transition-colors cursor-pointer h-full">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -198,19 +198,6 @@ export default function Dashboard() {
               <CardContent>
                 <p className="text-xs text-muted-foreground">
                   Click here to launch the POS terminal for in-person sales.
-                </p>
-              </CardContent>
-            </Card>
-        </Link>
-         <Link href="/inventory/forecast">
-            <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">AI Inventory Forecasting</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  Predict future stock needs and optimize inventory levels with AI.
                 </p>
               </CardContent>
             </Card>
@@ -240,5 +227,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
-    
