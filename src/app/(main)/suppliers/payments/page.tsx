@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -33,6 +32,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/components/location-provider';
 import { Skeleton } from '@/components/ui/skeleton';
+import { payments as mockPayments } from '@/lib/mock-data/payments';
 
 export default function PaymentsPage() {
     const { currencySymbol } = useCurrency();
@@ -56,7 +56,6 @@ export default function PaymentsPage() {
                 // setPayments(data);
                 
                 // Using mock data until endpoint is ready
-                const { payments: mockPayments } = await import('@/lib/mock-data/payments');
                 setPayments(mockPayments);
             } catch (error) {
                  toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch payments.' });

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -33,6 +32,7 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { emailCampaigns } from '@/lib/mock-data/email-campaigns';
 
 const getStatusColor = (status: EmailCampaign['status']) => {
   switch (status) {
@@ -53,9 +53,8 @@ export default function EmailCampaignsPage() {
   useEffect(() => {
     async function fetchCampaigns() {
       // In a real app, this would be a fetch call to your server
-      // For now, we simulate a fetch with mock data.
+      // For now, we use mock data.
       try {
-        const { emailCampaigns } = await import('@/lib/mock-data/email-campaigns');
         setCampaigns(emailCampaigns);
       } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch campaigns.' });
