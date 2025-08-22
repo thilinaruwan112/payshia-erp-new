@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -172,7 +171,7 @@ export default function CustomersPage() {
                     </TableRow>
                 ))
               ) : customerData.map((customer) => (
-                <TableRow key={customer.id}>
+                <TableRow key={customer.customer_id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar>
@@ -212,7 +211,7 @@ export default function CustomersPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem asChild>
-                          <Link href={`/crm/customers/${customer.id}/edit`}>
+                          <Link href={`/crm/customers/${customer.customer_id}/edit`}>
                             Edit
                           </Link>
                         </DropdownMenuItem>
@@ -231,5 +230,3 @@ export default function CustomersPage() {
     </div>
   );
 }
-
-    
