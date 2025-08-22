@@ -31,6 +31,7 @@ import React, { useState } from "react";
 import { useLocation } from "./location-provider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Switch } from "./ui/switch";
+import { format } from "date-fns";
 
 const tableFormSchema = z.object({
   table_name: z.string().min(2, "Table name is required."),
@@ -68,10 +69,12 @@ export function TableFormDialog({ children, table, onTableCreated }: TableFormDi
     const method = table ? 'PUT' : 'POST';
 
     const payload = { 
-        ...data,
-        company_id: company_id,
-        created_by: 'admin',
+        table_name: data.table_name,
+        location_id: parseInt(data.location_id, 10),
         is_active: data.is_active ? 1 : 0,
+        company_id: company_id,
+        created_by: 'admin_user',
+        created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
      };
 
     try {
