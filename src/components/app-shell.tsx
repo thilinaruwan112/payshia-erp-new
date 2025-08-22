@@ -54,6 +54,7 @@ import {
   PlusSquare,
   LogOut,
   ClipboardList,
+  Utensils,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -174,6 +175,7 @@ const navItems = [
     subItems: [
       { href: '/settings/profile', label: 'Profile', icon: Users },
       { href: '/locations', label: 'Locations', icon: Warehouse },
+      { href: '/settings/tables', label: 'Dine-in Tables', icon: Utensils },
       { href: '/billing', label: 'Billing & Plans', icon: CreditCard },
       { href: '/settings/currency', label: 'Currency', icon: DollarSign },
     ],
@@ -252,9 +254,9 @@ function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
 
 
 function DateTimeLocation() {
-    const [currentTime, setCurrentTime] = useState<Date | null>(null);
+    const [currentTime, setCurrentTime] = React.useState<Date | null>(null);
 
-    useEffect(() => {
+    React.useEffect(() => {
         const now = new Date();
         setCurrentTime(now);
 
