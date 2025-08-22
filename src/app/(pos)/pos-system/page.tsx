@@ -443,7 +443,7 @@ export default function POSPage() {
             
             if (!tablesResponse.ok) throw new Error('Failed to fetch tables');
             const tablesData = await tablesResponse.json();
-            setTables(tablesData);
+            setTables(tablesData?.data || []);
 
             if (!stewardsResponse.ok) throw new Error('Failed to fetch stewards');
             const stewardsData = await stewardsResponse.json();
@@ -506,47 +506,63 @@ export default function POSPage() {
     if (!company_id) return;
     setSelectedInvoiceForAction(invoice);
     
-    setIsPastInvoicesLoading(true);
     if (isReturnDialogOpen && returnType === 'invoice') {
-      try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
-        if (!response.ok) throw new Error('Failed to fetch invoice items.');
-        const fullInvoiceData: Invoice = await response.json();
-        const itemsToReturn = (fullInvoiceData.items || []).map((item: InvoiceItem): ReturnItem => {
-            const productDetails = posProducts.find(p => p.id === String(item.product_id));
-            const variantDetails = productDetails?.variants?.find(v => v.id === String(item.product_variant_id));
-            const variantName = [productDetails?.name, variantDetails?.color, variantDetails?.size].filter(Boolean).join(' - ');
+        setIsPastInvoicesLoading(true);
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
+            if (!response.ok) throw new Error('Failed to fetch invoice items.');
+            const fullInvoiceData: Invoice = await response.json();
+            
+            const itemsToReturn = (fullInvoiceData.items || []).map((item: InvoiceItem): ReturnItem => {
+                const productDetails = posProducts.find(p => p.id === String(item.product_id));
+                const variantDetails = productDetails?.variants?.find(v => v.id === String(item.product_variant_id));
+                const variantName = [productDetails?.name, variantDetails?.color, variantDetails?.size].filter(Boolean).join(' - ');
 
-            return {
-                id: String(item.product_variant_id),
-                name: item.productName || variantName || `Product ID: ${item.product_id}`,
-                unit: 'Nos',
-                rate: parseFloat(String(item.item_price)),
-                quantity: 0, // Initial return quantity is 0
-                amount: 0,
-                reason: '',
-                productId: String(item.product_id),
-                productVariantId: String(item.product_variant_id),
-            }
-        });
-        setReturnItems(itemsToReturn);
-      } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not load items for this invoice.' });
-        setReturnItems([]);
-      } finally {
-        setIsPastInvoicesLoading(false);
-      }
+                return {
+                    id: String(item.product_variant_id),
+                    name: item.productName || variantName || `Product ID: ${item.product_id}`,
+                    unit: 'Nos',
+                    rate: parseFloat(String(item.item_price)),
+                    quantity: 0, // Initial return quantity is 0
+                    amount: 0,
+                    reason: '',
+                    productId: String(item.product_id),
+                    productVariantId: String(item.product_variant_id),
+                }
+            });
+            setReturnItems(itemsToReturn);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load items for this invoice.' });
+            setReturnItems([]);
+        } finally {
+            setIsPastInvoicesLoading(false);
+        }
     }
+
 
     if(isPendingInvoicesDialogOpen) {
         setIsBalanceLoading(true);
         try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/balance?company_id=${company_id}&customer_id=${invoice.customer_code}&ref_id=${invoice.invoice_number}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch invoice balance');
-        }
-        const data: BalanceDetails = await response.json();
-        setPaymentAmount(data.balance.toFixed(2));
+            const receiptsResponse = await fetch(`https://server-erp.payshia.com/receipts/invoice/${invoice.invoice_number}`);
+            let totalPaid = 0;
+            if (receiptsResponse.ok) {
+                const receiptsData = await receiptsResponse.json();
+                totalPaid = (receiptsData || []).reduce((sum: number, receipt: any) => sum + parseFloat(receipt.amount), 0);
+            }
+
+            const grandTotal = parseFloat(invoice.grand_total);
+            const balance = grandTotal - totalPaid;
+
+            const balanceDetailPayload = {
+                grand_total: invoice.grand_total,
+                total_paid_amount: totalPaid.toFixed(2),
+                balance: balance,
+                company_id: invoice.company_id,
+                customer_id: invoice.customer_code,
+                ref_id: invoice.invoice_number,
+            };
+            setBalanceDetails(balanceDetailPayload);
+            setPaymentAmount(balance > 0 ? balance.toFixed(2) : '0.00');
         } catch (error) {
         toast({
             variant: 'destructive',
