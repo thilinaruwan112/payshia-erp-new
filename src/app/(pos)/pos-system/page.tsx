@@ -342,7 +342,8 @@ export default function POSPage() {
             const formattedCustomers = customersData.map(c => ({
                 ...c,
                 id: c.customer_id,
-                name: `${'c.customer_first_name'} ${'c.customer_last_name'}`,
+                name: `${c.customer_first_name} ${c.customer_last_name}`,
+                role: 'Customer',
             }));
             setCustomers([walkInCustomer, ...formattedCustomers]);
 
