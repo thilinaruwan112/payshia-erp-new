@@ -7,7 +7,36 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { supplierReturns, suppliers } from '@/lib/data';
+
+const suppliers: Supplier[] = [
+    { supplier_id: 'sup-123', supplier_name: 'Global Textiles Inc.', contact_person: 'John Doe', email: 'contact@globaltextiles.com', telephone: '111-222-3333', street_name: '123 Textile Ave', city: 'Fiberburg', zip_code: '12345', fax: '111-222-3334', opening_balance: '1000' },
+    { supplier_id: 'sup-456', supplier_name: 'Leather Goods Co.', contact_person: 'Jane Smith', email: 'sales@leatherco.com', telephone: '444-555-6666', street_name: '456 Hide St', city: 'Tannerville', zip_code: '67890', fax: '444-555-6667', opening_balance: '5000' },
+];
+
+const supplierReturns: SupplierReturn[] = [
+    {
+        id: 'RTN-001',
+        grnId: 'GRN-001',
+        supplierId: 'sup-123',
+        supplierName: 'Global Textiles Inc.',
+        date: '2023-10-10',
+        totalValue: 150.00,
+        items: [
+            { sku: 'TS-BLK-M', returnedQty: 10, unitPrice: 15.00, reason: 'Damaged' }
+        ]
+    },
+    {
+        id: 'RTN-002',
+        grnId: 'GRN-003',
+        supplierId: 'sup-456',
+        supplierName: 'Leather Goods Co.',
+        date: '2023-10-12',
+        totalValue: 80.00,
+        items: [
+            { sku: 'LW-BRN-OS', returnedQty: 2, unitPrice: 40.00, reason: 'Wrong item' }
+        ]
+    }
+];
 
 interface PrintViewProps {
     id: string;
