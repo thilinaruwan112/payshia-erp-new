@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -323,6 +324,7 @@ export function OrderPanel({
     }
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
     const costValue = cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
+    const refHoldValue = order.originalInvoiceNumber ? order.originalInvoiceNumber : "direct";
 
     return {
         invoice_date: format(new Date(), 'yyyy-MM-dd'),
@@ -345,7 +347,7 @@ export function OrderPanel({
         steward_id: steward?.id || "N/A",
         cost_value: costValue,
         remark: `${orderType} order`,
-        ref_hold: status === '1' ? 'direct' : null,
+        ref_hold: status === '1' ? refHoldValue : null,
         company_id: "1",
         chanel: "POS",
         items: cart.map(item => ({

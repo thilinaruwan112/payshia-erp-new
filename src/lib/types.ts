@@ -439,6 +439,7 @@ export type ActiveOrder = {
   orderType: 'Take Away' | 'Retail' | 'Delivery' | 'Dine-In';
   tableName?: string;
   steward?: User;
+  originalInvoiceNumber?: string;
 };
 
 export type CartItem = {

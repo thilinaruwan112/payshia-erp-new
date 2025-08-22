@@ -859,7 +859,7 @@ export default function POSPage() {
         steward_id: currentOrder.steward?.id || "N/A",
         cost_value: costValue,
         remark: `${currentOrder.orderType} order`,
-        ref_hold: null,
+        ref_hold: status === '1' ? 'direct' : null,
         company_id: company_id,
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
@@ -1226,6 +1226,7 @@ export default function POSPage() {
             customer: customerForOrder,
             orderType: 'Take Away', // Default, can be improved
             steward: stewards.find(s => s.id === invoice.steward_id),
+            originalInvoiceNumber: invoice.invoice_number,
         };
         
         setActiveOrders(prev => [...prev.filter(o => o.id !== invoice.id), heldOrder]);
