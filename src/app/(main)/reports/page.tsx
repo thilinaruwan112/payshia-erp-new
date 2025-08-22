@@ -31,18 +31,6 @@ import {
   AlertTriangle,
   Star,
 } from 'lucide-react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Rectangle,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import { addDays, format, isAfter, subDays } from 'date-fns';
 import { useMemo, useState, useEffect } from 'react';
 import type { Order, InventoryItem, Product, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -52,7 +40,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function ReportsPage() {
     const { toast } = useToast();
     const { company_id } = useLocation();
-    const [orders, setOrders] = useState<Order[]>([]);
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -66,18 +53,16 @@ export default function ReportsPage() {
         async function fetchData() {
             setIsLoading(true);
             try {
-                const [ordersRes, inventoryRes, productsRes, usersRes] = await Promise.all([
-                    fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`),
+                const [inventoryRes, productsRes, usersRes] = await Promise.all([
                     fetch(`https://server-erp.payshia.com/inventory/company/${company_id}`),
                     fetch('https://server-erp.payshia.com/products'),
                     fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
                 ]);
 
-                if (!ordersRes.ok || !inventoryRes.ok || !productsRes.ok || !usersRes.ok) {
+                if (!inventoryRes.ok || !productsRes.ok || !usersRes.ok) {
                     throw new Error('Failed to fetch report data');
                 }
 
-                setOrders(await ordersRes.json());
                 setInventory(await inventoryRes.json());
                 setProducts(await productsRes.json());
                 setUsers(await usersRes.json());
@@ -91,37 +76,6 @@ export default function ReportsPage() {
         fetchData();
     }, [company_id, toast]);
 
-  // Sales Data Processing
-  const salesData = useMemo(() => {
-    const sevenDaysAgo = subDays(new Date(), 7);
-    const relevantOrders = orders.filter((order) =>
-      isAfter(new Date(order.date), sevenDaysAgo)
-    );
-
-    const dailySales = new Map<string, number>();
-    for (let i = 0; i < 7; i++) {
-      const date = format(addDays(sevenDaysAgo, i + 1), 'yyyy-MM-dd');
-      dailySales.set(date, 0);
-    }
-
-    relevantOrders.forEach((order) => {
-      if (order.status !== 'Cancelled') {
-        const date = format(new Date(order.date), 'yyyy-MM-dd');
-        dailySales.set(date, (dailySales.get(date) || 0) + (order.total || 0));
-      }
-    });
-
-    return Array.from(dailySales.entries()).map(([date, total]) => ({
-      name: format(new Date(date), 'MMM d'),
-      total,
-    }));
-  }, [orders]);
-
-  const totalRevenue = orders
-    .filter((o) => o.status !== 'Cancelled')
-    .reduce((acc, order) => acc + (order.total || 0), 0);
-  const totalOrders = orders.filter((o) => o.status !== 'Cancelled').length;
-
   // Inventory Data Processing
   const lowStockItems = inventory.filter(
     (item) => item.stock > 0 && item.stock <= item.reorderLevel
@@ -133,24 +87,6 @@ export default function ReportsPage() {
 
   // Customer Data Processing
   const newCustomers = users.slice(0, 5); // Mock data
-  const topCustomers = [...orders]
-    .reduce((acc, order) => {
-      const existing = acc.find((c) => c.name === order.customerName);
-      if (existing) {
-        existing.totalSpent += (order.total || 0);
-        existing.orderCount += 1;
-      } else {
-        acc.push({
-          name: order.customerName,
-          totalSpent: (order.total || 0),
-          orderCount: 1,
-        });
-      }
-      return acc;
-    }, [] as { name: string; totalSpent: number; orderCount: number }[])
-    .sort((a, b) => b.totalSpent - a.totalSpent)
-    .slice(0, 5);
-
   const topLoyaltyCustomers = users
     .filter((u) => u.role === 'Customer' && u.loyaltyPoints)
     .sort((a, b) => (b.loyaltyPoints || 0) - (a.loyaltyPoints || 0))
@@ -164,108 +100,11 @@ export default function ReportsPage() {
           Analytics and insights for your business.
         </p>
       </div>
-      <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="sales">Sales</TabsTrigger>
+      <Tabs defaultValue="inventory" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="customers">Customers</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="sales" className="mt-6">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Revenue
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {isLoading ? <Skeleton className="h-7 w-32" /> : <div className="text-2xl font-bold">
-                  ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>}
-                <p className="text-xs text-muted-foreground">
-                  +20.1% from last month
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Orders
-                </CardTitle>
-                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {isLoading ? <Skeleton className="h-7 w-20" /> : <div className="text-2xl font-bold">
-                  +{totalOrders.toLocaleString()}
-                </div>}
-                <p className="text-xs text-muted-foreground">
-                  +180.1% from last month
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Avg. Order Value
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                {isLoading ? <Skeleton className="h-7 w-24" /> : <div className="text-2xl font-bold">
-                  ${(totalRevenue / totalOrders).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>}
-                <p className="text-xs text-muted-foreground">
-                  +19% from last month
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Sales Overview</CardTitle>
-              <CardDescription>
-                A chart of sales over the last 7 days.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? <Skeleton className="h-[350px]" /> : <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={salesData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="name"
-                    stroke="#888888"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="#888888"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `$${value.toLocaleString()}`}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: 'var(--radius)',
-                    }}
-                    formatter={(value: number) => value.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="total"
-                    fill="hsl(var(--primary))"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>}
-            </CardContent>
-          </Card>
-        </TabsContent>
         
         <TabsContent value="inventory" className="mt-6">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -330,7 +169,7 @@ export default function ReportsPage() {
         </TabsContent>
         
         <TabsContent value="customers" className="mt-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
                 <Card>
                     <CardHeader>
                         <CardTitle>New Customers</CardTitle>
@@ -347,30 +186,6 @@ export default function ReportsPage() {
                              </div>
                            ))}
                         </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Top Customers by Spending</CardTitle>
-                        <CardDescription>Your most valuable customers.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Customer</TableHead>
-                                    <TableHead className="text-right">Total Spent</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {isLoading ? Array.from({length: 5}).map((_, i) => <TableRow key={i}><TableCell><Skeleton className="h-4 w-32" /></TableCell><TableCell><Skeleton className="h-4 w-20 ml-auto" /></TableCell></TableRow>) : topCustomers.map(customer => (
-                                    <TableRow key={customer.name}>
-                                        <TableCell>{customer.name}</TableCell>
-                                        <TableCell className="text-right">${customer.totalSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
                     </CardContent>
                 </Card>
                 <Card>
@@ -406,5 +221,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    

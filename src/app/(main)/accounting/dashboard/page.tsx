@@ -32,7 +32,6 @@ export default function AccountingDashboardPage() {
     const { currencySymbol } = useCurrency();
     const { company_id } = useLocation();
     const { toast } = useToast();
-    const [orders, setOrders] = React.useState<Order[]>([]);
     const [accounts, setAccounts] = React.useState<Account[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
@@ -44,15 +43,12 @@ export default function AccountingDashboardPage() {
       async function fetchData() {
         setIsLoading(true);
         try {
-            const [ordersRes, accountsRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`),
+            const [accountsRes] = await Promise.all([
                 fetch(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`)
             ]);
 
-            if (!ordersRes.ok) throw new Error('Failed to fetch orders');
             if (!accountsRes.ok) throw new Error('Failed to fetch chart of accounts');
 
-            setOrders(await ordersRes.json());
             setAccounts(await accountsRes.json());
 
         } catch (error) {
@@ -66,9 +62,7 @@ export default function AccountingDashboardPage() {
 
 
   const financialSummary = useMemo(() => {
-    const totalRevenue = orders
-      .filter((o) => o.status !== 'Cancelled')
-      .reduce((acc, order) => acc + (order.total || 0), 0);
+    const totalRevenue = 0; // Removed order dependency
 
     const totalExpenses = accounts
       .filter((acc) => acc.type === 'Expense')
@@ -86,10 +80,10 @@ export default function AccountingDashboardPage() {
       accountsPayable,
       accountsReceivable,
     };
-  }, [orders, accounts]);
+  }, [accounts]);
   
   const chartData = [
-    { name: 'Financials', Revenue: financialSummary.totalRevenue, Expenses: financialSummary.totalExpenses, 'Net Income': financialSummary.netIncome },
+    { name: 'Financials', Expenses: financialSummary.totalExpenses, 'Net Income': financialSummary.netIncome },
   ];
 
   if (isLoading) {
@@ -181,7 +175,6 @@ export default function AccountingDashboardPage() {
                      formatter={(value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value).replace('$', currencySymbol)}
                 />
                 <Legend />
-                <Bar dataKey="Revenue" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Expenses" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Net Income" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -191,5 +184,3 @@ export default function AccountingDashboardPage() {
     </div>
   );
 }
-
-    

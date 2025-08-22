@@ -64,7 +64,6 @@ export default function CustomersPage() {
   const { company_id } = useLocation();
   const { toast } = useToast();
   const [customers, setCustomers] = useState<User[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -75,17 +74,13 @@ export default function CustomersPage() {
     async function fetchData() {
         setIsLoading(true);
         try {
-            const [customersRes, ordersRes] = await Promise.all([
+            const [customersRes] = await Promise.all([
                 fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`)
             ]);
             if (!customersRes.ok) throw new Error('Failed to fetch customers');
-            if (!ordersRes.ok) throw new Error('Failed to fetch orders');
             
             const customersData = await customersRes.json();
-            const ordersData = await ordersRes.json();
             setCustomers(customersData || []);
-            setOrders(ordersData || []);
 
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customer data.' });
@@ -99,22 +94,13 @@ export default function CustomersPage() {
 
   const customerData = useMemo(() => {
     return customers.map((customer) => {
-      const customerOrders = orders.filter(
-        (order) => order.customerName === customer.customer_id
-      );
-      const totalSpent = customerOrders.reduce(
-        (acc, order) => acc + (order.total || 0),
-        0
-      );
       const loyaltyTier = getLoyaltyTier(customer.loyaltyPoints || 0);
       return {
         ...customer,
-        orderCount: customerOrders.length,
-        totalSpent,
         loyaltyTier,
       };
     });
-  }, [customers, orders]);
+  }, [customers]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -145,14 +131,8 @@ export default function CustomersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Customer</TableHead>
-                <TableHead className="hidden sm:table-cell">
-                  Total Orders
-                </TableHead>
                 <TableHead className="hidden md:table-cell">
                   Loyalty Tier
-                </TableHead>
-                <TableHead className="hidden md:table-cell">
-                  Total Spent
                 </TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -164,9 +144,7 @@ export default function CustomersPage() {
                 Array.from({length: 5}).map((_, i) => (
                     <TableRow key={i}>
                         <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full" /><div className="space-y-2"><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-24" /></div></div></TableCell>
-                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-12 rounded-full mx-auto" /></TableCell>
                         <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                     </TableRow>
                 ))
@@ -188,17 +166,11 @@ export default function CustomersPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell text-center">
-                    <Badge variant="secondary">{customer.orderCount}</Badge>
-                  </TableCell>
                   <TableCell className="hidden md:table-cell">
                      <Badge variant="outline" className={cn('font-semibold', getTierColor(customer.loyaltyTier))}>
                         <Star className="mr-1.5 h-3.5 w-3.5" />
                         {customer.loyaltyTier}
                     </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell font-mono">
-                    {currencySymbol}{customer.totalSpent.toFixed(2)}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
