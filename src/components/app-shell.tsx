@@ -105,8 +105,6 @@ const navItems = [
       { href: '/inventory/dashboard', label: 'Inventory', icon: Package },
        { href: '/suppliers/dashboard', label: 'Suppliers', icon: Building },
       { href: '/crm/dashboard', label: 'CRM', icon: Users },
-      { href: '/accounting/dashboard', label: 'Accounting', icon: Landmark },
-      { href: '/hrm/dashboard', label: 'HRM', icon: Briefcase },
     ],
   },
   {
@@ -123,9 +121,6 @@ const navItems = [
     icon: Contact,
     subItems: [
       { href: '/crm/customers', label: 'Customers', icon: Users },
-      { href: '/crm/loyalty-schema', label: 'Loyalty Schema', icon: Gem },
-      { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
-      { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
     ],
   },
   {
@@ -157,28 +152,6 @@ const navItems = [
     subItems: [
       { href: '/purchasing/purchase-orders', label: 'Purchase Orders', icon: ShoppingCart },
       { href: '/purchasing/grn', label: 'Goods Received Notes (GRN)', icon: FileDigit },
-    ],
-  },
-  {
-    label: 'Accounting',
-    icon: Landmark,
-    subItems: [
-      { href: '/accounting/expenses', label: 'Expenses', icon: FileDigit },
-      { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: BookUser },
-      { href: '/accounting/journal-entries', label: 'Journal Entries', icon: FileText },
-      { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
-    ],
-  },
-  {
-    label: 'HRM',
-    icon: Briefcase,
-    subItems: [
-      { href: '/hrm/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { href: '/hrm/employees', label: 'Employees', icon: Users },
-      { href: '/hrm/payroll', label: 'Payroll', icon: DollarSign },
-      { href: '/hrm/leave', label: 'Leave Management', icon: CalendarCheck },
-      { href: '/hrm/attendance', label: 'Attendance', icon: Fingerprint },
-      { href: '/hrm/performance', label: 'Performance', icon: Star },
     ],
   },
   {
