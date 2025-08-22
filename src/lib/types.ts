@@ -36,6 +36,7 @@ export type ProductVariant = {
   size_id?: string | null;
   product_id?: string;
   barcode?: string | null;
+  stock?: number;
 };
 
 export type Product = {
@@ -351,6 +352,7 @@ export type InvoiceItem = {
     invoice_number?: string;
     // Client-side only
     productName?: string;
+    product_variant_id?: string;
 };
 
 export type Invoice = {

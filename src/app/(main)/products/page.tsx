@@ -42,7 +42,6 @@ import { useLocation } from '@/components/location-provider';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [planDetails, setPlanDetails] = useState({ hasAccess: true, limit: Infinity, usage: 0, name: '...' });
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -58,21 +57,17 @@ export default function ProductsPage() {
     };
     setIsLoading(true);
     try {
-      const [productsResponse, limitResponse, inventoryResponse] = await Promise.all([
+      const [productsResponse, limitResponse] = await Promise.all([
          fetch(`https://server-erp.payshia.com/products/get/filter/by-company?company_id=${company_id}`),
          checkPlanLimit('products'),
-         fetch(`https://server-erp.payshia.com/inventory/company/${company_id}`)
       ]);
       
       if (!productsResponse.ok) throw new Error('Failed to fetch products');
-      if (!inventoryResponse.ok) throw new Error('Failed to fetch inventory');
       
       const productsData: Product[] = await productsResponse.json();
-      const inventoryData: InventoryItem[] = await inventoryResponse.json();
       const parsedData = productsData.map(p => ({...p, price: parseFloat(p.price as any)}));
 
       setProducts(parsedData);
-      setInventory(inventoryData);
       setPlanDetails(limitResponse);
 
     } catch (error) {
@@ -201,9 +196,10 @@ export default function ProductsPage() {
                 ))
               ) : (
                 products.map((product) => {
-                  const totalStock = inventory
-                    .filter((item) => product.variants && product.variants.some(v => v.sku === item.sku))
-                    .reduce((sum, item) => sum + item.stock, 0);
+                  const totalStock = (product.variants || []).reduce((sum, variant) => {
+                      // Assuming stock property exists on variant, otherwise you need another source
+                      return sum + (Number(variant.stock) || 0);
+                  }, 0);
                   
                   return (
                     <TableRow key={product.id}>
