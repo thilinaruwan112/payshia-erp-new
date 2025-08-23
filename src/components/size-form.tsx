@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import type { Size } from "@/lib/types";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import { useLocation } from "./location-provider";
 
 const sizeFormSchema = z.object({
   value: z.string().min(1, "Size value is required."),
@@ -40,6 +41,7 @@ export function SizeForm({ size }: SizeFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { company_id } = useLocation();
 
   const defaultValues: Partial<SizeFormValues> = {
     value: size?.value || "",
@@ -52,10 +54,14 @@ export function SizeForm({ size }: SizeFormProps) {
   });
 
   async function onSubmit(data: SizeFormValues) {
+    if (!company_id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
+        return;
+    }
     setIsLoading(true);
     const url = size ? `https://server-erp.payshia.com/sizes/${size.id}` : 'https://server-erp.payshia.com/sizes';
     const method = size ? 'PUT' : 'POST';
-    const payload = { ...data, company_id: 1 };
+    const payload = { ...data, company_id: company_id };
     try {
       const response = await fetch(url, {
         method: method,
