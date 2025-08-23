@@ -28,6 +28,7 @@ import { Loader2 } from "lucide-react";
 import React from "react";
 import { Textarea } from "./ui/textarea";
 import { useLocation } from "./location-provider";
+import { format } from "date-fns";
 
 const customerFormSchema = z.object({
   customer_first_name: z.string().min(2, "First name is required."),
@@ -80,16 +81,24 @@ export function CustomerForm({ customer }: CustomerFormProps) {
     const method = customer ? 'PUT' : 'POST';
 
      const payload = {
-      ...data,
-      is_active: 1,
-      created_by: 'admin',
+      customer_first_name: data.customer_first_name,
+      customer_last_name: data.customer_last_name,
+      phone_number: data.phone_number,
+      address_line1: data.address_line1 || "N/A",
+      address_line2: data.address_line2 || "N/A",
+      city_id: 3, // Default as per sample
+      email_address: data.email_address || "",
+      opening_balance: data.opening_balance || 0,
+      created_by: "admin",
+      created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
       company_id: company_id,
-      location_id: parseInt(currentLocation.location_id),
-      city_id: 3, // Assuming a default city for now
-      credit_days: 30, // Assuming default
-      region_id: 5,
-      route_id: 2,
-      area_id: 8,
+      location_id: parseInt(currentLocation.location_id, 10),
+      is_active: 1,
+      credit_limit: data.credit_limit || 0,
+      credit_days: 30, // Default as per sample
+      region_id: 5, // Default as per sample
+      route_id: 2, // Default as per sample
+      area_id: 8, // Default as per sample
     };
 
     try {
