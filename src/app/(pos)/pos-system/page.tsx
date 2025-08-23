@@ -325,7 +325,7 @@ export default function POSPage() {
         setIsLoadingProducts(true);
         try {
             const [productsResponse, collectionsResponse, brandsResponse, customersResponse] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`),
+                fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`),
                 fetch(`https://server-erp.payshia.com/collections/company?company_id=${company_id}`),
                 fetch(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`),
                 fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
@@ -1260,7 +1260,7 @@ export default function POSPage() {
         availableTables={tables}
         availableStewards={stewards}
         customers={customers}
-        onUpdateCustomer={updateCustomer}
+        onUpdateCustomer={onUpdateCustomer}
      />
   ) : (
       <div className="flex flex-col h-full bg-card items-center justify-center text-center p-8">
