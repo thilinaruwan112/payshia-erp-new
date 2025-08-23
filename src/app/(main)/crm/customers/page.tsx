@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle, Star } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Star, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -35,6 +35,17 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 
 const getLoyaltyTier = (points: number) => {
   if (points >= 500) return 'Platinum';
@@ -65,6 +76,8 @@ export default function CustomersPage() {
   const { toast } = useToast();
   const [customers, setCustomers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<User | null>(null);
 
   useEffect(() => {
     if (!company_id) {
@@ -90,6 +103,34 @@ export default function CustomersPage() {
     }
     fetchData();
   }, [company_id, toast]);
+  
+  const handleDelete = async () => {
+    if (!selectedCustomer) return;
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/customers/${selectedCustomer.customer_id}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete customer');
+        }
+        setCustomers(customers.filter(c => c.customer_id !== selectedCustomer.customer_id));
+        toast({
+            title: 'Customer Deleted',
+            description: `The customer "${selectedCustomer.customer_first_name}" has been deleted.`
+        })
+    } catch (error) {
+         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+         toast({
+            variant: 'destructive',
+            title: 'Error deleting customer',
+            description: errorMessage
+        });
+    } finally {
+        setIsConfirmOpen(false);
+        setSelectedCustomer(null);
+    }
+  };
 
 
   const customerData = useMemo(() => {
@@ -103,6 +144,7 @@ export default function CustomersPage() {
   }, [customers]);
 
   return (
+    <>
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -187,8 +229,15 @@ export default function CustomersPage() {
                             Edit
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          Delete
+                        <DropdownMenuItem 
+                            className="text-destructive"
+                            onSelect={() => {
+                                setSelectedCustomer(customer);
+                                setIsConfirmOpen(true);
+                            }}
+                        >
+                           <Trash2 className="mr-2 h-4 w-4" />
+                           Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -200,5 +249,24 @@ export default function CustomersPage() {
         </CardContent>
       </Card>
     </div>
+    <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the customer {' '}
+                    <span className="font-bold text-foreground">{selectedCustomer?.customer_first_name} {selectedCustomer?.customer_last_name}</span>.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setSelectedCustomer(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                    Delete
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
+
