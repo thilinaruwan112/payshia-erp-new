@@ -1,9 +1,9 @@
 
-'use client';
+"use client";
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 import {
   Form,
   FormControl,
@@ -11,28 +11,34 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-import type { User } from '@/lib/types';
-import { Star } from 'lucide-react';
-import { Textarea } from './ui/textarea';
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
+import type { User } from "@/lib/types";
+import { Loader2 } from "lucide-react";
+import React from "react";
+import { Textarea } from "./ui/textarea";
+import { useLocation } from "./location-provider";
 
 const customerFormSchema = z.object({
-  name: z.string().min(3, 'Customer name is required.'),
-  email: z.string().email('Invalid email address.').optional().or(z.literal('')),
-  phone: z.string().optional(),
-  address: z.string().optional(),
-  loyaltyPoints: z.coerce.number().min(0, "Points must be non-negative.").optional(),
+  customer_first_name: z.string().min(2, "First name is required."),
+  customer_last_name: z.string().min(2, "Last name is required."),
+  phone_number: z.string().min(10, "A valid phone number is required."),
+  email_address: z.string().email("Invalid email address.").optional().or(z.literal('')),
+  address_line1: z.string().optional(),
+  address_line2: z.string().optional(),
+  city: z.string().optional(),
+  opening_balance: z.coerce.number().optional(),
+  credit_limit: z.coerce.number().optional(),
 });
 
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
@@ -41,44 +47,82 @@ interface CustomerFormProps {
   customer?: User;
 }
 
-const getLoyaltyTier = (points: number) => {
-  if (points >= 500) return 'Platinum';
-  if (points >= 250) return 'Gold';
-  if (points >= 100) return 'Silver';
-  return 'Bronze';
-};
-
 export function CustomerForm({ customer }: CustomerFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = React.useState(false);
+  const { company_id, currentLocation } = useLocation();
 
   const defaultValues: Partial<CustomerFormValues> = {
-    name: customer?.name || '',
-    email: customer?.email || '',
-    phone: customer?.phone || '',
-    address: customer?.address || '',
-    loyaltyPoints: customer?.loyaltyPoints || 0,
+    customer_first_name: customer?.customer_first_name || "",
+    customer_last_name: customer?.customer_last_name || "",
+    phone_number: customer?.phone || "",
+    email_address: customer?.email_address || "",
+    address_line1: customer?.address_line1 || "",
+    city: customer?.city_id || "",
+    opening_balance: 0,
+    credit_limit: 0,
   };
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
     defaultValues,
-    mode: 'onChange',
+    mode: "onChange",
   });
 
-  const watchedPoints = form.watch('loyaltyPoints') || 0;
-  const currentTier = getLoyaltyTier(watchedPoints);
+  async function onSubmit(data: CustomerFormValues) {
+     if (!company_id || !currentLocation) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Company or location not selected.' });
+      return;
+    }
+    setIsLoading(true);
+    const url = customer ? `https://server-erp.payshia.com/customers/${customer.customer_id}` : 'https://server-erp.payshia.com/customers';
+    const method = customer ? 'PUT' : 'POST';
 
-  function onSubmit(data: CustomerFormValues) {
-    console.log(data);
-    toast({
-      title: customer ? 'Customer Updated' : 'Customer Created',
-      description: `The customer "${data.name}" has been saved.`,
-    });
-    router.push('/crm/customers');
+     const payload = {
+      ...data,
+      is_active: 1,
+      created_by: 'admin',
+      company_id: company_id,
+      location_id: parseInt(currentLocation.location_id),
+      city_id: 3, // Assuming a default city for now
+      credit_days: 30, // Assuming default
+      region_id: 5,
+      route_id: 2,
+      area_id: 8,
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.message || 'Something went wrong');
+        }
+        toast({
+            title: customer ? "Customer Updated" : "Customer Created",
+            description: `The customer "${data.customer_first_name}" has been saved.`,
+        });
+        router.push('/crm/customers');
+        router.refresh();
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: "destructive",
+            title: "Failed to save customer",
+            description: errorMessage,
+        });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
-  const pageTitle = customer ? `Edit Customer: ${customer.name}` : 'Create Customer';
+  const pageTitle = customer ? `Edit Customer: ${customer.customer_first_name}` : 'Create Customer';
   const pageDescription = customer
     ? 'Update the details for this customer.'
     : 'Add a new customer to your system.';
@@ -99,127 +143,119 @@ export function CustomerForm({ customer }: CustomerFormProps) {
               type="button"
               onClick={() => router.back()}
               className="w-full"
+              disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Customer
             </Button>
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-            <div className="lg:col-span-2 space-y-8">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Contact Information</CardTitle>
-                    <CardDescription>
-                      Enter the basic contact details for the customer.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
+        <Card>
+          <CardHeader>
+            <CardTitle>Customer Information</CardTitle>
+            <CardDescription>
+              Enter the contact and financial details for the customer.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="customer_first_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>First Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. John" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="customer_last_name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Last Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. Doe" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phone_number"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone Number</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. 0771234567" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email_address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email (Optional)</FormLabel>
+                  <FormControl>
+                    <Input type="email" placeholder="e.g. john.doe@example.com" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <div className="md:col-span-2">
+                <FormField
+                    control={form.control}
+                    name="address_line1"
+                    render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Customer Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g. John Doe" {...field} />
-                          </FormControl>
-                          <FormMessage />
+                        <FormLabel>Address (Optional)</FormLabel>
+                        <FormControl>
+                            <Textarea placeholder="123 Main St, Anytown" {...field} />
+                        </FormControl>
+                        <FormMessage />
                         </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="email"
-                              placeholder="e.g. john.doe@example.com"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g. 123-456-7890" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Address</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                         <FormField
-                            control={form.control}
-                            name="address"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormControl>
-                                    <Textarea
-                                        placeholder="123 Main St, Anytown, USA"
-                                        className="resize-none"
-                                        rows={4}
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </CardContent>
-                </Card>
-            </div>
-            <div>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Loyalty Program</CardTitle>
-                        <CardDescription>
-                          Manage the customer's loyalty points and tier.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="loyaltyPoints"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Loyalty Points</FormLabel>
-                                <FormControl>
-                                    <Input type="number" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <div>
-                          <p className="text-sm font-medium text-muted-foreground">Current Tier</p>
-                          <p className="text-lg font-bold flex items-center gap-2">
-                             <Star className="w-5 h-5 text-yellow-400" />
-                            {currentTier}
-                          </p>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
+                    )}
+                />
+             </div>
+            <FormField
+                control={form.control}
+                name="opening_balance"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Opening Balance</FormLabel>
+                    <FormControl>
+                        <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+             <FormField
+                control={form.control}
+                name="credit_limit"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Credit Limit</FormLabel>
+                    <FormControl>
+                        <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+          </CardContent>
+        </Card>
       </form>
     </Form>
   );
