@@ -44,6 +44,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Switch } from '../ui/switch';
 import { format } from 'date-fns';
 import { useLocation } from '../location-provider';
+import { Badge } from '../ui/badge';
 
 interface OrderPanelProps {
   order: ActiveOrder;
