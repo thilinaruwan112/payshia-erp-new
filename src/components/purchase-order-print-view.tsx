@@ -136,10 +136,17 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
           <p>{supplier?.email}</p>
         </div>
         <div className="text-right">
-          <div className="grid grid-cols-2 gap-1">
-            <span className="font-semibold text-gray-600">PO #:</span>
+            <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Ship To</h3>
+            <p className="font-bold text-gray-800">{location?.location_name}</p>
+            <p>{location?.address_line1}</p>
+            <p>{location?.city}</p>
+            <p>{location?.phone_1}</p>
+        </div>
+        <div className="col-span-2 text-right">
+          <div className="grid grid-cols-4 gap-1">
+            <span className="font-semibold text-gray-600 col-start-3">PO #:</span>
             <span>{po.po_number}</span>
-            <span className="font-semibold text-gray-600">Date:</span>
+            <span className="font-semibold text-gray-600 col-start-3">Date:</span>
             <span>{format(new Date(po.created_at), "dd MMM, yyyy")}</span>
           </div>
         </div>

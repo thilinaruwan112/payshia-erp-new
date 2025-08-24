@@ -2,7 +2,7 @@
 
 'use client'
 
-import { type PurchaseOrder, type Supplier, type Product, type ProductVariant } from '@/lib/types';
+import { type PurchaseOrder, type Supplier, type Product, type ProductVariant, type Location } from '@/lib/types';
 import { notFound, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -54,6 +54,7 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -62,11 +63,12 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
       if (!id) return;
       setIsLoading(true);
       try {
-        const [poResponse, suppliersResponse, productsResponse, variantsResponse] = await Promise.all([
+        const [poResponse, suppliersResponse, productsResponse, variantsResponse, locationsResponse] = await Promise.all([
            fetch(`https://server-erp.payshia.com/purchase-orders/${id}`),
            fetch('https://server-erp.payshia.com/suppliers'),
            fetch('https://server-erp.payshia.com/products'),
            fetch('https://server-erp.payshia.com/product-variants'),
+           fetch('https://server-erp.payshia.com/locations'),
         ]);
         
         if (!poResponse.ok) {
@@ -76,16 +78,19 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
         if (!suppliersResponse.ok) throw new Error('Failed to fetch suppliers');
         if (!productsResponse.ok) throw new Error('Failed to fetch products');
         if (!variantsResponse.ok) throw new Error('Failed to fetch variants');
+        if (!locationsResponse.ok) throw new Error('Failed to fetch locations');
 
         const poData: PurchaseOrder = await poResponse.json();
         const suppliersData: Supplier[] = await suppliersResponse.json();
         const productsData: Product[] = await productsResponse.json();
         const variantsData: ProductVariant[] = await variantsResponse.json();
+        const locationsData: Location[] = await locationsResponse.json();
 
         setPo(poData);
         setSupplier(suppliersData.find(s => s.supplier_id === poData.supplier_id) || null);
         setProducts(productsData);
         setVariants(variantsData);
+        setLocations(locationsData);
 
       } catch (error) {
         toast({
@@ -102,6 +107,7 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
 
   const getProductName = (productId: string) => products.find(p => p.id === productId)?.name || 'Unknown Product';
   const getVariantSku = (variantId: string) => variants.find(v => v.id === variantId)?.sku || 'N/A';
+  const getLocationName = (locationId: string) => locations.find(l => l.location_id === locationId)?.location_name || 'N/A';
   
   const handlePrint = () => {
     if (po) {
@@ -163,6 +169,10 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
                            {getStatusText(po.po_status)}
                         </Badge>
                     </p>
+                </div>
+                <div className="space-y-1">
+                    <p className="text-sm font-medium text-muted-foreground">Ordered Location</p>
+                    <p className="font-semibold">{getLocationName(po.location_id)}</p>
                 </div>
                  <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">Subtotal</p>
