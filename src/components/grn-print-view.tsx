@@ -143,6 +143,8 @@ export function GrnPrintView({ id }: PrintViewProps) {
             <span>{grn.po_number}</span>
             <span className="font-semibold text-gray-600">Date:</span>
             <span>{format(new Date(grn.created_at), "dd MMM, yyyy")}</span>
+            <span className="font-semibold text-gray-600">Location:</span>
+            <span>{location?.location_name || 'N/A'}</span>
           </div>
         </div>
       </section>
