@@ -37,6 +37,7 @@ import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import type { Product, Supplier } from "@/lib/types";
 import { useLocation } from "./location-provider";
+import { Combobox } from "./ui/combobox";
 
 type Category = {
   id: string;
@@ -650,18 +651,13 @@ export function ProductForm({ product }: ProductFormProps) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Color</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                <SelectValue placeholder="Select a color" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {colors.map(color => (
-                                                    <SelectItem key={color.id} value={color.id}>{color.name}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                            </Select>
+                                             <Combobox
+                                                options={colors.map(c => ({ value: c.id, label: c.name }))}
+                                                value={field.value || ""}
+                                                onChange={field.onChange}
+                                                placeholder="Select a color"
+                                                notFoundText="No color found."
+                                            />
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -672,18 +668,13 @@ export function ProductForm({ product }: ProductFormProps) {
                                     render={({ field }) => (
                                         <FormItem>
                                             <FormLabel>Size</FormLabel>
-                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl>
-                                                <SelectTrigger>
-                                                <SelectValue placeholder="Select a size" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent>
-                                                {sizes.map(size => (
-                                                    <SelectItem key={size.id} value={size.id}>{size.value}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                            </Select>
+                                             <Combobox
+                                                options={sizes.map(s => ({ value: s.id, label: s.value }))}
+                                                value={field.value || ""}
+                                                onChange={field.onChange}
+                                                placeholder="Select a size"
+                                                notFoundText="No size found."
+                                            />
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -746,18 +737,13 @@ export function ProductForm({ product }: ProductFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Category</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                        <SelectValue placeholder="Select a category" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {categories.map(cat => (
-                                            <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                    </Select>
+                                    <Combobox
+                                        options={categories.map(cat => ({ value: cat.id, label: cat.name }))}
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        placeholder="Select a category"
+                                        notFoundText="No category found."
+                                    />
                                     <FormDescription>
                                         Categories are fetched from your server.
                                     </FormDescription>
@@ -771,18 +757,13 @@ export function ProductForm({ product }: ProductFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Brand</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                        <SelectValue placeholder="Select a brand" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {brands.map(brand => (
-                                            <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                    </Select>
+                                     <Combobox
+                                        options={brands.map(b => ({ value: b.id, label: b.name }))}
+                                        value={field.value || ""}
+                                        onChange={field.onChange}
+                                        placeholder="Select a brand"
+                                        notFoundText="No brand found."
+                                    />
                                     <FormMessage />
                                 </FormItem>
                             )}
