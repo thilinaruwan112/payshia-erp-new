@@ -56,6 +56,7 @@ import {
   ClipboardList,
   Utensils,
   PackagePlus,
+  LayoutList,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -131,6 +132,7 @@ const navItems = [
     icon: Package,
     subItems: [
       { href: '/products', label: 'All Products', icon: Boxes },
+      { href: '/products/categories', label: 'Categories', icon: LayoutList },
       { href: '/products/collections', label: 'Collections', icon: Archive },
       { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
       { href: '/products/colors', label: 'Colors', icon: SwatchBook },
