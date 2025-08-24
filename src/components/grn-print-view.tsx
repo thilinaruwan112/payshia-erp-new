@@ -2,7 +2,7 @@
 
 'use client'
 
-import { type GoodsReceivedNote, type Supplier, type Product, type ProductVariant } from '@/lib/types';
+import { type GoodsReceivedNote, type Supplier, type Product, type ProductVariant, type Location } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -13,11 +13,22 @@ interface PrintViewProps {
     id: string;
 }
 
+interface Company {
+    id: string;
+    company_name: string;
+    company_address: string;
+    company_city: string;
+    company_email: string;
+    company_telephone: string;
+}
+
 export function GrnPrintView({ id }: PrintViewProps) {
   const [grn, setGrn] = useState<GoodsReceivedNote | null>(null);
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
@@ -50,6 +61,15 @@ export function GrnPrintView({ id }: PrintViewProps) {
         setSupplier(suppliersData.find(s => s.supplier_id === grnData.supplier_id) || null);
         setProducts(productsData);
         setVariants(variantsData);
+
+        if (grnData.company_id && grnData.location_id) {
+             const [companyRes, locationRes] = await Promise.all([
+                fetch(`https://server-erp.payshia.com/companies/${grnData.company_id}`),
+                fetch(`https://server-erp.payshia.com/locations/${grnData.location_id}`),
+            ]);
+            if(companyRes.ok) setCompany(await companyRes.json());
+            if(locationRes.ok) setLocation(await locationRes.json());
+        }
 
       } catch (error) {
         toast({
@@ -98,10 +118,9 @@ export function GrnPrintView({ id }: PrintViewProps) {
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Payshia ERP</h1>
-          <p>#455, 533A3, Pelmadulla</p>
-          <p>Rathnapura, 70070</p>
-          <p>info@payshia.com</p>
+          <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
+          <p>{location?.address_line1}, {location?.city}</p>
+          <p>{company?.company_email}</p>
         </div>
         <div className="text-right">
           <h2 className="text-4xl font-bold uppercase text-gray-700">Goods Received Note</h2>

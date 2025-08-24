@@ -2,7 +2,7 @@
 
 'use client'
 
-import { type Invoice, type User, type Product } from '@/lib/types';
+import { type Invoice, type User, type Product, type Location } from '@/lib/types';
 import { notFound, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -13,10 +13,21 @@ interface PrintViewProps {
     id: string;
 }
 
+interface Company {
+    id: string;
+    company_name: string;
+    company_address: string;
+    company_city: string;
+    company_email: string;
+    company_telephone: string;
+}
+
 export function GatePassPrintView({ id }: PrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -35,9 +46,11 @@ export function GatePassPrintView({ id }: PrintViewProps) {
         const invoiceData: Invoice = await invoiceResponse.json();
         setInvoice(invoiceData);
 
-        const [customersResponse, productsResponse] = await Promise.all([
+        const [customersResponse, productsResponse, companyRes, locationRes] = await Promise.all([
            fetch(`https://server-erp.payshia.com/customers`),
            fetch('https://server-erp.payshia.com/products'),
+           fetch(`https://server-erp.payshia.com/companies/${invoiceData.company_id}`),
+           fetch(`https://server-erp.payshia.com/locations/${invoiceData.location_id}`),
         ]);
 
         if (!customersResponse.ok) throw new Error('Failed to fetch customers');
@@ -48,6 +61,9 @@ export function GatePassPrintView({ id }: PrintViewProps) {
 
         setCustomer(customersData.find(c => c.customer_id === invoiceData.customer_code) || null);
         setProducts(productsData);
+
+        if(companyRes.ok) setCompany(await companyRes.json());
+        if(locationRes.ok) setLocation(await locationRes.json());
 
       } catch (error) {
         toast({
@@ -89,16 +105,15 @@ export function GatePassPrintView({ id }: PrintViewProps) {
     product_name: getProductName(item.product_id),
   }));
 
-  const totalQuantity = invoiceItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const totalQuantity = invoiceItems?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Payshia ERP</h1>
-          <p>#455, 533A3, Pelmadulla</p>
-          <p>Rathnapura, 70070</p>
-          <p>info@payshia.com</p>
+          <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
+          <p>{location?.address_line1}, {location?.city}</p>
+          <p>{company?.company_email}</p>
         </div>
         <div className="text-right">
           <h2 className="text-4xl font-bold uppercase text-gray-700">Gate Pass</h2>
@@ -140,7 +155,7 @@ export function GatePassPrintView({ id }: PrintViewProps) {
               <tr key={index} className="border-b border-gray-100">
                 <td className="p-3">{index + 1}</td>
                 <td className="p-3">{item.product_name}</td>
-                <td className="p-3 text-right">{item.quantity.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">{Number(item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
               </tr>
             ))}
           </tbody>

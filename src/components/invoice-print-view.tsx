@@ -2,12 +2,21 @@
 
 'use client'
 
-import { type Invoice, type User, type Product } from '@/lib/types';
+import { type Invoice, type User, type Location } from '@/lib/types';
 import { notFound, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+
+interface Company {
+    id: string;
+    company_name: string;
+    company_address: string;
+    company_city: string;
+    company_email: string;
+    company_telephone: string;
+}
 
 interface InvoicePrintViewProps {
     id: string;
@@ -16,6 +25,8 @@ interface InvoicePrintViewProps {
 export function InvoicePrintView({ id }: InvoicePrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -35,6 +46,15 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
         setInvoice(data);
         if (data.customer) {
             setCustomer(data.customer);
+        }
+
+        if (data.company_id && data.location_id) {
+            const [companyRes, locationRes] = await Promise.all([
+                fetch(`https://server-erp.payshia.com/companies/${data.company_id}`),
+                fetch(`https://server-erp.payshia.com/locations/${data.location_id}`),
+            ]);
+            if(companyRes.ok) setCompany(await companyRes.json());
+            if(locationRes.ok) setLocation(await locationRes.json());
         }
 
       } catch (error) {
@@ -79,10 +99,9 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Payshia ERP</h1>
-          <p>#455, 533A3, Pelmadulla</p>
-          <p>Rathnapura, 70070</p>
-          <p>info@payshia.com</p>
+          <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
+          <p>{location?.address_line1}, {location?.city}</p>
+          <p>{company?.company_email}</p>
         </div>
         <div className="text-right">
           <h2 className="text-4xl font-bold uppercase text-gray-700">Invoice</h2>

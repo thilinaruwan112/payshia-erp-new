@@ -1,16 +1,28 @@
 
+
 'use client';
 
 import { notFound } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-import type { Invoice, User, Product } from '@/lib/types';
+import type { Invoice, User, Product, Location } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
+interface Company {
+    id: string;
+    company_name: string;
+    company_address: string;
+    company_city: string;
+    company_email: string;
+    company_telephone: string;
+}
+
 export default function POSInvoicePage({ params }: { params: { id: string } }) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
@@ -30,6 +42,15 @@ export default function POSInvoicePage({ params }: { params: { id: string } }) {
 
             if (invoiceData.customer) {
                 setCustomer(invoiceData.customer);
+            }
+
+            if (invoiceData.company_id && invoiceData.location_id) {
+                const [companyRes, locationRes] = await Promise.all([
+                    fetch(`https://server-erp.payshia.com/companies/${invoiceData.company_id}`),
+                    fetch(`https://server-erp.payshia.com/locations/${invoiceData.location_id}`),
+                ]);
+                if(companyRes.ok) setCompany(await companyRes.json());
+                if(locationRes.ok) setLocation(await locationRes.json());
             }
         } catch (error) {
             toast({
@@ -88,10 +109,9 @@ export default function POSInvoicePage({ params }: { params: { id: string } }) {
   return (
     <div className="w-[58mm] bg-white text-black p-1 font-mono text-[9px] leading-snug">
       <div className="text-center">
-        <h1 className="font-bold text-sm">Payshia Store</h1>
-        <p>#455, Pelmadulla, Rathnapura</p>
-        <p>045-222-2222</p>
-        <p>www.payshia.com</p>
+        <h1 className="font-bold text-sm">{company?.company_name || 'Payshia Store'}</h1>
+        <p>{location?.address_line1}, {location?.city}</p>
+        <p>{company?.company_telephone}</p>
       </div>
 
       <div className="my-2 border-t border-dashed border-black"></div>

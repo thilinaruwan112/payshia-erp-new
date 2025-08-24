@@ -4,7 +4,7 @@
 
 import { notFound } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
-import type { Invoice, User } from '@/lib/types';
+import type { Invoice, User, Location } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -25,6 +25,15 @@ type Receipt = {
     now_time: string;
 };
 
+interface Company {
+    id: string;
+    company_name: string;
+    company_address: string;
+    company_city: string;
+    company_email: string;
+    company_telephone: string;
+}
+
 interface PrintViewProps {
     id: string;
 }
@@ -33,6 +42,8 @@ export function A4ReceiptPrintView({ id }: PrintViewProps) {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -49,17 +60,18 @@ export function A4ReceiptPrintView({ id }: PrintViewProps) {
             const receiptData: Receipt = await receiptResponse.json();
             setReceipt(receiptData);
 
-            const [customerResponse, invoiceResponse] = await Promise.all([
+            const [customerResponse, invoiceResponse, companyRes, locationRes] = await Promise.all([
                  fetch(`https://server-erp.payshia.com/customers/${receiptData.customer_id}`),
-                 fetch(`https://server-erp.payshia.com/invoices/full/${receiptData.ref_id}`)
+                 fetch(`https://server-erp.payshia.com/invoices/full/${receiptData.ref_id}`),
+                 fetch(`https://server-erp.payshia.com/companies/${receiptData.company_id}`),
+                 fetch(`https://server-erp.payshia.com/locations/${receiptData.location_id}`),
             ]);
             
-             if (customerResponse.ok) {
-                setCustomer(await customerResponse.json());
-             }
-             if (invoiceResponse.ok) {
-                setInvoice(await invoiceResponse.json());
-             }
+             if (customerResponse.ok) setCustomer(await customerResponse.json());
+             if (invoiceResponse.ok) setInvoice(await invoiceResponse.json());
+             if (companyRes.ok) setCompany(await companyRes.json());
+             if (locationRes.ok) setLocation(await locationRes.json());
+
         } catch (error) {
             toast({
                 variant: 'destructive',
@@ -103,10 +115,9 @@ export function A4ReceiptPrintView({ id }: PrintViewProps) {
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
        <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Payshia ERP</h1>
-          <p>#455, 533A3, Pelmadulla</p>
-          <p>Rathnapura, 70070</p>
-          <p>info@payshia.com</p>
+          <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
+          <p>{location?.address_line1}, {location?.city}</p>
+          <p>{company?.company_email}</p>
         </div>
         <div className="text-right">
           <h2 className="text-4xl font-bold uppercase text-gray-700">Payment Receipt</h2>

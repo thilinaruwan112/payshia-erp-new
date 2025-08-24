@@ -1,7 +1,8 @@
 
+
 'use client'
 
-import { type SupplierReturn, type Supplier } from '@/lib/types';
+import { type SupplierReturn, type Supplier, type Location } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -42,9 +43,20 @@ interface PrintViewProps {
     id: string;
 }
 
+interface Company {
+    id: string;
+    company_name: string;
+    company_address: string;
+    company_city: string;
+    company_email: string;
+    company_telephone: string;
+}
+
 export function SupplierReturnPrintView({ id }: PrintViewProps) {
   const [sReturn, setSReturn] = useState<SupplierReturn | null>(null);
   const [supplier, setSupplier] = useState<Supplier | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
@@ -55,6 +67,20 @@ export function SupplierReturnPrintView({ id }: PrintViewProps) {
         setSReturn(returnData);
         const supplierData = suppliers.find(s => s.supplier_id === returnData.supplierId);
         setSupplier(supplierData || null);
+        
+        // Mock company and location data
+        setCompany({
+            id: '1',
+            company_name: 'Payshia ERP',
+            company_address: '#455, 533A3, Pelmadulla',
+            company_city: 'Rathnapura',
+            company_email: 'info@payshia.com',
+            company_telephone: '045-222-2222',
+        });
+        setLocation({
+             location_id: '1', location_name: 'Main Warehouse', address_line1: '#455, 533A3, Pelmadulla', city: 'Rathnapura', location_code: '', is_active: '', created_at: '', created_by: '', logo_path: '', address_line2: '', phone_1: '', phone_2: '', pos_status: '', pos_token: '', location_type: '', company_id: 1,
+        });
+
     } else {
         notFound();
     }
@@ -87,10 +113,9 @@ export function SupplierReturnPrintView({ id }: PrintViewProps) {
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Payshia ERP</h1>
-          <p>#455, 533A3, Pelmadulla</p>
-          <p>Rathnapura, 70070</p>
-          <p>info@payshia.com</p>
+          <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
+          <p>{location?.address_line1}, {location?.city}</p>
+          <p>{company?.company_email}</p>
         </div>
         <div className="text-right">
           <h2 className="text-4xl font-bold uppercase text-gray-700">Supplier Return Note</h2>
