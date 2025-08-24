@@ -937,7 +937,7 @@ export default function POSPage() {
     setActiveOrders(prevOrders => prevOrders.map(order => 
         order.id === orderId ? { ...order, customer } : order
     ));
-  }
+  };
 
   const filteredProducts = useMemo(() => {
     let productsToFilter = posProducts;
@@ -1260,7 +1260,7 @@ export default function POSPage() {
         availableTables={tables}
         availableStewards={stewards}
         customers={customers}
-        onUpdateCustomer={onUpdateCustomer}
+        onUpdateCustomer={updateCustomer}
      />
   ) : (
       <div className="flex flex-col h-full bg-card items-center justify-center text-center p-8">
