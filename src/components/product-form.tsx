@@ -95,6 +95,7 @@ const productFormSchema = z.object({
   wholesalePrice: z.coerce.number().optional(),
   price2: z.coerce.number().optional(),
   foreignPrice: z.coerce.number().optional(),
+  recipeType: z.enum(["standard", "a_la_carte", "item_recipe"]).optional(),
   variants: z.array(variantSchema).min(1, { message: "At least one variant is required." }),
   supplier: z.array(z.string()).optional(),
   customFields: z.array(customFieldSchema).optional(),
@@ -162,6 +163,7 @@ export function ProductForm({ product }: ProductFormProps) {
     costPrice: product?.cost_price ? parseFloat(String(product.cost_price)) : 0,
     minPrice: product?.min_price ? parseFloat(String(product.min_price)) : 0,
     wholesalePrice: product?.wholesale_price ? parseFloat(String(product.wholesale_price)) : 0,
+    recipeType: product?.recipe_type || "standard",
     variants: product?.variants?.map(v => ({
         id: v.id,
         sku: v.sku,
@@ -271,7 +273,7 @@ export function ProductForm({ product }: ProductFormProps) {
       item_type: "finished_good",
       base_location: "warehouse_a",
       product_image_url: "",
-      recipe_type: "standard",
+      recipe_type: data.recipeType || "standard",
       barcode: "",
       available_locations: "warehouse_a",
       variants: data.variants.map(v => ({
@@ -779,6 +781,28 @@ export function ProductForm({ product }: ProductFormProps) {
                                         {brands.map(brand => (
                                             <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
                                         ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="recipeType"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Recipe Type</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                        <SelectValue placeholder="Select a recipe type" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="standard">Standard</SelectItem>
+                                        <SelectItem value="a_la_carte">A La Carte</SelectItem>
+                                        <SelectItem value="item_recipe">Item Recipe</SelectItem>
                                     </SelectContent>
                                     </Select>
                                     <FormMessage />
