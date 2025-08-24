@@ -1,50 +1,50 @@
 
 'use client'
 
-import { ProductForm } from '@/components/product-form';
+import { CategoryForm } from '@/components/category-form';
 import { useToast } from '@/hooks/use-toast';
-import { type Product } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
-interface EditProductFormProps {
-    id: string;
-}
+type Category = {
+  id: string;
+  name: string;
+  description: string;
+};
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
-  const [product, setProduct] = useState<Product | null>(null);
+export default function EditCategoryPage({ params }: { params: { id: string } }) {
+  const [category, setCategory] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { id } = params;
 
   useEffect(() => {
-    async function fetchProduct() {
+    async function fetchCategory() {
       if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products/details/${id}`);
+        const response = await fetch(`https://server-erp.payshia.com/master-categories/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();
            }
-          throw new Error('Failed to fetch product data');
+          throw new Error('Failed to fetch category data');
         }
         const data = await response.json();
-        setProduct({ ...data.product, variants: data.variants });
+        setCategory(data);
       } catch (error) {
-        console.error(error);
         toast({
           variant: 'destructive',
-          title: 'Failed to load product',
-          description: 'Could not fetch product data from the server.',
+          title: 'Failed to load category',
+          description: 'Could not fetch category data from the server.',
         });
       } finally {
         setIsLoading(false);
       }
     }
-    fetchProduct();
+    fetchCategory();
   }, [id, toast]);
 
   if (isLoading) {
@@ -79,9 +79,9 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
     );
   }
 
-  if (!product) {
-    return <div>Could not load product data. It might have been deleted.</div>;
+  if (!category) {
+    return <div>Could not load category data. It might have been deleted.</div>;
   }
 
-  return <ProductForm product={product} />;
+  return <CategoryForm category={category} />;
 }
