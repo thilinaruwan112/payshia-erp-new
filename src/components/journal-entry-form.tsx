@@ -41,6 +41,7 @@ import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useCurrency } from "./currency-provider";
+import { Combobox } from "./ui/combobox";
 
 const journalEntryFormSchema = z.object({
   date: z.date({
@@ -106,6 +107,8 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
   const { lines } = form.watch();
   const totalDebit = lines.reduce((acc, line) => acc + (Number(line.debit) || 0), 0);
   const totalCredit = lines.reduce((acc, line) => acc + (Number(line.credit) || 0), 0);
+
+  const accountOptions = accounts.map(acc => ({ value: String(acc.code), label: `${acc.code} - ${acc.name}`}));
 
 
   return (
@@ -208,18 +211,13 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
                                         name={`lines.${index}.accountId`}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select an account" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        {accounts.map(acc => (
-                                                            <SelectItem key={acc.code} value={String(acc.code)}>{acc.code} - {acc.name}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
+                                                <Combobox
+                                                    options={accountOptions}
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    placeholder="Select an account..."
+                                                    notFoundText="No account found."
+                                                />
                                                 <FormMessage />
                                             </FormItem>
                                         )}

@@ -87,6 +87,9 @@ export function ExpenseForm({ expenseAccounts, paymentAccounts, payees }: Expens
   }
 
   const payeeOptions = payees.map(payee => ({ value: payee, label: payee }));
+  const expenseAccountOptions = expenseAccounts.map(acc => ({ value: String(acc.code), label: `${acc.code} - ${acc.name}`}));
+  const paymentAccountOptions = paymentAccounts.map(acc => ({ value: String(acc.code), label: `${acc.code} - ${acc.name}`}));
+
 
   return (
     <Form {...form}>
@@ -183,20 +186,15 @@ export function ExpenseForm({ expenseAccounts, paymentAccounts, payees }: Expens
                     control={form.control}
                     name="expenseAccountId"
                     render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="flex flex-col">
                             <FormLabel>Expense Category</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a category" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {expenseAccounts.map(acc => (
-                                        <SelectItem key={acc.code} value={String(acc.code)}>{acc.code} - {acc.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                             <Combobox
+                                options={expenseAccountOptions}
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="Select a category..."
+                                notFoundText="No account found."
+                            />
                             <FormMessage />
                         </FormItem>
                     )}
@@ -205,20 +203,15 @@ export function ExpenseForm({ expenseAccounts, paymentAccounts, payees }: Expens
                     control={form.control}
                     name="paymentAccountId"
                     render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="flex flex-col">
                             <FormLabel>Paid From</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a payment account" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {paymentAccounts.map(acc => (
-                                        <SelectItem key={acc.code} value={String(acc.code)}>{acc.code} - {acc.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Combobox
+                                options={paymentAccountOptions}
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="Select a payment account..."
+                                notFoundText="No account found."
+                            />
                             <FormMessage />
                         </FormItem>
                     )}

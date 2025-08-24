@@ -42,6 +42,7 @@ import React, { useEffect, useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { useLocation } from "./location-provider";
 import { Switch } from "./ui/switch";
+import { Combobox } from "./ui/combobox";
 
 const purchaseOrderItemSchema = z.object({
   product_id: z.string().min(1, "Product is required."),
@@ -225,6 +226,9 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
         setIsLoading(false);
     }
   }
+  
+  const supplierOptions = suppliers.map(s => ({ value: s.supplier_id, label: s.supplier_name }));
+  const productOptions = availableProducts.map(p => ({ value: p.product.id, label: p.product.name }));
 
   return (
     <Form {...form}>
@@ -254,18 +258,13 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                     render={({ field }) => (
                         <FormItem className="flex flex-col justify-end">
                             <FormLabel>Supplier</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a supplier" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {suppliers.map(s => (
-                                        <SelectItem key={s.supplier_id} value={s.supplier_id}>{s.supplier_name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                             <Combobox
+                                options={supplierOptions}
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="Select a supplier..."
+                                notFoundText="No supplier found."
+                            />
                             <FormMessage />
                         </FormItem>
                     )}
@@ -400,6 +399,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                 const total = cost * quantity;
                                 const selectedProductId = watchedItems[index]?.product_id;
                                 const productVariants = availableProducts.find(p => p.product.id === selectedProductId)?.variants || [];
+                                const variantOptions = productVariants.map(v => ({ value: v.id, label: [v.sku, v.color, v.size].filter(Boolean).join(' - ') }));
 
                                 return (
                                     <TableRow key={field.id}>
@@ -409,27 +409,19 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                                 name={`items.${index}.product_id`}
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <Select
-                                                            onValueChange={(value) => {
+                                                        <Combobox
+                                                            options={productOptions}
+                                                            value={field.value}
+                                                            onChange={(value) => {
                                                                 field.onChange(value);
                                                                 const selected = availableProducts.find(p => p.product.id === value);
                                                                 form.setValue(`items.${index}.order_rate`, parseFloat(selected?.product.cost_price as string) || 0);
                                                                 form.setValue(`items.${index}.product_variant_id`, ''); // Reset variant
                                                             }}
-                                                            defaultValue={field.value}
+                                                            placeholder="Select a product..."
+                                                            notFoundText="No product found."
                                                             disabled={!supplierId || availableProducts.length === 0}
-                                                        >
-                                                            <FormControl>
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="Select a product" />
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                                {availableProducts.map(p => (
-                                                                    <SelectItem key={p.product.id} value={p.product.id}>{p.product.name}</SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        />
                                                         <FormMessage />
                                                     </FormItem>
                                                 )}
@@ -441,24 +433,14 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                                 name={`items.${index}.product_variant_id`}
                                                 render={({ field }) => (
                                                     <FormItem>
-                                                        <Select
-                                                            onValueChange={field.onChange}
-                                                            defaultValue={field.value}
+                                                        <Combobox
+                                                            options={variantOptions}
+                                                            value={field.value}
+                                                            onChange={field.onChange}
+                                                            placeholder="Select a variant..."
+                                                            notFoundText="No variant found."
                                                             disabled={!selectedProductId}
-                                                        >
-                                                            <FormControl>
-                                                                <SelectTrigger>
-                                                                    <SelectValue placeholder="Select a variant" />
-                                                                </SelectTrigger>
-                                                            </FormControl>
-                                                            <SelectContent>
-                                                                {productVariants.map(v => (
-                                                                    <SelectItem key={v.id} value={v.id}>
-                                                                        {[v.sku, v.color, v.size].filter(Boolean).join(' - ')}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        />
                                                         <FormMessage />
                                                     </FormItem>
                                                 )}
