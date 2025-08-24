@@ -95,7 +95,7 @@ const productFormSchema = z.object({
   wholesalePrice: z.coerce.number().optional(),
   price2: z.coerce.number().optional(),
   foreignPrice: z.coerce.number().optional(),
-  recipeType: z.enum(["standard", "ala cart", "item_recipe"]).optional(),
+  recipeType: z.enum(["standard", "a_la_carte", "item_recipe"]).optional(),
   variants: z.array(variantSchema).min(1, { message: "At least one variant is required." }),
   supplier: z.array(z.string()).optional(),
   customFields: z.array(customFieldSchema).optional(),
@@ -139,7 +139,7 @@ export function ProductForm({ product }: ProductFormProps) {
     }
     
     if (company_id) {
-        fetchData('https://server-erp.payshia.com/categories', setCategories, 'categories');
+        fetchData(`https://server-erp.payshia.com/master-categories/company?company_id=${company_id}`, setCategories, 'categories');
         fetchData(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`, setBrands, 'brands');
         fetchData(`https://server-erp.payshia.com/product-colors/company?company_id=${company_id}`, setColors, 'colors');
         fetchData(`https://server-erp.payshia.com/sizes/filter/company?company_id=${company_id}`, setSizes, 'sizes');
@@ -273,7 +273,7 @@ export function ProductForm({ product }: ProductFormProps) {
       item_type: "finished_good",
       base_location: "warehouse_a",
       product_image_url: "",
-      recipe_type: data.recipeType || "standard",
+      recipe_type: data.recipeType === 'a_la_carte' ? 'ala cart' : data.recipeType || 'standard',
       barcode: "",
       available_locations: "warehouse_a",
       variants: data.variants.map(v => ({
@@ -801,7 +801,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="standard">Standard</SelectItem>
-                                        <SelectItem value="ala cart">A La Carte</SelectItem>
+                                        <SelectItem value="a_la_carte">A La Carte</SelectItem>
                                         <SelectItem value="item_recipe">Item Recipe</SelectItem>
                                     </SelectContent>
                                     </Select>
@@ -869,4 +869,3 @@ export function ProductForm({ product }: ProductFormProps) {
     </Form>
   );
 }
-
