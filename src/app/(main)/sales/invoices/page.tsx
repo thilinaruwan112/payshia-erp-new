@@ -34,13 +34,14 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/components/location-provider';
 
-const getStatusColor = (status: Invoice['invoice_status']) => {
+const getStatusColor = (status: string) => {
   switch (status) {
     case 'Draft':
       return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     case 'Sent':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
     case 'Paid':
+    case 'Active':
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
     case 'Overdue':
       return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
@@ -48,6 +49,11 @@ const getStatusColor = (status: Invoice['invoice_status']) => {
       return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
   }
 };
+
+const getStatusText = (status: string): string => {
+    if (status === '1') return 'Active';
+    return status;
+}
 
 
 export default function InvoicesPage() {
@@ -147,36 +153,39 @@ export default function InvoicesPage() {
                     </TableRow>
                 ))
               ) : (
-                invoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                    <TableCell>{getCustomerName(invoice.customer_code)}</TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                       <Badge variant="secondary" className={cn(getStatusColor(invoice.invoice_status))}>
-                        {invoice.invoice_status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">{new Date(invoice.invoice_date).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right font-mono">${parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/sales/invoices/${invoice.invoice_number}`}>View Details</Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>Send Reminder</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
+                invoices.map((invoice) => {
+                  const statusText = getStatusText(invoice.invoice_status);
+                  return (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                      <TableCell>{getCustomerName(invoice.customer_code)}</TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant="secondary" className={cn(getStatusColor(statusText))}>
+                          {statusText}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">{new Date(invoice.invoice_date).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right font-mono">${parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/sales/invoices/${invoice.invoice_number}`}>View Details</Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>Send Reminder</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
                {!isLoading && invoices.length === 0 && (
                 <TableRow>
