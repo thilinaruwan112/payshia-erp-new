@@ -448,7 +448,18 @@ export type CartItem = {
   product: Product & { variant: ProductVariant; variantName: string };
   quantity: number;
   itemDiscount?: number;
+  batch: StockInfo;
 };
+
+export type StockInfo = {
+    product_id: string;
+    expire_date: string;
+    patch_code: string;
+    total_in: string;
+    total_out: string;
+    stock_balance: string;
+}
+
 
 export type Table = {
     id: string;

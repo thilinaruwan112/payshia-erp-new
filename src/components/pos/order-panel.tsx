@@ -3,7 +3,7 @@
 'use client';
 
 import React from 'react';
-import type { CartItem, OrderInfo, ActiveOrder } from '@/app/(pos)/pos-system/page';
+import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
 import type { User, Table as TableType, Location } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -50,8 +50,8 @@ interface OrderPanelProps {
   orderTotals: OrderInfo;
   cashierName: string;
   currentLocation: Location | null;
-  onUpdateQuantity: (variantId: string, newQuantity: number) => void;
-  onRemoveItem: (variantId: string) => void;
+  onUpdateQuantity: (variantId: string, batchCode: string, newQuantity: number) => void;
+  onRemoveItem: (variantId: string, batchCode: string) => void;
   onClearCart: (invoiceId: string) => void;
   onHoldOrder: () => void;
   onSendToKitchen: () => void;
@@ -531,7 +531,7 @@ export function OrderPanel({
           <ScrollArea className="h-full max-h-[calc(100vh-570px)]">
             <div className="divide-y divide-border">
               {cart.map((item) => (
-                <div key={item.product.variant.id} className="p-4 flex gap-4">
+                <div key={`${item.product.variant.id}-${item.batch.patch_code}`} className="p-4 flex gap-4">
                   <Image
                     src={`https://placehold.co/64x64.png`}
                     alt={item.product.name}
@@ -545,6 +545,9 @@ export function OrderPanel({
                     <span className="text-muted-foreground text-sm">
                       ${(item.product.price as number).toFixed(2)}
                     </span>
+                    <Badge variant="outline" className="w-fit text-xs mt-1">
+                        Batch: {item.batch.patch_code}
+                    </Badge>
                     {item.itemDiscount && item.itemDiscount > 0 ? (
                         <span className="text-xs text-green-600">
                           Discount: -${item.itemDiscount.toFixed(2)}
@@ -556,7 +559,7 @@ export function OrderPanel({
                         variant="ghost"
                         className="h-8 w-8"
                         onClick={() =>
-                          onUpdateQuantity(item.product.variant.id, item.quantity - 1)
+                          onUpdateQuantity(item.product.variant.id, item.batch.patch_code, item.quantity - 1)
                         }
                       >
                         <MinusCircle className="h-5 w-5" />
@@ -567,7 +570,7 @@ export function OrderPanel({
                         variant="ghost"
                         className="h-8 w-8"
                         onClick={() =>
-                          onUpdateQuantity(item.product.variant.id, item.quantity + 1)
+                          onUpdateQuantity(item.product.variant.id, item.batch.patch_code, item.quantity + 1)
                         }
                       >
                         <PlusCircle className="h-5 w-5" />
@@ -582,7 +585,7 @@ export function OrderPanel({
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 mt-auto text-muted-foreground hover:text-destructive"
-                      onClick={() => onRemoveItem(item.product.variant.id)}
+                      onClick={() => onRemoveItem(item.product.variant.id, item.batch.patch_code)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

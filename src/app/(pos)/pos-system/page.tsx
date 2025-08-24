@@ -59,6 +59,14 @@ export type OrderInfo = {
   total: number;
 };
 
+export type StockInfo = {
+    product_id: string;
+    expire_date: string;
+    patch_code: string;
+    total_in: string;
+    total_out: string;
+    stock_balance: string;
+}
 
 interface ProductWithVariants {
     product: Product;
@@ -741,7 +749,7 @@ export default function POSPage() {
     setSelectedProduct(product);
   }
 
-  const addToCart = (product: PosProduct, quantity: number, discount: number) => {
+  const addToCart = (product: PosProduct, quantity: number, discount: number, batch: StockInfo) => {
     if (!currentOrderId) {
       return;
     }
@@ -749,17 +757,17 @@ export default function POSPage() {
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
         const existingItem = order.cart.find(
-          (item) => item.product.variant.id === product.variant.id
+          (item) => item.product.variant.id === product.variant.id && item.batch.patch_code === batch.patch_code
         );
         let newCart;
         if (existingItem) {
           newCart = order.cart.map((item) =>
-            item.product.variant.id === product.variant.id
+            item.product.variant.id === product.variant.id && item.batch.patch_code === batch.patch_code
               ? { ...item, quantity: item.quantity + quantity, itemDiscount: (item.itemDiscount || 0) + discount }
               : item
           );
         } else {
-          newCart = [...order.cart, { product, quantity, itemDiscount: discount }];
+          newCart = [...order.cart, { product, quantity, itemDiscount: discount, batch }];
         }
         return { ...order, cart: newCart };
       })
@@ -767,17 +775,17 @@ export default function POSPage() {
     setSelectedProduct(null);
   };
 
-  const updateQuantity = (variantId: string, newQuantity: number) => {
+  const updateQuantity = (variantId: string, batchCode: string, newQuantity: number) => {
     if (!currentOrderId) return;
     setActiveOrders((prevOrders) =>
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
         let newCart;
         if (newQuantity <= 0) {
-          newCart = order.cart.filter((item) => item.product.variant.id !== variantId);
+          newCart = order.cart.filter((item) => !(item.product.variant.id === variantId && item.batch.patch_code === batchCode));
         } else {
           newCart = order.cart.map((item) =>
-            item.product.variant.id === variantId
+            item.product.variant.id === variantId && item.batch.patch_code === batchCode
               ? { ...item, quantity: newQuantity }
               : item
           );
@@ -787,12 +795,12 @@ export default function POSPage() {
     );
   };
 
-  const removeFromCart = (variantId: string) => {
+  const removeFromCart = (variantId: string, batchCode: string) => {
      if (!currentOrderId) return;
      setActiveOrders((prevOrders) =>
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
-        const newCart = order.cart.filter((item) => item.product.variant.id !== variantId);
+        const newCart = order.cart.filter((item) => !(item.product.variant.id === variantId && item.batch.patch_code === batchCode));
         return {...order, cart: newCart };
       })
     );
@@ -1209,6 +1217,7 @@ export default function POSPage() {
                 },
                 quantity: parseFloat(String(item.quantity)),
                 itemDiscount: parseFloat(String(item.item_discount)),
+                batch: { patch_code: 'HELD', expire_date: '' } as StockInfo, // Mock batch for now
             };
         }).filter((item): item is CartItem => item !== null);
         
