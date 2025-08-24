@@ -100,6 +100,7 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
+          <p className="font-semibold">{location?.location_name}</p>
           <p>{location?.address_line1}, {location?.city}</p>
           <p>{company?.company_email}</p>
         </div>
