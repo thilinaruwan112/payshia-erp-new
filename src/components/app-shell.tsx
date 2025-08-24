@@ -55,6 +55,7 @@ import {
   LogOut,
   ClipboardList,
   Utensils,
+  PackagePlus,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -136,6 +137,7 @@ const navItems = [
       { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
       { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
       { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
+      { href: '/inventory/opening-stock', label: 'Opening Stock', icon: PackagePlus },
     ],
   },
   {
