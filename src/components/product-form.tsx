@@ -95,7 +95,7 @@ const productFormSchema = z.object({
   wholesalePrice: z.coerce.number().optional(),
   price2: z.coerce.number().optional(),
   foreignPrice: z.coerce.number().optional(),
-  recipeType: z.enum(["standard", "a_la_carte", "item_recipe"]).optional(),
+  recipeType: z.enum(["standard", "ala cart", "item_recipe"]).optional(),
   variants: z.array(variantSchema).min(1, { message: "At least one variant is required." }),
   supplier: z.array(z.string()).optional(),
   customFields: z.array(customFieldSchema).optional(),
@@ -801,7 +801,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                     </FormControl>
                                     <SelectContent>
                                         <SelectItem value="standard">Standard</SelectItem>
-                                        <SelectItem value="a_la_carte">A La Carte</SelectItem>
+                                        <SelectItem value="ala cart">A La Carte</SelectItem>
                                         <SelectItem value="item_recipe">Item Recipe</SelectItem>
                                     </SelectContent>
                                     </Select>
@@ -869,3 +869,4 @@ export function ProductForm({ product }: ProductFormProps) {
     </Form>
   );
 }
+
