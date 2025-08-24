@@ -67,7 +67,7 @@ export function CategoryForm({ category }: CategoryFormProps) {
       return;
     }
     setIsLoading(true);
-    const url = category ? `https://server-erp.payshia.com/master-categories/${category.id}` : 'https://server-erp.payshia.com/master-categories';
+    const url = category ? `https://server-erp.payshia.com/master-categories/${category.id}` : 'https://server-erp.payshia.com/categories';
     const method = category ? 'PUT' : 'POST';
 
     const payload = { ...data, company_id: company_id };
