@@ -138,9 +138,6 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
         <div className="text-right">
             <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Ship To</h3>
             <p className="font-bold text-gray-800">{location?.location_name}</p>
-            <p>{location?.address_line1}</p>
-            <p>{location?.city}</p>
-            <p>{location?.phone_1}</p>
         </div>
         <div className="col-span-2 text-right">
           <div className="grid grid-cols-4 gap-1">
