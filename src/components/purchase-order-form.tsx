@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, PurchaseOrderItem, Supplier, ProductVariant } from "@/lib/types";
+import type { Product, PurchaseOrderItem, Supplier, ProductVariant, Location } from "@/lib/types";
 import { CalendarIcon, Trash2, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -116,7 +116,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
       setIsLoadingProducts(true);
       replace([]); // Clear items when supplier changes
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products/filter?supplier_id=${supplierId}&company_id=${company_id}`);
+        const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company-and-supplier?company_id=${company_id}&supplier_id=${supplierId}`);
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to fetch products for this supplier');
@@ -136,7 +136,9 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
         append({ product_id: '', product_variant_id: '', quantity: 1, order_rate: 0 });
       }
     }
-    fetchProductsBySupplier(supplierId);
+    if (supplierId) {
+        fetchProductsBySupplier(supplierId);
+    }
   }, [supplierId, company_id, toast, replace, append]);
   
 
