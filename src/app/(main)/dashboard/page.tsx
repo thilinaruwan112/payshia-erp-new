@@ -41,16 +41,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Dashboard() {
   const { currentLocation, isLoading: isLocationLoading, availableLocations } = useLocation();
-  const [companyName, setCompanyName] = useState('');
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const { toast } = useToast();
-
-  useEffect(() => {
-    const name = localStorage.getItem('companyName');
-    setCompanyName(name || 'Your Company');
-  }, []);
   
   useEffect(() => {
     if (!currentLocation) {
@@ -131,7 +125,7 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard for <span className="text-primary">{companyName}</span></h1>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
             Showing data for location: <span className="font-semibold">{currentLocation.location_name}</span>
           </p>

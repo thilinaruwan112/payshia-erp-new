@@ -101,20 +101,15 @@ import { Calendar } from './ui/calendar';
 
 const navItems = [
   {
-    label: 'Dashboards',
+    href: '/dashboard',
+    label: 'Dashboard',
     icon: LayoutDashboard,
-    subItems: [
-      { href: '/dashboard', label: 'Overview', icon: LayoutGrid },
-      { href: '/sales/dashboard', label: 'Sales', icon: TrendingUp },
-      { href: '/inventory/dashboard', label: 'Inventory', icon: Package },
-       { href: '/suppliers/dashboard', label: 'Suppliers', icon: Building },
-      { href: '/crm/dashboard', label: 'CRM', icon: Users },
-    ],
   },
   {
     label: 'Sales',
     icon: TrendingUp,
     subItems: [
+      { href: '/sales/dashboard', label: 'Sales Dashboard', icon: TrendingUp },
       { href: '/orders', label: 'Orders', icon: ShoppingCart },
       { href: '/sales/invoices', label: 'Invoices', icon: FileText },
       { href: '/sales/receipts', label: 'Receipts', icon: Receipt },
@@ -124,13 +119,18 @@ const navItems = [
     label: 'CRM',
     icon: Contact,
     subItems: [
+      { href: '/crm/dashboard', label: 'CRM Dashboard', icon: LayoutDashboard },
       { href: '/crm/customers', label: 'Customers', icon: Users },
+      { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
+      { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
+      { href: '/crm/loyalty-schema', label: 'Loyalty Schema', icon: Gem },
     ],
   },
   {
     label: 'Inventory & Products',
     icon: Package,
     subItems: [
+      { href: '/inventory/dashboard', label: 'Inventory Dashboard', icon: LayoutDashboard },
       { href: '/products', label: 'All Products', icon: Boxes },
       { href: '/products/categories', label: 'Categories', icon: LayoutList },
       { href: '/products/collections', label: 'Collections', icon: Archive },
@@ -140,6 +140,7 @@ const navItems = [
       { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
       { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
       { href: '/inventory/opening-stock', label: 'Opening Stock', icon: PackagePlus },
+      { href: '/inventory/forecast', label: 'AI Forecast', icon: TrendingUp },
     ],
   },
   {
@@ -169,9 +170,51 @@ const navItems = [
     ],
   },
   {
-    href: '/reports',
+    label: 'Accounting',
+    icon: Calculator,
+    subItems: [
+        { href: '/accounting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: FileText },
+        { href: '/accounting/journal-entries', label: 'Journal Entries', icon: BookUser },
+        { href: '/accounting/expenses', label: 'Expenses', icon: Receipt },
+        { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
+    ],
+  },
+  {
+    label: 'HRM',
+    icon: Briefcase,
+    subItems: [
+        { href: '/hrm/dashboard', label: 'HRM Dashboard', icon: LayoutDashboard },
+        { href: '/hrm/employees', label: 'Employees', icon: Users },
+        { href: '/hrm/attendance', label: 'Attendance', icon: CalendarCheck },
+        { href: '/hrm/payroll', label: 'Payroll', icon: DollarSign },
+        { href: '/hrm/leave', label: 'Leave Management', icon: CalendarDays },
+        { href: '/hrm/performance', label: 'Performance', icon: Star },
+    ],
+  },
+  {
     label: 'Reports',
     icon: BarChart3,
+    subItems: [
+        { href: '/reports', label: 'Reports Center', icon: LayoutGrid },
+        { href: '/reports/sales-summary', label: 'Sales Summary', icon: TrendingUp },
+        { href: '/reports/stock-balance', label: 'Stock Balance', icon: AreaChart },
+        { href: '/reports/bin-card', label: 'Bin Card', icon: History },
+        { href: '/reports/customer-statement', label: 'Customer Statement', icon: User },
+        { href: '/reports/credit-sales-summary', label: 'Credit Sales', icon: CreditCard },
+        { href: '/reports/invoice-report', label: 'Invoice Report', icon: FileText },
+        { href: '/reports/supplier-report', label: 'Supplier Report', icon: Truck },
+        { href: '/reports/supplier-balance', label: 'Supplier Balance', icon: Wallet },
+        { href: '/reports/customer-report', label: 'Customer Report', icon: Contact },
+    ],
+  },
+  {
+    label: 'AI Tools',
+    icon: Fingerprint,
+    subItems: [
+      { href: '/logistics', label: 'Logistics Assistant', icon: Truck },
+      { href: '/inventory/forecast', label: 'Inventory Forecasting', icon: TrendingUp },
+    ],
   },
   {
     label: 'Settings',
@@ -409,11 +452,11 @@ function UserMenu({ user }: { user: any }) {
   );
 }
 
-function Brand() {
+function Brand({ companyName }: { companyName: string }) {
   return (
     <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg">
       <Truck className="h-6 w-6 text-primary" />
-      <span>Payshia ERP</span>
+      <span>{companyName}</span>
     </Link>
   );
 }
@@ -480,6 +523,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
   const [user, setUser] = useState({ name: '', email: '', role: '', avatar: '' });
+  const [companyName, setCompanyName] = useState('Payshia ERP');
 
   useEffect(() => {
     const userName = localStorage.getItem('userName');
@@ -491,6 +535,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         role: 'User',
         avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`
       });
+    }
+    const name = localStorage.getItem('companyName');
+    if (name) {
+      setCompanyName(name);
     }
   }, []);
 
@@ -504,7 +552,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <>
       <Sidebar>
         <SidebarHeader>
-          <Brand />
+          <Brand companyName={companyName} />
         </SidebarHeader>
          <LocationSwitcher isMobile={true} />
          <SidebarSeparator />
@@ -528,6 +576,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
           <div className="flex items-center gap-4">
             <SidebarTrigger className="md:hidden" />
+            <div className="hidden md:block">
+              <h1 className="text-lg font-semibold">{companyName}</h1>
+            </div>
             <DateTimeLocation />
           </div>
           <div className="flex items-center gap-2">
