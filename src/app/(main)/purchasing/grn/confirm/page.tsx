@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { format, parseISO } from "date-fns";
 import React, { useEffect, useState } from "react";
 import type { GrnFormValues } from "@/components/grn-form";
+import { useLocation } from "@/components/location-provider";
 
 const grnBatchSchema = z.object({
     batchNumber: z.string().min(1, "Batch number is required."),
@@ -68,6 +69,7 @@ const grnFormSchema = z.object({
 export default function GrnConfirmationPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const { company_id } = useLocation();
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -109,6 +111,10 @@ export default function GrnConfirmationPage() {
     const grandTotal = subTotal + taxValue;
 
     const onSubmit = async (data: GrnFormValues) => {
+        if (!company_id) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Company not found. Please re-login.' });
+            return;
+        }
         setIsSubmitting(true);
         const grnItemsPayload = data.items.flatMap(item => 
             item.batches.map(batch => ({
@@ -128,7 +134,7 @@ export default function GrnConfirmationPage() {
 
         const grnPayload = {
             location_id: parseInt(data.locationId, 10),
-            company_id: 1,
+            company_id: company_id,
             supplier_id: parseInt(data.supplierId, 10),
             currency: data.currency,
             tax_type: data.taxType,
