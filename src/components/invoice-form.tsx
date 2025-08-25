@@ -41,6 +41,7 @@ import { addDays, format } from "date-fns";
 import React from "react";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useLocation } from "./location-provider";
+import { Combobox } from "./ui/combobox";
 
 type StockInfo = {
     product_id: string;
@@ -300,6 +301,11 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         setIsLoading(false);
     }
   }
+  
+  const customerOptions = customers.map(c => ({
+      value: c.customer_id,
+      label: `${c.customer_first_name} ${c.customer_last_name}`,
+  }));
 
   return (
     <Form {...form}>
@@ -363,20 +369,15 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                         control={form.control}
                         name="customerId"
                         render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="flex flex-col">
                                 <FormLabel>Customer</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select a customer" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {customers.map(c => (
-                                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <Combobox
+                                    options={customerOptions}
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder="Select a customer..."
+                                    notFoundText="No customer found."
+                                />
                                 <FormMessage />
                             </FormItem>
                         )}
@@ -582,7 +583,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent>
-                                                            {stockInfo[index]?.map(stock => (
+                                                            {(stockInfo[index] || []).map(stock => (
                                                                 <SelectItem key={stock.expire_date} value={stock.expire_date}>
                                                                     EXP: {stock.expire_date === '0000-00-00' ? 'N/A' : format(new Date(stock.expire_date), 'dd/MM/yy')} 
                                                                     (Qty: {parseFloat(stock.stock_balance).toFixed(2)})
