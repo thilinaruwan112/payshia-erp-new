@@ -68,7 +68,7 @@ export function Combobox({ options, value, onChange, placeholder, notFoundText }
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value.toLowerCase() === option.value.toLowerCase() ? "opacity-100" : "opacity-0"
+                      (value || '').toLowerCase() === option.value.toLowerCase() ? "opacity-100" : "opacity-0"
                     )}
                   />
                   {option.label}
