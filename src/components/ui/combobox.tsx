@@ -56,7 +56,7 @@ export function Combobox({ options, value, onChange, placeholder, notFoundText }
           <CommandList>
             <CommandEmpty>{notFoundText || "No option found."}</CommandEmpty>
             <CommandGroup>
-              {options.filter(option => option.label.toLowerCase().includes(value.toLowerCase())).map((option) => (
+              {options.filter(option => option.label.toLowerCase().includes((value || '').toLowerCase())).map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
