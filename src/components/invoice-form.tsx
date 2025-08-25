@@ -87,12 +87,38 @@ interface InvoiceFormProps {
     orders: Order[];
 }
 
-export function InvoiceForm({ productsWithVariants, customers, orders }: InvoiceFormProps) {
+export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const { currentLocation } = useLocation();
+  const { currentLocation, company_id } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [productsWithVariants, setProductsWithVariants] = React.useState<ProductWithVariants[]>([]);
   const [stockInfo, setStockInfo] = React.useState<Record<number, StockInfo[]>>({});
+
+  React.useEffect(() => {
+    async function fetchProducts() {
+        if (!company_id) return;
+        setIsLoading(true);
+         try {
+            const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch products');
+            }
+            const data = await response.json();
+            setProductsWithVariants(data.products || []);
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error fetching products',
+                description: 'Could not load product data for the form.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchProducts();
+  }, [company_id, toast]);
+
 
   const allSkus = productsWithVariants.flatMap(p => (p.variants || []).map(v => ({
       label: `${p.product.name} (${v.sku})`,
