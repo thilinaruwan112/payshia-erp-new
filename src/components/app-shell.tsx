@@ -169,20 +169,9 @@ const navItems = [
     ],
   },
   {
+    href: '/reports',
     label: 'Reports',
     icon: BarChart3,
-    subItems: [
-        { href: '/reports/overview', label: 'Overview' },
-        { href: '/reports/sales-summary', label: 'Sales Summary' },
-        { href: '/reports/stock-balance', label: 'Stock Balance' },
-        { href: '/reports/bin-card', label: 'Bin Card' },
-        { href: '/reports/customer-statement', label: 'Customer Statement' },
-        { href: '/reports/credit-sales-summary', label: 'Credit Sales Summary' },
-        { href: '/reports/invoice-report', label: 'Invoice Report' },
-        { href: '/reports/supplier-report', label: 'Supplier Report' },
-        { href: '/reports/supplier-balance', label: 'Supplier Balance' },
-        { href: '/reports/customer-report', label: 'Customer Report' },
-    ]
   },
   {
     label: 'Settings',
