@@ -5,7 +5,7 @@ import React from 'react';
 
 interface KotPrintViewProps {
   invoiceId: string;
-  companyId: string;
+  companyId: string | null;
 }
 
 export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {

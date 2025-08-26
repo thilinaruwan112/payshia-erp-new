@@ -2,26 +2,21 @@
 'use client';
 
 import { KotPrintView } from '@/components/kot-print-view';
-import { notFound, useSearchParams } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
-
-function KOTPrintPageContent({ params }: { params: { id: string } }) {
+export default function KOTPrintPage({ params, searchParams }: { params: { id: string }, searchParams: { [key: string]: string | string[] | undefined } }) {
     const { id } = params;
-    const searchParams = useSearchParams();
-    const companyId = searchParams.get('company_id');
+    const companyId = searchParams?.company_id;
 
     if (!id || !companyId) {
-        notFound();
+        // You might want to return a more user-friendly error message
+        return <div>Error: Missing Invoice ID or Company ID</div>;
     }
 
-    return <KotPrintView companyId={companyId} invoiceId={id} />;
-}
-
-export default function KOTPrintPage({ params }: { params: { id: string } }) {
     return (
         <Suspense fallback={<div>Loading...</div>}>
-            <KOTPrintPageContent params={params} />
+            <KotPrintView companyId={String(companyId)} invoiceId={id} />
         </Suspense>
     );
 }
