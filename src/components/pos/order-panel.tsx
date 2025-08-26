@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -404,7 +403,7 @@ export function OrderPanel({
             description: `Invoice #${result.invoice_number} created.`
         });
         
-        window.open(`/pos/invoice/${result.invoice_id}`, '_blank');
+        window.open(`/sales-print/invoices/${result.invoice_id}/print`, '_blank');
         
         setPaymentOpen(false);
         onClearCart(orderId);
