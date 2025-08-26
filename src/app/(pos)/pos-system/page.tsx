@@ -317,12 +317,25 @@ export default function POSPage() {
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
-  const defaultCashier = { id: 'user-3', name: 'Cashier Chloe', role: 'Sales Agent', avatar: 'https://placehold.co/100x100.png?text=CC', email: 'chloe@payshia.com', customer_id: '3' };
   const walkInCustomer = { id: 'user-4', name: 'Walk-in Customer', role: 'Customer', avatar: 'https://placehold.co/100x100.png?text=WC', loyaltyPoints: 0, email: 'walkin@payshia.com', phone: 'N/A', address: 'N/A', customer_id: '4' };
 
-  const [currentCashier, setCurrentCashier] = useState<User>(defaultCashier);
+  const [currentCashier, setCurrentCashier] = useState<User | null>(null);
   
   const { currentLocation, isLoading: isLocationLoading, setCurrentLocation, availableLocations, company_id } = useLocation();
+
+  useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    const userName = localStorage.getItem('userName');
+    if (userId && userName) {
+      setCurrentCashier({
+        id: userId,
+        customer_id: userId,
+        name: userName,
+        role: 'Cashier', // Assuming a default role
+        avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`,
+      });
+    }
+  }, []);
   
 
   useEffect(() => {
@@ -612,7 +625,7 @@ export default function POSPage() {
   }
 
   const handleCreateReceipt = async () => {
-    if (!selectedInvoiceForAction || !currentLocation || !company_id) {
+    if (!selectedInvoiceForAction || !currentLocation || !company_id || !currentCashier) {
       toast({
         variant: 'destructive',
         title: 'Missing Information',
@@ -712,15 +725,88 @@ export default function POSPage() {
     setSelectedTable(null);
   };
   
-  const handleSendToKitchen = async (invoice: Invoice) => {
-    const encodedData = btoa(JSON.stringify(invoice));
-    window.open(`/pos/kot/${invoice.id}?data=${encodedData}`, '_blank');
-    
-    toast({
-      title: 'KOT Sent!',
-      description: `Order sent to the kitchen.`,
-      icon: <ChefHat className="h-6 w-6 text-green-500" />,
-    });
+  const createInvoicePayload = (status: '1' | '2', cashierName: string, paymentMethod = 'N/A', tenderedAmount = 0) => {
+    if (!currentOrder || !currentLocation || !company_id) return null;
+
+    const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
+    const costValue = currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
+
+    return {
+        invoice_date: format(new Date(), 'yyyy-MM-dd'),
+        inv_amount: orderTotals.subtotal,
+        grand_total: orderTotals.total,
+        discount_amount: totalDiscount,
+        discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
+        customer_code: currentOrder.customer.customer_id,
+        service_charge: orderTotals.serviceCharge,
+        tendered_amount: tenderedAmount,
+        close_type: paymentMethod,
+        invoice_status: status,
+        payment_status: "Pending",
+        current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+        location_id: parseInt(currentLocation.location_id, 10),
+        table_id: 0,
+        order_ready_status: 1,
+        created_by: cashierName,
+        is_active: 1,
+        steward_id: currentOrder.steward?.id || "N/A",
+        cost_value: costValue,
+        remark: `${currentOrder.orderType} order`,
+        ref_hold: status === '1' ? (currentOrder.originalInvoiceNumber || "direct") : null,
+        company_id: company_id,
+        chanel: "POS",
+        items: currentOrder.cart.map(item => ({
+            user_id: 1, // Default user_id as per example
+            product_id: parseInt(item.product.id, 10),
+            item_price: item.product.price,
+            item_discount: item.itemDiscount || 0,
+            quantity: item.quantity,
+            customer_id: parseInt(currentOrder.customer.customer_id, 10),
+            table_id: 0,
+            cost_price: item.product.costPrice || 0,
+            is_active: 1,
+            hold_status: 0,
+            printed_status: 1,
+            product_variant_id: parseInt(item.product.variant.id, 10),
+            company_id: company_id,
+        })),
+    };
+  };
+
+  const handleSendToKitchen = async () => {
+    if (!currentOrder || !currentCashier) return;
+    const payload = createInvoicePayload('2', currentCashier.name);
+    if (!payload) return;
+    try {
+      const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to send to kitchen.');
+      }
+      
+      // Pass the necessary ID to the KOT print page
+      window.open(`/pos/kot/${company_id}/${result.invoice_id}`, '_blank');
+      
+      toast({
+        title: 'KOT Sent!',
+        description: `Order sent to the kitchen.`,
+        icon: <ChefHat className="h-6 w-6 text-green-500" />,
+      });
+
+      onClearCart(currentOrderId!);
+    } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+       toast({
+        variant: 'destructive',
+        title: 'Error Sending KOT',
+        description: errorMessage,
+      });
+    }
   };
 
   const handleProductSelect = (product: PosProduct) => {
@@ -770,69 +856,6 @@ export default function POSPage() {
       })
     );
     setSelectedProduct(null);
-  
-    // If it's a held order, send an update to the backend.
-    const updatedOrder = activeOrders.find(o => o.id === currentOrderId);
-    if (updatedOrder?.originalInvoiceNumber && company_id) {
-      // Recalculate totals based on the new cart state
-      const subtotal = updatedOrder.cart.reduce((acc, item) => acc + (item.product.price as number) * item.quantity, 0) + (product.price as number) * quantity;
-      const itemDiscounts = updatedOrder.cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0) + discount;
-      const total = subtotal - itemDiscounts + updatedOrder.serviceCharge - updatedOrder.discount;
-
-      const payload = {
-        grand_total: total,
-        discount_amount: updatedOrder.discount + itemDiscounts,
-        service_charge: updatedOrder.serviceCharge,
-        remark: "Item added to held order",
-        items: [
-          {
-            user_id: 1, // Assuming a default user ID
-            product_id: parseInt(product.id, 10),
-            item_price: product.price,
-            item_discount: discount,
-            quantity: quantity,
-            customer_id: parseInt(updatedOrder.customer.customer_id, 10),
-            table_id: updatedOrder.tableName ? (tables.find(t => t.table_name === updatedOrder.tableName)?.id || 0) : 0,
-            cost_price: product.costPrice || 0,
-            product_variant_id: parseInt(product.variant.id, 10),
-          },
-        ],
-      };
-  
-      try {
-        const response = await fetch(
-          `https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${updatedOrder.originalInvoiceNumber}`,
-          {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          }
-        );
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to update held order.");
-        }
-        toast({
-          title: "Held Order Updated",
-          description: "New item has been saved to the held order.",
-        });
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        toast({
-          variant: "destructive",
-          title: "Update Failed",
-          description: errorMessage,
-        });
-        // Revert optimistic update on failure
-        setActiveOrders((prevOrders) =>
-          prevOrders.map((order) =>
-            order.id === currentOrderId
-              ? { ...order, cart: order.cart.filter((item) => item.tempId !== tempId) }
-              : order
-          )
-        );
-      }
-    }
   };
 
   const updateQuantity = (variantId: string, batchCode: string, newQuantity: number) => {
@@ -866,56 +889,8 @@ export default function POSPage() {
     );
   };
   
-   const createInvoicePayload = (status: '1' | '2', cashierName: string, paymentMethod = 'N/A', tenderedAmount = 0) => {
-    if (!currentOrder || !currentLocation || !company_id) return null;
-
-    const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
-    const costValue = currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
-
-    return {
-        invoice_date: format(new Date(), 'yyyy-MM-dd'),
-        inv_amount: orderTotals.subtotal,
-        grand_total: orderTotals.total,
-        discount_amount: totalDiscount,
-        discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
-        customer_code: currentOrder.customer.customer_id,
-        service_charge: orderTotals.serviceCharge,
-        tendered_amount: tenderedAmount,
-        close_type: paymentMethod,
-        invoice_status: status,
-        payment_status: "Pending",
-        current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-        location_id: parseInt(currentLocation.location_id, 10),
-        table_id: 0,
-        order_ready_status: 1,
-        created_by: cashierName,
-        is_active: 1,
-        steward_id: currentOrder.steward?.id || "N/A",
-        cost_value: costValue,
-        remark: `${currentOrder.orderType} order`,
-        ref_hold: status === '1' ? (currentOrder.originalInvoiceNumber || "direct") : null,
-        company_id: company_id,
-        chanel: "POS",
-        items: currentOrder.cart.map(item => ({
-            user_id: 1, // Default user_id as per example
-            product_id: parseInt(item.product.id, 10),
-            item_price: item.product.price,
-            item_discount: item.itemDiscount || 0,
-            quantity: item.quantity,
-            customer_id: parseInt(currentOrder.customer.customer_id, 10),
-            table_id: 0,
-            cost_price: item.product.costPrice || 0,
-            is_active: 1,
-            hold_status: 0,
-            printed_status: 1,
-            product_variant_id: parseInt(item.product.variant.id, 10),
-            company_id: company_id,
-        })),
-    };
-  };
-  
   const onHoldOrder = async () => {
-    if (!currentOrder || currentOrder.cart.length === 0) {
+    if (!currentOrder || currentOrder.cart.length === 0 || !currentCashier) {
       toast({
         variant: 'default',
         title: 'Cannot Hold Empty Order',
@@ -943,9 +918,6 @@ export default function POSPage() {
         description: `${currentOrder.name} has been put on hold as Invoice #${result.invoice_number}.`,
       });
       
-      // Print KOT after holding
-      handleSendToKitchen(result);
-
       onClearCart(currentOrderId!);
     } catch (error) {
        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -1071,7 +1043,7 @@ export default function POSPage() {
   };
   
   const handleProcessReturn = async () => {
-    if (!currentLocation || !selectedCustomerForAction || returnItems.length === 0 || !company_id) {
+    if (!currentLocation || !selectedCustomerForAction || returnItems.length === 0 || !company_id || !currentCashier) {
       toast({
         variant: "destructive",
         title: "Missing Information",
@@ -1144,7 +1116,7 @@ export default function POSPage() {
   };
 
     const handleRefund = async () => {
-        if (!selectedReturnForRefund || !currentLocation || !company_id) {
+        if (!selectedReturnForRefund || !currentLocation || !company_id || !currentCashier) {
             toast({ variant: "destructive", title: "Error", description: "No return selected or location missing." });
             return;
         }
@@ -1318,7 +1290,7 @@ export default function POSPage() {
         setDrawerOpen(false);
     }
 
-  const orderPanelComponent = currentOrder ? (
+  const orderPanelComponent = currentOrder && currentCashier ? (
      <OrderPanel
         key={currentOrder.id}
         order={currentOrder}
@@ -1329,11 +1301,7 @@ export default function POSPage() {
         onRemoveItem={removeFromCart}
         onClearCart={onClearCart}
         onHoldOrder={onHoldOrder}
-        onSendToKitchen={() => {
-            const payload = createInvoicePayload('1', currentCashier.name, 'Cash', orderTotals.total);
-            if (!payload || !company_id) return;
-            handleSendToKitchen(payload as unknown as Invoice);
-        }}
+        onSendToKitchen={handleSendToKitchen}
         isDrawer={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
         setDiscount={setDiscount}
@@ -1388,6 +1356,15 @@ export default function POSPage() {
         onSelectLocation={(loc) => setCurrentLocation(loc)}
       />
     );
+  }
+
+  if (!currentCashier) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4">Loading cashier details...</p>
+      </div>
+    )
   }
 
   return (
