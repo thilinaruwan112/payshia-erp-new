@@ -558,28 +558,11 @@ export function OrderPanel({
                           Discount: -{currencySymbol}{item.itemDiscount.toFixed(2)}
                         </span>
                       ) : null}
-                    <div className="flex items-center gap-2 mt-auto">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8"
-                        onClick={() =>
-                          onUpdateQuantity(item.product.variant.id, item.batch.patch_code, item.quantity - 1)
-                        }
-                      >
-                        <MinusCircle className="h-5 w-5" />
-                      </Button>
-                      <span className="w-8 text-center text-lg font-bold">{item.quantity}</span>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-8 w-8"
-                        onClick={() =>
-                          onUpdateQuantity(item.product.variant.id, item.batch.patch_code, item.quantity + 1)
-                        }
-                      >
-                        <PlusCircle className="h-5 w-5" />
-                      </Button>
+                    <div className="mt-auto">
+                        <span className="text-lg font-bold">{item.quantity}</span>
+                        <span className="text-sm text-muted-foreground ml-1">
+                            {item.product.stock_unit || 'Nos'}
+                        </span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
