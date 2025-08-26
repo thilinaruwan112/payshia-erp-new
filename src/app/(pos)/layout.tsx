@@ -36,14 +36,16 @@ export default function POSLayout({
   }
 
   return (
-    <ThemeProvider
+     <ThemeProvider
         attribute="class"
         defaultTheme="dark"
         enableSystem
         disableTransitionOnChange
     >
         <CurrencyProvider>
-        <LocationProvider>{children}</LocationProvider>
+            <LocationProvider>
+                 <main>{children}</main>
+            </LocationProvider>
         </CurrencyProvider>
         <Toaster />
     </ThemeProvider>
