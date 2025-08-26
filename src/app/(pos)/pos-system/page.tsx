@@ -66,8 +66,6 @@ export default function POSPage() {
   const [isNewOrderDialogOpen, setNewOrderDialogOpen] = useState(false);
   const [isHeldOrderDetailsDialogOpen, setHeldOrderDetailsDialogOpen] = useState(false);
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
-  const [isReturnDialogOpen, setReturnDialogOpen] = useState(false);
-  const [isRefundDialogOpen, setRefundDialogOpen] = useState(false);
   
   const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -86,6 +84,9 @@ export default function POSPage() {
   const [returnReason, setReturnReason] = useState('');
   const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
+  const [isReturnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [isRefundDialogOpen, setRefundDialogOpen] = useState(false);
+
 
   useEffect(() => {
     const userId = localStorage.getItem('userId');
@@ -344,7 +345,7 @@ export default function POSPage() {
       setActiveOrders(prev => prev.map(o => o.id === currentOrder.id ? updatedOrder : o));
       
       // Open the KOT print view
-      window.open(`/pos/kot/${company_id}/${result.invoice_id}`, '_blank');
+      window.open(`/pos/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
       
       toast({ title: 'KOT Sent!', description: `Order sent to the kitchen.`, icon: <ChefHat className="h-6 w-6 text-green-500" /> });
       onClearCart(currentOrderId!);
@@ -420,6 +421,60 @@ export default function POSPage() {
       })
     );
     setSelectedProduct(null);
+  };
+  
+  const handleLoadOrder = async (invoice: Invoice) => {
+    if (!invoice.items) return;
+    
+    // Helper function to find PosProduct
+    const findPosProduct = (variantId: string | undefined): PosProduct | undefined => {
+        if (!variantId) return undefined;
+        return posProducts.find(p => p.variant.id === variantId);
+    }
+    
+    const cartItemsPromises = invoice.items.map(async (item): Promise<CartItem | null> => {
+        const product = findPosProduct(item.product_variant_id);
+        if (!product) return null;
+
+        // Fetch stock for this specific item to get batch info.
+        // This is a simplification; a real scenario might need more robust batch tracking.
+        if (!currentLocation || !company_id) return null;
+        const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}&location_id=${currentLocation.location_id}`);
+        if (!response.ok) return null;
+        const stockData = await response.json();
+        const firstAvailableBatch = stockData.grouped_by_expire_date.find((b: StockInfo) => parseFloat(b.stock_balance) > 0);
+        
+        if (!firstAvailableBatch) {
+             toast({ variant: 'destructive', title: 'Stock Error', description: `No available stock/batch for ${product.variantName}. Cannot load item.` });
+            return null;
+        }
+
+        return {
+            product: product,
+            quantity: parseFloat(String(item.quantity)),
+            itemDiscount: parseFloat(String(item.item_discount)),
+            batch: firstAvailableBatch,
+        };
+    });
+
+    const loadedCartItems = (await Promise.all(cartItemsPromises)).filter((item): item is CartItem => item !== null);
+    
+    const customer = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
+
+    const newActiveOrder: ActiveOrder = {
+        id: `order-${Date.now()}`,
+        name: `Loaded ${invoice.invoice_number}`,
+        cart: loadedCartItems,
+        discount: parseFloat(invoice.discount_amount) - loadedCartItems.reduce((acc, item) => acc + (item.itemDiscount || 0), 0),
+        serviceCharge: parseFloat(invoice.service_charge),
+        customer: customer,
+        orderType: (invoice.remark?.split(' ')[0] as any) || 'Retail', // Infer type from remark
+        originalInvoiceNumber: invoice.invoice_number,
+    };
+    
+    setActiveOrders(prev => [...prev, newActiveOrder]);
+    setCurrentOrderId(newActiveOrder.id);
+    setHeldOrderDetailsDialogOpen(false);
   };
 
   const updateQuantity = (variantId: string, batchCode: string, newQuantity: number) => {
@@ -531,7 +586,12 @@ export default function POSPage() {
     <>
       <AddToCartDialog product={selectedProduct} onClose={() => setSelectedProduct(null)} onAddToCart={addToCart} />
       <NewOrderDialog isOpen={isNewOrderDialogOpen} onOpenChange={setNewOrderDialogOpen} createNewOrder={createNewOrder} activeOrders={activeOrders} />
-      <HeldOrderDetailsDialog isOpen={isHeldOrderDetailsDialogOpen} onOpenChange={setHeldOrderDetailsDialogOpen} posProducts={posProducts} customers={customers} onLoadOrder={(invoice) => {/* TODO */}} />
+      <HeldOrderDetailsDialog 
+        isOpen={isHeldOrderDetailsDialogOpen} 
+        onOpenChange={setHeldOrderDetailsDialogOpen} 
+        customers={customers} 
+        onLoadOrder={handleLoadOrder} 
+      />
       <PendingInvoicesDialog isOpen={isPendingInvoicesDialogOpen} onOpenChange={setPendingInvoicesDialogOpen} customers={customers} />
       <ReturnDialog 
           isOpen={isReturnDialogOpen} 
@@ -625,4 +685,3 @@ export default function POSPage() {
     </>
   );
 }
-

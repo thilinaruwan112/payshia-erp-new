@@ -19,7 +19,6 @@ import { format } from 'date-fns';
 interface HeldOrderDetailsDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  posProducts: any[];
   customers: User[];
   onLoadOrder: (invoice: Invoice) => void;
 }
@@ -27,7 +26,6 @@ interface HeldOrderDetailsDialogProps {
 export function HeldOrderDetailsDialog({
   isOpen,
   onOpenChange,
-  posProducts,
   customers,
   onLoadOrder,
 }: HeldOrderDetailsDialogProps) {
