@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useSearchParams, notFound } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import Image from 'next/image';
-import type { Invoice, User } from '@/lib/types';
+import type { Invoice } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 // Extend the Window interface
@@ -214,5 +214,3 @@ export function KotPrintView({ invoiceId }: KotPrintViewProps) {
     </div>
   );
 }
-
-    
