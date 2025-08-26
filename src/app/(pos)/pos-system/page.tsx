@@ -347,7 +347,7 @@ export default function POSPage() {
         cost_value: costValue, 
         remark: `${currentOrder.orderType} order`, 
         ref_hold: "direct",
-        company_id: company_id,
+        company_id: String(company_id),
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
             user_id: parseInt(currentCashier.id, 10),
@@ -360,7 +360,7 @@ export default function POSPage() {
             cost_price: item.product.costPrice || 0,
             is_active: 1,
             hold_status: 0,
-            printed_status: 1,
+            printed_status: 0,
             product_variant_id: parseInt(item.product.variant.id, 10),
         })),
     };
