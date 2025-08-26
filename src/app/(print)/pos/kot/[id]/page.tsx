@@ -7,22 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import Image from 'next/image';
-
-type KotItem = {
-    name: string;
-    quantity: number;
-    price: number;
-    total: number;
-}
-
-type KotData = {
-    orderId: string;
-    orderName: string;
-    cashierName: string;
-    stewardName: string;
-    customerName: string;
-    items: KotItem[];
-}
+import type { Invoice, User } from '@/lib/types';
 
 // Extend the Window interface
 declare global {
@@ -33,26 +18,39 @@ declare global {
 
 export default function KOTPage({ params }: { params: { id: string } }) {
   const searchParams = useSearchParams();
-  const [kotData, setKotData] = useState<KotData | null>(null);
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [customer, setCustomer] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const kotRef = useRef<HTMLDivElement>(null);
   const [connected, setConnected] = useState(false);
-
+  const companyId = searchParams.get('companyId');
 
   useEffect(() => {
-    try {
-        const data = searchParams.get('data');
-        if (data) {
-            const decodedData = atob(data);
-            const parsedData: KotData = JSON.parse(decodedData);
-            setKotData(parsedData);
+    async function fetchInvoiceData() {
+        if (!params.id || !companyId) {
+            console.error("Missing invoice ID or Company ID");
+            setIsLoading(false);
+            return;
         }
-    } catch (error) {
-        console.error("Failed to parse KOT data", error);
-    } finally {
-        setIsLoading(false);
+
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/pos-invoices/${params.id}?company_id=${companyId}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch invoice data: ${response.statusText}`);
+            }
+            const data: Invoice = await response.json();
+            setInvoice(data);
+            if (data.customer) {
+                setCustomer(data.customer);
+            }
+        } catch (error) {
+            console.error("Error fetching KOT data:", error);
+        } finally {
+            setIsLoading(false);
+        }
     }
-  }, [searchParams]);
+    fetchInvoiceData();
+  }, [params.id, companyId]);
 
   const handlePrint = async () => {
     if (!window.JSPM || !connected || !kotRef.current) {
@@ -79,7 +77,7 @@ export default function KOTPage({ params }: { params: { id: string } }) {
         const myImageFile = new PrintFile(
             imgBase64Content,
             FileSourceType.Base64,
-            `KOT-${kotData?.orderId}.png`,
+            `KOT-${invoice?.invoice_number}.png`,
             1
         );
         cpj.files.push(myImageFile);
@@ -125,16 +123,16 @@ export default function KOTPage({ params }: { params: { id: string } }) {
   }, []);
 
    useEffect(() => {
-    if (connected && !isLoading && kotData) {
-        document.title = `KOT - ${kotData.orderName}`;
+    if (connected && !isLoading && invoice) {
+        document.title = `KOT - ${invoice.invoice_number}`;
         handlePrint();
-    } else if (!isLoading && kotData && typeof window !== "undefined" && !window.JSPM) {
+    } else if (!isLoading && invoice && typeof window !== "undefined" && !window.JSPM) {
         console.warn("JSPM not found. Falling back to browser print.");
         setTimeout(() => window.print(), 500);
     }
-  }, [connected, isLoading, kotData]);
+  }, [connected, isLoading, invoice]);
 
-  if (isLoading || !kotData) {
+  if (isLoading || !invoice) {
     return (
       <div className="w-[80mm] bg-white text-black p-2 font-mono">
         <Skeleton className="h-6 w-3/4 mx-auto" />
@@ -159,12 +157,12 @@ export default function KOTPage({ params }: { params: { id: string } }) {
       </div>
       
       <div className="space-y-1 text-xs">
-          <p><strong>KOT # :</strong> {kotData.orderId.slice(-6).toUpperCase()}</p>
-          <p><strong>Table :</strong> {kotData.orderName}</p>
-          <p><strong>Customer :</strong> {kotData.customerName}</p>
-          <p><strong>Date :</strong> {format(new Date(), "yyyy-MM-dd HH:mm:ss")}</p>
-          <p><strong>Steward :</strong> {kotData.stewardName}</p>
-          <p><strong>Cashier :</strong> {kotData.cashierName}</p>
+          <p><strong>KOT # :</strong> {invoice.id.slice(-6).toUpperCase()}</p>
+          <p><strong>Table :</strong> {invoice.table_id || 'Take Away'}</p>
+          <p><strong>Customer :</strong> {customer?.name || 'Walk-in Customer'}</p>
+          <p><strong>Date :</strong> {format(new Date(invoice.invoice_date), "yyyy-MM-dd HH:mm:ss")}</p>
+          <p><strong>Steward :</strong> {invoice.steward_id}</p>
+          <p><strong>Cashier :</strong> {invoice.created_by}</p>
       </div>
 
 
@@ -179,15 +177,15 @@ export default function KOTPage({ params }: { params: { id: string } }) {
             </tr>
         </thead>
         <tbody>
-          {kotData.items?.map((item, index) => (
+          {invoice.items?.map((item, index) => (
             <React.Fragment key={index}>
               <tr>
-                <td colSpan={3} className="pt-1">{item.name}</td>
+                <td colSpan={3} className="pt-1">{item.productName}</td>
               </tr>
               <tr>
-                <td className="pb-1">{item.quantity.toFixed(3)}</td>
-                <td className="text-right pb-1">{item.price.toFixed(2)}</td>
-                <td className="text-right pb-1">{item.total.toFixed(2)}</td>
+                <td className="pb-1">{parseFloat(String(item.quantity)).toFixed(3)}</td>
+                <td className="text-right pb-1">{parseFloat(String(item.item_price)).toFixed(2)}</td>
+                <td className="text-right pb-1">{(parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))).toFixed(2)}</td>
               </tr>
             </React.Fragment>
           ))}

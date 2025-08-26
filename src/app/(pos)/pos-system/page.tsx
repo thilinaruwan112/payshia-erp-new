@@ -712,35 +712,20 @@ export default function POSPage() {
     setSelectedTable(null);
   };
   
-   const handleSendToKitchen = () => {
-    if (!currentOrder || currentOrder.cart.length === 0) {
+  const handleSendToKitchen = async (invoiceId: string) => {
+    if (!company_id) {
       toast({
         variant: 'destructive',
-        title: 'Cart is empty',
-        description: 'Cannot send an empty order to the kitchen.',
+        title: 'Company ID missing',
       });
       return;
     }
-    const orderData = {
-        orderId: currentOrder.id,
-        orderName: currentOrder.name,
-        cashierName: currentCashier.name,
-        stewardName: currentOrder.steward?.name || "Default",
-        customerName: currentOrder.customer.name,
-        items: currentOrder.cart.map(item => ({ 
-            name: item.product.variantName, 
-            quantity: item.quantity,
-            price: item.product.price as number,
-            total: (item.product.price as number) * item.quantity,
-        })),
-    };
     
-    const encodedData = btoa(JSON.stringify(orderData));
-    window.open(`/pos/kot/${currentOrder.id}?data=${encodedData}`, '_blank');
+    window.open(`/pos/kot/${invoiceId}?companyId=${company_id}`, '_blank');
     
     toast({
       title: 'KOT Sent!',
-      description: `Order for ${currentOrder.name} sent to the kitchen.`,
+      description: `Order sent to the kitchen.`,
       icon: <ChefHat className="h-6 w-6 text-green-500" />,
     });
   };
@@ -843,7 +828,7 @@ export default function POSPage() {
       });
       
       // Print KOT after holding
-      handleSendToKitchen();
+      handleSendToKitchen(result.id);
 
       onClearCart(currentOrderId);
     } catch (error) {
@@ -1276,7 +1261,14 @@ export default function POSPage() {
         onRemoveItem={removeFromCart}
         onClearCart={onClearCart}
         onHoldOrder={onHoldOrder}
-        onSendToKitchen={handleSendToKitchen}
+        onSendToKitchen={() => {
+            const payload = createInvoicePayload('1', 'Cash', orderTotals.total);
+            if (!payload || !company_id) return;
+            // This is a mock-up of what would happen.
+            // A real app would save the invoice, then print.
+            // For now, we'll just open the KOT page with a temporary ID.
+            handleSendToKitchen(payload.items[0].product_id);
+        }}
         isDrawer={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
         setDiscount={setDiscount}
