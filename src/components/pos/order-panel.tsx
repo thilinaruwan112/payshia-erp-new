@@ -579,7 +579,7 @@ export function OrderPanel({
           <ScrollArea className="h-full max-h-[calc(100vh-570px)]">
             <div className="divide-y divide-border">
               {cart.map((item) => (
-                <div key={`${item.product.variant.id}-${item.batch.patch_code}`} className="p-4 flex gap-4">
+                <div key={item.uniqueId} className="p-4 flex gap-4">
                   <Image
                     src={`https://placehold.co/64x64.png`}
                     alt={item.product.name}

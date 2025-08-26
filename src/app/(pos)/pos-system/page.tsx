@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -345,7 +344,7 @@ export default function POSPage() {
       setActiveOrders(prev => prev.map(o => o.id === currentOrder.id ? updatedOrder : o));
       
       // Open the KOT print view
-      window.open(`/pos/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
+      window.open(`/pos/kot/${company_id}/${result.invoice_id}`, '_blank');
       
       toast({ title: 'KOT Sent!', description: `Order sent to the kitchen.`, icon: <ChefHat className="h-6 w-6 text-green-500" /> });
       onClearCart(currentOrderId!);
@@ -401,7 +400,7 @@ export default function POSPage() {
       setSelectedProduct(null);
       return;
     }
-    const newCartItem: CartItem = { product, quantity, itemDiscount: discount, batch };
+    const newCartItem: CartItem = { uniqueId: `${product.variant.id}-${batch.patch_code}-${Date.now()}`, product, quantity, itemDiscount: discount, batch };
     setActiveOrders((prevOrders) =>
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
@@ -450,6 +449,7 @@ export default function POSPage() {
         }
 
         return {
+            uniqueId: `${product.variant.id}-${firstAvailableBatch.patch_code}-${Date.now()}`,
             product: product,
             quantity: parseFloat(String(item.quantity)),
             itemDiscount: parseFloat(String(item.item_discount)),

@@ -1,5 +1,4 @@
 
-
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -51,6 +50,7 @@ export type Product = {
   status: 'active' | 'draft';
   stock_unit?: string;
   costPrice?: number | string;
+  cost_price?: number | string;
   min_price?: number | string;
   wholesale_price?: number | string;
   price2?: number;
@@ -108,7 +108,7 @@ export type User = {
   customer_first_name?: string;
   customer_last_name?: string;
   email_address?: string;
-  role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer';
+  role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer' | 'Cashier' | string;
   avatar?: string;
   loyaltyPoints?: number;
   email?: string;
@@ -445,6 +445,7 @@ export type ActiveOrder = {
 };
 
 export type CartItem = {
+  uniqueId?: string;
   product: Product & { variant: ProductVariant; variantName: string };
   quantity: number;
   itemDiscount?: number;
@@ -490,3 +491,18 @@ export type ProductionNote = {
     notes?: string;
     production_date: string;
 };
+
+
+export type TransactionReturn = {
+  id: string;
+  rtn_number: string;
+  customer_id: string;
+  location_id: string;
+  company_id: string;
+  return_amount: string;
+  reason: string;
+  created_at: string;
+  created_by: string;
+  is_active: string;
+  stock_entries?: (StockEntry & {product?: Product})[];
+}
