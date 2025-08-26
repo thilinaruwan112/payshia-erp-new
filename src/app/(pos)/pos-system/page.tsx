@@ -313,7 +313,7 @@ export default function POSPage() {
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
   const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
-
+  const [balanceDetails, setBalanceDetails] = useState<BalanceDetails | null>(null);
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
   const walkInCustomer = { id: 'user-4', name: 'Walk-in Customer', role: 'Customer', avatar: 'https://placehold.co/100x100.png?text=WC', loyaltyPoints: 0, email: 'walkin@payshia.com', phone: 'N/A', address: 'N/A', customer_id: '4' };
@@ -758,7 +758,7 @@ export default function POSPage() {
             user_id: 1, // Default user_id as per example
             product_id: parseInt(item.product.id, 10),
             item_price: item.product.price,
-            item_discount: item.item_discount || 0,
+            item_discount: item.itemDiscount || 0,
             quantity: item.quantity,
             customer_id: parseInt(currentOrder.customer.customer_id, 10),
             table_id: 0,
@@ -774,8 +774,11 @@ export default function POSPage() {
 
   const handleSendToKitchen = async () => {
     if (!currentOrder || !currentCashier || !company_id) return;
+    
+    // Create the invoice with status '2' (held/KOT)
     const payload = createInvoicePayload('2', currentCashier.name);
     if (!payload) return;
+    
     try {
       const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
         method: 'POST',
@@ -788,7 +791,12 @@ export default function POSPage() {
         throw new Error(result.message || 'Failed to send to kitchen.');
       }
       
-      window.open(`/pos/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
+      // Update the active order with the official invoice number
+      const updatedOrder = { ...currentOrder, originalInvoiceNumber: result.invoice_number };
+      setActiveOrders(prev => prev.map(o => o.id === currentOrder.id ? updatedOrder : o));
+      
+      // Open KOT print page
+      window.open(`/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
       
       toast({
         title: 'KOT Sent!',
@@ -888,7 +896,7 @@ export default function POSPage() {
   };
   
   const onHoldOrder = async () => {
-    if (!currentOrder || cart.length === 0 || !currentCashier) {
+    if (!currentOrder || !currentOrder.cart.length || !currentCashier) {
       toast({
         variant: 'default',
         title: 'Cannot Hold Empty Order',
@@ -1556,7 +1564,7 @@ export default function POSPage() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Button variant="ghost" size="icon"><RefreshCcw className="h-5 w-5" /></Button>
-                                        <DialogClose asChild><Button variant="ghost" size="icon"><X className="h-5 w-5" /></DialogClose>
+                                        <DialogClose asChild><Button variant="ghost" size="icon"><X className="h-5 w-5" /></Button></DialogClose>
                                     </div>
                                 </DialogHeader>
                                 {selectedReturnForRefund ? (
@@ -1778,6 +1786,7 @@ export default function POSPage() {
                 )}
             </div>
         </div>
+      </div>
       <Dialog open={isHeldOrderDetailsOpen} onOpenChange={setIsHeldOrderDetailsOpen}>
         <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -1824,5 +1833,3 @@ export default function POSPage() {
     </>
   );
 }
-
-    
