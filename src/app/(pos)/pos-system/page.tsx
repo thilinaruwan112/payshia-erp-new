@@ -774,7 +774,7 @@ export default function POSPage() {
   };
 
   const handleSendToKitchen = async () => {
-    if (!currentOrder || !currentCashier) return;
+    if (!currentOrder || !currentCashier || !company_id) return;
     const payload = createInvoicePayload('2', currentCashier.name);
     if (!payload) return;
     try {
@@ -789,8 +789,7 @@ export default function POSPage() {
         throw new Error(result.message || 'Failed to send to kitchen.');
       }
       
-      // Pass the necessary ID to the KOT print page
-      window.open(`/pos/kot/${company_id}/${result.invoice_id}`, '_blank');
+      window.open(`/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
       
       toast({
         title: 'KOT Sent!',
