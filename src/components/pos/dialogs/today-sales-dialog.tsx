@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, isToday } from 'date-fns';
 import { useCurrency } from '@/components/currency-provider';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 interface TodaySalesDialogProps {
   isOpen: boolean;
