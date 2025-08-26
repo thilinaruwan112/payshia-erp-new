@@ -1,8 +1,10 @@
+
 import type { Metadata } from 'next';
 import '../globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/theme-provider';
 import { LocationProvider } from '@/components/location-provider';
+import { CurrencyProvider } from '@/components/currency-provider';
 
 export const metadata: Metadata = {
   title: 'Payshia POS',
@@ -31,7 +33,9 @@ export default function POSLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <LocationProvider>{children}</LocationProvider>
+          <CurrencyProvider>
+            <LocationProvider>{children}</LocationProvider>
+          </CurrencyProvider>
           <Toaster />
         </ThemeProvider>
       </body>
