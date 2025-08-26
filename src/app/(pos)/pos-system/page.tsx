@@ -314,7 +314,7 @@ export default function POSPage() {
   
   const handleHoldAndKitchen = async () => {
     if (!currentOrder || !currentCashier || !company_id || !currentLocation) return;
-     if (currentOrder.cart.length === 0) {
+    if (currentOrder.cart.length === 0) {
       toast({
         variant: 'default',
         title: 'Cannot Process Empty Order',
@@ -325,19 +325,36 @@ export default function POSPage() {
 
     const payload = {
         invoice_date: format(new Date(), 'yyyy-MM-dd'),
-        inv_amount: orderTotals.subtotal, grand_total: orderTotals.total, discount_amount: orderTotals.discount + orderTotals.itemDiscounts,
-        discount_percentage: 0, customer_code: currentOrder.customer.customer_id, service_charge: orderTotals.serviceCharge,
-        tendered_amount: 0, close_type: 'N/A', invoice_status: '2', payment_status: "Pending", 
-        current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'), location_id: parseInt(currentLocation.location_id, 10), 
-        table_id: currentOrder.tableName ? (tables.find(t => t.table_name === currentOrder.tableName)?.id || 0) : 0, 
-        order_ready_status: 1, created_by: currentCashier.name, is_active: 1, steward_id: currentOrder.steward?.id || "N/A",
-        cost_value: 0, remark: `${currentOrder.orderType} order`, ref_hold: "direct",
-        company_id: company_id,
+        inv_amount: orderTotals.subtotal, 
+        grand_total: orderTotals.total, 
+        discount_amount: orderTotals.discount + orderTotals.itemDiscounts,
+        discount_percentage: 0, 
+        customer_code: currentOrder.customer.customer_id, 
+        service_charge: orderTotals.serviceCharge,
+        tendered_amount: 0, 
+        close_type: 'N/A', 
+        invoice_status: '2', // Status for held order
+        payment_status: "Pending", 
+        current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'), 
+        location_id: parseInt(currentLocation.location_id, 10), 
+        table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0, 
+        order_ready_status: 1, 
+        created_by: currentCashier.name, 
+        is_active: 1, 
+        steward_id: currentOrder.steward?.id || "N/A",
+        cost_value: 0, 
+        remark: `${currentOrder.orderType} order`, 
+        ref_hold: "direct",
+        company_id: parseInt(String(company_id)),
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
-            product_id: parseInt(item.product.id, 10), item_price: item.product.price,
-            item_discount: item.itemDiscount || 0, quantity: item.quantity, customer_id: parseInt(currentOrder.customer.customer_id, 10),
-            product_variant_id: parseInt(item.product.variant.id, 10), company_id: company_id,
+            product_id: parseInt(item.product.id, 10), 
+            item_price: item.product.price,
+            item_discount: item.itemDiscount || 0, 
+            quantity: item.quantity, 
+            customer_id: parseInt(currentOrder.customer.customer_id, 10),
+            product_variant_id: parseInt(item.product.variant.id, 10), 
+            company_id: parseInt(String(company_id)),
         })),
     };
 
@@ -350,13 +367,11 @@ export default function POSPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || 'Failed to send to kitchen.');
       
-      const updatedOrder = { ...currentOrder, originalInvoiceNumber: result.invoice_number };
-      setActiveOrders(prev => prev.map(o => o.id === currentOrder.id ? updatedOrder : o));
-      
-      // Open the KOT print view
-      window.open(`/kot/${company_id}/${result.invoice_id}`, '_blank');
-      
       toast({ title: 'KOT Sent!', description: `Order sent to the kitchen.`, icon: <ChefHat className="h-6 w-6 text-green-500" /> });
+      
+      // Open the KOT print view in a new tab
+      window.open(`/pos/kot/${company_id}/${result.invoice_id}`, '_blank');
+      
       onClearCart(currentOrderId!);
     } catch (error) {
        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
