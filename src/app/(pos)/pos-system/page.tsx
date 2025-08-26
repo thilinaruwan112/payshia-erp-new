@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -713,16 +712,9 @@ export default function POSPage() {
     setSelectedTable(null);
   };
   
-  const handleSendToKitchen = async (invoiceId: string) => {
-    if (!company_id) {
-      toast({
-        variant: 'destructive',
-        title: 'Company ID missing',
-      });
-      return;
-    }
-    
-    window.open(`/pos/kot/${invoiceId}?companyId=${company_id}`, '_blank');
+  const handleSendToKitchen = async (invoice: Invoice) => {
+    const encodedData = btoa(JSON.stringify(invoice));
+    window.open(`/pos/kot/${invoice.id}?data=${encodedData}`, '_blank');
     
     toast({
       title: 'KOT Sent!',
@@ -829,7 +821,7 @@ export default function POSPage() {
       });
       
       // Print KOT after holding
-      handleSendToKitchen(result.id);
+      handleSendToKitchen(result);
 
       onClearCart(currentOrderId);
     } catch (error) {
@@ -1265,10 +1257,7 @@ export default function POSPage() {
         onSendToKitchen={() => {
             const payload = createInvoicePayload('1', 'Cash', orderTotals.total);
             if (!payload || !company_id) return;
-            // This is a mock-up of what would happen.
-            // A real app would save the invoice, then print.
-            // For now, we'll just open the KOT page with a temporary ID.
-            handleSendToKitchen(payload.items[0].product_id);
+            handleSendToKitchen(payload as unknown as Invoice);
         }}
         isDrawer={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
