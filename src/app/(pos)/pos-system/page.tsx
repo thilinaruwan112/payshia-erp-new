@@ -865,50 +865,8 @@ export default function POSPage() {
       })
     );
   };
-
-  const onHoldOrder = async () => {
-    if (!currentOrder || currentOrder.cart.length === 0) {
-      toast({
-        variant: 'default',
-        title: 'Cannot Hold Empty Order',
-        description: 'Add items to the cart before holding.',
-      });
-      return;
-    }
-    const payload = createInvoicePayload('2');
-     if (!payload) return;
-
-    try {
-      const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to hold order.');
-      }
-      toast({
-        title: 'Order Held',
-        description: `${currentOrder.name} has been put on hold as Invoice #${result.invoice_number}.`,
-      });
-      
-      // Print KOT after holding
-      handleSendToKitchen(result);
-
-      onClearCart(currentOrderId);
-    } catch (error) {
-       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-       toast({
-        variant: 'destructive',
-        title: 'Error Holding Order',
-        description: errorMessage,
-      });
-    }
-  };
   
-   const createInvoicePayload = (status: '1' | '2', paymentMethod = 'N/A', tenderedAmount = 0) => {
+   const createInvoicePayload = (status: '1' | '2', cashierName: string, paymentMethod = 'N/A', tenderedAmount = 0) => {
     if (!currentOrder || !currentLocation || !company_id) return null;
 
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
@@ -954,6 +912,49 @@ export default function POSPage() {
             company_id: company_id,
         })),
     };
+  };
+  
+  const onHoldOrder = async () => {
+    if (!currentOrder || currentOrder.cart.length === 0) {
+      toast({
+        variant: 'default',
+        title: 'Cannot Hold Empty Order',
+        description: 'Add items to the cart before holding.',
+      });
+      return;
+    }
+    const cashierName = currentCashier.name;
+    const payload = createInvoicePayload('2', cashierName);
+     if (!payload) return;
+
+    try {
+      const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to hold order.');
+      }
+      toast({
+        title: 'Order Held',
+        description: `${currentOrder.name} has been put on hold as Invoice #${result.invoice_number}.`,
+      });
+      
+      // Print KOT after holding
+      handleSendToKitchen(result);
+
+      onClearCart(currentOrderId!);
+    } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+       toast({
+        variant: 'destructive',
+        title: 'Error Holding Order',
+        description: errorMessage,
+      });
+    }
   };
 
   const clearCart = () => {
@@ -1329,7 +1330,7 @@ export default function POSPage() {
         onClearCart={onClearCart}
         onHoldOrder={onHoldOrder}
         onSendToKitchen={() => {
-            const payload = createInvoicePayload('1', 'Cash', orderTotals.total);
+            const payload = createInvoicePayload('1', currentCashier.name, 'Cash', orderTotals.total);
             if (!payload || !company_id) return;
             handleSendToKitchen(payload as unknown as Invoice);
         }}
@@ -1849,4 +1850,3 @@ export default function POSPage() {
     </>
   );
 }
-
