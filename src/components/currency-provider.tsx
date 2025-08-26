@@ -29,7 +29,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
 
   const currencySymbol = useMemo(() => {
     const found = currencies.find(c => c.code === currency);
-    return found ? found.symbol : 'LKR';
+    return found ? `${found.symbol} ` : 'Rs ';
   }, [currency]);
 
   const value = useMemo(() => ({
