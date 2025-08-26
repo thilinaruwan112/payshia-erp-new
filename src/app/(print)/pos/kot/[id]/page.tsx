@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import Image from 'next/image';
 import type { Invoice, User } from '@/lib/types';
+import { notFound } from 'next/navigation';
 
 // Extend the Window interface
 declare global {
@@ -29,6 +30,7 @@ export default function KOTPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     async function fetchInvoiceData() {
         if (!id || !companyId) {
+            console.error("Missing invoice ID or Company ID");
             setIsLoading(false);
             return;
         }
@@ -36,21 +38,21 @@ export default function KOTPage({ params }: { params: { id: string } }) {
         try {
             const response = await fetch(`https://server-erp.payshia.com/pos-invoices/${id}?company_id=${companyId}`);
             if (!response.ok) {
+                if (response.status === 404) notFound();
                 throw new Error(`Failed to fetch invoice data: ${response.statusText}`);
             }
-            const data = await response.json();
-            
-            // Correctly parse the nested response structure
-            const invoiceData = data.pos_invoice as Invoice;
-
-            if (!invoiceData) {
-              throw new Error("pos_invoice object not found in API response.");
-            }
-
+            const invoiceData: Invoice = await response.json();
             setInvoice(invoiceData);
-            if (invoiceData.customer) {
-                setCustomer(invoiceData.customer);
+
+            if (invoiceData.customer_code) {
+                const customerResponse = await fetch(`https://server-erp.payshia.com/customers/${invoiceData.customer_code}`);
+                if (customerResponse.ok) {
+                    setCustomer(await customerResponse.json());
+                } else {
+                    console.warn(`Could not fetch customer ${invoiceData.customer_code}`);
+                }
             }
+
         } catch (error) {
             console.error("Error fetching KOT data:", error);
         } finally {
@@ -166,8 +168,8 @@ export default function KOTPage({ params }: { params: { id: string } }) {
       
       <div className="space-y-1 text-xs">
           <p><strong>KOT # :</strong> {invoice.id.slice(-6).toUpperCase()}</p>
-          <p><strong>Table :</strong> {invoice.table_id || 'Take Away'}</p>
-          <p><strong>Customer :</strong> {customer?.name || 'Walk-in Customer'}</p>
+          <p><strong>Table :</strong> {invoice.table_id && invoice.table_id !== '0' ? invoice.table_id : (invoice.remark || 'N/A')}</p>
+          <p><strong>Customer :</strong> {customer?.customer_first_name || 'Walk-in Customer'}</p>
           <p><strong>Date :</strong> {format(new Date(invoice.invoice_date), "yyyy-MM-dd HH:mm:ss")}</p>
           <p><strong>Steward :</strong> {invoice.steward_id}</p>
           <p><strong>Cashier :</strong> {invoice.created_by}</p>
@@ -188,7 +190,7 @@ export default function KOTPage({ params }: { params: { id: string } }) {
           {invoice.items?.map((item, index) => (
             <React.Fragment key={index}>
               <tr>
-                <td colSpan={3} className="pt-1">{item.productName}</td>
+                <td colSpan={3} className="pt-1">{item.productName || `Product ID: ${item.product_id}`}</td>
               </tr>
               <tr>
                 <td className="pb-1">{parseFloat(String(item.quantity)).toFixed(3)}</td>
