@@ -347,7 +347,7 @@ export default function POSPage() {
         cost_value: costValue, 
         remark: `${currentOrder.orderType} order`, 
         ref_hold: "direct",
-        company_id: String(company_id),
+        company_id: company_id,
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
             user_id: parseInt(currentCashier.id, 10),
@@ -376,7 +376,7 @@ export default function POSPage() {
       
       toast({ title: 'KOT Sent!', description: `Order sent to the kitchen.`, icon: <ChefHat className="h-6 w-6 text-green-500" /> });
       
-      window.open(`/kot/${company_id}/${result.invoice_id}`, '_blank');
+      window.open(`/pos/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
       
       onClearCart(currentOrderId!);
     } catch (error) {
@@ -490,12 +490,12 @@ export default function POSPage() {
     );
   };
 
-  const removeFromCart = (variantId: string, batchCode: string) => {
-     if (!currentOrderId) return;
+  const removeFromCart = (uniqueId?: string) => {
+     if (!currentOrderId || !uniqueId) return;
      setActiveOrders((prevOrders) =>
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
-        const newCart = order.cart.filter((item) => !(item.product.variant.id === variantId && item.batch.patch_code === batchCode));
+        const newCart = order.cart.filter((item) => item.uniqueId !== uniqueId);
         return {...order, cart: newCart };
       })
     );
