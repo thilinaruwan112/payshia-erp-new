@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -45,7 +44,8 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
                 }
                 throw new Error('Failed to fetch invoice data for KOT.');
             }
-            const data: Invoice = await response.json();
+            const result = await response.json();
+            const data: Invoice = result.data; // Correctly access the nested data object
             setInvoice(data);
         } catch (error) {
             console.error("Failed to fetch KOT data", error);
