@@ -5,9 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
-import { JSPM, ClientPrintJob, InstalledPrinter, FileSourceType, PrintFile } from 'jsprintmanager';
-import html2canvas from 'html2canvas';
-
 
 type KotItem = {
     name: string;
@@ -19,6 +16,14 @@ type KotData = {
     orderName: string;
     cashierName: string;
     items: KotItem[];
+}
+
+// Extend the Window interface
+declare global {
+  interface Window {
+      JSPM: any;
+      html2canvas: any;
+  }
 }
 
 export default function KOTPage({ params }: { params: { id: string } }) {
@@ -47,14 +52,14 @@ export default function KOTPage({ params }: { params: { id: string } }) {
     const handlePrint = () => {
         if (!kotRef.current) return;
 
-        try {
-            JSPM.JSPrintManager.auto_reconnect = true;
-            JSPM.JSPrintManager.start();
-            JSPM.JSPrintManager.WS.onStatusChanged = function () {
-                if (JSPM.JSPrintManager.websocket_status === JSPM.WSStatus.Open) {
-                    html2canvas(kotRef.current!, { scale: 2 }).then(canvas => {
-                        const cpj = new ClientPrintJob();
-                        const myPrinter = new InstalledPrinter('KOT-Printer');
+        if (window.JSPM) {
+            window.JSPM.JSPrintManager.auto_reconnect = true;
+            window.JSPM.JSPrintManager.start();
+            window.JSPM.JSPrintManager.WS.onStatusChanged = function () {
+                if (window.JSPM.JSPrintManager.websocket_status === window.JSPM.WSStatus.Open) {
+                    window.html2canvas(kotRef.current!, { scale: 2 }).then((canvas: any) => {
+                        const cpj = new window.JSPM.ClientPrintJob();
+                        const myPrinter = new window.JSPM.InstalledPrinter('KOT-Printer');
                         
                         myPrinter.paperName = '80(72.1) x 297 mm';
                         cpj.clientPrinter = myPrinter;
@@ -63,25 +68,22 @@ export default function KOTPage({ params }: { params: { id: string } }) {
                         const imgBase64DataUri = canvas.toDataURL("image/png");
                         const imgBase64Content = imgBase64DataUri.substring(b64Prefix.length);
 
-                        const myImageFile = new PrintFile(imgBase64Content, FileSourceType.Base64, `KOT-${kotData?.orderId}.png`, 1);
+                        const myImageFile = new window.JSPM.PrintFile(imgBase64Content, window.JSPM.FileSourceType.Base64, `KOT-${kotData?.orderId}.png`, 1);
                         cpj.files.push(myImageFile);
                         cpj.sendToClient();
 
                         setTimeout(() => window.close(), 2000);
-                    }).catch(err => {
+                    }).catch((err: any) => {
                         console.error("html2canvas error:", err);
-                        // Fallback to browser print
                         window.print();
                     });
                 } else {
-                     // Fallback to browser print if JSPM is not running
                      console.warn("JSPM not connected. Falling back to browser print.");
                      window.print();
                 }
             };
-        } catch (error) {
-            console.error("JSPM Error:", error);
-            // Fallback to browser print on any error
+        } else {
+            console.warn("JSPM not found. Falling back to browser print.");
             window.print();
         }
     };
@@ -89,7 +91,6 @@ export default function KOTPage({ params }: { params: { id: string } }) {
     if (!isLoading && kotData && !printTriggered.current) {
       document.title = `KOT - ${kotData.orderName}`;
       printTriggered.current = true;
-      // Delay to ensure the DOM is fully rendered before printing
       setTimeout(handlePrint, 500);
     }
   }, [isLoading, kotData]);
