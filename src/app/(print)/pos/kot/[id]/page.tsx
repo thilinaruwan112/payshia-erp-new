@@ -17,6 +17,7 @@ declare global {
 }
 
 export default function KOTPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const searchParams = useSearchParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
@@ -24,8 +25,7 @@ export default function KOTPage({ params }: { params: { id: string } }) {
   const kotRef = useRef<HTMLDivElement>(null);
   const [connected, setConnected] = useState(false);
   const companyId = searchParams.get('companyId');
-  const { id } = params;
-
+  
   useEffect(() => {
     async function fetchInvoiceData() {
         if (!id || !companyId) {
