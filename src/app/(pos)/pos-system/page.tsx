@@ -800,6 +800,9 @@ export default function POSPage() {
         description: `Order sent to the kitchen.`,
         icon: <ChefHat className="h-6 w-6 text-green-500" />,
       });
+      
+      // Open KOT print view
+      window.open(`/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
 
       onClearCart(currentOrderId!);
     } catch (error) {
@@ -1372,7 +1375,8 @@ export default function POSPage() {
 
   return (
     <>
-      <AddToCartDialog
+    <div className="flex h-screen w-screen flex-col">
+       <AddToCartDialog
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
@@ -1827,6 +1831,8 @@ export default function POSPage() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
     </>
   );
 }
+

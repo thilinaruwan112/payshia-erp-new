@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -12,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { User } from '@/lib/types';
-import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock, ChevronDown, Building } from 'lucide-react';
+import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock, ChevronDown, Building, History, Utensils } from 'lucide-react';
 import { ThemeToggle } from '../theme-toggle';
 import Link from 'next/link';
 import { Button } from '../ui/button';
@@ -151,9 +150,17 @@ export function PosHeader({
                         <span>Admin Dashboard</span>
                     </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                 <DropdownMenuItem asChild>
+                    <Link href="/pos/kot" target="_blank" rel="noopener noreferrer">
+                        <Utensils className="mr-2 h-4 w-4" />
+                        <span>KOT History</span>
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link href="/pos/history" target="_blank" rel="noopener noreferrer">
+                        <History className="mr-2 h-4 w-4" />
+                        <span>Order History</span>
+                    </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
