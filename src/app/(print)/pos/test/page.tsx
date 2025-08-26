@@ -79,13 +79,24 @@ export default function PrintPage() {
 
     cpj.files.push(myImageFile);
     cpj.sendToClient();
+
+    setTimeout(() => {
+      window.close();
+    }, 5000);
   };
 
   return (
     <>
+      {/* Load JSPM Script */}
+      <Script
+        src="https://unpkg.com/jsprintmanager/JSPrintManager.js"
+        strategy="beforeInteractive"
+      />
+
       <div style={{ padding: "20px", fontFamily: "Arial" }}>
         <h1>Next.js + JSPrintManager Invoice Print</h1>
 
+        {/* Invoice content to capture */}
         <div
           id="inv"
           ref={invRef}
