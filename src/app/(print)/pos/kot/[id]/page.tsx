@@ -52,7 +52,7 @@ export default function KOTPage({ params }: { params: { id: string } }) {
   const handlePrint = async () => {
     if (!window.JSPM || !connected || !kotRef.current) {
         console.warn("JSPM not ready or KOT element not found. Falling back to browser print.");
-        window.print();
+        setTimeout(() => window.print(), 500);
         return;
     }
 
@@ -70,8 +70,8 @@ export default function KOTPage({ params }: { params: { id: string } }) {
         const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
 
         const cpj = new ClientPrintJob();
-        const myPrinter = new InstalledPrinter("KOT-Printer");
-        // myPrinter.paperName = '80(72.1) x 297 mm'; // Optional: Set if needed
+        const myPrinter = new InstalledPrinter("Microsoft Print to PDF");
+        
         cpj.clientPrinter = myPrinter;
 
         // 4. Add image as PrintFile
@@ -101,7 +101,7 @@ export default function KOTPage({ params }: { params: { id: string } }) {
     if (typeof window !== "undefined") {
       const initJSPM = () => {
         if (!window.JSPM) {
-          console.error("JSPM script not loaded!");
+          console.error("JSPM script not loaded! Make sure the client app is running.");
           return;
         }
 
@@ -120,7 +120,6 @@ export default function KOTPage({ params }: { params: { id: string } }) {
         };
       };
       
-      // Give the script a moment to load
       setTimeout(initJSPM, 500);
     }
   }, []);
@@ -129,10 +128,9 @@ export default function KOTPage({ params }: { params: { id: string } }) {
     if (connected && !isLoading && kotData) {
         document.title = `KOT - ${kotData.orderName}`;
         handlePrint();
-    } else if (!isLoading && kotData && !window.JSPM) {
-        // Fallback for when JSPM doesn't load
-        console.warn("JSPM not found, using browser print.");
-        window.print();
+    } else if (!isLoading && kotData && typeof window !== "undefined" && !window.JSPM) {
+        console.warn("JSPM not found. Falling back to browser print.");
+        setTimeout(() => window.print(), 500);
     }
   }, [connected, isLoading, kotData]);
 
