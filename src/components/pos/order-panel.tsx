@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -54,7 +53,7 @@ interface OrderPanelProps {
   cashierName: string;
   currentLocation: Location | null;
   onUpdateQuantity: (variantId: string, batchCode: string, newQuantity: number) => void;
-  onRemoveItem: (variantId: string, batchCode: string) => void;
+  onRemoveItem: (uniqueId: string) => void;
   onClearCart: (invoiceId: string) => void;
   onHoldAndKitchen: () => void;
   isDrawer?: boolean;
@@ -402,7 +401,7 @@ export function OrderPanel({
             description: `Invoice #${result.invoice_number} created.`
         });
         
-        window.open(`/sales-print/invoices/${result.invoice_id}/print`, '_blank');
+        window.open(`/sales-print/invoices/${result.invoice_id}/print?company_id=${company_id}`, '_blank');
         
         setPaymentOpen(false);
         onClearCart(orderId);
@@ -573,7 +572,7 @@ export function OrderPanel({
                       size="icon"
                       variant="ghost"
                       className="h-8 w-8 mt-auto text-muted-foreground hover:text-destructive"
-                      onClick={() => onRemoveItem(item.product.variant.id, item.batch.patch_code)}
+                      onClick={() => onRemoveItem(item.uniqueId!)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

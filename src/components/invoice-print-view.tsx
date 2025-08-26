@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { type Invoice, type User, type Location } from '@/lib/types';
@@ -20,9 +19,10 @@ interface Company {
 
 interface InvoicePrintViewProps {
     id: string;
+    companyId: string | null;
 }
 
-export function InvoicePrintView({ id }: InvoicePrintViewProps) {
+export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
@@ -34,10 +34,10 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
 
   useEffect(() => {
     async function fetchData() {
-      if (!id) return;
+      if (!id || !companyId) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/full/${id}`);
+        const response = await fetch(`https://server-erp.payshia.com/pos-invoices/${id}/?company_id=${companyId}`);
         if (!response.ok) {
            if (response.status === 404) notFound();
            throw new Error('Failed to fetch invoice data');
@@ -49,12 +49,14 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
         }
 
         if (data.company_id && data.location_id) {
-            const [companyRes, locationRes] = await Promise.all([
+            const [companyRes, locationRes, customerRes] = await Promise.all([
                 fetch(`https://server-erp.payshia.com/companies/${data.company_id}`),
                 fetch(`https://server-erp.payshia.com/locations/${data.location_id}`),
+                fetch(`https://server-erp.payshia.com/customers/${data.customer_code}`),
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());
+            if(customerRes.ok) setCustomer(await customerRes.json());
         }
 
       } catch (error) {
@@ -68,7 +70,7 @@ export function InvoicePrintView({ id }: InvoicePrintViewProps) {
       }
     }
     fetchData();
-  }, [id, toast]);
+  }, [id, companyId, toast]);
 
   useEffect(() => {
     if (invoice) {
