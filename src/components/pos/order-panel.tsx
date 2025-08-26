@@ -22,6 +22,7 @@ import {
   Star,
   UserCheck,
   Settings,
+  Receipt,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -455,6 +456,44 @@ export function OrderPanel({
     onUpdateCustomer(orderId, newCustomer);
   }
 
+  const handleGuestReceipt = () => {
+    if (!order || order.cart.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Cart is empty',
+        description: 'Cannot print a receipt for an empty order.',
+      });
+      return;
+    }
+    const orderData = {
+        orderId: order.id,
+        orderName: order.name,
+        cashierName: cashierName,
+        customerName: order.customer.name,
+        items: order.cart.map(item => ({ 
+            name: item.product.variantName, 
+            quantity: item.quantity,
+            price: item.product.price,
+            total: (item.product.price as number) * item.quantity,
+        })),
+        totals: {
+            subtotal: orderTotals.subtotal,
+            discount: orderTotals.discount + orderTotals.itemDiscounts,
+            serviceCharge: orderTotals.serviceCharge,
+            total: orderTotals.total,
+        },
+    };
+    
+    const encodedData = btoa(JSON.stringify(orderData));
+    window.open(`/pos/guest-receipt/${order.id}?data=${encodedData}`, '_blank');
+    
+    toast({
+      title: 'Guest Receipt Printed!',
+      description: `Receipt for ${order.name} sent to the printer.`,
+      icon: <Receipt className="h-6 w-6 text-green-500" />,
+    });
+  };
+
   return (
     <div className="flex flex-col h-full bg-card">
       <header className="p-4 border-b border-border flex items-center justify-between">
@@ -644,8 +683,8 @@ export function OrderPanel({
              <Button variant="outline" onClick={onHoldOrder} disabled={cart.length === 0} className="h-12">
                 <Notebook className="mr-2 h-4 w-4" /> Hold
             </Button>
-             <Button variant="secondary" onClick={onSendToKitchen} disabled={cart.length === 0} className="h-12">
-              <ChefHat className="mr-2 h-4 w-4" /> Send to Kitchen
+             <Button variant="secondary" onClick={handleGuestReceipt} disabled={cart.length === 0} className="h-12">
+                <Receipt className="mr-2 h-4 w-4" /> Guest Receipt
             </Button>
             <Button variant="destructive" onClick={() => onClearCart(orderId)} disabled={cart.length === 0} className="h-12">
                 <Trash2 className="mr-2 h-4 w-4" /> Clear Cart
@@ -657,7 +696,7 @@ export function OrderPanel({
             className="w-full h-16 text-lg bg-green-600 hover:bg-green-700 text-white"
             disabled={cart.length === 0}
             >
-            <CreditCard className="mr-2 h-5 w-5" /> Proceed
+            <CreditCard className="mr-2 h-5 w-5" /> Proceed to Payment
             </Button>
         </DialogTrigger>
         <PaymentDialog
