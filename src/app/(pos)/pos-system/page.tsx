@@ -791,7 +791,6 @@ export default function POSPage() {
         throw new Error(result.message || 'Failed to send to kitchen.');
       }
       
-      // Update the active order with the official invoice number
       const updatedOrder = { ...currentOrder, originalInvoiceNumber: result.invoice_number };
       setActiveOrders(prev => prev.map(o => o.id === currentOrder.id ? updatedOrder : o));
       
@@ -801,8 +800,9 @@ export default function POSPage() {
         icon: <ChefHat className="h-6 w-6 text-green-500" />,
       });
       
-      // Open KOT print view
-      window.open(`/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
+      // Pass the full invoice object for printing
+      const encodedData = btoa(JSON.stringify(result));
+      window.open(`/pos/kot/${result.invoice_id}?data=${encodedData}`, '_blank');
 
       onClearCart(currentOrderId!);
     } catch (error) {
@@ -1375,13 +1375,12 @@ export default function POSPage() {
 
   return (
     <>
-    <div className="flex h-screen w-screen flex-col">
-       <AddToCartDialog
+    <AddToCartDialog
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
       />
-      <div className="flex h-screen w-screen flex-col">
+    <div className="flex h-screen w-screen flex-col">
         <PosHeader
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
@@ -1787,7 +1786,6 @@ export default function POSPage() {
                 )}
             </div>
         </div>
-      </div>
       <Dialog open={isHeldOrderDetailsOpen} onOpenChange={setIsHeldOrderDetailsOpen}>
         <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -1836,3 +1834,4 @@ export default function POSPage() {
   );
 }
 
+    

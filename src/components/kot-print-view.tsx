@@ -1,7 +1,7 @@
 
 'use client';
 
-import { notFound } from 'next/navigation';
+import { useSearchParams, notFound } from 'next/navigation';
 import React, { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -19,10 +19,10 @@ declare global {
 
 interface KotPrintViewProps {
     invoiceId: string;
-    companyId: string | null;
 }
 
-export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
+export function KotPrintView({ invoiceId }: KotPrintViewProps) {
+  const searchParams = useSearchParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -30,38 +30,27 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [connected, setConnected] = useState(false);
   
   useEffect(() => {
-    async function fetchInvoiceData() {
-        if (!invoiceId || !companyId) {
-            toast({
-                variant: 'destructive',
-                title: 'Missing Information',
-                description: 'Invoice ID or Company ID is missing from the request.',
-            });
-            setIsLoading(false);
-            return;
-        }
-
-        try {
-            const response = await fetch(`https://server-erp.payshia.com/pos-invoices/${invoiceId}?company_id=${companyId}`);
-            if (!response.ok) {
-                if (response.status === 404) notFound();
-                throw new Error('Failed to fetch KOT data');
-            }
-            const data: Invoice = await response.json();
-            setInvoice(data);
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: 'Error loading KOT',
-                description: 'Could not fetch order data to generate KOT.',
-            });
-        } finally {
-            setIsLoading(false);
-        }
+    setIsLoading(true);
+    try {
+      const data = searchParams.get('data');
+      if (data) {
+        const decodedData = atob(data);
+        const parsedData: Invoice = JSON.parse(decodedData);
+        setInvoice(parsedData);
+      } else {
+        throw new Error("No data provided for KOT.");
+      }
+    } catch (error) {
+      console.error("Failed to parse KOT data", error);
+      toast({
+          variant: 'destructive',
+          title: 'Error loading KOT',
+          description: 'Could not read order data to generate KOT.',
+      });
+    } finally {
+        setIsLoading(false);
     }
-
-    fetchInvoiceData();
-  }, [invoiceId, companyId, toast]);
+  }, [searchParams, toast]);
 
 
   const handlePrint = async () => {
@@ -225,3 +214,5 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     </div>
   );
 }
+
+    

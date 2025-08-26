@@ -6,10 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
 function KOTPageContent({ params }: { params: { id: string } }) {
-  const searchParams = useSearchParams();
-  const companyId = searchParams.get('company_id');
-
-  return <KotPrintView invoiceId={params.id} companyId={companyId} />;
+  return <KotPrintView invoiceId={params.id} />;
 }
 
 export default function KOTPage({ params }: { params: { id: string } }) {
@@ -19,3 +16,5 @@ export default function KOTPage({ params }: { params: { id: string } }) {
         </Suspense>
     )
 }
+
+    
