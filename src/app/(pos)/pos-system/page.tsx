@@ -8,7 +8,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu, LineChart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +21,7 @@ import { HeldOrderDetailsDialog } from '@/components/pos/dialogs/held-order-deta
 import { PendingInvoicesDialog } from '@/components/pos/dialogs/pending-invoices-dialog';
 import { ReturnDialog, type ReturnItem } from '@/components/pos/dialogs/return-dialog';
 import { RefundDialog } from '@/components/pos/dialogs/refund-dialog';
+import { TodaySalesDialog } from '@/components/pos/dialogs/today-sales-dialog';
 import { useCurrency } from '@/components/currency-provider';
 
 export type PosProduct = Product & {
@@ -66,11 +67,12 @@ export default function POSPage() {
   const [isNewOrderDialogOpen, setNewOrderDialogOpen] = useState(false);
   const [isHeldOrderDetailsDialogOpen, setHeldOrderDetailsDialogOpen] = useState(false);
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
+  const [isTodaySalesDialogOpen, setTodaySalesDialogOpen] = useState(false);
   
   const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
   
-  const walkInCustomer = { id: 'user-4', name: 'Walk-in Customer', role: 'Customer', avatar: 'https://placehold.co/100x100.png?text=WC', loyaltyPoints: 0, email: 'walkin@payshia.com', phone: 'N/A', address: 'N/A', customer_id: '4' };
+  const walkInCustomer = { id: 'user-4', name: 'Walk-in Customer', role: 'Customer', avatar: 'https://placehold.co/100x100.png?text=WC', loyaltyPoints: 0, email: 'walkin@payshia.com', phone: 'N/A', customer_id: '4' };
 
   const [currentCashier, setCurrentCashier] = useState<User | null>(null);
   const { currentLocation, isLoading: isLocationLoading, setCurrentLocation, availableLocations, company_id } = useLocation();
@@ -607,6 +609,7 @@ export default function POSPage() {
           handleProcessReturn={handleProcessReturn}
       />
       <RefundDialog isOpen={isRefundDialogOpen} onOpenChange={setRefundDialogOpen} customers={customers} />
+      <TodaySalesDialog isOpen={isTodaySalesDialogOpen} onOpenChange={setTodaySalesDialogOpen} />
 
       <div className="flex h-screen w-screen flex-col">
         <PosHeader
@@ -618,6 +621,7 @@ export default function POSPage() {
             <div className="flex-1 flex flex-col">
                 <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
+                         <Button variant="outline" size="sm" onClick={() => setTodaySalesDialogOpen(true)}><LineChart className="mr-2 h-4 w-4" />Sales</Button>
                          <Button variant="outline" size="sm" onClick={() => setPendingInvoicesDialogOpen(true)}><Receipt className="mr-2 h-4 w-4" />Pending Invoices</Button>
                         <Button variant="outline" size="sm" onClick={() => setReturnDialogOpen(true)}><Undo2 className="mr-2 h-4 w-4" />Return</Button>
                         <Button variant="outline" size="sm" onClick={() => setRefundDialogOpen(true)}><Banknote className="mr-2 h-4 w-4" />Refund</Button>
