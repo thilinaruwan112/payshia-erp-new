@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useSearchParams, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import React, { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -19,16 +19,15 @@ declare global {
 
 interface KotPrintViewProps {
     invoiceId: string;
+    companyId: string;
 }
 
-export function KotPrintView({ invoiceId }: KotPrintViewProps) {
-  const searchParams = useSearchParams();
+export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const kotRef = useRef<HTMLDivElement>(null);
   const [connected, setConnected] = useState(false);
-  const companyId = searchParams.get('company_id');
   
   useEffect(() => {
     async function fetchInvoiceData() {
