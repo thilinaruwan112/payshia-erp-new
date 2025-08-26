@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -55,8 +56,7 @@ interface OrderPanelProps {
   onUpdateQuantity: (variantId: string, batchCode: string, newQuantity: number) => void;
   onRemoveItem: (variantId: string, batchCode: string) => void;
   onClearCart: (invoiceId: string) => void;
-  onHoldOrder: () => void;
-  onSendToKitchen: () => void;
+  onHoldAndKitchen: () => void;
   isDrawer?: boolean;
   onClose?: () => void;
   setDiscount: (discount: number) => void;
@@ -299,8 +299,7 @@ export function OrderPanel({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
-  onHoldOrder: holdOrderCallback,
-  onSendToKitchen,
+  onHoldAndKitchen,
   isDrawer,
   onClose,
   setDiscount,
@@ -415,48 +414,6 @@ export function OrderPanel({
             title: "Payment Failed",
             description: errorMessage,
         });
-    }
-  };
-
-  const onHoldOrder = async () => {
-    if (!order || cart.length === 0) {
-      toast({
-        variant: 'default',
-        title: 'Cannot Hold Empty Order',
-        description: 'Add items to the cart before holding.',
-      });
-      return;
-    }
-    const payload = createInvoicePayload('2');
-     if (!payload) return;
-
-    try {
-      const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to hold order.');
-      }
-      toast({
-        title: 'Order Held',
-        description: `${order.name} has been put on hold as Invoice #${result.invoice_number}.`,
-      });
-
-      // Send to kitchen after holding
-      onSendToKitchen();
-
-      onClearCart(orderId);
-    } catch (error) {
-       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-       toast({
-        variant: 'destructive',
-        title: 'Error Holding Order',
-        description: errorMessage,
-      });
     }
   };
   
@@ -688,7 +645,7 @@ export function OrderPanel({
               </DialogTrigger>
               <DiscountDialog setDiscount={setDiscount} onClose={() => setDiscountOpen(false)} />
             </Dialog>
-             <Button variant="outline" onClick={onHoldOrder} disabled={cart.length === 0} className="h-12">
+             <Button variant="outline" onClick={onHoldAndKitchen} disabled={cart.length === 0} className="h-12">
                 <Notebook className="mr-2 h-4 w-4" /> Hold
             </Button>
              <Button variant="secondary" onClick={handleGuestReceipt} disabled={cart.length === 0} className="h-12">
