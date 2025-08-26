@@ -1,8 +1,7 @@
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import type { Invoice } from '@/lib/types';
+import type { Invoice, Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -14,8 +13,29 @@ interface KotPrintViewProps {
 
 export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchProducts() {
+        if (!companyId) return;
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/products/get/filter/by-company?company_id=${companyId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch products');
+            }
+            setProducts(await response.json());
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error Fetching Products',
+                description: 'Could not load product list for KOT.',
+            });
+        }
+    }
+    fetchProducts();
+  }, [companyId, toast]);
 
   useEffect(() => {
     if (!invoiceId || !companyId) {
@@ -30,13 +50,9 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         if (!response.ok) {
           throw new Error('Failed to fetch invoice data for KOT.');
         }
-        const result = await response.json();
-        // The API nests the data in a `data` property
-        if (result && result.data) {
-          setInvoice(result.data);
-        } else {
-          throw new Error('Invoice data not found in API response.');
-        }
+        const result: Invoice = await response.json();
+        setInvoice(result);
+
       } catch (error) {
         toast({
           variant: 'destructive',
@@ -52,11 +68,15 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }, [invoiceId, companyId, toast]);
   
   useEffect(() => {
-    if (!isLoading && invoice) {
+    if (!isLoading && invoice && products.length > 0) {
         document.title = `KOT - ${invoice.invoice_number}`;
         setTimeout(() => window.print(), 500);
     }
-  }, [isLoading, invoice]);
+  }, [isLoading, invoice, products]);
+
+  const getProductName = (productId: number) => {
+    return products.find(p => p.id === String(productId))?.name || `Product ID: ${productId}`;
+  }
 
 
   if (isLoading) {
@@ -113,7 +133,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
           {invoice.items?.map((item, index) => (
             <tr key={index}>
               <td className="py-1 align-top font-bold text-base">{parseFloat(String(item.quantity))}</td>
-              <td className="py-1 align-top font-semibold">{item.productName}</td>
+              <td className="py-1 align-top font-semibold">{getProductName(item.product_id)}</td>
             </tr>
           ))}
         </tbody>
