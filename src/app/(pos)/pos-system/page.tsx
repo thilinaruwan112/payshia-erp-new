@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -313,7 +314,6 @@ export default function POSPage() {
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
   const [isSubmittingRefund, setIsSubmittingRefund] = useState(false);
-  const [balanceDetails, setBalanceDetails] = useState<BalanceDetails | null>(null);
 
 
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -735,30 +735,104 @@ export default function POSPage() {
     setSelectedProduct(product);
   }
 
-  const addToCart = (product: PosProduct, quantity: number, discount: number, batch: StockInfo) => {
+  const addToCart = async (product: PosProduct, quantity: number, discount: number, batch: StockInfo) => {
     if (!currentOrderId) {
       return;
     }
+  
+    // Optimistically update UI
+    const tempId = `${product.variant.id}-${batch.patch_code}-${Date.now()}`;
+    const newCartItem: CartItem = { product, quantity, itemDiscount: discount, batch, tempId };
+  
     setActiveOrders((prevOrders) =>
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
-        const existingItem = order.cart.find(
-          (item) => item.product.variant.id === product.variant.id && item.batch.patch_code === batch.patch_code
+        
+        // This is a simplified check. A real-world scenario might require more complex logic
+        // to handle updates vs. new additions if the same item-batch can be added multiple times.
+        const existingItemIndex = order.cart.findIndex(
+            (item) => item.product.variant.id === product.variant.id && item.batch.patch_code === batch.patch_code
         );
+
         let newCart;
-        if (existingItem) {
-          newCart = order.cart.map((item) =>
-            item.product.variant.id === product.variant.id && item.batch.patch_code === batch.patch_code
-              ? { ...item, quantity: item.quantity + quantity, itemDiscount: (item.itemDiscount || 0) + discount }
-              : item
-          );
+        if (existingItemIndex > -1) {
+            newCart = [...order.cart];
+            newCart[existingItemIndex] = {
+                ...newCart[existingItemIndex],
+                quantity: newCart[existingItemIndex].quantity + quantity,
+                itemDiscount: (newCart[existingItemIndex].itemDiscount || 0) + discount
+            };
         } else {
-          newCart = [...order.cart, { product, quantity, itemDiscount: discount, batch }];
+            newCart = [...order.cart, newCartItem];
         }
+
         return { ...order, cart: newCart };
       })
     );
     setSelectedProduct(null);
+  
+    // If it's a held order, send an update to the backend.
+    const updatedOrder = activeOrders.find(o => o.id === currentOrderId);
+    if (updatedOrder?.originalInvoiceNumber && company_id) {
+      // Recalculate totals based on the new cart state
+      const subtotal = updatedOrder.cart.reduce((acc, item) => acc + (item.product.price as number) * item.quantity, 0) + (product.price as number) * quantity;
+      const itemDiscounts = updatedOrder.cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0) + discount;
+      const total = subtotal - itemDiscounts + updatedOrder.serviceCharge - updatedOrder.discount;
+
+      const payload = {
+        grand_total: total,
+        discount_amount: updatedOrder.discount + itemDiscounts,
+        service_charge: updatedOrder.serviceCharge,
+        remark: "Item added to held order",
+        items: [
+          {
+            user_id: 1, // Assuming a default user ID
+            product_id: parseInt(product.id, 10),
+            item_price: product.price,
+            item_discount: discount,
+            quantity: quantity,
+            customer_id: parseInt(updatedOrder.customer.customer_id, 10),
+            table_id: updatedOrder.tableName ? (tables.find(t => t.table_name === updatedOrder.tableName)?.id || 0) : 0,
+            cost_price: product.costPrice || 0,
+            product_variant_id: parseInt(product.variant.id, 10),
+          },
+        ],
+      };
+  
+      try {
+        const response = await fetch(
+          `https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${updatedOrder.originalInvoiceNumber}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          }
+        );
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to update held order.");
+        }
+        toast({
+          title: "Held Order Updated",
+          description: "New item has been saved to the held order.",
+        });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+          variant: "destructive",
+          title: "Update Failed",
+          description: errorMessage,
+        });
+        // Revert optimistic update on failure
+        setActiveOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order.id === currentOrderId
+              ? { ...order, cart: order.cart.filter((item) => item.tempId !== tempId) }
+              : order
+          )
+        );
+      }
+    }
   };
 
   const updateQuantity = (variantId: string, batchCode: string, newQuantity: number) => {
@@ -1775,3 +1849,4 @@ export default function POSPage() {
     </>
   );
 }
+
