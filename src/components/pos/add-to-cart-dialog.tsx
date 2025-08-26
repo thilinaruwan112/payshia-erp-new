@@ -21,6 +21,7 @@ import { useLocation } from '../location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { useCurrency } from '../currency-provider';
+import { Badge } from '../ui/badge';
 
 interface AddToCartDialogProps {
   product: PosProduct | null;
@@ -41,10 +42,13 @@ export function AddToCartDialog({
   const { currentLocation, company_id } = useLocation();
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
+  
+  const isAlaCarte = product?.recipe_type === 'ala cart';
+
 
   useEffect(() => {
     async function fetchStock() {
-      if (product && currentLocation && company_id) {
+      if (product && currentLocation && company_id && !isAlaCarte) {
         setIsLoadingStock(true);
         setStockInfo(null);
         setSelectedBatch("");
@@ -81,21 +85,25 @@ export function AddToCartDialog({
       setDiscount('0');
       fetchStock();
     }
-  }, [product, currentLocation, company_id, toast]);
+  }, [product, currentLocation, company_id, toast, isAlaCarte]);
 
   const handleAddToCart = () => {
-    if (product && selectedBatch) {
+    if (product) {
       const numQuantity = parseFloat(quantity);
       const numDiscount = parseFloat(discount);
-      const batchData = JSON.parse(selectedBatch) as StockInfo;
+      
+      let batchData: StockInfo = { product_id: product.id, product_variant_id: product.variant.id, patch_code: 'N/A', expire_date: 'N/A', total_in: '0', total_out: '0', stock_balance: '9999' };
 
-      if (numQuantity > parseFloat(batchData.stock_balance)) {
-          toast({
-              variant: 'destructive',
-              title: 'Insufficient Stock',
-              description: `Only ${batchData.stock_balance} units available in this batch.`
-          });
-          return;
+      if (!isAlaCarte) {
+        if (!selectedBatch) {
+            toast({ variant: 'destructive', title: 'No Batch Selected', description: 'Please select an available batch.'});
+            return;
+        }
+        batchData = JSON.parse(selectedBatch);
+        if (numQuantity > parseFloat(batchData.stock_balance)) {
+            toast({ variant: 'destructive', title: 'Insufficient Stock', description: `Only ${batchData.stock_balance} units available in this batch.`});
+            return;
+        }
       }
 
       if (numQuantity > 0) {
@@ -135,7 +143,10 @@ export function AddToCartDialog({
             {/* Left Column: Product Info */}
             <div className="p-6 flex flex-col">
               <DialogHeader className="mb-4">
-                <DialogTitle className="text-2xl">{product.variantName}</DialogTitle>
+                <div className="flex items-center gap-4">
+                    <DialogTitle className="text-2xl">{product.variantName}</DialogTitle>
+                    {isAlaCarte && <Badge variant="secondary">A La Carte</Badge>}
+                </div>
                 <p className="text-sm text-muted-foreground">{product.variant.sku || 'No SKU'}</p>
               </DialogHeader>
 
@@ -150,27 +161,29 @@ export function AddToCartDialog({
                 />
               </div>
               
-               <div className="grid grid-cols-2 gap-4 mb-4">
-                  <FormField
-                      label="Available Stock"
-                      value={isLoadingStock ? <Loader2 className="h-4 w-4 animate-spin"/> : `${stockInfo?.totalStock || 0} ${product.stock_unit || 'Nos'}`}
-                  />
-                  <div className="space-y-1">
-                    <Label>Batch / Expiry</Label>
-                     <Select onValueChange={setSelectedBatch} value={selectedBatch} disabled={isLoadingStock || !stockInfo?.batches.length}>
-                        <SelectTrigger>
-                            <SelectValue placeholder={isLoadingStock ? "Loading..." : "Select batch"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {stockInfo?.batches.map(batch => (
-                                <SelectItem key={`${batch.patch_code}-${batch.expire_date}`} value={JSON.stringify(batch)}>
-                                    EXP: {format(new Date(batch.expire_date), 'dd/MM/yy')} (Qty: {batch.stock_balance})
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                  </div>
-              </div>
+               {!isAlaCarte ? (
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <FormField
+                            label="Available Stock"
+                            value={isLoadingStock ? <Loader2 className="h-4 w-4 animate-spin"/> : `${stockInfo?.totalStock || 0} ${product.stock_unit || 'Nos'}`}
+                        />
+                        <div className="space-y-1">
+                            <Label>Batch / Expiry</Label>
+                            <Select onValueChange={setSelectedBatch} value={selectedBatch} disabled={isLoadingStock || !stockInfo?.batches.length}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={isLoadingStock ? "Loading..." : "Select batch"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {stockInfo?.batches.map(batch => (
+                                        <SelectItem key={`${batch.patch_code}-${batch.expire_date}`} value={JSON.stringify(batch)}>
+                                            EXP: {format(new Date(batch.expire_date), 'dd/MM/yy')} (Qty: {batch.stock_balance})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                ) : null}
               
               <div className="mt-auto grid grid-cols-2 gap-4">
                 <div>
@@ -194,7 +207,9 @@ export function AddToCartDialog({
             <div className="p-6 bg-muted/30 flex flex-col">
               <div className="flex justify-between items-center mb-4">
                  <h3 className="text-lg font-semibold">Select Quantity</h3>
-                 <p className="text-sm text-muted-foreground">In batch: <span className="font-bold text-foreground">{currentBatchStock}</span></p>
+                 {!isAlaCarte && (
+                    <p className="text-sm text-muted-foreground">In batch: <span className="font-bold text-foreground">{currentBatchStock}</span></p>
+                 )}
               </div>
               <Input 
                 readOnly 
@@ -211,7 +226,7 @@ export function AddToCartDialog({
                 <Button variant="outline" type="button" onClick={() => handleNumpadClick('.')} className="h-full text-2xl bg-background">.</Button>
                 <Button variant="outline" type="button" onClick={handleClear} className="h-full text-2xl bg-destructive/20 text-destructive-foreground hover:bg-destructive/30">C</Button>
               </div>
-              <Button onClick={handleAddToCart} disabled={!quantity || parseFloat(quantity) <= 0 || !selectedBatch} className="w-full h-14 text-lg mt-4">
+              <Button onClick={handleAddToCart} disabled={!quantity || parseFloat(quantity) <= 0 || (!isAlaCarte && !selectedBatch)} className="w-full h-14 text-lg mt-4">
                 <Plus className="mr-2 h-5 w-5" /> Add
               </Button>
             </div>
