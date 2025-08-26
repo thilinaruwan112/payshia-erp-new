@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -868,7 +869,7 @@ export default function POSPage() {
         steward_id: currentOrder.steward?.id || "N/A",
         cost_value: costValue,
         remark: `${currentOrder.orderType} order`,
-        ref_hold: status === '1' ? (order.originalInvoiceNumber || "direct") : null,
+        ref_hold: status === '1' ? (currentOrder.originalInvoiceNumber || "direct") : null,
         company_id: company_id,
         chanel: "POS",
         items: currentOrder.cart.map(item => ({

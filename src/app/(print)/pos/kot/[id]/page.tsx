@@ -1,14 +1,15 @@
 
+
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, notFound } from 'next/navigation';
 import React, { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import Image from 'next/image';
 import type { Invoice, User } from '@/lib/types';
-import { notFound } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 // Extend the Window interface
 declare global {
@@ -23,6 +24,7 @@ export default function KOTPage({ params }: { params: { id: string } }) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
   const kotRef = useRef<HTMLDivElement>(null);
   const [connected, setConnected] = useState(false);
   const companyId = searchParams.get('companyId');
@@ -55,12 +57,17 @@ export default function KOTPage({ params }: { params: { id: string } }) {
 
         } catch (error) {
             console.error("Error fetching KOT data:", error);
+             toast({
+                variant: 'destructive',
+                title: 'Error Fetching Data',
+                description: 'Could not load data for the KOT.',
+            });
         } finally {
             setIsLoading(false);
         }
     }
     fetchInvoiceData();
-  }, [id, companyId]);
+  }, [id, companyId, toast]);
 
   const handlePrint = async () => {
     if (!window.JSPM || !connected || !kotRef.current) {
@@ -142,7 +149,7 @@ export default function KOTPage({ params }: { params: { id: string } }) {
     }
   }, [connected, isLoading, invoice]);
 
-  if (isLoading || !invoice) {
+  if (isLoading) {
     return (
       <div className="w-[80mm] bg-white text-black p-2 font-mono">
         <Skeleton className="h-6 w-3/4 mx-auto" />
@@ -158,6 +165,14 @@ export default function KOTPage({ params }: { params: { id: string } }) {
         </div>
       </div>
     );
+  }
+  
+  if (!invoice) {
+    return (
+      <div className="w-[80mm] bg-white text-black p-2 font-mono">
+        <p>Could not load KOT data.</p>
+      </div>
+    )
   }
   
   return (
