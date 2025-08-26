@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -759,7 +758,7 @@ export default function POSPage() {
             user_id: 1, // Default user_id as per example
             product_id: parseInt(item.product.id, 10),
             item_price: item.product.price,
-            item_discount: item.itemDiscount || 0,
+            item_discount: item.item_discount || 0,
             quantity: item.quantity,
             customer_id: parseInt(currentOrder.customer.customer_id, 10),
             table_id: 0,
@@ -789,7 +788,7 @@ export default function POSPage() {
         throw new Error(result.message || 'Failed to send to kitchen.');
       }
       
-      window.open(`/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
+      window.open(`/pos/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
       
       toast({
         title: 'KOT Sent!',
@@ -889,7 +888,7 @@ export default function POSPage() {
   };
   
   const onHoldOrder = async () => {
-    if (!currentOrder || currentOrder.cart.length === 0 || !currentCashier) {
+    if (!currentOrder || cart.length === 0 || !currentCashier) {
       toast({
         variant: 'default',
         title: 'Cannot Hold Empty Order',
@@ -1300,7 +1299,7 @@ export default function POSPage() {
         onRemoveItem={removeFromCart}
         onClearCart={onClearCart}
         onHoldOrder={onHoldOrder}
-        onSendToKitchen={handleSendToKitchen}
+        onSendToKitchen={onSendToKitchen}
         isDrawer={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
         setDiscount={setDiscount}
@@ -1373,413 +1372,412 @@ export default function POSPage() {
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
       />
-      <div className="flex h-screen w-screen overflow-hidden">
-        <div className="flex-1 flex flex-col overflow-y-auto">
-          <PosHeader
+      <div className="flex h-screen w-screen flex-col">
+        <PosHeader
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             cashier={currentCashier}
-          />
-          <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
-            <div className="flex items-center gap-2">
-                <Dialog open={isPendingInvoicesDialogOpen} onOpenChange={setPendingInvoicesDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                            <Receipt className="mr-2 h-4 w-4" />
-                            Pending Invoices
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Pay Pending Invoices</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                            <Select onValueChange={setSelectedCustomerForAction}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a customer..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {customers.map(c => (
-                                        <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {isPastInvoicesLoading ? <Loader2 className="mx-auto h-6 w-6 animate-spin" /> : (
-                                 <RadioGroup onValueChange={(invoiceNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invoiceNumber)!)}>
-                                    {pastInvoices.map(invoice => (
-                                        <div key={invoice.id} className="flex items-center space-x-2">
-                                            <RadioGroupItem value={invoice.invoice_number} id={invoice.id} />
-                                            <Label htmlFor={invoice.id} className="flex justify-between w-full">
-                                                <span>{invoice.invoice_number} ({format(new Date(invoice.invoice_date), 'dd/MM/yy')})</span>
-                                                <span>LKR {parseFloat(invoice.grand_total).toFixed(2)}</span>
-                                            </Label>
-                                        </div>
-                                    ))}
-                                </RadioGroup>
-                            )}
-                             {selectedInvoiceForAction && (
-                                <Card>
-                                    <CardContent className="pt-4">
-                                        <div className="space-y-2">
-                                            <Select onValueChange={setPaymentMethod} defaultValue={paymentMethod}>
-                                                <SelectTrigger><SelectValue placeholder="Payment Method" /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="Cash">Cash</SelectItem>
-                                                    <SelectItem value="Card">Card</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <Input 
-                                                placeholder="Amount" 
-                                                type="number" 
-                                                value={paymentAmount}
-                                                onChange={(e) => setPaymentAmount(e.target.value)}
-                                            />
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setPendingInvoicesDialogOpen(false)}>Cancel</Button>
-                            <Button onClick={handleCreateReceipt} disabled={isBalanceLoading || !selectedInvoiceForAction || isSubmittingPayment}>
-                                {isSubmittingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Record Payment
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-                 <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button variant="outline" size="sm">
-                            <Undo2 className="mr-2 h-4 w-4" />
-                            Return
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                        <DialogHeader>
-                            <DialogTitle>Process a Return</DialogTitle>
-                        </DialogHeader>
-                         <div className="space-y-4">
-                            <RadioGroup value={returnType} onValueChange={handleReturnTypeChange} className="flex gap-4">
-                                <div><RadioGroupItem value="invoice" id="r-invoice" /><Label htmlFor="r-invoice" className="ml-2">Return with Invoice</Label></div>
-                                <div><RadioGroupItem value="manual" id="r-manual" /><Label htmlFor="r-manual" className="ml-2">Manual Return</Label></div>
-                            </RadioGroup>
-                            
-                            {!selectedCustomerForAction ? (
-                                <Select onValueChange={setSelectedCustomerForAction}>
-                                    <SelectTrigger><SelectValue placeholder="Select a customer..."/></SelectTrigger>
-                                    <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                                </Select>
-                            ) : (
-                                <>
-                                    <div className="flex justify-between items-center bg-muted p-2 rounded-md">
-                                        <p>Customer: <span className="font-semibold">{customers.find(c => c.id === selectedCustomerForAction)?.name}</span></p>
-                                        <Button variant="ghost" size="sm" onClick={() => {
-                                            setSelectedCustomerForAction(null);
-                                            setSelectedInvoiceForAction(null);
-                                            setReturnItems([]);
-                                        }}>Change</Button>
-                                    </div>
+        />
+        <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex flex-col">
+                <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <Dialog open={isPendingInvoicesDialogOpen} onOpenChange={setPendingInvoicesDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <Receipt className="mr-2 h-4 w-4" />
+                                    Pending Invoices
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                <DialogTitle>Pay Pending Invoices</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                    <Select onValueChange={setSelectedCustomerForAction}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a customer..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {customers.map(c => (
+                                                <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {isPastInvoicesLoading ? <Loader2 className="mx-auto h-6 w-6 animate-spin" /> : (
+                                        <RadioGroup onValueChange={(invoiceNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invoiceNumber)!)}>
+                                            {pastInvoices.map(invoice => (
+                                                <div key={invoice.id} className="flex items-center space-x-2">
+                                                    <RadioGroupItem value={invoice.invoice_number} id={invoice.id} />
+                                                    <Label htmlFor={invoice.id} className="flex justify-between w-full">
+                                                        <span>{invoice.invoice_number} ({format(new Date(invoice.invoice_date), 'dd/MM/yy')})</span>
+                                                        <span>LKR {parseFloat(invoice.grand_total).toFixed(2)}</span>
+                                                    </Label>
+                                                </div>
+                                            ))}
+                                        </RadioGroup>
+                                    )}
+                                    {selectedInvoiceForAction && (
+                                        <Card>
+                                            <CardContent className="pt-4">
+                                                <div className="space-y-2">
+                                                    <Select onValueChange={setPaymentMethod} defaultValue={paymentMethod}>
+                                                        <SelectTrigger><SelectValue placeholder="Payment Method" /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="Cash">Cash</SelectItem>
+                                                            <SelectItem value="Card">Card</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                    <Input 
+                                                        placeholder="Amount" 
+                                                        type="number" 
+                                                        value={paymentAmount}
+                                                        onChange={(e) => setPaymentAmount(e.target.value)}
+                                                    />
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+                                </div>
+                                <DialogFooter>
+                                    <Button variant="outline" onClick={() => setPendingInvoicesDialogOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleCreateReceipt} disabled={isBalanceLoading || !selectedInvoiceForAction || isSubmittingPayment}>
+                                        {isSubmittingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Record Payment
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                        <Dialog open={isReturnDialogOpen} onOpenChange={setReturnDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <Undo2 className="mr-2 h-4 w-4" />
+                                    Return
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl">
+                                <DialogHeader>
+                                    <DialogTitle>Process a Return</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                    <RadioGroup value={returnType} onValueChange={handleReturnTypeChange} className="flex gap-4">
+                                        <div><RadioGroupItem value="invoice" id="r-invoice" /><Label htmlFor="r-invoice" className="ml-2">Return with Invoice</Label></div>
+                                        <div><RadioGroupItem value="manual" id="r-manual" /><Label htmlFor="r-manual" className="ml-2">Manual Return</Label></div>
+                                    </RadioGroup>
                                     
-                                    {returnType === 'invoice' ? (
-                                        <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invNumber)!)} disabled={isPastInvoicesLoading}>
-                                            <SelectTrigger><SelectValue placeholder="Select Invoice to Return From"/></SelectTrigger>
-                                            <SelectContent>{pastInvoices.map(inv => <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number}</SelectItem>)}</SelectContent>
+                                    {!selectedCustomerForAction ? (
+                                        <Select onValueChange={setSelectedCustomerForAction}>
+                                            <SelectTrigger><SelectValue placeholder="Select a customer..."/></SelectTrigger>
+                                            <SelectContent>{customers.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                                         </Select>
                                     ) : (
-                                        <ProductPickerDialog onProductsSelected={(products) => {
-                                            const newItems = products.map(p => ({
-                                                id: p.variant.id,
-                                                name: p.variantName,
-                                                unit: p.stock_unit || 'Nos',
-                                                rate: p.price as number,
-                                                quantity: 1,
-                                                amount: p.price as number,
-                                                reason: '',
-                                                productId: p.id,
-                                                productVariantId: p.variant.id,
-                                            }));
-                                            setReturnItems(newItems);
-                                        }}>
-                                            <Button variant="outline">Add Products to Return</Button>
-                                        </ProductPickerDialog>
-                                    )}
-
-                                    <Input placeholder="General Reason for Return (Optional)" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
-
-                                    <Table>
-                                        <TableHeader><TableRow><TableHead>Item</TableHead><TableHead>Return Qty</TableHead><TableHead>Reason</TableHead></TableRow></TableHeader>
-                                        <TableBody>
-                                            {isPastInvoicesLoading ? (
-                                                <TableRow><TableCell colSpan={3} className="text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
-                                            ) : returnItems.length > 0 ? (
-                                                returnItems.map((item, index) => (
-                                                    <TableRow key={index}>
-                                                        <TableCell>{item.name}</TableCell>
-                                                        <TableCell><Input type="number" value={item.quantity} onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, quantity: parseInt(e.target.value) || 0, amount: (parseInt(e.target.value) || 0) * p.rate } : p))} className="w-20" /></TableCell>
-                                                        <TableCell><Input value={item.reason} onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, reason: e.target.value } : p))} placeholder="Item-specific reason" /></TableCell>
-                                                    </TableRow>
-                                                ))
+                                        <>
+                                            <div className="flex justify-between items-center bg-muted p-2 rounded-md">
+                                                <p>Customer: <span className="font-semibold">{customers.find(c => c.id === selectedCustomerForAction)?.name}</span></p>
+                                                <Button variant="ghost" size="sm" onClick={() => {
+                                                    setSelectedCustomerForAction(null);
+                                                    setSelectedInvoiceForAction(null);
+                                                    setReturnItems([]);
+                                                }}>Change</Button>
+                                            </div>
+                                            
+                                            {returnType === 'invoice' ? (
+                                                <Select onValueChange={(invNumber) => handleInvoiceSelectForAction(pastInvoices.find(i => i.invoice_number === invNumber)!)} disabled={isPastInvoicesLoading}>
+                                                    <SelectTrigger><SelectValue placeholder="Select Invoice to Return From"/></SelectTrigger>
+                                                    <SelectContent>{pastInvoices.map(inv => <SelectItem key={inv.id} value={inv.invoice_number}>{inv.invoice_number}</SelectItem>)}</SelectContent>
+                                                </Select>
                                             ) : (
-                                                <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Select an invoice or add products manually.</TableCell></TableRow>
+                                                <ProductPickerDialog onProductsSelected={(products) => {
+                                                    const newItems = products.map(p => ({
+                                                        id: p.variant.id,
+                                                        name: p.variantName,
+                                                        unit: p.stock_unit || 'Nos',
+                                                        rate: p.price as number,
+                                                        quantity: 1,
+                                                        amount: p.price as number,
+                                                        reason: '',
+                                                        productId: p.id,
+                                                        productVariantId: p.variant.id,
+                                                    }));
+                                                    setReturnItems(newItems);
+                                                }}>
+                                                    <Button variant="outline">Add Products to Return</Button>
+                                                </ProductPickerDialog>
                                             )}
-                                        </TableBody>
-                                    </Table>
-                                </>
-                            )}
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
-                            <Button onClick={handleProcessReturn} disabled={returnItems.length === 0 || isSubmittingReturn}>
-                                {isSubmittingReturn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Process Return
-                            </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-                <Dialog open={isRefundDialogOpen} onOpenChange={setRefundDialogOpen}>
-                    <DialogTrigger asChild>
-                         <Button variant="outline" size="sm">
-                            <Banknote className="mr-2 h-4 w-4" />
-                            Refund
-                        </Button>
-                    </DialogTrigger>
-                     <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-                        <DialogHeader className="flex-row items-center justify-between border-b pb-4">
-                            <div className="flex items-center gap-4">
-                                {selectedReturnForRefund && <Button variant="ghost" onClick={() => setSelectedReturnForRefund(null)}><ArrowLeft className="h-5 w-5 mr-2"/> Back</Button>}
-                                <img src="https://i.imgur.com/kS4S17L.png" alt="Payshia POS" className="h-8"/>
-                                <div className="text-left">
-                                    <DialogTitle className="text-2xl">{selectedReturnForRefund ? 'Refund Confirmation' : 'Select Return to Make Refund'}</DialogTitle>
-                                    {!selectedReturnForRefund && <DialogDescription>Note : A La Carte Items cannot be Returned of Refunded!</DialogDescription>}
+
+                                            <Input placeholder="General Reason for Return (Optional)" value={returnReason} onChange={(e) => setReturnReason(e.target.value)} />
+
+                                            <Table>
+                                                <TableHeader><TableRow><TableHead>Item</TableHead><TableHead>Return Qty</TableHead><TableHead>Reason</TableHead></TableRow></TableHeader>
+                                                <TableBody>
+                                                    {isPastInvoicesLoading ? (
+                                                        <TableRow><TableCell colSpan={3} className="text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin" /></TableCell></TableRow>
+                                                    ) : returnItems.length > 0 ? (
+                                                        returnItems.map((item, index) => (
+                                                            <TableRow key={index}>
+                                                                <TableCell>{item.name}</TableCell>
+                                                                <TableCell><Input type="number" value={item.quantity} onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, quantity: parseInt(e.target.value) || 0, amount: (parseInt(e.target.value) || 0) * p.rate } : p))} className="w-20" /></TableCell>
+                                                                <TableCell><Input value={item.reason} onChange={(e) => setReturnItems(prev => prev.map((p, i) => i === index ? { ...p, reason: e.target.value } : p))} placeholder="Item-specific reason" /></TableCell>
+                                                            </TableRow>
+                                                        ))
+                                                    ) : (
+                                                        <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Select an invoice or add products manually.</TableCell></TableRow>
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </>
+                                    )}
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="icon"><RefreshCcw className="h-5 w-5" /></Button>
-                                <DialogClose asChild><Button variant="ghost" size="icon"><X className="h-5 w-5" /></Button></DialogClose>
-                            </div>
-                        </DialogHeader>
-                        {selectedReturnForRefund ? (
-                            <div className="grid grid-cols-2 gap-8 p-6 flex-1 overflow-y-auto">
-                                <div>
-                                    <Badge>{customers.find(c => c.customer_id === selectedReturnForRefund.customer_id)?.name || 'Walk-in'}</Badge>
-                                    <p className="text-2xl font-bold mt-1">{selectedReturnForRefund.rtn_number}</p>
-                                    <p className="text-4xl font-bold text-green-600">LKR {parseFloat(selectedReturnForRefund.return_amount).toFixed(2)}</p>
-                                    <Badge variant="secondary" className="mt-1 text-sm font-normal">{format(new Date(selectedReturnForRefund.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
-                                    <Table className="mt-4">
-                                        <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="w-24">Return Qty</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
-                                        <TableBody>
-                                            {selectedReturnForRefund.stock_entries?.map(item => {
-                                                const maxQty = parseFloat(item.quantity);
-                                                return (
-                                                <TableRow key={item.id}>
-                                                    <TableCell>{item.product ? item.product.name : 'Product not found'}</TableCell>
-                                                    <TableCell>
-                                                        <Input
-                                                            type="number"
-                                                            value={refundQuantities[item.id] || ''}
-                                                            onChange={(e) => {
-                                                                const newQty = Math.min(parseFloat(e.target.value) || 0, maxQty);
-                                                                setRefundQuantities(prev => ({...prev, [item.id]: newQty}));
-                                                            }}
-                                                            max={maxQty}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="text-right">LKR {item.product ? (parseFloat(item.product.price as string) * (refundQuantities[item.id] || 0)).toFixed(2) : '0.00'}</TableCell>
-                                                </TableRow>
-                                            )}) || (
-                                                 <TableRow>
-                                                    <TableCell colSpan={3} className="text-center text-muted-foreground">No item details available.</TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                                <div className="bg-muted/50 p-6 rounded-lg flex flex-col justify-center">
-                                    <div className="space-y-4">
-                                        <h3 className="text-lg font-semibold text-center">Enter PIN</h3>
-                                        <Input type="password" placeholder="****" className="h-12 text-center text-2xl tracking-widest" />
-                                        <Button onClick={handleRefund} disabled={isSubmittingRefund} className="w-full h-12 text-lg">
-                                            {isSubmittingRefund && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Refund
-                                        </Button>
+                                <DialogFooter>
+                                    <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>Cancel</Button>
+                                    <Button onClick={handleProcessReturn} disabled={returnItems.length === 0 || isSubmittingReturn}>
+                                        {isSubmittingReturn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Process Return
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                        <Dialog open={isRefundDialogOpen} onOpenChange={setRefundDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                    <Banknote className="mr-2 h-4 w-4" />
+                                    Refund
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+                                <DialogHeader className="flex-row items-center justify-between border-b pb-4">
+                                    <div className="flex items-center gap-4">
+                                        {selectedReturnForRefund && <Button variant="ghost" onClick={() => setSelectedReturnForRefund(null)}><ArrowLeft className="h-5 w-5 mr-2"/> Back</Button>}
+                                        <img src="https://i.imgur.com/kS4S17L.png" alt="Payshia POS" className="h-8"/>
+                                        <div className="text-left">
+                                            <DialogTitle className="text-2xl">{selectedReturnForRefund ? 'Refund Confirmation' : 'Select Return to Make Refund'}</DialogTitle>
+                                            {!selectedReturnForRefund && <DialogDescription>Note : A La Carte Items cannot be Returned of Refunded!</DialogDescription>}
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <ScrollArea className="flex-1 -mx-6 px-6">
-                                {isReturnsLoading ? (
-                                    <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="ghost" size="icon"><RefreshCcw className="h-5 w-5" /></Button>
+                                        <DialogClose asChild><Button variant="ghost" size="icon"><X className="h-5 w-5" /></DialogClose>
+                                    </div>
+                                </DialogHeader>
+                                {selectedReturnForRefund ? (
+                                    <div className="grid grid-cols-2 gap-8 p-6 flex-1 overflow-y-auto">
+                                        <div>
+                                            <Badge>{customers.find(c => c.customer_id === selectedReturnForRefund.customer_id)?.name || 'Walk-in'}</Badge>
+                                            <p className="text-2xl font-bold mt-1">{selectedReturnForRefund.rtn_number}</p>
+                                            <p className="text-4xl font-bold text-green-600">LKR {parseFloat(selectedReturnForRefund.return_amount).toFixed(2)}</p>
+                                            <Badge variant="secondary" className="mt-1 text-sm font-normal">{format(new Date(selectedReturnForRefund.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
+                                            <Table className="mt-4">
+                                                <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="w-24">Return Qty</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
+                                                <TableBody>
+                                                    {selectedReturnForRefund.stock_entries?.map(item => {
+                                                        const maxQty = parseFloat(item.quantity);
+                                                        return (
+                                                        <TableRow key={item.id}>
+                                                            <TableCell>{item.product ? item.product.name : 'Product not found'}</TableCell>
+                                                            <TableCell>
+                                                                <Input
+                                                                    type="number"
+                                                                    value={refundQuantities[item.id] || ''}
+                                                                    onChange={(e) => {
+                                                                        const newQty = Math.min(parseFloat(e.target.value) || 0, maxQty);
+                                                                        setRefundQuantities(prev => ({...prev, [item.id]: newQty}));
+                                                                    }}
+                                                                    max={maxQty}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="text-right">LKR {item.product ? (parseFloat(item.product.price as string) * (refundQuantities[item.id] || 0)).toFixed(2) : '0.00'}</TableCell>
+                                                        </TableRow>
+                                                    )}) || (
+                                                        <TableRow>
+                                                            <TableCell colSpan={3} className="text-center text-muted-foreground">No item details available.</TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                        <div className="bg-muted/50 p-6 rounded-lg flex flex-col justify-center">
+                                            <div className="space-y-4">
+                                                <h3 className="text-lg font-semibold text-center">Enter PIN</h3>
+                                                <Input type="password" placeholder="****" className="h-12 text-center text-2xl tracking-widest" />
+                                                <Button onClick={handleRefund} disabled={isSubmittingRefund} className="w-full h-12 text-lg">
+                                                    {isSubmittingRefund && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                                    Refund
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 ) : (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 py-4">
-                                        {transactionReturns.map(ret => {
-                                            const customer = customers.find(c => c.customer_id === ret.customer_id)
-                                            return (
-                                                <Card key={ret.id} className="cursor-pointer hover:border-primary p-2" onClick={() => handleReturnSelectForAction(ret)}>
-                                                    <CardHeader className="p-2">
-                                                        <Badge className="w-fit mb-1 text-xs">{customer?.name || 'Walk-in'}</Badge>
-                                                        <CardTitle className="text-sm">{ret.rtn_number}</CardTitle>
-                                                    </CardHeader>
-                                                    <CardContent className="p-2">
-                                                        <p className="text-xl font-bold">LKR {parseFloat(ret.return_amount).toFixed(2)}</p>
-                                                        <Badge variant="secondary" className="mt-1 text-xs font-normal">{format(new Date(ret.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
-                                                    </CardContent>
-                                                </Card>
-                                            )
-                                        })}
-                                    </div>
+                                    <ScrollArea className="flex-1 -mx-6 px-6">
+                                        {isReturnsLoading ? (
+                                            <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                                        ) : (
+                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 py-4">
+                                                {transactionReturns.map(ret => {
+                                                    const customer = customers.find(c => c.customer_id === ret.customer_id)
+                                                    return (
+                                                        <Card key={ret.id} className="cursor-pointer hover:border-primary p-2" onClick={() => handleReturnSelectForAction(ret)}>
+                                                            <CardHeader className="p-2">
+                                                                <Badge className="w-fit mb-1 text-xs">{customer?.name || 'Walk-in'}</Badge>
+                                                                <CardTitle className="text-sm">{ret.rtn_number}</CardTitle>
+                                                            </CardHeader>
+                                                            <CardContent className="p-2">
+                                                                <p className="text-xl font-bold">LKR {parseFloat(ret.return_amount).toFixed(2)}</p>
+                                                                <Badge variant="secondary" className="mt-1 text-xs font-normal">{format(new Date(ret.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
+                                                            </CardContent>
+                                                        </Card>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
+                                    </ScrollArea>
                                 )}
-                            </ScrollArea>
-                        )}
-                    </DialogContent>
-                </Dialog>
-            </div>
-            <div className="flex items-center gap-2">
-               <Drawer open={isDrawerOpen} onOpenChange={setDrawerOpen}>
-                  <DrawerTrigger asChild>
-                      <Button variant="outline">
-                          <NotebookPen className="mr-2 h-4 w-4" />
-                          Held Orders ({heldOrders.length})
-                      </Button>
-                  </DrawerTrigger>
-                  <DrawerContent>
-                      <DrawerTitle className="sr-only">Held Orders</DrawerTitle>
-                      {heldOrdersList}
-                  </DrawerContent>
-              </Drawer>
-              <Dialog open={isNewOrderDialogOpen} onOpenChange={setNewOrderDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" /> New Order
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-4xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-2xl">Create New Order</DialogTitle>
-                            <DialogDescription>Select an order type or choose a table for dine-in.</DialogDescription>
-                        </DialogHeader>
-                        {newOrderDialogStep === 'type' ? (
-                            <OrderTypeSelection 
-                                onSelectOrderType={(type) => createNewOrder(type)} 
-                                onSelectTable={(tableName) => {
-                                    setSelectedTable(tableName);
-                                    setNewOrderDialogStep('steward');
-                                }} 
-                                tables={tables}
-                                isLoadingTables={isLoadingTables}
-                                activeOrders={activeOrders}
-                            />
-                        ) : (
-                             <StewardSelection
-                                onBack={() => setNewOrderDialogStep('type')}
-                                onSelectSteward={(steward) => createNewOrder('Dine-In', steward, selectedTable!)}
-                                stewards={stewards}
-                                isLoading={isLoadingStewards}
-                            />
-                        )}
-                    </DialogContent>
-                </Dialog>
-            </div>
-          </div>
-           <div className="flex-1 flex overflow-hidden">
-            <ScrollArea className="flex-1 p-4">
-              {isLoadingProducts ? (
-                <div className="flex items-center justify-center h-[calc(100vh-250px)]">
-                  <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                    <div className="flex items-center gap-2">
+                    <Drawer open={isDrawerOpen} onOpenChange={setDrawerOpen}>
+                        <DrawerTrigger asChild>
+                            <Button variant="outline">
+                                <NotebookPen className="mr-2 h-4 w-4" />
+                                Held Orders ({heldOrders.length})
+                            </Button>
+                        </DrawerTrigger>
+                        <DrawerContent>
+                            <DrawerTitle className="sr-only">Held Orders</DrawerTitle>
+                            {heldOrdersList}
+                        </DrawerContent>
+                    </Drawer>
+                    <Dialog open={isNewOrderDialogOpen} onOpenChange={setNewOrderDialogOpen}>
+                            <DialogTrigger asChild>
+                                <Button>
+                                    <Plus className="mr-2 h-4 w-4" /> New Order
+                                </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-4xl">
+                                <DialogHeader>
+                                    <DialogTitle className="text-2xl">Create New Order</DialogTitle>
+                                    <DialogDescription>Select an order type or choose a table for dine-in.</DialogDescription>
+                                </DialogHeader>
+                                {newOrderDialogStep === 'type' ? (
+                                    <OrderTypeSelection 
+                                        onSelectOrderType={(type) => createNewOrder(type)} 
+                                        onSelectTable={(tableName) => {
+                                            setSelectedTable(tableName);
+                                            setNewOrderDialogStep('steward');
+                                        }} 
+                                        tables={tables}
+                                        isLoadingTables={isLoadingTables}
+                                        activeOrders={activeOrders}
+                                    />
+                                ) : (
+                                    <StewardSelection
+                                        onBack={() => setNewOrderDialogStep('type')}
+                                        onSelectSteward={(steward) => createNewOrder('Dine-In', steward, selectedTable!)}
+                                        stewards={stewards}
+                                        isLoading={isLoadingStewards}
+                                    />
+                                )}
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                 </div>
-              ) : (
-                  <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
-              )}
-            </ScrollArea>
-            <aside className="hidden md:block w-48 border-l border-border overflow-y-auto">
-                <ScrollArea className="h-full p-2">
-                    <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
-                    <div className="flex flex-col gap-1">
-                        {categories.map(cat => (
-                            <Button
-                                key={cat}
-                                variant={activeFilter.type === 'category' && activeFilter.value === cat ? 'secondary' : 'ghost'}
-                                className="justify-start"
-                                onClick={() => handleFilterChange('category', cat)}
-                            >
-                                {cat}
-                            </Button>
-                        ))}
-                    </div>
-                     <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 my-2 pt-2 border-t">Collections</h3>
-                    <div className="flex flex-col gap-1">
-                        <Button
-                            variant={activeFilter.type === 'collection' && activeFilter.value === 'All' ? 'secondary' : 'ghost'}
-                            className="justify-start"
-                            onClick={() => handleFilterChange('collection', 'All')}
-                        >
-                            All Collections
-                        </Button>
-                        {collections.map(col => (
-                            <Button
-                                key={col.id}
-                                variant={activeFilter.type === 'collection' && activeFilter.value === col.id ? 'secondary' : 'ghost'}
-                                className="justify-start"
-                                onClick={() => handleFilterChange('collection', col.id)}
-                            >
-                                {col.title}
-                            </Button>
-                        ))}
-                    </div>
-                    <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 my-2 pt-2 border-t">Brands</h3>
-                    <div className="flex flex-col gap-1">
-                         <Button
-                            variant={activeFilter.type === 'brand' && activeFilter.value === 'All' ? 'secondary' : 'ghost'}
-                            className="justify-start"
-                            onClick={() => handleFilterChange('brand', 'All')}
-                        >
-                            All Brands
-                        </Button>
-                        {brands.map(brand => (
-                            <Button
-                                key={brand.id}
-                                variant={activeFilter.type === 'brand' && activeFilter.value === brand.id ? 'secondary' : 'ghost'}
-                                className="justify-start"
-                                onClick={() => handleFilterChange('brand', brand.id)}
-                            >
-                                {brand.name}
-                            </Button>
-                        ))}
-                    </div>
-                </ScrollArea>
-            </aside>
-           </div>
-        </div>
-
-        <aside className="w-full lg:w-[380px] xl:w-[420px] flex-shrink-0 bg-card border-t lg:border-t-0 lg:border-l border-border flex-col hidden lg:flex">
-          {orderPanelComponent}
-        </aside>
-
-          <div className="lg:hidden">
-            {currentOrder && currentOrder.cart.length > 0 && (
-              <div className="fixed bottom-4 left-4 right-4 z-20">
-                <Drawer open={isDrawerOpen} onOpenChange={setDrawerOpen}>
-                    <DrawerTrigger asChild>
-                          <Button className="w-full h-16 text-lg shadow-lg">
-                            <div className="flex items-center justify-between w-full">
-                                <div className='flex items-center gap-2'>
-                                    <ShoppingCart className="h-6 w-6" />
-                                    <span>View {currentOrder.name}</span>
-                                    <Badge variant="secondary" className="text-base">{totalItems}</Badge>
-                                </div>
-                                <span className='font-bold'>LKR {orderTotals.total.toFixed(2)}</span>
+                <div className="flex-1 flex overflow-hidden">
+                    <ScrollArea className="flex-1 p-4">
+                    {isLoadingProducts ? (
+                        <div className="flex items-center justify-center h-[calc(100vh-250px)]">
+                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                        </div>
+                    ) : (
+                        <ProductGrid products={filteredProducts} onProductSelect={handleProductSelect} />
+                    )}
+                    </ScrollArea>
+                    <aside className="hidden md:block w-48 border-l border-border overflow-y-auto">
+                        <ScrollArea className="h-full p-2">
+                            <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
+                            <div className="flex flex-col gap-1">
+                                {categories.map(cat => (
+                                    <Button
+                                        key={cat}
+                                        variant={activeFilter.type === 'category' && activeFilter.value === cat ? 'secondary' : 'ghost'}
+                                        className="justify-start"
+                                        onClick={() => handleFilterChange('category', cat)}
+                                    >
+                                        {cat}
+                                    </Button>
+                                ))}
                             </div>
-                        </Button>
-                    </DrawerTrigger>
-                    <DrawerContent className='h-[90vh]'>
-                        <DrawerTitle className="sr-only">Order Details</DrawerTitle>
-                        {orderPanelComponent}
-                    </DrawerContent>
-                </Drawer>
-              </div>
-            )}
-          </div>
-      </div>
+                            <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 my-2 pt-2 border-t">Collections</h3>
+                            <div className="flex flex-col gap-1">
+                                <Button
+                                    variant={activeFilter.type === 'collection' && activeFilter.value === 'All' ? 'secondary' : 'ghost'}
+                                    className="justify-start"
+                                    onClick={() => handleFilterChange('collection', 'All')}
+                                >
+                                    All Collections
+                                </Button>
+                                {collections.map(col => (
+                                    <Button
+                                        key={col.id}
+                                        variant={activeFilter.type === 'collection' && activeFilter.value === col.id ? 'secondary' : 'ghost'}
+                                        className="justify-start"
+                                        onClick={() => handleFilterChange('collection', col.id)}
+                                    >
+                                        {col.title}
+                                    </Button>
+                                ))}
+                            </div>
+                            <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 my-2 pt-2 border-t">Brands</h3>
+                            <div className="flex flex-col gap-1">
+                                <Button
+                                    variant={activeFilter.type === 'brand' && activeFilter.value === 'All' ? 'secondary' : 'ghost'}
+                                    className="justify-start"
+                                    onClick={() => handleFilterChange('brand', 'All')}
+                                >
+                                    All Brands
+                                </Button>
+                                {brands.map(brand => (
+                                    <Button
+                                        key={brand.id}
+                                        variant={activeFilter.type === 'brand' && activeFilter.value === brand.id ? 'secondary' : 'ghost'}
+                                        className="justify-start"
+                                        onClick={() => handleFilterChange('brand', brand.id)}
+                                    >
+                                        {brand.name}
+                                    </Button>
+                                ))}
+                            </div>
+                        </ScrollArea>
+                    </aside>
+                </div>
+            </div>
+            <aside className="w-full lg:w-[380px] xl:w-[420px] flex-shrink-0 bg-card border-t lg:border-t-0 lg:border-l border-border flex-col hidden lg:flex">
+                {orderPanelComponent}
+            </aside>
+            <div className="lg:hidden">
+                {currentOrder && currentOrder.cart.length > 0 && (
+                <div className="fixed bottom-4 left-4 right-4 z-20">
+                    <Drawer open={isDrawerOpen} onOpenChange={setDrawerOpen}>
+                        <DrawerTrigger asChild>
+                            <Button className="w-full h-16 text-lg shadow-lg">
+                                <div className="flex items-center justify-between w-full">
+                                    <div className='flex items-center gap-2'>
+                                        <ShoppingCart className="h-6 w-6" />
+                                        <span>View {currentOrder.name}</span>
+                                        <Badge variant="secondary" className="text-base">{totalItems}</Badge>
+                                    </div>
+                                    <span className='font-bold'>LKR {orderTotals.total.toFixed(2)}</span>
+                                </div>
+                            </Button>
+                        </DrawerTrigger>
+                        <DrawerContent className='h-[90vh]'>
+                            <DrawerTitle className="sr-only">Order Details</DrawerTitle>
+                            {orderPanelComponent}
+                        </DrawerContent>
+                    </Drawer>
+                </div>
+                )}
+            </div>
+        </div>
       <Dialog open={isHeldOrderDetailsOpen} onOpenChange={setIsHeldOrderDetailsOpen}>
         <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -1826,3 +1824,5 @@ export default function POSPage() {
     </>
   );
 }
+
+    
