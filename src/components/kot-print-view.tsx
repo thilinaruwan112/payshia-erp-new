@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -9,10 +8,9 @@ interface KotPrintViewProps {
 }
 
 export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
-
   React.useEffect(() => {
     // This will trigger the browser's print dialog.
-    setTimeout(() => window.print(), 500);
+    // setTimeout(() => window.print(), 500);
   }, []);
 
   return (

@@ -1,27 +1,26 @@
-
 'use client';
 
 import { KotPrintView } from '@/components/kot-print-view';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
 
-function KOTPrintPageContent({ params }: { params: { id: string } }) {
-    const searchParams = useSearchParams();
-    const companyId = searchParams.get('company_id');
+export default function KOTPrintPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
+  const { id: invoiceId } = params;
+  const companyId = searchParams?.company_id as string | undefined;
 
-    if (!params.id) {
-        notFound();
-    }
+  if (!invoiceId) {
+    notFound();
+  }
 
-    return <KotPrintView invoiceId={params.id} companyId={companyId} />;
-}
-
-
-export default function KOTPrintPage({ params }: { params: { id: string } }) {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <KOTPrintPageContent params={params} />
-        </Suspense>
-    );
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <KotPrintView invoiceId={invoiceId} companyId={companyId || null} />
+    </Suspense>
+  );
 }
