@@ -648,7 +648,7 @@ export default function POSPage() {
 
         toast({
             title: 'Receipt Created!',
-            description: `Payment of $${paymentAmount} recorded successfully.`
+            description: `Payment of LKR ${paymentAmount} recorded successfully.`
         });
         setPendingInvoicesDialogOpen(false);
         setSelectedInvoiceForAction(null);
@@ -711,7 +711,7 @@ export default function POSPage() {
     setSelectedTable(null);
   };
   
-  const handleSendToKitchen = () => {
+   const handleSendToKitchen = () => {
     if (!currentOrder || currentOrder.cart.length === 0) {
       toast({
         variant: 'destructive',
@@ -833,6 +833,10 @@ export default function POSPage() {
         title: 'Order Held',
         description: `${currentOrder.name} has been put on hold as Invoice #${result.invoice_number}.`,
       });
+      
+      // Print KOT after holding
+      handleSendToKitchen();
+
       onClearCart(currentOrderId);
     } catch (error) {
        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -1362,7 +1366,7 @@ export default function POSPage() {
                                             <RadioGroupItem value={invoice.invoice_number} id={invoice.id} />
                                             <Label htmlFor={invoice.id} className="flex justify-between w-full">
                                                 <span>{invoice.invoice_number} ({format(new Date(invoice.invoice_date), 'dd/MM/yy')})</span>
-                                                <span>${parseFloat(invoice.grand_total).toFixed(2)}</span>
+                                                <span>LKR {parseFloat(invoice.grand_total).toFixed(2)}</span>
                                             </Label>
                                         </div>
                                     ))}
@@ -1515,7 +1519,7 @@ export default function POSPage() {
                                 <div>
                                     <Badge>{customers.find(c => c.customer_id === selectedReturnForRefund.customer_id)?.name || 'Walk-in'}</Badge>
                                     <p className="text-2xl font-bold mt-1">{selectedReturnForRefund.rtn_number}</p>
-                                    <p className="text-4xl font-bold text-green-600">${parseFloat(selectedReturnForRefund.return_amount).toFixed(2)}</p>
+                                    <p className="text-4xl font-bold text-green-600">LKR {parseFloat(selectedReturnForRefund.return_amount).toFixed(2)}</p>
                                     <Badge variant="secondary" className="mt-1 text-sm font-normal">{format(new Date(selectedReturnForRefund.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
                                     <Table className="mt-4">
                                         <TableHeader><TableRow><TableHead>Item</TableHead><TableHead className="w-24">Return Qty</TableHead><TableHead className="text-right">Amount</TableHead></TableRow></TableHeader>
@@ -1536,7 +1540,7 @@ export default function POSPage() {
                                                             max={maxQty}
                                                         />
                                                     </TableCell>
-                                                    <TableCell className="text-right">${item.product ? (parseFloat(item.product.price as string) * (refundQuantities[item.id] || 0)).toFixed(2) : '0.00'}</TableCell>
+                                                    <TableCell className="text-right">LKR {item.product ? (parseFloat(item.product.price as string) * (refundQuantities[item.id] || 0)).toFixed(2) : '0.00'}</TableCell>
                                                 </TableRow>
                                             )}) || (
                                                  <TableRow>
@@ -1572,7 +1576,7 @@ export default function POSPage() {
                                                         <CardTitle className="text-sm">{ret.rtn_number}</CardTitle>
                                                     </CardHeader>
                                                     <CardContent className="p-2">
-                                                        <p className="text-xl font-bold">${parseFloat(ret.return_amount).toFixed(2)}</p>
+                                                        <p className="text-xl font-bold">LKR {parseFloat(ret.return_amount).toFixed(2)}</p>
                                                         <Badge variant="secondary" className="mt-1 text-xs font-normal">{format(new Date(ret.created_at), 'yyyy-MM-dd HH:mm')}</Badge>
                                                     </CardContent>
                                                 </Card>
@@ -1718,7 +1722,7 @@ export default function POSPage() {
                                     <span>View {currentOrder.name}</span>
                                     <Badge variant="secondary" className="text-base">{totalItems}</Badge>
                                 </div>
-                                <span className='font-bold'>${orderTotals.total.toFixed(2)}</span>
+                                <span className='font-bold'>LKR {orderTotals.total.toFixed(2)}</span>
                             </div>
                         </Button>
                     </DrawerTrigger>
@@ -1755,14 +1759,14 @@ export default function POSPage() {
                                 <TableRow key={item.id}>
                                     <TableCell>{posProducts.find(p => p.id === String(item.product_id))?.name}</TableCell>
                                     <TableCell>{item.quantity}</TableCell>
-                                    <TableCell className="text-right">${(parseFloat(item.item_price as string) * parseFloat(item.quantity as string)).toFixed(2)}</TableCell>
+                                    <TableCell className="text-right">LKR {(parseFloat(item.item_price as string) * parseFloat(item.quantity as string)).toFixed(2)}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                         <TableFooter>
                             <TableRow>
                                 <TableCell colSpan={2} className="text-right font-bold">Grand Total</TableCell>
-                                <TableCell className="text-right font-bold">${parseFloat(selectedHeldOrderDetails.grand_total).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-bold">LKR {parseFloat(selectedHeldOrderDetails.grand_total).toFixed(2)}</TableCell>
                             </TableRow>
                         </TableFooter>
                     </Table>
