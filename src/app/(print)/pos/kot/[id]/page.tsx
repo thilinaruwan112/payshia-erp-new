@@ -6,16 +6,21 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
+import Image from 'next/image';
 
 type KotItem = {
     name: string;
     quantity: number;
+    price: number;
+    total: number;
 }
 
 type KotData = {
     orderId: string;
     orderName: string;
     cashierName: string;
+    stewardName: string;
+    customerName: string;
     items: KotItem[];
 }
 
@@ -57,16 +62,13 @@ export default function KOTPage({ params }: { params: { id: string } }) {
     }
 
     try {
-        // 1. Capture the invoice div
         const element = kotRef.current;
         const canvas = await html2canvas(element, { scale: 2 });
 
-        // 2. Convert to Base64 PNG
         const b64Prefix = "data:image/png;base64,";
         const imgBase64DataUri = canvas.toDataURL("image/png");
         const imgBase64Content = imgBase64DataUri.substring(b64Prefix.length);
 
-        // 3. Create print job
         const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
 
         const cpj = new ClientPrintJob();
@@ -74,7 +76,6 @@ export default function KOTPage({ params }: { params: { id: string } }) {
         
         cpj.clientPrinter = myPrinter;
 
-        // 4. Add image as PrintFile
         const myImageFile = new PrintFile(
             imgBase64Content,
             FileSourceType.Base64,
@@ -83,7 +84,6 @@ export default function KOTPage({ params }: { params: { id: string } }) {
         );
         cpj.files.push(myImageFile);
 
-        // 5. Send job to client
         cpj.sendToClient();
 
         setTimeout(() => {
@@ -153,32 +153,57 @@ export default function KOTPage({ params }: { params: { id: string } }) {
   }
   
   return (
-    <div ref={kotRef} className="w-[80mm] bg-white text-black p-2 font-mono text-lg leading-tight">
+    <div ref={kotRef} className="w-[80mm] bg-white text-black p-2 font-[sans-serif] text-sm leading-tight">
       <div className="text-center mb-2">
-        <h1 className="font-bold text-2xl">K.O.T</h1>
+        <h1 className="font-bold text-lg">KOT</h1>
       </div>
       
-      <div className="flex justify-between text-base">
-        <p>Order: {kotData.orderName}</p>
-        <p>{format(new Date(), "HH:mm")}</p>
-      </div>
-       <div className="flex justify-between text-base">
-        <p>Cashier: {kotData.cashierName}</p>
+      <div className="space-y-1 text-xs">
+          <p><strong>KOT # :</strong> {kotData.orderId.slice(-6).toUpperCase()}</p>
+          <p><strong>Table :</strong> {kotData.orderName}</p>
+          <p><strong>Customer :</strong> {kotData.customerName}</p>
+          <p><strong>Date :</strong> {format(new Date(), "yyyy-MM-dd HH:mm:ss")}</p>
+          <p><strong>Steward :</strong> {kotData.stewardName}</p>
+          <p><strong>Cashier :</strong> {kotData.cashierName}</p>
       </div>
 
-      <div className="my-2 border-t-2 border-dashed border-black"></div>
 
-      <table className="w-full text-xl">
+      <div className="my-1 border-t-2 border-dashed border-black"></div>
+
+      <table className="w-full text-xs">
+        <thead>
+            <tr className="border-b-2 border-dashed border-black">
+                <th className='text-left font-semibold pb-1'>Qty</th>
+                <th className='text-right font-semibold pb-1'>Unit Price</th>
+                <th className='text-right font-semibold pb-1'>Amount</th>
+            </tr>
+        </thead>
         <tbody>
           {kotData.items?.map((item, index) => (
-            <tr key={index}>
-              <td className="py-2 align-top">{item.quantity}</td>
-              <td className="py-2 align-top">x</td>
-              <td className="py-2 w-full pl-2">{item.name}</td>
-            </tr>
+            <React.Fragment key={index}>
+              <tr>
+                <td colSpan={3} className="pt-1">{item.name}</td>
+              </tr>
+              <tr>
+                <td className="pb-1">{item.quantity.toFixed(3)}</td>
+                <td className="text-right pb-1">{item.price.toFixed(2)}</td>
+                <td className="text-right pb-1">{item.total.toFixed(2)}</td>
+              </tr>
+            </React.Fragment>
           ))}
         </tbody>
       </table>
+
+       <div className="my-1 border-t-2 border-dashed border-black"></div>
+
+       <div className="text-center mt-4 text-xs space-y-1">
+           <p className="font-bold">Thank You..! Come Again</p>
+           <p className="text-[10px]">Software by Payshia</p>
+           <div className="flex justify-center">
+              <Image src="https://i.imgur.com/kS4S17L.png" alt="Payshia Logo" width={20} height={20} />
+           </div>
+           <p className="text-[10px]">077 0 481 363 | www.payshia.com</p>
+       </div>
     </div>
   );
 }

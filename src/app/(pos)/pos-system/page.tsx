@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -170,7 +169,9 @@ const OrderTypeSelection = ({
                             <Card key={table.id} className="p-4 cursor-pointer hover:border-primary" onClick={() => onSelectTable(table.table_name)}>
                                 <div className="flex items-center gap-2 mb-2">
                                     <Badge>Dine-In</Badge>
-                                    <Badge variant={!inUse ? 'default' : 'destructive'} className={cn(!inUse && 'bg-green-500')}>{!inUse ? 'Available' : 'In Use'}</Badge>
+                                    <Badge variant={!inUse ? 'default' : 'destructive'} className={cn(!inUse && 'bg-green-500')}>
+                                        {!inUse ? 'Available' : 'In Use'}
+                                    </Badge>
                                 </div>
                                 <p className="text-lg font-bold">{table.table_name}</p>
                             </Card>
@@ -724,7 +725,14 @@ export default function POSPage() {
         orderId: currentOrder.id,
         orderName: currentOrder.name,
         cashierName: currentCashier.name,
-        items: currentOrder.cart.map(item => ({ name: item.product.variantName, quantity: item.quantity })),
+        stewardName: currentOrder.steward?.name || "Default",
+        customerName: currentOrder.customer.name,
+        items: currentOrder.cart.map(item => ({ 
+            name: item.product.variantName, 
+            quantity: item.quantity,
+            price: item.product.price as number,
+            total: (item.product.price as number) * item.quantity,
+        })),
     };
     
     const encodedData = btoa(JSON.stringify(orderData));
