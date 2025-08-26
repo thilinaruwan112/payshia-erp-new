@@ -1186,10 +1186,14 @@ export default function POSPage() {
     }, [isDrawerOpen, toast, company_id]);
     
     const handleSelectHeldOrder = async (invoice: Invoice) => {
+        if (!company_id) {
+             toast({ variant: 'destructive', title: 'Error', description: 'Company ID is missing.' });
+             return;
+        }
         setIsHeldOrderDetailsLoading(true);
         setIsHeldOrderDetailsOpen(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/pos-invoices/${invoice.id}`);
+            const response = await fetch(`https://server-erp.payshia.com/pos-invoices/${invoice.id}?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch held order details');
             }
