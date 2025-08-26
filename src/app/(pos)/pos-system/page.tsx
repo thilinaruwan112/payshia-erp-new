@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -74,6 +74,15 @@ export default function POSPage() {
 
   const [currentCashier, setCurrentCashier] = useState<User | null>(null);
   const { currentLocation, isLoading: isLocationLoading, setCurrentLocation, availableLocations, company_id } = useLocation();
+  
+  // State for Return Dialog
+  const [returnType, setReturnType] = useState<'invoice' | 'manual'>('invoice');
+  const [selectedReturnCustomer, setSelectedReturnCustomer] = useState<string | null>(null);
+  const [pastInvoices, setPastInvoices] = useState<Invoice[]>([]);
+  const [isLoadingPastInvoices, setIsLoadingPastInvoices] = useState(false);
+  const [returnReason, setReturnReason] = useState('');
+  const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
+  const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
 
   useEffect(() => {
     const userId = localStorage.getItem('userId');
@@ -167,6 +176,105 @@ export default function POSPage() {
     }
   }, [toast, currentLocation, company_id]);
 
+  useEffect(() => {
+    async function fetchInvoicesForReturn() {
+        if (!selectedReturnCustomer || !company_id) {
+            setPastInvoices([]);
+            return;
+        }
+        setIsLoadingPastInvoices(true);
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/paid/by-customer?company_id=${company_id}&customer_code=${selectedReturnCustomer}`);
+            if (!response.ok) throw new Error('Failed to fetch invoices');
+            const data: Invoice[] = await response.json();
+            setPastInvoices(data.filter(inv => inv.payment_status === 'Paid') || []);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch invoices for this customer.' });
+            setPastInvoices([]);
+        } finally {
+            setIsLoadingPastInvoices(false);
+        }
+    }
+    if (isReturnDialogOpen && returnType === 'invoice') {
+        fetchInvoicesForReturn();
+    }
+  }, [selectedReturnCustomer, toast, isReturnDialogOpen, returnType, company_id]);
+  
+  const handleInvoiceSelect = async (invoice: Invoice) => {
+    if (!invoice) return;
+    try {
+      const response = await fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
+      if (!response.ok) throw new Error('Failed to fetch full invoice details.');
+      const fullInvoice: Invoice = await response.json();
+      const items = (fullInvoice.items || []).map(item => ({
+        id: item.product_variant_id || item.product_id.toString(),
+        name: item.productName || 'Unknown Product',
+        unit: 'Nos',
+        rate: parseFloat(item.item_price as string),
+        quantity: 0,
+        amount: 0,
+        reason: '',
+        productId: item.product_id.toString(),
+        productVariantId: item.product_variant_id || item.product_id.toString(),
+      }));
+      setReturnItems(items);
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not load items for the selected invoice.' });
+    }
+  };
+  
+  const handleProcessReturn = async () => {
+    if (returnItems.length === 0 || !selectedReturnCustomer || !currentLocation || !company_id) {
+      toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select items and a customer.' });
+      return;
+    }
+    setIsSubmittingReturn(true);
+    const payload: Partial<TransactionReturn> = {
+      customer_id: selectedReturnCustomer,
+      location_id: currentLocation.location_id,
+      company_id: String(company_id),
+      return_amount: returnItems.reduce((acc, item) => acc + item.amount, 0).toString(),
+      reason: returnReason,
+      created_by: currentCashier?.name || 'Admin',
+      stock_entries: returnItems.map(item => ({
+        product_id: parseInt(item.productId),
+        product_variant_id: parseInt(item.productVariantId),
+        quantity: item.quantity,
+        patch_code: 'RETURN', // This might need to be dynamic
+        expire_date: '0000-00-00',
+        manufacture_date: format(new Date(), 'yyyy-MM-dd'),
+        reference: 'Customer Return',
+        transaction_type: 'customer_return',
+      })),
+    };
+    
+    try {
+        const response = await fetch('https://server-erp.payshia.com/transaction-returns', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to process return.');
+        }
+        toast({ title: 'Return Processed', description: 'The return has been successfully logged.' });
+        setReturnDialogOpen(false);
+        // Reset state
+        setReturnType('invoice');
+        setSelectedReturnCustomer(null);
+        setReturnItems([]);
+        setReturnReason('');
+
+    } catch(error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Return Failed', description: errorMessage });
+    } finally {
+        setIsSubmittingReturn(false);
+    }
+  };
+
+
   const handleFilterChange = async (type: 'category' | 'collection' | 'brand', value: string) => {
     setActiveFilter({ type, value });
     if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
@@ -231,10 +339,6 @@ export default function POSPage() {
       
       const updatedOrder = { ...currentOrder, originalInvoiceNumber: result.invoice_number };
       setActiveOrders(prev => prev.map(o => o.id === currentOrder.id ? updatedOrder : o));
-
-      // Open KOT print view in new tab
-      const encodedData = btoa(JSON.stringify({ ...payload, id: result.invoice_number, customer: currentOrder.customer }));
-      window.open(`/pos/kot/${result.invoice_id}?data=${encodedData}`, '_blank');
       
       toast({ title: 'KOT Sent!', description: `Order sent to the kitchen.`, icon: <ChefHat className="h-6 w-6 text-green-500" /> });
       onClearCart(currentOrderId!);
@@ -423,7 +527,24 @@ export default function POSPage() {
       <NewOrderDialog isOpen={isNewOrderDialogOpen} onOpenChange={setNewOrderDialogOpen} createNewOrder={createNewOrder} activeOrders={activeOrders} />
       <HeldOrderDetailsDialog isOpen={isHeldOrderDetailsDialogOpen} onOpenChange={setHeldOrderDetailsDialogOpen} posProducts={posProducts} customers={customers} onLoadOrder={(invoice) => {/* TODO */}} />
       <PendingInvoicesDialog isOpen={isPendingInvoicesDialogOpen} onOpenChange={setPendingInvoicesDialogOpen} customers={customers} />
-      <ReturnDialog isOpen={isReturnDialogOpen} onOpenChange={setReturnDialogOpen} />
+      <ReturnDialog 
+          isOpen={isReturnDialogOpen} 
+          onOpenChange={setReturnDialogOpen} 
+          customers={customers}
+          returnType={returnType}
+          setReturnType={setReturnType}
+          selectedCustomer={selectedReturnCustomer}
+          setSelectedCustomer={setSelectedReturnCustomer}
+          pastInvoices={pastInvoices}
+          isLoadingPastInvoices={isLoadingPastInvoices}
+          handleInvoiceSelect={handleInvoiceSelect}
+          returnReason={returnReason}
+          setReturnReason={setReturnReason}
+          returnItems={returnItems}
+          setReturnItems={setReturnItems}
+          isSubmittingReturn={isSubmittingReturn}
+          handleProcessReturn={handleProcessReturn}
+      />
       <RefundDialog isOpen={isRefundDialogOpen} onOpenChange={setRefundDialogOpen} customers={customers} />
 
       <div className="flex h-screen w-screen flex-col">
