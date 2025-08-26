@@ -24,17 +24,18 @@ export default function KOTPage({ params }: { params: { id: string } }) {
   const kotRef = useRef<HTMLDivElement>(null);
   const [connected, setConnected] = useState(false);
   const companyId = searchParams.get('companyId');
+  const { id } = params;
 
   useEffect(() => {
     async function fetchInvoiceData() {
-        if (!params.id || !companyId) {
+        if (!id || !companyId) {
             console.error("Missing invoice ID or Company ID");
             setIsLoading(false);
             return;
         }
 
         try {
-            const response = await fetch(`https://server-erp.payshia.com/pos-invoices/${params.id}?company_id=${companyId}`);
+            const response = await fetch(`https://server-erp.payshia.com/pos-invoices/${id}?company_id=${companyId}`);
             if (!response.ok) {
                 throw new Error(`Failed to fetch invoice data: ${response.statusText}`);
             }
@@ -50,7 +51,7 @@ export default function KOTPage({ params }: { params: { id: string } }) {
         }
     }
     fetchInvoiceData();
-  }, [params.id, companyId]);
+  }, [id, companyId]);
 
   const handlePrint = async () => {
     if (!window.JSPM || !connected || !kotRef.current) {
