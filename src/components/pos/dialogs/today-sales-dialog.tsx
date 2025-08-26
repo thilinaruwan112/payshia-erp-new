@@ -9,7 +9,7 @@ import {
   DialogHeader,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { RefreshCcw, X, Truck, Loader2 } from 'lucide-react';
+import { RefreshCcw, X, Truck, Loader2, Printer } from 'lucide-react';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { format, isToday } from 'date-fns';
@@ -71,6 +71,10 @@ export function TodaySalesDialog({
     }
   }, [isOpen, fetchInvoices]);
 
+  const handleReprint = (invoiceId: string) => {
+    window.open(`/pos/invoice/${invoiceId}/print`, '_blank');
+  };
+
   const totalSales = invoices.reduce((acc, inv) => acc + parseFloat(inv.grand_total), 0);
 
   return (
@@ -102,9 +106,12 @@ export function TodaySalesDialog({
                              <div key={inv.id} className="flex justify-between items-center bg-muted/50 p-2 rounded-md">
                                 <div>
                                     <p className="font-semibold">{inv.invoice_number}</p>
-                                    <p className="text-xs text-muted-foreground">{format(new Date(inv.invoice_date), "hh:mm a")}</p>
+                                    <p className="text-xs text-muted-foreground">{format(new Date(inv.current_time), "hh:mm a")}</p>
                                 </div>
-                                <div className="font-bold text-lg">{currencySymbol}{parseFloat(inv.grand_total).toFixed(2)}</div>
+                                <div className="flex items-center gap-2">
+                                  <div className="font-bold text-lg text-right w-24">{currencySymbol}{parseFloat(inv.grand_total).toFixed(2)}</div>
+                                  <Button size="icon" variant="ghost" onClick={() => handleReprint(inv.invoice_number)}><Printer className="h-4 w-4" /></Button>
+                                </div>
                             </div>
                         ))}
                     </div>
