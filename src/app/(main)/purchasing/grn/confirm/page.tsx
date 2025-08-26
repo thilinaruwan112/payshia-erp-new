@@ -176,7 +176,7 @@ export default function GrnConfirmationPage() {
             localStorage.removeItem('grnConfirmationData');
             
             // Open print view in new tab
-            window.open(`/purchasing/grn/${result.id}/print`, '_blank');
+            window.open(`/purchasing-print/grn/${result.id}`, '_blank');
             
             router.push('/purchasing/grn');
         } catch (error) {

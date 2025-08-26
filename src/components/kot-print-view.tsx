@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import Image from 'next/image';
-import type { Invoice } from '@/lib/types';
+import type { Invoice, User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 // Extend the Window interface

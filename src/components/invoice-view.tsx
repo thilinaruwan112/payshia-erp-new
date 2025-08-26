@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { type Invoice, type User, type Product, type ProductVariant } from '@/lib/types';
@@ -93,13 +92,13 @@ export function InvoiceView({ id }: InvoiceViewProps) {
   }));
   
   const handlePrint = (showBankDetails: boolean) => {
-    const url = `/sales/invoices/${invoice.invoice_number}/print?showBankDetails=${showBankDetails}`;
+    const url = `/sales-print/invoices/${invoice.invoice_number}?showBankDetails=${showBankDetails}`;
     window.open(url, '_blank');
   };
 
   const handlePrintWithVehicle = () => {
     if (printType) {
-      const url = `/sales/invoices/${invoice.invoice_number}/${printType === 'dispatch' ? 'dispatch-note' : 'gate-pass'}?vehicleNo=${encodeURIComponent(vehicleNumber)}`;
+      const url = `/sales-print/invoices/${invoice.invoice_number}/${printType === 'dispatch' ? 'dispatch-note' : 'gate-pass'}?vehicleNo=${encodeURIComponent(vehicleNumber)}`;
       window.open(url, '_blank');
       setVehicleDialogVisible(false);
       setVehicleNumber('');

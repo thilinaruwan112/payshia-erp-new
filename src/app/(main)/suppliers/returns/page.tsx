@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -212,7 +211,7 @@ export default function SupplierReturnsPage() {
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                      <DropdownMenuItem asChild>
-                                                        <Link href={`/suppliers/returns/${sReturn.id}`}>View Details</Link>
+                                                        <Link href={`/suppliers-print/returns/${sReturn.id}`}>View Details</Link>
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>

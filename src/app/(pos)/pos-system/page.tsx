@@ -800,7 +800,6 @@ export default function POSPage() {
         icon: <ChefHat className="h-6 w-6 text-green-500" />,
       });
       
-      // Pass the full invoice object for printing
       const encodedData = btoa(JSON.stringify(result));
       window.open(`/pos/kot/${result.invoice_id}?data=${encodedData}`, '_blank');
 
@@ -1380,7 +1379,7 @@ export default function POSPage() {
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
       />
-    <div className="flex h-screen w-screen flex-col">
+      <div className="flex h-screen w-screen flex-col">
         <PosHeader
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
@@ -1829,9 +1828,7 @@ export default function POSPage() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
     </>
   );
 }
 
-    

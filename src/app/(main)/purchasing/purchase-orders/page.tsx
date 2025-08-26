@@ -201,7 +201,7 @@ export default function PurchaseOrdersPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuItem asChild>
-                              <Link href={`/purchasing/purchase-orders/${po.id}`}>View Details</Link>
+                              <Link href={`/purchasing-print/purchase-orders/${po.id}`}>View Details</Link>
                             </DropdownMenuItem>
                             {po.po_status === '1' && ( // Only show if Approved
                               <DropdownMenuItem asChild>

@@ -183,10 +183,10 @@ export default function ReceiptsPage() {
                             <Link href={`/sales/receipts/${receipt.id}`}>View Details</Link>
                           </DropdownMenuItem>
                            <DropdownMenuItem asChild>
-                            <Link href={`/sales/receipts/${receipt.id}/print`} target="_blank">Print A4 Receipt</Link>
+                            <Link href={`/sales-print/receipts/${receipt.id}`} target="_blank">Print A4 Receipt</Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem asChild>
-                            <Link href={`/pos/receipt/${receipt.id}/print`} target="_blank">Print POS Receipt</Link>
+                            <Link href={`/pos-print/receipts/${receipt.id}`} target="_blank">Print POS Receipt</Link>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

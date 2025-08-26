@@ -74,7 +74,7 @@ export function SupplierReturnView({ id }: SupplierReturnViewProps) {
   
   const handlePrint = () => {
     if (sReturn) {
-      window.open(`/suppliers/returns/${sReturn.id}/print`, '_blank');
+      window.open(`/suppliers-print/returns/${sReturn.id}`, '_blank');
     }
   };
 
