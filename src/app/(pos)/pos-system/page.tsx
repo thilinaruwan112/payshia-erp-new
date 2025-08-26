@@ -312,7 +312,7 @@ export default function POSPage() {
     setNewOrderDialogOpen(false);
   };
   
-  const handleHoldAndKitchen = async () => {
+ const handleHoldAndKitchen = async () => {
     if (!currentOrder || !currentCashier || !company_id || !currentLocation) return;
     if (currentOrder.cart.length === 0) {
       toast({
@@ -323,18 +323,20 @@ export default function POSPage() {
       return;
     }
 
+    const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
+    const costValue = currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0);
+
     const payload = {
         invoice_date: format(new Date(), 'yyyy-MM-dd'),
         inv_amount: orderTotals.subtotal, 
         grand_total: orderTotals.total, 
-        discount_amount: orderTotals.discount + orderTotals.itemDiscounts,
-        discount_percentage: 0, 
+        discount_amount: totalDiscount,
+        discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
         customer_code: currentOrder.customer.customer_id, 
         service_charge: orderTotals.serviceCharge,
         tendered_amount: 0, 
         close_type: 'N/A', 
         invoice_status: '2', // Status for held order
-        payment_status: "Pending", 
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'), 
         location_id: parseInt(currentLocation.location_id, 10), 
         table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0, 
@@ -342,19 +344,24 @@ export default function POSPage() {
         created_by: currentCashier.name, 
         is_active: 1, 
         steward_id: currentOrder.steward?.id || "N/A",
-        cost_value: 0, 
+        cost_value: costValue, 
         remark: `${currentOrder.orderType} order`, 
         ref_hold: "direct",
-        company_id: parseInt(String(company_id)),
+        company_id: String(company_id),
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
+            user_id: parseInt(currentCashier.id, 10),
             product_id: parseInt(item.product.id, 10), 
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0, 
             quantity: item.quantity, 
             customer_id: parseInt(currentOrder.customer.customer_id, 10),
-            product_variant_id: parseInt(item.product.variant.id, 10), 
-            company_id: parseInt(String(company_id)),
+            table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
+            cost_price: item.product.costPrice || 0,
+            is_active: 1,
+            hold_status: 0,
+            printed_status: 1,
+            product_variant_id: parseInt(item.product.variant.id, 10),
         })),
     };
 
@@ -369,8 +376,7 @@ export default function POSPage() {
       
       toast({ title: 'KOT Sent!', description: `Order sent to the kitchen.`, icon: <ChefHat className="h-6 w-6 text-green-500" /> });
       
-      // Open the KOT print view in a new tab
-      window.open(`/pos/kot/${company_id}/${result.invoice_id}`, '_blank');
+      window.open(`/kot/${company_id}/${result.invoice_id}`, '_blank');
       
       onClearCart(currentOrderId!);
     } catch (error) {
