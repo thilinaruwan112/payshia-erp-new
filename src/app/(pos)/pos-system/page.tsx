@@ -1307,7 +1307,7 @@ export default function POSPage() {
         onRemoveItem={removeFromCart}
         onClearCart={onClearCart}
         onHoldOrder={onHoldOrder}
-        onSendToKitchen={onSendToKitchen}
+        onSendToKitchen={handleSendToKitchen}
         isDrawer={isDrawerOpen}
         onClose={() => setDrawerOpen(false)}
         setDiscount={setDiscount}
@@ -1833,3 +1833,5 @@ export default function POSPage() {
     </>
   );
 }
+
+    
