@@ -1,13 +1,13 @@
 
 "use client";
 
+// pages/print.js
 import { useEffect, useState, useRef } from "react";
-import Script from "next/script";
 import html2canvas from "html2canvas";
 
 declare global {
   interface Window {
-    JSPM: any;
+      JSPM: any;
   }
 }
 
@@ -17,10 +17,8 @@ export default function PrintPage() {
   const invRef = useRef(null);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && window.JSPM) {
       const initJSPM = () => {
-        if (!window.JSPM) return;
-
         const { JSPrintManager } = window.JSPM;
         JSPrintManager.auto_reconnect = true;
         JSPrintManager.start();
@@ -45,31 +43,32 @@ export default function PrintPage() {
   }, []);
 
   const handlePrint = async () => {
-    if (!window.JSPM || !connected) {
-      alert("JSPM not connected.");
+    if (!window.JSPM || !connected || !invRef.current) {
+      alert("JSPM not connected or element not found.");
       return;
     }
 
+    // 1️⃣ Capture the invoice div
     const element = invRef.current;
-    if (!element) {
-        alert("Printable element not found.");
-        return;
-    }
     const canvas = await html2canvas(element, { scale: 2 });
 
+    // 2️⃣ Convert to Base64 PNG
     const b64Prefix = "data:image/png;base64,";
     const imgBase64DataUri = canvas.toDataURL("image/png");
     const imgBase64Content = imgBase64DataUri.substring(b64Prefix.length);
 
+    // 3️⃣ Create print job
     const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } =
       window.JSPM;
 
     const cpj = new ClientPrintJob();
 
+    // Pick printer → for demo: Microsoft Print to PDF
     const myPrinter = new InstalledPrinter("Microsoft Print to PDF");
-    myPrinter.paperName = "80(72.1) x 297 mm";
+    myPrinter.paperName = "80(72.1) x 297 mm"; // optional: custom paper size
     cpj.clientPrinter = myPrinter;
 
+    // 4️⃣ Add image as PrintFile (Base64)
     const myImageFile = new PrintFile(
       imgBase64Content,
       FileSourceType.Base64,
@@ -78,21 +77,24 @@ export default function PrintPage() {
     );
 
     cpj.files.push(myImageFile);
+
+    // 5️⃣ Send job to client
     cpj.sendToClient();
 
+    // (Optional) close after a few seconds
     setTimeout(() => {
-      window.close();
+      // window.close();
     }, 5000);
   };
+  
+   useEffect(() => {
+    if (connected) {
+      handlePrint();
+    }
+   }, [connected]);
 
   return (
     <>
-      {/* Load JSPM Script */}
-      <Script
-        src="https://unpkg.com/jsprintmanager/JSPrintManager.js"
-        strategy="beforeInteractive"
-      />
-
       <div style={{ padding: "20px", fontFamily: "Arial" }}>
         <h1>Next.js + JSPrintManager Invoice Print</h1>
 
