@@ -29,7 +29,6 @@ export default function KOTPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     async function fetchInvoiceData() {
         if (!id || !companyId) {
-            console.error("Missing invoice ID or Company ID");
             setIsLoading(false);
             return;
         }
@@ -39,10 +38,18 @@ export default function KOTPage({ params }: { params: { id: string } }) {
             if (!response.ok) {
                 throw new Error(`Failed to fetch invoice data: ${response.statusText}`);
             }
-            const data: Invoice = await response.json();
-            setInvoice(data);
-            if (data.customer) {
-                setCustomer(data.customer);
+            const data = await response.json();
+            
+            // Correctly parse the nested response structure
+            const invoiceData = data.pos_invoice as Invoice;
+
+            if (!invoiceData) {
+              throw new Error("pos_invoice object not found in API response.");
+            }
+
+            setInvoice(invoiceData);
+            if (invoiceData.customer) {
+                setCustomer(invoiceData.customer);
             }
         } catch (error) {
             console.error("Error fetching KOT data:", error);
