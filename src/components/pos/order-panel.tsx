@@ -446,6 +446,10 @@ export function OrderPanel({
         title: 'Order Held',
         description: `${order.name} has been put on hold as Invoice #${result.invoice_number}.`,
       });
+
+      // Send to kitchen after holding
+      onSendToKitchen();
+
       onClearCart(orderId);
     } catch (error) {
        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
