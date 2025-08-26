@@ -796,7 +796,7 @@ export default function POSPage() {
       setActiveOrders(prev => prev.map(o => o.id === currentOrder.id ? updatedOrder : o));
       
       // Open KOT print page
-      window.open(`/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
+      window.open(`/kot/${company_id}/${result.id}`, '_blank');
       
       toast({
         title: 'KOT Sent!',
