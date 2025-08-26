@@ -1,14 +1,15 @@
 
+
 'use client';
 
-import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import Image from 'next/image';
-import type { Invoice, User } from '@/lib/types';
+import type { Invoice } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { notFound } from 'next/navigation';
 
 declare global {
   interface Window {
@@ -22,7 +23,6 @@ interface KotPrintViewProps {
 }
 
 export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
-  const searchParams = useSearchParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -30,27 +30,36 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    setIsLoading(true);
-    try {
-      const data = searchParams.get('data');
-      if (data) {
-        const decodedData = atob(data);
-        const parsedData: Invoice = JSON.parse(decodedData);
-        setInvoice(parsedData);
-      } else {
-        throw new Error("No data provided for KOT.");
-      }
-    } catch (error) {
-      console.error("Failed to parse KOT data", error);
-      toast({
-        variant: 'destructive',
-        title: 'Error loading KOT',
-        description: 'Could not read order data to generate KOT.',
-      });
-    } finally {
-      setIsLoading(false);
+    async function fetchInvoiceData() {
+        if (!invoiceId || !companyId) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Missing Invoice ID or Company ID.'});
+            setIsLoading(false);
+            return;
+        }
+        setIsLoading(true);
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/pos-invoices/${invoiceId}/?company_id=${companyId}`);
+            if (!response.ok) {
+                if (response.status === 404) {
+                    notFound();
+                }
+                throw new Error('Failed to fetch invoice data for KOT.');
+            }
+            const data: Invoice = await response.json();
+            setInvoice(data);
+        } catch (error) {
+            console.error("Failed to fetch KOT data", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error loading KOT',
+                description: 'Could not fetch order data to generate KOT.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
-  }, [searchParams, toast]);
+    fetchInvoiceData();
+  }, [invoiceId, companyId, toast]);
 
   const handlePrint = async () => {
     if (!window.JSPM || !connected || !kotRef.current) {

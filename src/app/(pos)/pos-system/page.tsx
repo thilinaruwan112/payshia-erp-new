@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -20,6 +21,7 @@ import { HeldOrderDetailsDialog } from '@/components/pos/dialogs/held-order-deta
 import { PendingInvoicesDialog } from '@/components/pos/dialogs/pending-invoices-dialog';
 import { ReturnDialog, type ReturnItem } from '@/components/pos/dialogs/return-dialog';
 import { RefundDialog } from '@/components/pos/dialogs/refund-dialog';
+import { useCurrency } from '@/components/currency-provider';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -74,6 +76,7 @@ export default function POSPage() {
 
   const [currentCashier, setCurrentCashier] = useState<User | null>(null);
   const { currentLocation, isLoading: isLocationLoading, setCurrentLocation, availableLocations, company_id } = useLocation();
+  const { currencySymbol } = useCurrency();
   
   // State for Return Dialog
   const [returnType, setReturnType] = useState<'invoice' | 'manual'>('invoice');
@@ -309,7 +312,7 @@ export default function POSPage() {
   };
   
   const handleSendToKitchen = async () => {
-    if (!currentOrder || !currentCashier || !company_id) return;
+    if (!currentOrder || !currentCashier || !company_id || !currentLocation) return;
 
     const payload = {
         invoice_date: format(new Date(), 'yyyy-MM-dd'),
@@ -339,6 +342,9 @@ export default function POSPage() {
       
       const updatedOrder = { ...currentOrder, originalInvoiceNumber: result.invoice_number };
       setActiveOrders(prev => prev.map(o => o.id === currentOrder.id ? updatedOrder : o));
+      
+      // Open the KOT print view
+      window.open(`/pos/kot/${company_id}/${result.invoice_id}`, '_blank');
       
       toast({ title: 'KOT Sent!', description: `Order sent to the kitchen.`, icon: <ChefHat className="h-6 w-6 text-green-500" /> });
       onClearCart(currentOrderId!);
@@ -548,7 +554,11 @@ export default function POSPage() {
       <RefundDialog isOpen={isRefundDialogOpen} onOpenChange={setRefundDialogOpen} customers={customers} />
 
       <div className="flex h-screen w-screen flex-col">
-        <PosHeader searchTerm={searchTerm} setSearchTerm={setSearchTerm} cashier={currentCashier} />
+        <PosHeader
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            cashier={currentCashier}
+        />
         <div className="flex-1 flex overflow-hidden">
             <div className="flex-1 flex flex-col">
                 <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
@@ -615,3 +625,4 @@ export default function POSPage() {
     </>
   );
 }
+
