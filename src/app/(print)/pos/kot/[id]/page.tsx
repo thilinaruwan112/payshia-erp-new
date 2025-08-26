@@ -2,7 +2,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 
@@ -22,6 +22,7 @@ export default function KOTPage({ params }: { params: { id: string } }) {
   const searchParams = useSearchParams();
   const [kotData, setKotData] = useState<KotData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const printTriggered = useRef(false);
 
   useEffect(() => {
     try {
@@ -39,8 +40,9 @@ export default function KOTPage({ params }: { params: { id: string } }) {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!isLoading && kotData) {
+    if (!isLoading && kotData && !printTriggered.current) {
       document.title = `KOT - ${kotData.orderName}`;
+      printTriggered.current = true;
       setTimeout(() => window.print(), 500);
     }
   }, [isLoading, kotData]);
