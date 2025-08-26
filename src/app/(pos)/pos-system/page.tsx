@@ -801,7 +801,7 @@ export default function POSPage() {
       });
       
       const encodedData = btoa(JSON.stringify(result));
-      window.open(`/pos/kot/${result.invoice_id}?data=${encodedData}`, '_blank');
+      window.open(`/pos/kot/${result.id}?data=${encodedData}`, '_blank');
 
       onClearCart(currentOrderId!);
     } catch (error) {
@@ -1374,12 +1374,12 @@ export default function POSPage() {
 
   return (
     <>
-    <AddToCartDialog
+      <AddToCartDialog
         product={selectedProduct}
         onClose={() => setSelectedProduct(null)}
         onAddToCart={addToCart}
       />
-      <div className="flex h-screen w-screen flex-col">
+       <div className="flex h-screen w-screen flex-col">
         <PosHeader
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
@@ -1785,6 +1785,7 @@ export default function POSPage() {
                 )}
             </div>
         </div>
+      </div>
       <Dialog open={isHeldOrderDetailsOpen} onOpenChange={setIsHeldOrderDetailsOpen}>
         <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -1831,4 +1832,3 @@ export default function POSPage() {
     </>
   );
 }
-
