@@ -9,6 +9,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import Image from 'next/image';
+import { useCurrency } from '../currency-provider';
 
 interface ProductCardProps {
   product: PosProduct;
@@ -16,6 +17,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onSelect }: ProductCardProps) {
+  const { currencySymbol } = useCurrency();
   return (
     <Card
       className="overflow-hidden cursor-pointer hover:border-primary transition-colors group"
@@ -33,7 +35,7 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
         <div className='p-4'>
             <h3 className="font-semibold text-base truncate group-hover:text-primary leading-tight">{product.variantName}</h3>
             <p className="text-sm text-muted-foreground">{product.category}</p>
-            <p className="font-bold text-xl mt-2">${(product.price as number).toFixed(2)}</p>
+            <p className="font-bold text-xl mt-2">{currencySymbol}{(product.price as number).toFixed(2)}</p>
         </div>
       </CardContent>
     </Card>

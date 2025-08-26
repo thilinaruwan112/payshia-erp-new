@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useLocation } from '../location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { useCurrency } from '../currency-provider';
 
 interface AddToCartDialogProps {
   product: PosProduct | null;
@@ -40,6 +41,7 @@ export function AddToCartDialog({
   const [isLoadingStock, setIsLoadingStock] = useState(false);
   const { currentLocation, company_id } = useLocation();
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
 
   useEffect(() => {
     async function fetchStock() {

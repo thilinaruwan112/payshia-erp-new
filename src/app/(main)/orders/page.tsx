@@ -34,6 +34,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/components/location-provider';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCurrency } from '@/components/currency-provider';
 
 const getStatusColor = (status: Order['status']) => {
   switch (status) {
@@ -55,6 +56,7 @@ const getStatusColor = (status: Order['status']) => {
 export default function OrdersPage() {
     const { toast } = useToast();
     const { company_id } = useLocation();
+    const { currencySymbol } = useCurrency();
     const [orders, setOrders] = useState<Order[]>([]);
     const [customers, setCustomers] = useState<User[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -165,7 +167,7 @@ export default function OrdersPage() {
                     </TableCell>
                     <TableCell>{new Date(order.date).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
-                      ${(order.total || 0).toFixed(2)}
+                      {currencySymbol}{(order.total || 0).toFixed(2)}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -232,7 +234,7 @@ export default function OrdersPage() {
                 <CardFooter className="bg-muted/50 p-4">
                   <div className="flex justify-between w-full font-semibold">
                       <span>Total</span>
-                      <span>${(order.total || 0).toFixed(2)}</span>
+                      <span>{currencySymbol}{(order.total || 0).toFixed(2)}</span>
                   </div>
                 </CardFooter>
               </Card>
@@ -243,5 +245,3 @@ export default function OrdersPage() {
     </div>
   );
 }
-
-    

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -41,6 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useCurrency } from '@/components/currency-provider';
 
 const fixedAssets: FixedAsset[] = [
     {
@@ -100,6 +102,7 @@ const getStatusColor = (status: FixedAsset['status']) => {
 
 export default function FixedAssetsPage() {
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<FixedAsset | null>(null);
 
@@ -185,9 +188,9 @@ export default function FixedAssetsPage() {
                       <Badge variant="outline">{asset.assetType}</Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{new Date(asset.purchaseDate).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right font-mono">${asset.purchaseCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-right hidden md:table-cell font-mono">${asset.accumulatedDepreciation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-right font-mono">${(asset.purchaseCost - asset.accumulatedDepreciation).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right font-mono">{currencySymbol}{asset.purchaseCost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right hidden md:table-cell font-mono">{currencySymbol}{asset.accumulatedDepreciation.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right font-mono">{currencySymbol}{(asset.purchaseCost - asset.accumulatedDepreciation).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                     <TableCell className="hidden sm:table-cell">
                       <Badge variant="secondary" className={cn(getStatusColor(asset.status))}>
                           {asset.status}
@@ -233,7 +236,7 @@ export default function FixedAssetsPage() {
               This action cannot be undone.
               <div className="mt-4 space-y-1 text-sm text-muted-foreground bg-muted p-3 rounded-md border">
                 <p><strong>Method:</strong> {depreciationDetails.method}</p>
-                <p><strong>Amount:</strong> <span className="font-mono">${depreciationDetails.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> (for the current month)</p>
+                <p><strong>Amount:</strong> <span className="font-mono">{currencySymbol}{depreciationDetails.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> (for the current month)</p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>

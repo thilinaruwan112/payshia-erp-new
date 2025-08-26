@@ -43,6 +43,7 @@ import { Textarea } from "./ui/textarea";
 import { useLocation } from "./location-provider";
 import { Switch } from "./ui/switch";
 import { Combobox } from "./ui/combobox";
+import { useCurrency } from "./currency-provider";
 
 const purchaseOrderItemSchema = z.object({
   product_id: z.string().min(1, "Product is required."),
@@ -78,6 +79,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currentLocation, company_id } = useLocation();
+  const { currencySymbol } = useCurrency();
   const [availableProducts, setAvailableProducts] = useState<ProductWithVariants[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
@@ -469,14 +471,14 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormControl>
-                                                            <Input type="number" {...field} startIcon="Rs" />
+                                                            <Input type="number" {...field} startIcon={currencySymbol} />
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
                                         </TableCell>
-                                        <TableCell className="text-right font-mono">Rs{total.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-mono">{currencySymbol}{total.toFixed(2)}</TableCell>
                                         <TableCell>
                                             {fields.length > 1 && (
                                                 <Button variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -498,15 +500,15 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                  <div className="w-full max-w-sm space-y-2">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span className="font-mono">Rs{subTotal.toFixed(2)}</span>
+                        <span className="font-mono">{currencySymbol}{subTotal.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between">
                         <span>Tax (15%)</span>
-                        <span className="font-mono">Rs{taxAmount.toFixed(2)}</span>
+                        <span className="font-mono">{currencySymbol}{taxAmount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total</span>
-                        <span className="font-mono">Rs{totalAmount.toFixed(2)}</span>
+                        <span className="font-mono">{currencySymbol}{totalAmount.toFixed(2)}</span>
                     </div>
                 </div>
                 <div className="w-full">

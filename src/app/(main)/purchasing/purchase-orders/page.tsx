@@ -36,6 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLocation } from '@/components/location-provider';
+import { useCurrency } from '@/components/currency-provider';
 
 const getStatusText = (status: string) => {
   switch (status) {
@@ -74,6 +75,7 @@ export default function PurchaseOrdersPage() {
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
   const { company_id } = useLocation();
+  const { currencySymbol } = useCurrency();
   const itemsPerPage = 15;
 
   useEffect(() => {
@@ -187,7 +189,7 @@ export default function PurchaseOrdersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{new Date(po.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell className="text-right">${parseFloat(po.sub_total).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{currencySymbol}{parseFloat(po.sub_total).toFixed(2)}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

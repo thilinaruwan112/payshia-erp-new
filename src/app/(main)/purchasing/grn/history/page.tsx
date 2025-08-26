@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -32,12 +33,14 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import { useCurrency } from '@/components/currency-provider';
 
 export default function GrnHistoryPage() {
   const [grns, setGrns] = useState<GoodsReceivedNote[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
 
   useEffect(() => {
     async function fetchData() {
@@ -130,7 +133,7 @@ export default function GrnHistoryPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">{format(new Date(grn.created_at), 'dd MMM, yyyy')}</TableCell>
-                    <TableCell className="text-right">${parseFloat(grn.grand_total).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{currencySymbol}{parseFloat(grn.grand_total).toFixed(2)}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

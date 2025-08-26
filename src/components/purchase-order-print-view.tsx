@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import { useCurrency } from './currency-provider';
 
 interface PrintViewProps {
     id: string;
@@ -31,6 +32,7 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   
   useEffect(() => {
     async function fetchData() {
@@ -167,8 +169,8 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
                   <p className="text-xs text-gray-500">SKU: {item.variant_sku}</p>
                 </td>
                 <td className="p-3 text-right">{item.quantity}</td>
-                <td className="p-3 text-right">${parseFloat(String(item.order_rate)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="p-3 text-right">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">{currencySymbol}{parseFloat(String(item.order_rate)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">{currencySymbol}{item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             ))}
           </tbody>
@@ -179,7 +181,7 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
         <div className="w-full max-w-xs space-y-2 text-gray-700">
            <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
             <span>Total</span>
-            <span>${parseFloat(po.sub_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>{currencySymbol}{parseFloat(po.sub_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
       </section>

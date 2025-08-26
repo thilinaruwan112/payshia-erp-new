@@ -46,6 +46,7 @@ import { Switch } from '../ui/switch';
 import { format } from 'date-fns';
 import { useLocation } from '../location-provider';
 import { Badge } from '../ui/badge';
+import { useCurrency } from '../currency-provider';
 
 interface OrderPanelProps {
   order: ActiveOrder;
@@ -75,6 +76,7 @@ const PaymentDialog = ({
   orderTotals: OrderInfo;
   onSuccessfulPayment: (paymentMethod: string, tenderedAmount: number) => void;
 }) => {
+  const { currencySymbol } = useCurrency();
   const [amountTendered, setAmountTendered] = React.useState('');
   const change = Number(amountTendered) - orderTotals.total;
 
@@ -86,7 +88,7 @@ const PaymentDialog = ({
       <div className="space-y-4">
         <div className="bg-muted/50 rounded-lg p-4 text-center">
           <p className="text-sm text-muted-foreground">Total Due</p>
-          <p className="text-4xl font-bold">${orderTotals.total.toFixed(2)}</p>
+          <p className="text-4xl font-bold">{currencySymbol}{orderTotals.total.toFixed(2)}</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <Button
@@ -116,7 +118,7 @@ const PaymentDialog = ({
         </div>
         {Number(amountTendered) > 0 && (
           <div className="text-center font-medium">
-            <p>Change: ${change > 0 ? change.toFixed(2) : '0.00'}</p>
+            <p>Change: {currencySymbol}{change > 0 ? change.toFixed(2) : '0.00'}</p>
           </div>
         )}
       </div>
@@ -142,6 +144,7 @@ const DiscountDialog = ({
   setDiscount: (d: number) => void;
   onClose: () => void;
 }) => {
+  const { currencySymbol } = useCurrency();
   const [discountValue, setDiscountValue] = React.useState('');
 
   const applyDiscount = () => {
@@ -155,7 +158,7 @@ const DiscountDialog = ({
         <DialogTitle>Apply Order Discount</DialogTitle>
       </DialogHeader>
       <div className="space-y-2">
-        <Label htmlFor="discount-value">Discount Amount ($)</Label>
+        <Label htmlFor="discount-value">Discount Amount ({currencySymbol})</Label>
         <Input
           id="discount-value"
           type="number"
@@ -183,6 +186,7 @@ const ServiceChargeDialog = ({
   setServiceCharge: (d: number) => void;
   onClose: () => void;
 }) => {
+  const { currencySymbol } = useCurrency();
   const [chargeValue, setChargeValue] = React.useState(currentValue.toString());
 
   const applyCharge = () => {
@@ -196,7 +200,7 @@ const ServiceChargeDialog = ({
         <DialogTitle>Apply Service Charge</DialogTitle>
       </DialogHeader>
       <div className="space-y-2">
-        <Label htmlFor="charge-value">Service Charge Amount ($)</Label>
+        <Label htmlFor="charge-value">Service Charge Amount ({currencySymbol})</Label>
         <Input
           id="charge-value"
           type="number"
@@ -310,6 +314,7 @@ export function OrderPanel({
 }: OrderPanelProps) {
   const { toast } = useToast();
   const { company_id } = useLocation();
+  const { currencySymbol } = useCurrency();
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
   const [isServiceChargeOpen, setServiceChargeOpen] = React.useState(false);
@@ -375,7 +380,7 @@ export function OrderPanel({
   const handleSuccessfulPayment = async (paymentMethod: string, tenderedAmount: number) => {
     toast({
       title: 'Payment Processing...',
-      description: `Processing $${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
+      description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
     });
 
     const payload = createInvoicePayload('1', paymentMethod, tenderedAmount);
@@ -583,14 +588,14 @@ export function OrderPanel({
                   <div className="flex-1 flex flex-col">
                     <span className="font-semibold">{item.product.variantName}</span>
                     <span className="text-muted-foreground text-sm">
-                      ${(item.product.price as number).toFixed(2)}
+                      {currencySymbol}{(item.product.price as number).toFixed(2)}
                     </span>
                     <Badge variant="outline" className="w-fit text-xs mt-1">
                         Batch: {item.batch.patch_code}
                     </Badge>
                     {item.itemDiscount && item.itemDiscount > 0 ? (
                         <span className="text-xs text-green-600">
-                          Discount: -${item.itemDiscount.toFixed(2)}
+                          Discount: -{currencySymbol}{item.itemDiscount.toFixed(2)}
                         </span>
                       ) : null}
                     <div className="flex items-center gap-2 mt-auto">
@@ -619,7 +624,7 @@ export function OrderPanel({
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="font-bold">
-                      ${((item.product.price as number) * item.quantity).toFixed(2)}
+                      {currencySymbol}{((item.product.price as number) * item.quantity).toFixed(2)}
                     </span>
                     <Button
                       size="icon"
@@ -640,11 +645,11 @@ export function OrderPanel({
       <footer className="p-4 border-t border-border mt-auto space-y-3 shrink-0">
         <div className="flex justify-between text-sm">
           <span>Subtotal</span>
-          <span>${orderTotals.subtotal.toFixed(2)}</span>
+          <span>{currencySymbol}{orderTotals.subtotal.toFixed(2)}</span>
         </div>
          <div className="flex justify-between text-sm text-green-600">
           <span>Item Discounts</span>
-          <span>-${orderTotals.itemDiscounts.toFixed(2)}</span>
+          <span>-{currencySymbol}{orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
         <Dialog open={isServiceChargeOpen} onOpenChange={setServiceChargeOpen}>
           <DialogTrigger asChild>
@@ -652,7 +657,7 @@ export function OrderPanel({
               <span className="flex items-center gap-2">
                 <PlusSquare className="h-4 w-4" /> Service Charge
               </span>
-              <span>${orderTotals.serviceCharge.toFixed(2)}</span>
+              <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
             </div>
           </DialogTrigger>
           <ServiceChargeDialog
@@ -663,12 +668,12 @@ export function OrderPanel({
         </Dialog>
          <div className="flex justify-between text-sm text-green-600">
           <span>Order Discount</span>
-          <span>-${discount.toFixed(2)}</span>
+          <span>-{currencySymbol}{discount.toFixed(2)}</span>
         </div>
         <Separator />
         <div className="flex justify-between font-bold text-lg">
           <span>Total</span>
-          <span>${orderTotals.total.toFixed(2)}</span>
+          <span>{currencySymbol}{orderTotals.total.toFixed(2)}</span>
         </div>
         
         <div className="grid grid-cols-2 gap-2 pt-2">

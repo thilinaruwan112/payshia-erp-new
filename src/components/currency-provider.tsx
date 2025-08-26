@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { currencies } from '@/lib/currencies';
 
 type CurrencyCode = 'LKR' | 'USD' | 'EUR' | 'GBP' | 'JPY';
@@ -15,7 +15,17 @@ interface CurrencyContextType {
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  const [currency, setCurrency] = useState<CurrencyCode>('LKR');
+  const [currency, setCurrency] = useState<CurrencyCode>(() => {
+    if (typeof window !== 'undefined') {
+      const savedCurrency = localStorage.getItem('erp-currency');
+      return (savedCurrency as CurrencyCode) || 'LKR';
+    }
+    return 'LKR';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('erp-currency', currency);
+  }, [currency]);
 
   const currencySymbol = useMemo(() => {
     const found = currencies.find(c => c.code === currency);

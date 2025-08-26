@@ -23,6 +23,7 @@ import { format, parseISO } from "date-fns";
 import React, { useEffect, useState } from "react";
 import type { GrnFormValues } from "@/components/grn-form";
 import { useLocation } from "@/components/location-provider";
+import { useCurrency } from "@/components/currency-provider";
 
 const grnBatchSchema = z.object({
     batchNumber: z.string().min(1, "Batch number is required."),
@@ -70,6 +71,7 @@ export default function GrnConfirmationPage() {
     const router = useRouter();
     const { toast } = useToast();
     const { company_id } = useLocation();
+    const { currencySymbol } = useCurrency();
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -241,8 +243,8 @@ export default function GrnConfirmationPage() {
                                             <TableCell>{batch.mfgDate ? format(batch.mfgDate, "dd/MM/yy") : 'N/A'}</TableCell>
                                             <TableCell>{batch.expDate ? format(batch.expDate, "dd/MM/yy") : 'N/A'}</TableCell>
                                             <TableCell className="text-right">{batch.receivedQty}</TableCell>
-                                            <TableCell className="text-right font-mono">${item.unitRate.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right font-mono">${(batch.receivedQty * item.unitRate).toFixed(2)}</TableCell>
+                                            <TableCell className="text-right font-mono">{currencySymbol}{item.unitRate.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right font-mono">{currencySymbol}{(batch.receivedQty * item.unitRate).toFixed(2)}</TableCell>
                                         </TableRow>
                                     ))
                                 )}
@@ -250,7 +252,7 @@ export default function GrnConfirmationPage() {
                              <TableFooter>
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-right font-bold">Grand Total</TableCell>
-                                    <TableCell className="text-right font-bold font-mono">${grandTotal.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-bold font-mono">{currencySymbol}{grandTotal.toFixed(2)}</TableCell>
                                 </TableRow>
                             </TableFooter>
                         </Table>

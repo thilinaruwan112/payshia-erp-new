@@ -13,6 +13,7 @@ import { Printer, ArrowLeft } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { useCurrency } from './currency-provider';
 
 interface PurchaseOrderViewProps {
     id: string;
@@ -57,6 +58,7 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
 
   useEffect(() => {
     async function fetchData() {
@@ -176,7 +178,7 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
                 </div>
                  <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">Subtotal</p>
-                    <p className="font-semibold font-mono">${parseFloat(po.sub_total).toFixed(2)}</p>
+                    <p className="font-semibold font-mono">{currencySymbol}{parseFloat(po.sub_total).toFixed(2)}</p>
                 </div>
                  <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">Tax Type</p>
@@ -207,8 +209,8 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
                                 <TableCell>{item.product_name}</TableCell>
                                 <TableCell>{item.variant_sku}</TableCell>
                                 <TableCell className="text-right">{item.quantity}</TableCell>
-                                <TableCell className="text-right font-mono">${parseFloat(String(item.order_rate)).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono">${item.total_cost.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(String(item.order_rate)).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono">{currencySymbol}{item.total_cost.toFixed(2)}</TableCell>
                            </TableRow>
                         ))}
                     </TableBody>
@@ -217,7 +219,7 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
              <CardFooter className="flex justify-end font-bold text-lg">
                 <div className="flex items-center gap-4">
                     <span>Total:</span>
-                    <span className="font-mono">${parseFloat(po.sub_total).toFixed(2)}</span>
+                    <span className="font-mono">{currencySymbol}{parseFloat(po.sub_total).toFixed(2)}</span>
                 </div>
             </CardFooter>
          </Card>

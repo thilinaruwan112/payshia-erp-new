@@ -172,7 +172,7 @@ export default function AccountingDashboardPage() {
                       borderRadius: 'var(--radius)',
                     }}
                     cursor={{fill: 'hsl(var(--muted))'}}
-                     formatter={(value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value).replace('$', currencySymbol)}
+                     formatter={(value: number) => `${currencySymbol}${new Intl.NumberFormat('en-US').format(value)}`}
                 />
                 <Legend />
                 <Bar dataKey="Expenses" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
