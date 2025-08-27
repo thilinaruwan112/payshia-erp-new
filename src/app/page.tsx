@@ -99,7 +99,7 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-         <section className="w-full py-20 md:py-32 lg:py-40 landing-page-aurora">
+         <section className="w-full landing-page-aurora flex items-center min-h-[calc(100vh-80px)]">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-16">
               <div className="space-y-4">
