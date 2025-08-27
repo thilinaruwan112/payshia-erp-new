@@ -144,11 +144,13 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
-            <ArrowDown className="h-8 w-8 text-foreground/50" />
+            <Link href="#ecosystem">
+                <ArrowDown className="h-8 w-8 text-foreground/50" />
+            </Link>
           </div>
         </section>
 
-        <SectionSeparator />
+        
 
         <section id="ecosystem" className="w-full py-12 md:py-24 lg:py-32 bg-[#1C1C1C]">
           <div className="container mx-auto px-4 md:px-6">
