@@ -9,7 +9,6 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -20,51 +19,65 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
-const masterReports = [
-  { name: 'Customer Master Report', href: '/reports/customer-report', filters: ['customer'] },
-  { name: 'Supplier Master Report', href: '/reports/supplier-report', filters: ['supplier'] },
-  { name: 'Item Master Report', href: '/reports/stock-balance', filters: ['item', 'category', 'brand'] },
+const reportCategories = [
+    { 
+        name: 'Master', 
+        reports: [
+            { name: 'Customer Master Report', href: '/reports/customer-report', filters: ['customer'] },
+            { name: 'Supplier Master Report', href: '/reports/supplier-report', filters: ['supplier'] },
+            { name: 'Item Master Report', href: '/reports/stock-balance', filters: ['item', 'category', 'brand'] },
+        ]
+    },
+    { 
+        name: 'Transaction', 
+        reports: [
+            { name: 'Transaction Summary', href: '#', filters: ['dateRange', 'location', 'user'] },
+            { name: 'Transaction by User', href: '#', filters: ['dateRange', 'user'] },
+        ]
+    },
+    { 
+        name: 'Sale', 
+        reports: [
+            { name: 'Credit Sales Summary Report', href: '/reports/credit-sales-summary', filters: ['dateRange', 'customer', 'location'] },
+            { name: 'Customer Order Report', href: '/reports/customer-report', filters: ['dateRange', 'customer'] },
+            { name: 'Day End Sale Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
+            { name: 'Hourly Sales Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
+            { name: 'Invoice Report', href: '/reports/invoice-report', filters: ['dateRange', 'customer', 'status'] },
+            { name: 'Item Wise Sales', href: '#', filters: ['dateRange', 'item', 'category', 'brand', 'location'] },
+            { name: 'Receipt Report', href: '/sales/receipts', filters: ['dateRange', 'customer'] },
+            { name: 'Sales Summary Report', href: '/reports/sales-summary', filters: ['dateRange', 'location', 'user'] },
+        ]
+    },
+    {
+        name: 'Purchasing',
+        reports: [
+            { name: 'Purchase Order Report', href: '/purchasing/purchase-orders', filters: ['dateRange', 'supplier', 'status'] },
+            { name: 'GRN Report', href: '/purchasing/grn', filters: ['dateRange', 'supplier'] },
+        ]
+    },
+    { 
+        name: 'Stock', 
+        reports: [
+            { name: 'Stock Balance Report', href: '/reports/stock-balance', filters: ['location', 'category', 'brand', 'item'] },
+            { name: 'Stock Transfer Report', href: '/transfers', filters: ['dateRange', 'fromLocation', 'toLocation'] },
+            { name: 'Bin Card Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
+            { name: 'Stock Movement Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
+        ]
+    },
+    { 
+        name: 'Management',
+        reports: [
+            { name: 'Profit & Loss Statement', href: '#', filters: ['dateRange'] },
+            { name: 'Balance Sheet', href: '#', filters: ['date'] },
+            { name: 'Trial Balance', href: '#', filters: ['date'] },
+        ]
+    },
 ];
 
-const transactionReports = [
-  { name: 'Transaction Summary', href: '#', filters: ['dateRange', 'location', 'user'] },
-  { name: 'Transaction by User', href: '#', filters: ['dateRange', 'user'] },
-];
-
-const salesReports = [
-    { name: 'Credit Sales Summary Report', href: '/reports/credit-sales-summary', filters: ['dateRange', 'customer', 'location'] },
-    { name: 'Customer Order Report', href: '/reports/customer-report', filters: ['dateRange', 'customer'] },
-    { name: 'Day End Sale Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
-    { name: 'Hourly Sales Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
-    { name: 'Invoice Report', href: '/reports/invoice-report', filters: ['dateRange', 'customer', 'status'] },
-    { name: 'Item Wise Sales', href: '#', filters: ['dateRange', 'item', 'category', 'brand', 'location'] },
-    { name: 'Receipt Report', href: '/sales/receipts', filters: ['dateRange', 'customer'] },
-    { name: 'Sales Summary Report', href: '/reports/sales-summary', filters: ['dateRange', 'location', 'user'] },
-];
-
-const purchasingReports = [
-    { name: 'Purchase Order Report', href: '/purchasing/purchase-orders', filters: ['dateRange', 'supplier', 'status'] },
-    { name: 'GRN Report', href: '/purchasing/grn', filters: ['dateRange', 'supplier'] },
-];
-
-const stockReports = [
-    { name: 'Stock Balance Report', href: '/reports/stock-balance', filters: ['location', 'category', 'brand', 'item'] },
-    { name: 'Stock Transfer Report', href: '/transfers', filters: ['dateRange', 'fromLocation', 'toLocation'] },
-    { name: 'Bin Card Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
-    { name: 'Stock Movement Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
-];
-
-const managementReports = [
-    { name: 'Profit & Loss Statement', href: '#', filters: ['dateRange'] },
-    { name: 'Balance Sheet', href: '#', filters: ['date'] },
-    { name: 'Trial Balance', href: '#', filters: ['date'] },
-];
-
-const allReports = [...masterReports, ...transactionReports, ...salesReports, ...purchasingReports, ...stockReports, ...managementReports];
+const allReports = reportCategories.flatMap(cat => cat.reports);
 
 
 const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () => void }) => {
@@ -184,23 +197,19 @@ const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () 
     )
 }
 
-const ReportList = ({ title, reports, selectedReport, onSelectReport }: { 
-    title: string; 
+const ReportList = ({ reports, selectedReport, onSelectReport }: { 
     reports: {name: string, href: string, filters: string[]}[];
     selectedReport: string | null;
     onSelectReport: (name: string) => void;
 }) => (
-    <Card>
-        <CardHeader>
-            <CardTitle className="text-xl">{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
+     <Card>
+        <CardContent className="p-2">
             <div className="flex flex-col">
                 {reports.map((report) => (
                     <button key={report.name} onClick={() => onSelectReport(report.name)}
                         className={cn(
-                            "text-left py-3 px-2 rounded-md",
-                            selectedReport === report.name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/50'
+                            "text-left py-3 px-3 rounded-md text-sm",
+                            selectedReport === report.name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
                         )}
                     >
                         {report.name}
@@ -224,33 +233,39 @@ export default function ReportsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="sale" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6">
-          <TabsTrigger value="master">Master</TabsTrigger>
-          <TabsTrigger value="transaction">Transaction</TabsTrigger>
-          <TabsTrigger value="sale">Sale</TabsTrigger>
-          <TabsTrigger value="purchasing">Purchasing</TabsTrigger>
-          <TabsTrigger value="stock">Stock</TabsTrigger>
-          <TabsTrigger value="management">Management</TabsTrigger>
-        </TabsList>
-         <div className="mt-6 md:grid md:grid-cols-3 md:gap-8">
-            <div className={cn("md:col-span-1", selectedReport && "hidden md:block")}>
-                 <TabsContent value="master" className="mt-0"><ReportList title="Master Reports" reports={masterReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
-                 <TabsContent value="transaction" className="mt-0"><ReportList title="Transaction Reports" reports={transactionReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
-                 <TabsContent value="sale" className="mt-0"><ReportList title="Sales Reports" reports={salesReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
-                 <TabsContent value="purchasing" className="mt-0"><ReportList title="Purchasing Reports" reports={purchasingReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
-                 <TabsContent value="stock" className="mt-0"><ReportList title="Stock Reports" reports={stockReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
-                 <TabsContent value="management" className="mt-0"><ReportList title="Management Reports" reports={managementReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
-            </div>
-            <div className={cn("md:col-span-2", !selectedReport && "hidden md:block")}>
-                {selectedReport ? <ReportFilters reportName={selectedReport} onBack={() => setSelectedReport(null)} /> : (
-                    <div className="flex items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[300px]">
-                        <p className="text-muted-foreground">Select a report to see filters</p>
-                    </div>
-                )}
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className={cn("md:col-span-1", selectedReport && "hidden md:block")}>
+           <Accordion type="single" collapsible className="w-full space-y-4" defaultValue="item-2">
+            {reportCategories.map((category, index) => (
+              <Card key={category.name}>
+                 <AccordionItem value={`item-${index}`} className="border-b-0">
+                    <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline">
+                        {category.name}
+                    </AccordionTrigger>
+                    <AccordionContent className="p-0">
+                        <ReportList 
+                            reports={category.reports}
+                            selectedReport={selectedReport}
+                            onSelectReport={setSelectedReport}
+                        />
+                    </AccordionContent>
+                </AccordionItem>
+              </Card>
+            ))}
+           </Accordion>
         </div>
-      </Tabs>
+
+        <div className={cn("md:col-span-2", !selectedReport && "hidden md:flex")}>
+          {selectedReport ? (
+            <ReportFilters reportName={selectedReport} onBack={() => setSelectedReport(null)} />
+          ) : (
+             <div className="flex items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[400px]">
+                <p className="text-muted-foreground">Select a report to see filters</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
+
