@@ -568,8 +568,11 @@ export default function POSPage() {
   ) : (
       <div className="flex flex-col h-full bg-card items-center justify-center text-center p-8">
         <NotebookPen className="h-16 w-16 text-muted-foreground" />
-        <h3 className="mt-4 text-xl font-semibold">No Active Order</h3>
+        <h3 className="mt-4 text-xl font-semibold">Start a New Order</h3>
         <p className="text-muted-foreground mt-2">Select a held order or create a new one to begin.</p>
+        <Button onClick={() => setNewOrderDialogOpen(true)} className="mt-4">
+            <Plus className="mr-2 h-4 w-4" /> New Order
+        </Button>
       </div>
   );
   
