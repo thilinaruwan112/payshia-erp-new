@@ -121,7 +121,7 @@ export function NewOrderDialog({ isOpen, onOpenChange, activeOrders = [], create
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-full h-full">
         <DialogHeader>
           <DialogTitle className="text-2xl">Create New Order</DialogTitle>
           <DialogDescription>Select an order type or choose a table for dine-in.</DialogDescription>
