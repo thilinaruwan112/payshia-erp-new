@@ -4,6 +4,7 @@ import { Truck } from "lucide-react";
 import Link from "next/link";
 import { Button } from '@/components/ui/button';
 import Image from "next/image";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LegalLayout({
   children,
@@ -16,6 +17,7 @@ export default function LegalLayout({
         <div className="container mx-auto flex h-16 items-center px-4 lg:px-6">
           <Link href="/" className="flex items-center justify-center gap-2">
             <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={32} height={32} />
+             <span className="font-bold">Payshia ERP</span>
           </Link>
           <nav className="ml-auto hidden md:flex items-center gap-4 sm:gap-6">
             <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4">About</Link>
@@ -24,6 +26,7 @@ export default function LegalLayout({
             <Link href="/whats-new" className="text-sm font-medium hover:underline underline-offset-4">What's New</Link>
           </nav>
           <div className="ml-auto md:ml-4 flex items-center gap-2">
+            <ThemeToggle />
             <Button variant="ghost" asChild>
               <Link href="/login">
                 Login

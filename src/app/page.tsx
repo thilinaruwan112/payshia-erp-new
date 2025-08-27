@@ -70,92 +70,70 @@ const testimonials = [
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
-       <header className="sticky top-0 z-50 w-full">
-            <div className="bg-[#1C463B] text-white">
-                <div className="container mx-auto flex h-12 items-center justify-between px-4 lg:px-6">
-                    <div className="flex items-center gap-6 text-sm">
-                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">Alumni</Link>
-                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">Quality Assurance</Link>
-                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">International</Link>
-                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">Resources</Link>
-                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">CSR Projects</Link>
-                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">Library</Link>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white">
-                           <LogIn className="mr-2 h-4 w-4" />
-                            Login
-                        </Button>
-                        <Button size="sm" className="bg-[#FFC107] text-black hover:bg-[#FFC107]/90">
-                           <Phone className="mr-2 h-4 w-4" />
-                            Contact Us
-                        </Button>
-                    </div>
-                </div>
-            </div>
-            <nav className="bg-background/80 backdrop-blur-sm border-b">
-                <div className="container mx-auto flex h-20 items-center justify-between px-4 lg:px-6">
-                    <Link href="/" className="flex items-center gap-2">
-                        <Image
-                        src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png"
-                        alt="Pharma College Logo"
-                        width={50}
-                        height={50}
-                        data-ai-hint="logo"
-                        />
-                        <span className="font-bold text-lg">CEYLON PHARMA COLLEGE</span>
-                    </Link>
-                     <div className="hidden lg:flex items-center gap-6 text-sm font-medium">
-                        <Link href="#" className="text-primary hover:text-primary/80 transition-colors">Home</Link>
-                        <Link href="#" className="hover:text-foreground/80 transition-colors">Certificate</Link>
-                        <Link href="#" className="hover:text-foreground/80 transition-colors">Courses</Link>
-                        <Link href="#" className="hover:text-foreground/80 transition-colors">Reviews</Link>
-                        <Link href="#" className="hover:text-foreground/80 transition-colors">Departments</Link>
-                        <Link href="#" className="hover:text-foreground/80 transition-colors">Students</Link>
-                        <Link href="#" className="hover:text-foreground/80 transition-colors">About</Link>
-                        <Link href="#" className="hover:text-foreground/80 transition-colors">Contact</Link>
-                    </div>
-                     <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon">
-                            <Search className="h-5 w-5" />
-                            <span className="sr-only">Search</span>
-                        </Button>
-                        <ThemeToggle />
-                    </div>
-                </div>
-            </nav>
+      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
+        <div className="container mx-auto flex h-16 items-center px-4 lg:px-6">
+          <Link href="/" className="flex items-center justify-center gap-2">
+            <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={32} height={32} />
+            <span className="font-bold">Payshia ERP</span>
+          </Link>
+          <nav className="ml-auto hidden md:flex items-center gap-4 sm:gap-6">
+            <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4">About</Link>
+            <Link href="/pricing" className="text-sm font-medium hover:underline underline-offset-4">Pricing</Link>
+            <Link href="/contact" className="text-sm font-medium hover:underline underline-offset-4">Contact</Link>
+            <Link href="/whats-new" className="text-sm font-medium hover:underline underline-offset-4">What's New</Link>
+          </nav>
+          <div className="ml-auto md:ml-4 flex items-center gap-2">
+             <ThemeToggle />
+            <Button variant="ghost" asChild>
+              <Link href="/login">
+                Login
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/register">
+                Sign Up
+              </Link>
+            </Button>
+          </div>
+        </div>
       </header>
+
       <main className="flex-1">
-        <section className="relative w-full h-[calc(100vh-128px)] flex items-center justify-center text-white">
-            <Image
-                src="https://picsum.photos/1920/1080"
-                alt="Graduates"
-                layout="fill"
-                objectFit="cover"
-                className="brightness-75"
-                data-ai-hint="graduates smiling"
-            />
-            <div className="relative z-10 flex flex-col items-center text-center p-4">
-                <Image
-                    src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png"
-                    alt="Pharma College Logo"
-                    width={100}
-                    height={100}
-                    className="mb-4"
-                    data-ai-hint="logo"
-                />
-                <h1 className="text-4xl md:text-6xl font-bold !leading-tight tracking-tighter">
-                    Learn, Play &<br />
-                    Level up your Skill
-                </h1>
-                <div className="flex gap-4 mt-8">
-                    <Button size="lg" className="bg-[#1C463B] hover:bg-[#1C463B]/90">Apply Now</Button>
-                    <Button size="lg" variant="secondary">Student Login</Button>
+         <section className="w-full py-20 md:py-32 lg:py-40 landing-page-aurora">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="grid gap-6 lg:grid-cols-2 lg:gap-16">
+              <div className="space-y-4">
+                <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary font-semibold">
+                  Payshia ERP
                 </div>
+                <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-foreground">
+                  Scalable & Modular Web-Based ERP
+                </h1>
+                <p className="max-w-[600px] text-muted-foreground md:text-xl">
+                  An all-in-one solution for managing your sales channels, locations,
+                  inventory, and orders with powerful AI features.
+                </p>
+                <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                  <Button asChild size="lg">
+                    <Link href="/register">Get Started</Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg">
+                    <Link href="/dashboard">Live Demo</Link>
+                  </Button>
+                </div>
+              </div>
+              <div className="hidden lg:block">
+                <Image
+                  src="https://picsum.photos/600/400"
+                  width={600}
+                  height={400}
+                  alt="Dashboard Preview"
+                  className="mx-auto aspect-video overflow-hidden rounded-xl object-cover"
+                  data-ai-hint="dashboard analytics"
+                />
+              </div>
             </div>
-            <div className="absolute bottom-10 animate-bounce">
-                <ArrowDown className="h-8 w-8" />
-            </div>
+          </div>
         </section>
 
         <SectionSeparator />
