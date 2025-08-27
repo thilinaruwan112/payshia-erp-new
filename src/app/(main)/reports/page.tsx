@@ -3,7 +3,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, Suspense, useCallback } from 'react';
-import type { User, Supplier, Product, ProductVariant, PurchaseOrder, Invoice } from '@/lib/types';
+import type { User, Supplier, Product, ProductVariant, PurchaseOrder, Invoice, GoodsReceivedNote } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { ReportFilters } from '@/components/reports/report-filters';
 import { ReportList } from '@/components/reports/report-list';
@@ -12,6 +12,7 @@ import { SupplierReportView } from '@/components/reports/supplier-report-view';
 import { ItemMasterReportView } from '@/components/reports/item-master-report-view';
 import { PurchaseOrderReportView } from '@/components/reports/purchase-order-report-view';
 import { SalesSummaryReportView } from '@/components/reports/sales-summary-report-view';
+import { GrnReportView } from '@/components/reports/grn-report-view';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import jsPDF from 'jspdf';
@@ -23,7 +24,7 @@ interface ProductWithVariants {
     product: Product;
     variants: ProductVariant[];
 }
-type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[] | Invoice[];
+type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[] | Invoice[] | GoodsReceivedNote[];
 
 function ReportsPage() {
     const searchParams = useSearchParams();
@@ -70,6 +71,8 @@ function ReportsPage() {
         } else if (selectedReport === 'Sales Summary Report') {
             const reportDataString = encodeURIComponent(JSON.stringify(reportData));
             url = `/reports-print/sales-summary/print?company_id=${company_id}&data=${reportDataString}`;
+        } else if (selectedReport === 'GRN Report') {
+             url = `/reports-print/grn-report/print?company_id=${company_id}`;
         }
         
         if (url) {
@@ -234,6 +237,9 @@ function ReportsPage() {
                          )}
                           {reportData.length > 0 && selectedReport === 'Sales Summary Report' && (
                             <SalesSummaryReportView invoices={reportData as Invoice[]} customers={customers} />
+                         )}
+                         {reportData.length > 0 && selectedReport === 'GRN Report' && (
+                            <GrnReportView grns={reportData as GoodsReceivedNote[]} />
                          )}
                     </div>
                 ) : (

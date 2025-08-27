@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useEffect, useState, Suspense } from 'react';
-import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand, PurchaseOrder, Invoice } from '@/lib/types';
+import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand, PurchaseOrder, Invoice, GoodsReceivedNote } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -31,7 +31,7 @@ interface ProductWithVariants {
     product: Product;
     variants: ProductVariant[];
 }
-type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[] | Invoice[];
+type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[] | Invoice[] | GoodsReceivedNote[];
 
 interface Category { id: string; name: string };
 interface CustomField { id: string; field_name: string; }
@@ -160,7 +160,10 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             } else if (reportName === 'Sales Summary Report') {
                 url = `https://server-erp.payshia.com/invoices/filter/hold/by-company-status`;
                 params.append('invoice_status', '1');
-            } else {
+            } else if (reportName === 'GRN Report') {
+                 url = `https://server-erp.payshia.com/grn/company/${company_id}`;
+            }
+             else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
                  setIsFetching(false);
                  return;
