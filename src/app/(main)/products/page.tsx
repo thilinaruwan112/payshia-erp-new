@@ -19,8 +19,8 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Star, Trash2 } from 'lucide-react';
-import type { Product, InventoryItem } from '@/lib/types';
+import { MoreHorizontal, PlusCircle, Star, Trash2, UploadCloud } from 'lucide-react';
+import type { Product, InventoryItem, ProductVariant } from '@/lib/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +39,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCurrency } from '@/components/currency-provider';
 import { useLocation } from '@/components/location-provider';
+import { ImageUploadDialog } from '@/components/image-upload-dialog';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -46,6 +47,8 @@ export default function ProductsPage() {
   const [planDetails, setPlanDetails] = useState({ hasAccess: true, limit: Infinity, usage: 0, name: '...' });
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isUploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [selectedProductForUpload, setSelectedProductForUpload] = useState<Product | null>(null);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
   const { company_id } = useLocation();
@@ -115,171 +118,191 @@ export default function ProductsPage() {
     }
   };
 
+  const handleUploadComplete = () => {
+    setUploadDialogOpen(false);
+    setSelectedProductForUpload(null);
+    fetchProducts(); // Refresh data after upload
+  };
+
 
   return (
     <>
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Products</h1>
-          <p className="text-muted-foreground">
-            Manage your products and view their inventory. You are on the{' '}
-            <span className="font-semibold text-primary">{planDetails.name}</span> plan.
-          </p>
+      <ImageUploadDialog
+        isOpen={isUploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        productId={selectedProductForUpload?.id || null}
+        productVariants={selectedProductForUpload?.variants || []}
+        companyId={company_id}
+        onUploadComplete={handleUploadComplete}
+       />
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+            <p className="text-muted-foreground">
+              Manage your products and view their inventory. You are on the{' '}
+              <span className="font-semibold text-primary">{planDetails.name}</span> plan.
+            </p>
+          </div>
+          <Button asChild className="w-full sm:w-auto" disabled={!planDetails.hasAccess}>
+            <Link href="/products/new">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Product
+            </Link>
+          </Button>
         </div>
-        <Button asChild className="w-full sm:w-auto" disabled={!planDetails.hasAccess}>
-          <Link href="/products/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Product
-          </Link>
-        </Button>
-      </div>
 
-      {!planDetails.hasAccess && (
-        <Alert>
-          <Star className="h-4 w-4" />
-          <AlertTitle>Upgrade to add more products</AlertTitle>
-          <AlertDescription>
-            You have reached the limit of {planDetails.limit} products on the {planDetails.name} plan.
-            <Button asChild variant="link" className="p-0 pl-1 h-auto">
-              <Link href="/billing">Upgrade your plan</Link>
-            </Button>
-            to add more.
-          </AlertDescription>
-        </Alert>
-      )}
+        {!planDetails.hasAccess && (
+          <Alert>
+            <Star className="h-4 w-4" />
+            <AlertTitle>Upgrade to add more products</AlertTitle>
+            <AlertDescription>
+              You have reached the limit of {planDetails.limit} products on the {planDetails.name} plan.
+              <Button asChild variant="link" className="p-0 pl-1 h-auto">
+                <Link href="/billing">Upgrade your plan</Link>
+              </Button>
+              to add more.
+            </AlertDescription>
+          </Alert>
+        )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>All Products</CardTitle>
-          <CardDescription>
-            Showing {products.length} of {planDetails.limit === Infinity ? 'unlimited' : planDetails.limit} products.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px] hidden sm:table-cell">Image</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead className="hidden md:table-cell">Status</TableHead>
-                <TableHead className="hidden md:table-cell">Inventory</TableHead>
-                <TableHead className="hidden lg:table-cell">Price</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="hidden sm:table-cell">
-                      <Skeleton className="h-16 w-16 rounded-md" />
-                    </TableCell>
-                    <TableCell>
-                      <Skeleton className="h-4 w-48" />
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Skeleton className="h-6 w-20 rounded-full" />
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                       <Skeleton className="h-4 w-24" />
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Skeleton className="h-4 w-16" />
-                    </TableCell>
-                    <TableCell className="text-right">
-                       <Skeleton className="h-8 w-8 rounded-md" />
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                products.map((product) => {
-                  const totalStock = (product.variants || []).reduce((sum, variant) => {
-                      // Assuming stock property exists on variant, otherwise you need another source
-                      return sum + (Number(variant.stock) || 0);
-                  }, 0);
-                  
-                  return (
-                    <TableRow key={product.id}>
+        <Card>
+          <CardHeader>
+            <CardTitle>All Products</CardTitle>
+            <CardDescription>
+              Showing {products.length} of {planDetails.limit === Infinity ? 'unlimited' : planDetails.limit} products.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[80px] hidden sm:table-cell">Image</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead className="hidden md:table-cell">Status</TableHead>
+                  <TableHead className="hidden md:table-cell">Inventory</TableHead>
+                  <TableHead className="hidden lg:table-cell">Price</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
                       <TableCell className="hidden sm:table-cell">
-                        <Image
-                          alt={product.name}
-                          className="aspect-square rounded-md object-cover"
-                          height="64"
-                          src={product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${product.product_image_url}` : "https://placehold.co/64x64.png"}
-                          width="64"
-                          data-ai-hint="product photo"
-                        />
+                        <Skeleton className="h-16 w-16 rounded-md" />
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{product.name}</div>
-                        <div className="text-sm text-muted-foreground lg:hidden">{product.category}</div>
+                        <Skeleton className="h-4 w-48" />
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                         <Badge variant={'secondary'} className={cn(
-                            product.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                         )}>
-                          {product.status}
-                        </Badge>
+                        <Skeleton className="h-6 w-20 rounded-full" />
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">{totalStock} in stock</TableCell>
-                      <TableCell className="hidden lg:table-cell">{currencySymbol}{(product.price as number).toFixed(2)}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                             <DropdownMenuItem asChild>
-                              <Link href={`/products/${product.id}`}>Edit</Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onSelect={() => {
-                                  setSelectedProduct(product);
-                                  setIsConfirmOpen(true);
-                              }}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                      <TableCell className="hidden md:table-cell">
+                         <Skeleton className="h-4 w-24" />
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell className="text-right">
+                         <Skeleton className="h-8 w-8 rounded-md" />
                       </TableCell>
                     </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-    <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the product {' '}
-              <span className="font-bold text-foreground">{selectedProduct?.name}</span>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setSelectedProduct(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+                  ))
+                ) : (
+                  products.map((product) => {
+                    const totalStock = (product.variants || []).reduce((sum, variant) => {
+                        // Assuming stock property exists on variant, otherwise you need another source
+                        return sum + (Number(variant.stock) || 0);
+                    }, 0);
+                    
+                    return (
+                      <TableRow key={product.id}>
+                        <TableCell className="hidden sm:table-cell">
+                          <Image
+                            alt={product.name}
+                            className="aspect-square rounded-md object-cover"
+                            height="64"
+                            src={product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${product.product_image_url}` : "https://placehold.co/64x64.png"}
+                            width="64"
+                            data-ai-hint="product photo"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{product.name}</div>
+                          <div className="text-sm text-muted-foreground lg:hidden">{product.category}</div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                           <Badge variant={'secondary'} className={cn(
+                              product.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                           )}>
+                            {product.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">{totalStock} in stock</TableCell>
+                        <TableCell className="hidden lg:table-cell">{currencySymbol}{(product.price as number).toFixed(2)}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                               <DropdownMenuItem asChild>
+                                <Link href={`/products/${product.id}`}>Edit</Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => {
+                                  setSelectedProductForUpload(product);
+                                  setUploadDialogOpen(true);
+                              }}>
+                                <UploadCloud className="mr-2 h-4 w-4" />
+                                <span>Upload Image</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onSelect={() => {
+                                    setSelectedProduct(product);
+                                    setIsConfirmOpen(true);
+                                }}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the product {' '}
+                <span className="font-bold text-foreground">{selectedProduct?.name}</span>.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setSelectedProduct(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                  Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
     </>
   );
 }
-
