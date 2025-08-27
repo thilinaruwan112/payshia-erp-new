@@ -167,6 +167,8 @@ export function ProductForm({ product }: ProductFormProps) {
     costPrice: product?.cost_price ? parseFloat(String(product.cost_price)) : 0,
     minPrice: product?.min_price ? parseFloat(String(product.min_price)) : 0,
     wholesalePrice: product?.wholesale_price ? parseFloat(String(product.wholesale_price)) : 0,
+    price2: product?.price2 || 0,
+    foreignPrice: product?.foreignPrice || 0,
     recipeType: product?.recipe_type || "standard",
     variants: product?.variants?.map(v => ({
         id: v.id,
@@ -865,3 +867,4 @@ export function ProductForm({ product }: ProductFormProps) {
     </>
   );
 }
+
