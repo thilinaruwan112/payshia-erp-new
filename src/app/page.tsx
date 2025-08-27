@@ -1,4 +1,5 @@
 
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, ShoppingCart, Terminal, ChevronDown, LogIn, Phone, Search, ArrowDown } from 'lucide-react';
@@ -34,6 +35,11 @@ const features = [
     name: 'HRM',
     description: 'Manage your employees, payroll, and attendance all in one place.',
   },
+  {
+    icon: <ShoppingCart className="h-8 w-8 text-primary" />,
+    name: 'Purchasing',
+    description: 'Create purchase orders, manage suppliers, and track goods received.',
+  }
 ];
 
 const ecosystemFeatures = [
@@ -123,7 +129,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="hidden lg:grid grid-cols-2 gap-4">
-                 {features.slice(0, 4).map((feature, index) => (
+                 {features.slice(0, 6).map((feature, index) => (
                     <Card key={index} className="bg-background/40 backdrop-blur-sm border-white/20">
                       <CardHeader className="flex-row items-center gap-4 pb-2">
                         {feature.icon}
