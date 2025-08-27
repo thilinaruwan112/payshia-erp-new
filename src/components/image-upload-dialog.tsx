@@ -70,18 +70,17 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
 
     const formData = new FormData();
     formData.append('product_id', productId);
-    // If there are variants, a variant must be selected. If no variants, this ID may not be needed, but we pass the product ID as a fallback.
     formData.append('product_variant_id', selectedVariantId || productId); 
     formData.append('company_id', String(companyId));
     formData.append('image_type', 'gallery');
-    formData.append('created_by', 'admin'); // Replace with actual user later
+    formData.append('created_by', 'admin');
 
     files.forEach(file => {
       formData.append('images[]', file);
     });
 
     try {
-      const response = await fetch('https://server-erp.payshia.com/product-images', {
+      const response = await fetch('https://server-erp.payshia.com/product-images/upload-multiple', {
         method: 'POST',
         body: formData,
       });
@@ -93,7 +92,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
 
       toast({
         title: 'Upload Successful',
-        description: `${files.length} image(s) have been uploaded for product ID ${productId}.`,
+        description: `${files.length} image(s) have been uploaded.`,
       });
       onUploadComplete();
     } catch (error) {
