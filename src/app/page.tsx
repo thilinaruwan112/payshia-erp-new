@@ -429,7 +429,7 @@ export default function LandingPage() {
               </div>
               <div className="mx-auto w-full max-w-sm space-y-2">
                    <Button size="lg" asChild>
-                     <Link href="/register">
+                     <Link href="/agent-register">
                       Become an Agent
                     </Link>
                    </Button>
