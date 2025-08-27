@@ -95,7 +95,7 @@ const CustomerReportView = ({ customers }: { customers: User[] }) => {
     const paginatedCustomers = filteredCustomers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
-        <Card className="w-full mt-8">
+        <Card className="w-full">
             <CardHeader>
                 <CardTitle>Customer Master Report</CardTitle>
                 <CardDescription>A list of all customers in the system.</CardDescription>
@@ -478,22 +478,24 @@ export default function ReportsPage() {
         </div>
 
         <div className={cn("md:col-span-3 w-full", !selectedReport && "hidden md:flex")}>
-          {selectedReport ? (
             <div className="w-full space-y-8">
-                <ReportFilters 
-                    reportName={selectedReport} 
-                    onBack={() => setSelectedReport(null)} 
-                    onShowReport={handleShowReport}
-                    onPrintReport={handlePrintReport}
-                    reportData={reportData}
-                />
-                 {reportData.length > 0 && <CustomerReportView customers={reportData} />}
+                {selectedReport ? (
+                    <ReportFilters 
+                        reportName={selectedReport} 
+                        onBack={() => setSelectedReport(null)} 
+                        onShowReport={handleShowReport}
+                        onPrintReport={handlePrintReport}
+                        reportData={reportData}
+                    />
+                ) : (
+                    <div className="flex w-full items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[400px]">
+                        <p className="text-muted-foreground">Select a report to see filters</p>
+                    </div>
+                )}
+                 {reportData.length > 0 && selectedReport === 'Customer Master Report' && (
+                    <CustomerReportView customers={reportData} />
+                 )}
             </div>
-          ) : (
-             <div className="flex w-full items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[400px]">
-                <p className="text-muted-foreground">Select a report to see filters</p>
-            </div>
-          )}
         </div>
       </div>
     </div>
