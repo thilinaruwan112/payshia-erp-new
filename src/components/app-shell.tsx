@@ -121,11 +121,11 @@ const navItems = [
     label: 'CRM',
     icon: Contact,
     subItems: [
-      { href: '/crm/dashboard', label: 'CRM Dashboard', icon: LayoutDashboard },
+      // { href: '/crm/dashboard', label: 'CRM Dashboard', icon: LayoutDashboard },
       { href: '/crm/customers', label: 'Customers', icon: Users },
-      { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
-      { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
-      { href: '/crm/loyalty-schema', label: 'Loyalty Schema', icon: Gem },
+      // { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
+      // { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
+      // { href: '/crm/loyalty-schema', label: 'Loyalty Schema', icon: Gem },
     ],
   },
   {
@@ -171,29 +171,29 @@ const navItems = [
       { href: '/purchasing/grn', label: 'Goods Received Notes (GRN)', icon: FileDigit },
     ],
   },
-  {
-    label: 'Accounting',
-    icon: Calculator,
-    subItems: [
-        { href: '/accounting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: FileText },
-        { href: '/accounting/journal-entries', label: 'Journal Entries', icon: BookUser },
-        { href: '/accounting/expenses', label: 'Expenses', icon: Receipt },
-        { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
-    ],
-  },
-  {
-    label: 'HRM',
-    icon: Briefcase,
-    subItems: [
-        { href: '/hrm/dashboard', label: 'HRM Dashboard', icon: LayoutDashboard },
-        { href: '/hrm/employees', label: 'Employees', icon: Users },
-        { href: '/hrm/attendance', label: 'Attendance', icon: CalendarCheck },
-        { href: '/hrm/payroll', label: 'Payroll', icon: DollarSign },
-        { href: '/hrm/leave', label: 'Leave Management', icon: CalendarDays },
-        { href: '/hrm/performance', label: 'Performance', icon: Star },
-    ],
-  },
+  // {
+  //   label: 'Accounting',
+  //   icon: Calculator,
+  //   subItems: [
+  //       { href: '/accounting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  //       { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: FileText },
+  //       { href: '/accounting/journal-entries', label: 'Journal Entries', icon: BookUser },
+  //       { href: '/accounting/expenses', label: 'Expenses', icon: Receipt },
+  //       { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
+  //   ],
+  // },
+  // {
+  //   label: 'HRM',
+  //   icon: Briefcase,
+  //   subItems: [
+  //       { href: '/hrm/dashboard', label: 'HRM Dashboard', icon: LayoutDashboard },
+  //       { href: '/hrm/employees', label: 'Employees', icon: Users },
+  //       { href: '/hrm/attendance', label: 'Attendance', icon: CalendarCheck },
+  //       { href: '/hrm/payroll', label: 'Payroll', icon: DollarSign },
+  //       { href: '/hrm/leave', label: 'Leave Management', icon: CalendarDays },
+  //       { href: '/hrm/performance', label: 'Performance', icon: Star },
+  //   ],
+  // },
   {
     label: 'Reports',
     icon: BarChart3,
