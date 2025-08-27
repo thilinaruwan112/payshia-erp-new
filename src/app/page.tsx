@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, ShoppingCart } from 'lucide-react';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, ShoppingCart, Terminal } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SectionSeparator } from '@/components/section-separator';
@@ -37,12 +37,12 @@ const features = [
 ];
 
 const ecosystemFeatures = [
-    { name: "Inventory", icon: Package, angle: 0 },
-    { name: "Sales", icon: DollarSign, angle: 60 },
-    { name: "CRM", icon: Users, angle: 120 },
-    { name: "Purchasing", icon: ShoppingCart, angle: 180 },
-    { name: "HRM", icon: Briefcase, angle: 240 },
-    { name: "Accounting", icon: LayoutDashboard, angle: 300 },
+    { name: "ERP", icon: LayoutDashboard, angle: -90 },
+    { name: "Inventory", icon: Package, angle: -150 },
+    { name: "Accounting", icon: DollarSign, angle: -210 },
+    { name: "HRM", icon: Briefcase, angle: -270 },
+    { name: "CRM", icon: Users, angle: -330 },
+    { name: "POS", icon: Terminal, angle: -30 },
 ];
 
 
@@ -73,7 +73,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center px-4 lg:px-6">
           <Link href="/" className="flex items-center justify-center gap-2">
-            <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={32} height={32} />
+            <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={40} height={40} />
           </Link>
           <nav className="ml-auto hidden md:flex items-center gap-4 sm:gap-6">
             <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4">About</Link>
@@ -120,37 +120,63 @@ export default function LandingPage() {
 
         <SectionSeparator />
 
-        <section id="ecosystem" className="w-full py-12 md:py-24 lg:py-32 bg-background/50">
-            <div className="container mx-auto px-4 md:px-6">
-                <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-                    <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Our Ecosystem</div>
-                    <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">A Complete ERP Ecosystem</h2>
-                    <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                        All modules are seamlessly integrated to provide a single source of truth for your entire business operation.
-                    </p>
-                </div>
-                <div className="relative flex items-center justify-center h-96 w-96 mx-auto">
-                    <div className="absolute flex items-center justify-center h-40 w-40 rounded-full bg-primary/10 border-2 border-dashed border-primary/20">
-                         <div className="flex flex-col items-center text-center">
-                            <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={64} height={64} />
-                            <h3 className="mt-2 text-xl font-bold text-primary">Payshia ERP</h3>
-                         </div>
-                    </div>
-                    {ecosystemFeatures.map((feature, index) => {
-                        const angle = feature.angle * (Math.PI / 180);
-                        const x = 125 * Math.cos(angle);
-                        const y = 125 * Math.sin(angle);
-                        return (
-                            <div key={index} className="absolute flex flex-col items-center text-center group" style={{ transform: `translate(${x}px, ${y}px)`}}>
-                                <div className="flex items-center justify-center h-20 w-20 rounded-full bg-background border shadow-md group-hover:bg-primary transition-colors duration-300">
-                                    <feature.icon className="h-8 w-8 text-muted-foreground group-hover:text-primary-foreground" />
-                                </div>
-                                <span className="mt-2 text-sm font-semibold">{feature.name}</span>
-                            </div>
-                        )
-                    })}
-                </div>
+        <section id="ecosystem" className="w-full py-12 md:py-24 lg:py-32 bg-[#1C1C1C]">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center text-center mb-12 md:mb-20">
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-white">
+                A Complete ERP Ecosystem
+              </h2>
+              <p className="max-w-[900px] mx-auto text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed mt-4">
+                All modules are seamlessly integrated to provide a single source
+                of truth for your entire business operation.
+              </p>
             </div>
+            <div className="relative flex items-center justify-center min-h-[30rem] w-full">
+              <div
+                className="absolute flex items-center justify-center h-80 w-80 rounded-full"
+                style={{
+                  background:
+                    'radial-gradient(circle, rgba(255,107,0,0.15) 0%, rgba(255,107,0,0) 70%)',
+                }}
+              >
+                <div className="text-center">
+                  <h3 className="text-4xl font-bold text-[#FF6B00]">
+                    Payshia ERP
+                  </h3>
+                  <p className="text-2xl text-[#FF6B00] opacity-80">
+                    Solutions
+                  </p>
+                </div>
+              </div>
+              {ecosystemFeatures.map((feature, index) => {
+                const angle = feature.angle * (Math.PI / 180);
+                const radius = 220; // Increased radius for more space
+                const x = radius * Math.cos(angle);
+                const y = radius * Math.sin(angle);
+                return (
+                  <div
+                    key={index}
+                    className="absolute flex flex-col items-center text-center group"
+                    style={{
+                      transform: `translate(${x}px, ${y}px)`,
+                      transition: 'transform 0.3s ease',
+                    }}
+                  >
+                    <div className="flex items-center justify-center h-20 w-20 rounded-full bg-black border-2 border-gray-800 shadow-lg group-hover:border-[#FF6B00] transition-colors duration-300">
+                      <feature.icon className="h-8 w-8 text-[#FF6B00]" />
+                    </div>
+                    <span className="mt-3 text-sm font-semibold text-white tracking-wider">
+                      {feature.name}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-center gap-4 mt-20">
+                <Button variant="outline" className="bg-transparent border-gray-600 text-white hover:bg-gray-800 hover:text-white">Explore Products</Button>
+                <Button className="bg-[#FF6B00] text-black hover:bg-[#FF8533]">Contact Sales</Button>
+            </div>
+          </div>
         </section>
 
         <SectionSeparator />
