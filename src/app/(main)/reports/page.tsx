@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -38,7 +37,7 @@ const reportCategories = [
         reports: [
             { name: 'Customer Master Report', href: '/reports/customer-report', filters: ['customer'] },
             { name: 'Supplier Master Report', href: '/reports/supplier-report', filters: ['supplier'] },
-            { name: 'Item Master Report', href: '/reports/stock-balance', filters: ['item', 'category', 'brand'] },
+            { name: 'Item Master Report', href: '/reports/stock-balance', filters: ['item', 'category', 'brand', 'collection', 'color', 'size', 'customField'] },
         ]
     },
     {
@@ -537,6 +536,30 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, onExpo
                             <Combobox options={brandOptions} value="" onChange={() => {}} placeholder="Select brand..." notFoundText="No brands found." />
                         </div>
                     )}
+                    {hasFilter('collection') && (
+                        <div className="space-y-1.5">
+                            <Label>Collection</Label>
+                            <Input placeholder="Not implemented" disabled />
+                        </div>
+                    )}
+                    {hasFilter('color') && (
+                        <div className="space-y-1.5">
+                            <Label>Color</Label>
+                           <Input placeholder="Not implemented" disabled />
+                        </div>
+                    )}
+                    {hasFilter('size') && (
+                        <div className="space-y-1.5">
+                            <Label>Size</Label>
+                            <Input placeholder="Not implemented" disabled />
+                        </div>
+                    )}
+                     {hasFilter('customField') && (
+                        <div className="space-y-1.5">
+                            <Label>Custom Field</Label>
+                           <Input placeholder="Not implemented" disabled />
+                        </div>
+                    )}
                       {hasFilter('status') && (
                         <div className="space-y-1.5">
                             <Label>Status</Label>
@@ -661,7 +684,7 @@ export default function ReportsPage() {
         document.body.removeChild(link);
     }
     
-    const handleExportPDF = () => {
+    const handleExportPdf = () => {
         if (reportData.length === 0) {
             toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
             return;
@@ -739,7 +762,7 @@ export default function ReportsPage() {
                             onShowReport={handleShowReport}
                             onPrintReport={handlePrintReport}
                             onExportCsv={handleExportCSV}
-                            onExportPdf={handleExportPDF}
+                            onExportPdf={handleExportPdf}
                             reportData={reportData}
                         />
                          {reportData.length > 0 && selectedReport === 'Customer Master Report' && (
