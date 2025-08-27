@@ -57,6 +57,13 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
     const [sizes, setSizes] = useState<Size[]>([]);
     const [customFields, setCustomFields] = useState<CustomField[]>([]);
     const [isFetching, setIsFetching] = useState(false);
+    
+    // State for filter values
+    const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+
+    const handleFilterChange = (filterName: string, value: string) => {
+        setFilterValues(prev => ({ ...prev, [filterName]: value }));
+    };
 
     useEffect(() => {
         async function fetchDropdownData() {
@@ -114,12 +121,15 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
         value: s.supplier_id,
         label: s.supplier_name,
     }));
-    const itemOptions = products.flatMap(p => 
-        p.variants.map(v => ({
-            value: v.id,
-            label: `${p.product.name} (${v.sku})`
-        }))
-    );
+    const itemOptions = [
+        { value: 'all', label: 'All Items' },
+        ...products.flatMap(p => 
+            p.variants.map(v => ({
+                value: v.id,
+                label: `${p.product.name} (${v.sku})`
+            }))
+        )
+    ];
     const categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
     const brandOptions = brands.map(b => ({ value: b.id, label: b.name }));
     const collectionOptions = collections.map(c => ({ value: c.id, label: c.title }));
@@ -220,8 +230,8 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                         <Label>Customer</Label>
                         <Combobox
                             options={customerOptions}
-                            value={''}
-                            onChange={() => {}}
+                            value={filterValues['customer'] || ''}
+                            onChange={(value) => handleFilterChange('customer', value)}
                             placeholder="Select a customer..."
                             notFoundText="No customers found."
                         />
@@ -232,8 +242,8 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                         <Label>Supplier</Label>
                          <Combobox
                             options={supplierOptions}
-                            value={''}
-                            onChange={() => {}}
+                            value={filterValues['supplier'] || ''}
+                            onChange={(value) => handleFilterChange('supplier', value)}
                             placeholder="Select a supplier..."
                             notFoundText="No suppliers found."
                         />
@@ -248,43 +258,43 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                       {hasFilter('item') && (
                         <div className="space-y-1.5">
                             <Label>Item</Label>
-                             <Combobox options={itemOptions} value="" onChange={() => {}} placeholder="Select item..." notFoundText="No items found." />
+                             <Combobox options={itemOptions} value={filterValues['item'] || ''} onChange={(value) => handleFilterChange('item', value)} placeholder="Select item..." notFoundText="No items found." />
                         </div>
                     )}
                     {hasFilter('category') && (
                          <div className="space-y-1.5">
                             <Label>Category</Label>
-                            <Combobox options={categoryOptions} value="" onChange={() => {}} placeholder="Select category..." notFoundText="No categories found." />
+                            <Combobox options={categoryOptions} value={filterValues['category'] || ''} onChange={(value) => handleFilterChange('category', value)} placeholder="Select category..." notFoundText="No categories found." />
                         </div>
                     )}
                     {hasFilter('brand') && (
                         <div className="space-y-1.5">
                             <Label>Brand</Label>
-                            <Combobox options={brandOptions} value="" onChange={() => {}} placeholder="Select brand..." notFoundText="No brands found." />
+                            <Combobox options={brandOptions} value={filterValues['brand'] || ''} onChange={(value) => handleFilterChange('brand', value)} placeholder="Select brand..." notFoundText="No brands found." />
                         </div>
                     )}
                     {hasFilter('collection') && (
                         <div className="space-y-1.5">
                             <Label>Collection</Label>
-                             <Combobox options={collectionOptions} value="" onChange={() => {}} placeholder="Select collection..." notFoundText="No collections found." />
+                             <Combobox options={collectionOptions} value={filterValues['collection'] || ''} onChange={(value) => handleFilterChange('collection', value)} placeholder="Select collection..." notFoundText="No collections found." />
                         </div>
                     )}
                     {hasFilter('color') && (
                         <div className="space-y-1.5">
                             <Label>Color</Label>
-                           <Combobox options={colorOptions} value="" onChange={() => {}} placeholder="Select color..." notFoundText="No colors found." />
+                           <Combobox options={colorOptions} value={filterValues['color'] || ''} onChange={(value) => handleFilterChange('color', value)} placeholder="Select color..." notFoundText="No colors found." />
                         </div>
                     )}
                     {hasFilter('size') && (
                         <div className="space-y-1.5">
                             <Label>Size</Label>
-                             <Combobox options={sizeOptions} value="" onChange={() => {}} placeholder="Select size..." notFoundText="No sizes found." />
+                             <Combobox options={sizeOptions} value={filterValues['size'] || ''} onChange={(value) => handleFilterChange('size', value)} placeholder="Select size..." notFoundText="No sizes found." />
                         </div>
                     )}
                      {hasFilter('customField') && (
                         <div className="space-y-1.5">
                             <Label>Custom Field</Label>
-                             <Combobox options={customFieldOptions} value="" onChange={() => {}} placeholder="Select custom field..." notFoundText="No custom fields found." />
+                             <Combobox options={customFieldOptions} value={filterValues['customField'] || ''} onChange={(value) => handleFilterChange('customField', value)} placeholder="Select custom field..." notFoundText="No custom fields found." />
                         </div>
                     )}
                       {hasFilter('status') && (
