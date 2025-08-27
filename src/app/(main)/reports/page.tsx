@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -11,7 +12,7 @@ import {
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, ArrowLeft, Printer, Eye } from 'lucide-react';
+import { CalendarIcon, ArrowLeft, Printer, Eye, Loader2 } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -405,3 +406,4 @@ export default function ReportsPage() {
     </div>
   );
 }
+
