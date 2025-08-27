@@ -37,42 +37,29 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
 
   const fetchExistingImages = useCallback(async () => {
     if (!productId || !companyId) return;
+    
+    const variantsToFetch = productVariants?.length > 0 ? productVariants : [];
+    if (variantsToFetch.length === 0) return;
 
     let allImages: ProductImage[] = [];
-    const variantsToFetch = productVariants?.length > 0 ? productVariants : [];
 
-    if (variantsToFetch.length === 0 && productId) {
-        // Handle case for simple product with no variants from the initial prop
-        try {
-            const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}`);
-             if (response.ok) {
+    try {
+        for (const variant of variantsToFetch) {
+            const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
+            if (response.ok) {
                 const data = await response.json();
                 if (Array.isArray(data)) {
                     allImages = [...allImages, ...data];
                 }
+            } else {
+                 const errorData = await response.json();
+                 if (errorData.error !== "No records found") {
+                    console.error(`Failed to fetch images for variant ${variant.id}:`, errorData.message || response.statusText);
+                 }
             }
-        } catch (error) {
-            console.error(`Failed to fetch images for simple product ${productId}:`, error);
         }
-    } else {
-        try {
-            for (const variant of variantsToFetch) {
-                const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        allImages = [...allImages, ...data];
-                    }
-                } else {
-                     const errorData = await response.json();
-                     if (errorData.error !== "No records found") {
-                        console.error(`Failed to fetch images for variant ${variant.id}:`, errorData.message || response.statusText);
-                     }
-                }
-            }
-        } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Could not load existing product images." });
-        }
+    } catch (error) {
+        toast({ variant: "destructive", title: "Error", description: "Could not load existing product images." });
     }
     
     const uniqueImages = Array.from(new Map(allImages.map(img => [img.id, img])).values());
