@@ -16,7 +16,6 @@ export default function LegalLayout({
         <div className="container mx-auto flex h-16 items-center px-4 lg:px-6">
           <Link href="/" className="flex items-center justify-center gap-2">
             <Image src="http://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={32} height={32} />
-            <span className="text-xl font-bold">Payshia ERP</span>
           </Link>
           <nav className="ml-auto hidden md:flex items-center gap-4 sm:gap-6">
             <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4">About</Link>

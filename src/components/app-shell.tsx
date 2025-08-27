@@ -458,7 +458,6 @@ function Brand({ companyName }: { companyName: string }) {
   return (
     <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg">
       <Image src="http://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={32} height={32} />
-      <span>{companyName}</span>
     </Link>
   );
 }
