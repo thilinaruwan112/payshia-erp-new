@@ -565,16 +565,7 @@ export default function POSPage() {
         availableTables={tables} availableStewards={stewards}
         customers={customers} onUpdateCustomer={updateCustomer}
      />
-  ) : (
-      <div className="flex flex-col h-full bg-card items-center justify-center text-center p-8">
-        <NotebookPen className="h-16 w-16 text-muted-foreground" />
-        <h3 className="mt-4 text-xl font-semibold">Start a New Order</h3>
-        <p className="text-muted-foreground mt-2">Select a held order or create a new one to begin.</p>
-        <Button onClick={() => setNewOrderDialogOpen(true)} className="mt-4">
-            <Plus className="mr-2 h-4 w-4" /> New Order
-        </Button>
-      </div>
-  );
+  ) : null;
   
   const categories = ['All', ...new Set(posProducts.map((p) => p.category))];
 
@@ -634,7 +625,7 @@ export default function POSPage() {
                     <Button onClick={() => setNewOrderDialogOpen(true)}><Plus className="mr-2 h-4 w-4" /> New Order</Button>
                     </div>
                 </div>
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex overflow-hidden relative">
                     <div className="flex-1 p-4">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[calc(100vh-250px)]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
@@ -642,6 +633,18 @@ export default function POSPage() {
                         <ProductGrid products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} />
                     )}
                     </div>
+                    {!currentOrder && (
+                        <div className="absolute inset-0 bg-black/40 z-10 flex flex-col items-center justify-center text-center p-8">
+                             <div className="bg-background p-8 rounded-lg shadow-2xl">
+                                <NotebookPen className="h-16 w-16 text-muted-foreground mx-auto" />
+                                <h3 className="mt-4 text-2xl font-semibold">No Active Order</h3>
+                                <p className="text-muted-foreground mt-2 max-w-sm">Select a held order from the list, or create a new order to begin adding items to the cart.</p>
+                                <Button onClick={() => setNewOrderDialogOpen(true)} className="mt-6">
+                                    <Plus className="mr-2 h-4 w-4" /> Create New Order
+                                </Button>
+                             </div>
+                        </div>
+                    )}
                     <aside className="hidden md:block w-48 border-l border-border overflow-y-auto">
                         <div className="h-full p-2">
                             <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
@@ -687,3 +690,4 @@ export default function POSPage() {
     </>
   );
 }
+
