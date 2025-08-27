@@ -1,5 +1,4 @@
 
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, ShoppingCart, Terminal, ChevronDown, LogIn, Phone, Search, ArrowDown } from 'lucide-react';
@@ -72,6 +71,29 @@ const testimonials = [
         review: "The CRM and sales modules are fantastic. We've been able to streamline our customer communication and boost our sales by 20% in just one quarter."
     }
 ]
+
+const premiumAgents = [
+    {
+        name: 'Kasun Perera',
+        location: 'Colombo, Sri Lanka',
+        avatar: 'https://i.pravatar.cc/150?u=agent1',
+    },
+    {
+        name: 'Nimali Silva',
+        location: 'Kandy, Sri Lanka',
+        avatar: 'https://i.pravatar.cc/150?u=agent2',
+    },
+    {
+        name: 'Suresh Kumar',
+        location: 'Jaffna, Sri Lanka',
+        avatar: 'https://i.pravatar.cc/150?u=agent3',
+    },
+    {
+        name: 'Fatima Rizwan',
+        location: 'Galle, Sri Lanka',
+        avatar: 'https://i.pravatar.cc/150?u=agent4',
+    }
+];
 
 export default function LandingPage() {
   return (
@@ -414,6 +436,36 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        <SectionSeparator />
+
+        <section id="premium-agents" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="flex flex-col items-center justify-center space-y-4 text-center">
+                    <div className="space-y-2">
+                        <div className="inline-block rounded-lg bg-background px-3 py-1 text-sm">Our Network</div>
+                        <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Meet Our Premium Agents</h2>
+                        <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                            Our trusted partners are here to help you get the most out of Payshia ERP.
+                        </p>
+                    </div>
+                </div>
+                <div className="mx-auto grid max-w-5xl items-stretch gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-4 mt-12">
+                    {premiumAgents.map((agent) => (
+                        <Card key={agent.name} className="flex flex-col text-center items-center p-6 hover:shadow-lg transition-shadow">
+                            <Avatar className="w-24 h-24 mb-4 border-2 border-primary">
+                                <AvatarImage src={agent.avatar} alt={agent.name} data-ai-hint="profile photo"/>
+                                <AvatarFallback>{agent.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                            </Avatar>
+                            <CardHeader className="p-0">
+                                <CardTitle className="text-lg">{agent.name}</CardTitle>
+                                <CardDescription>{agent.location}</CardDescription>
+                            </CardHeader>
+                        </Card>
+                    ))}
+                </div>
+            </div>
         </section>
 
         <section className="w-full py-12 md:py-24 lg:py-32 bg-primary text-primary-foreground">
