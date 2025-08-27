@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useState, Suspense } from 'react';
-import type { User, Supplier, Brand, Product, ProductVariant } from '@/lib/types';
+import React, { useEffect, useState, Suspense, useCallback } from 'react';
+import type { User, Supplier, Brand, Product, ProductVariant, Collection, Color, Size } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -85,6 +86,10 @@ type Category = { id: string; name: string };
 interface ProductWithVariants {
     product: Product;
     variants: ProductVariant[];
+}
+interface CustomField {
+    id: string;
+    field_name: string;
 }
 type ReportData = User[] | Supplier[] | ProductWithVariants[];
 
@@ -358,6 +363,10 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, onExpo
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [brands, setBrands] = useState<Brand[]>([]);
+    const [collections, setCollections] = useState<Collection[]>([]);
+    const [colors, setColors] = useState<Color[]>([]);
+    const [sizes, setSizes] = useState<Size[]>([]);
+    const [customFields, setCustomFields] = useState<CustomField[]>([]);
     const [isFetching, setIsFetching] = useState(false);
 
     useEffect(() => {
@@ -385,6 +394,18 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, onExpo
             if (filters.includes('brand')) {
                 fetchData(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`, setBrands, 'brands');
             }
+             if (filters.includes('collection')) {
+                fetchData(`https://server-erp.payshia.com/collections/company?company_id=${company_id}`, setCollections, 'collections');
+            }
+            if (filters.includes('color')) {
+                fetchData(`https://server-erp.payshia.com/product-colors/company?company_id=${company_id}`, setColors, 'colors');
+            }
+            if (filters.includes('size')) {
+                fetchData(`https://server-erp.payshia.com/sizes/filter/company?company_id=${company_id}`, setSizes, 'sizes');
+            }
+            if (filters.includes('customField')) {
+                fetchData(`https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=${company_id}`, setCustomFields, 'custom fields');
+            }
         }
         fetchDropdownData();
     }, [reportName, filters, company_id, toast]);
@@ -399,6 +420,10 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, onExpo
     }));
     const categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
     const brandOptions = brands.map(b => ({ value: b.id, label: b.name }));
+    const collectionOptions = collections.map(c => ({ value: c.id, label: c.title }));
+    const colorOptions = colors.map(c => ({ value: c.id, label: c.name }));
+    const sizeOptions = sizes.map(s => ({ value: s.id, label: s.value }));
+    const customFieldOptions = customFields.map(f => ({ value: f.id, label: f.field_name }));
 
     const hasFilter = (filterName: string) => filters.includes(filterName);
 
@@ -539,25 +564,25 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, onExpo
                     {hasFilter('collection') && (
                         <div className="space-y-1.5">
                             <Label>Collection</Label>
-                            <Input placeholder="Not implemented" disabled />
+                             <Combobox options={collectionOptions} value="" onChange={() => {}} placeholder="Select collection..." notFoundText="No collections found." />
                         </div>
                     )}
                     {hasFilter('color') && (
                         <div className="space-y-1.5">
                             <Label>Color</Label>
-                           <Input placeholder="Not implemented" disabled />
+                           <Combobox options={colorOptions} value="" onChange={() => {}} placeholder="Select color..." notFoundText="No colors found." />
                         </div>
                     )}
                     {hasFilter('size') && (
                         <div className="space-y-1.5">
                             <Label>Size</Label>
-                            <Input placeholder="Not implemented" disabled />
+                             <Combobox options={sizeOptions} value="" onChange={() => {}} placeholder="Select size..." notFoundText="No sizes found." />
                         </div>
                     )}
                      {hasFilter('customField') && (
                         <div className="space-y-1.5">
                             <Label>Custom Field</Label>
-                           <Input placeholder="Not implemented" disabled />
+                             <Combobox options={customFieldOptions} value="" onChange={() => {}} placeholder="Select custom field..." notFoundText="No custom fields found." />
                         </div>
                     )}
                       {hasFilter('status') && (
@@ -588,7 +613,7 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, onExpo
             </CardFooter>
         </Card>
     )
-}
+};
 
 const ReportList = ({ reports, selectedReport, onSelectReport }: { 
     reports: {name: string, href: string, filters: string[]}[];
@@ -611,21 +636,22 @@ const ReportList = ({ reports, selectedReport, onSelectReport }: {
 
 
 export default function ReportsPage() {
+    const searchParams = useSearchParams();
     const [selectedReport, setSelectedReport] = useState<string | null>(null);
     const [reportData, setReportData] = useState<ReportData>([]);
     const { company_id } = useLocation();
     const { toast } = useToast();
 
-    const handleShowReport = (data: ReportData) => {
+    const handleShowReport = useCallback((data: ReportData) => {
         setReportData(data);
-    };
+    }, []);
     
-    const handleSelectReport = (name: string) => {
+    const handleSelectReport = useCallback((name: string) => {
         setSelectedReport(name);
         setReportData([]);
-    }
+    }, []);
     
-    const handlePrintReport = () => {
+    const handlePrintReport = useCallback(() => {
         if (!company_id) return;
         let url = '';
         if (selectedReport === 'Customer Master Report') {
@@ -641,9 +667,9 @@ export default function ReportsPage() {
         } else {
              toast({ title: "Coming Soon", description: "This report is not yet available for printing." });
         }
-    };
+    }, [selectedReport, company_id, toast]);
 
-    const handleExportCSV = () => {
+    const handleExportCSV = useCallback(() => {
         if (reportData.length === 0) {
             toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
             return;
@@ -682,9 +708,9 @@ export default function ReportsPage() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    }
+    }, [reportData, selectedReport, toast]);
     
-    const handleExportPdf = () => {
+    const handleExportPdf = useCallback(() => {
         if (reportData.length === 0) {
             toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
             return;
@@ -715,11 +741,30 @@ export default function ReportsPage() {
                 supplier.email,
             ]);
             filename = 'supplier_report.pdf';
+        } else if (selectedReport === 'Item Master Report' && reportData.length > 0 && 'product' in reportData[0]) {
+            head = [['Product Name', 'SKU', 'Category', 'Brand', 'Stock']];
+            body = (reportData as ProductWithVariants[]).flatMap(p => 
+                p.variants.map(v => ([
+                    p.product.name,
+                    v.sku,
+                    p.product.category,
+                    'N/A',
+                    v.stock || 0
+                ]))
+            );
+            filename = 'item_master_report.pdf';
         }
 
         autoTable(doc, { head, body, startY: 25 });
         doc.save(filename);
-    }
+    }, [reportData, selectedReport, toast]);
+
+    useEffect(() => {
+      const reportParam = searchParams.get('report');
+      if (reportParam && allReports.find(r => r.name === reportParam)) {
+          handleSelectReport(reportParam);
+      }
+    }, [searchParams, handleSelectReport]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -732,7 +777,7 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
         <div className={cn("md:col-span-1", selectedReport && "hidden md:block")}>
-           <Accordion type="single" collapsible className="w-full space-y-4 md:space-y-0 md:border-0 md:p-0">
+           <Accordion type="multiple" className="w-full space-y-4 md:space-y-0 md:border-0 md:p-0">
             {reportCategories.map((category, index) => (
               <AccordionItem value={`item-${index}`} key={category.name} className="border-b-0 md:border-b">
                 <Card className="md:shadow-none md:border-0 md:rounded-none">
@@ -786,3 +831,14 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+
+function ReportsPageWrapper() {
+  return (
+    <Suspense fallback={<div>Loading reports...</div>}>
+      <ReportsPage />
+    </Suspense>
+  )
+}
+
+export default ReportsPageWrapper;
