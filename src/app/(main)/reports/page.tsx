@@ -202,22 +202,18 @@ const ReportList = ({ reports, selectedReport, onSelectReport }: {
     selectedReport: string | null;
     onSelectReport: (name: string) => void;
 }) => (
-     <Card>
-        <CardContent className="p-2">
-            <div className="flex flex-col">
-                {reports.map((report) => (
-                    <button key={report.name} onClick={() => onSelectReport(report.name)}
-                        className={cn(
-                            "text-left py-3 px-3 rounded-md text-sm",
-                            selectedReport === report.name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-                        )}
-                    >
-                        {report.name}
-                    </button>
-                ))}
-            </div>
-        </CardContent>
-    </Card>
+     <div className="flex flex-col">
+        {reports.map((report) => (
+            <button key={report.name} onClick={() => onSelectReport(report.name)}
+                className={cn(
+                    "text-left py-3 px-4 rounded-md text-sm transition-colors",
+                    selectedReport === report.name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                )}
+            >
+                {report.name}
+            </button>
+        ))}
+    </div>
 )
 
 
@@ -233,29 +229,29 @@ export default function ReportsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className={cn("md:col-span-1", selectedReport && "hidden md:block")}>
-           <Accordion type="single" collapsible className="w-full space-y-4" defaultValue="item-2">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8 items-start">
+        <div className={cn("md:col-span-1 lg:col-span-1", selectedReport && "hidden md:block")}>
+           <Accordion type="single" collapsible className="w-full space-y-4">
             {reportCategories.map((category, index) => (
-              <Card key={category.name}>
-                 <AccordionItem value={`item-${index}`} className="border-b-0">
+              <AccordionItem value={`item-${index}`} key={category.name} className="border-b-0">
+                <Card>
                     <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline">
                         {category.name}
                     </AccordionTrigger>
-                    <AccordionContent className="p-0">
+                    <AccordionContent className="p-2 pt-0">
                         <ReportList 
                             reports={category.reports}
                             selectedReport={selectedReport}
                             onSelectReport={setSelectedReport}
                         />
                     </AccordionContent>
-                </AccordionItem>
-              </Card>
+                </Card>
+              </AccordionItem>
             ))}
            </Accordion>
         </div>
 
-        <div className={cn("md:col-span-2", !selectedReport && "hidden md:flex")}>
+        <div className={cn("md:col-span-2 lg:col-span-3", !selectedReport && "hidden md:flex")}>
           {selectedReport ? (
             <ReportFilters reportName={selectedReport} onBack={() => setSelectedReport(null)} />
           ) : (
@@ -268,4 +264,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
