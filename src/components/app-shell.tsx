@@ -456,8 +456,9 @@ function UserMenu({ user }: { user: any }) {
 
 function Brand({ companyName }: { companyName: string }) {
   return (
-    <Link href="/dashboard" className="flex items-center justify-center gap-2 font-bold text-lg">
-       <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={100} height={100} className="h-10 w-auto" />
+    <Link href="/dashboard" className="flex items-center justify-center gap-2">
+       <Image src="https://content-provider.payshia.com/payshia-erp/branding/payshia-erp-logo-01.webp" alt="Payshia ERP Logo" width={32} height={32} />
+       <span className="font-bold text-lg">Payshia ERP</span>
     </Link>
   );
 }
