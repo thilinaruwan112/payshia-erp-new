@@ -7,6 +7,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { RefreshCcw, X, Truck, Loader2, Printer } from 'lucide-react';
@@ -16,7 +17,6 @@ import { format, isToday } from 'date-fns';
 import { useCurrency } from '@/components/currency-provider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { DialogClose } from '@radix-ui/react-dialog';
 
 interface TodaySalesDialogProps {
   isOpen: boolean;
