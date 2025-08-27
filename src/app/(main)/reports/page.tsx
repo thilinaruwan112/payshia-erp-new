@@ -38,8 +38,8 @@ const transactionReports = [
 const salesReports = [
     { name: 'Credit Sales Summary Report', href: '/reports/credit-sales-summary', filters: ['dateRange', 'customer', 'location'] },
     { name: 'Customer Order Report', href: '/reports/customer-report', filters: ['dateRange', 'customer'] },
-    { name: 'Day End Sale Report', href: '/reports/sales-summary', filters: ['date', 'location'] },
-    { name: 'Hourly Sales Report', href: '/reports/sales-summary', filters: ['date', 'location'] },
+    { name: 'Day End Sale Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
+    { name: 'Hourly Sales Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
     { name: 'Invoice Report', href: '/reports/invoice-report', filters: ['dateRange', 'customer', 'status'] },
     { name: 'Item Wise Sales', href: '#', filters: ['dateRange', 'item', 'category', 'brand', 'location'] },
     { name: 'Receipt Report', href: '/sales/receipts', filters: ['dateRange', 'customer'] },
@@ -53,9 +53,9 @@ const purchasingReports = [
 
 const stockReports = [
     { name: 'Stock Balance Report', href: '/reports/stock-balance', filters: ['location', 'category', 'brand', 'item'] },
+    { name: 'Stock Transfer Report', href: '/transfers', filters: ['dateRange', 'fromLocation', 'toLocation'] },
     { name: 'Bin Card Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
     { name: 'Stock Movement Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
-    { name: 'Stock Transfer Report', href: '/transfers', filters: ['dateRange', 'fromLocation', 'toLocation'] },
 ];
 
 const managementReports = [
@@ -93,14 +93,14 @@ const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () 
                         <div className="space-y-1.5">
                             <Label>From Date</Label>
                             <Popover>
-                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{format(new Date(), 'MM/dd/yyyy')}</Button></PopoverTrigger>
+                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{'Select...'}</Button></PopoverTrigger>
                                 <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
                             </Popover>
                         </div>
                         <div className="space-y-1.5">
                             <Label>To Date</Label>
                             <Popover>
-                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{format(new Date(), 'MM/dd/yyyy')}</Button></PopoverTrigger>
+                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{'Select...'}</Button></PopoverTrigger>
                                 <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
                             </Popover>
                         </div>
@@ -110,7 +110,7 @@ const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () 
                         <div className="space-y-1.5">
                             <Label>Date</Label>
                             <Popover>
-                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{format(new Date(), 'MM/dd/yyyy')}</Button></PopoverTrigger>
+                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{'Select...'}</Button></PopoverTrigger>
                                 <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
                             </Popover>
                         </div>
@@ -242,9 +242,9 @@ export default function ReportsPage() {
                  <TabsContent value="stock" className="mt-0"><ReportList title="Stock Reports" reports={stockReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
                  <TabsContent value="management" className="mt-0"><ReportList title="Management Reports" reports={managementReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
             </div>
-            <div className="md:col-span-2">
+            <div className={cn("md:col-span-2", !selectedReport && "hidden md:block")}>
                 {selectedReport ? <ReportFilters reportName={selectedReport} onBack={() => setSelectedReport(null)} /> : (
-                    <div className="hidden md:flex items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[300px]">
+                    <div className="flex items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[300px]">
                         <p className="text-muted-foreground">Select a report to see filters</p>
                     </div>
                 )}
