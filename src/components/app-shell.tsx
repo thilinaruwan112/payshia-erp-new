@@ -233,7 +233,6 @@ const navItems = [
     href: '/pos-system',
     label: 'POS System',
     icon: Terminal,
-    isExternal: true,
   },
   {
     href: '/help',
