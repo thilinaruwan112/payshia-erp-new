@@ -49,6 +49,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
     const { toast } = useToast();
     const [customers, setCustomers] = useState<User[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [products, setProducts] = useState<ProductWithVariants[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [brands, setBrands] = useState<Brand[]>([]);
     const [collections, setCollections] = useState<Collection[]>([]);
@@ -65,7 +66,11 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                     const response = await fetch(url);
                     if (!response.ok) throw new Error(`Failed to fetch ${type}`);
                     const data = await response.json();
-                    setData(data || []);
+                    if (type === 'products') {
+                        setData(data.products || []);
+                    } else {
+                        setData(data || []);
+                    }
                 } catch (error) {
                     toast({ variant: 'destructive', title: 'Error', description: `Could not fetch ${type} list.`});
                 }
@@ -75,6 +80,9 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             }
             if (filters.includes('supplier')) {
                 fetchData(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`, setSuppliers, 'suppliers');
+            }
+            if (filters.includes('item')) {
+                 fetchData(`https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`, setProducts, 'products');
             }
             if (filters.includes('category')) {
                 fetchData(`https://server-erp.payshia.com/master-categories/company?company_id=${company_id}`, setCategories, 'categories');
@@ -106,6 +114,12 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
         value: s.supplier_id,
         label: s.supplier_name,
     }));
+    const itemOptions = products.flatMap(p => 
+        p.variants.map(v => ({
+            value: v.id,
+            label: `${p.product.name} (${v.sku})`
+        }))
+    );
     const categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
     const brandOptions = brands.map(b => ({ value: b.id, label: b.name }));
     const collectionOptions = collections.map(c => ({ value: c.id, label: c.title }));
@@ -234,7 +248,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                       {hasFilter('item') && (
                         <div className="space-y-1.5">
                             <Label>Item</Label>
-                            <Input placeholder="Search Item" />
+                             <Combobox options={itemOptions} value="" onChange={() => {}} placeholder="Select item..." notFoundText="No items found." />
                         </div>
                     )}
                     {hasFilter('category') && (
