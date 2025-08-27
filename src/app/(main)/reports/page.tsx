@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -12,7 +11,7 @@ import {
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, ArrowLeft } from 'lucide-react';
+import { CalendarIcon, ArrowLeft, Printer, Eye } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -24,6 +23,8 @@ import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { type User, type Supplier, type Brand } from '@/lib/types';
 import { Combobox } from '@/components/ui/combobox';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const reportCategories = [
@@ -83,12 +84,53 @@ const reportCategories = [
 
 const allReports = reportCategories.flatMap(cat => cat.reports);
 
-const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () => void }) => {
+const CustomerReportView = ({ customers, onBack }: { customers: User[], onBack: () => void }) => {
+    return (
+        <Card className="flex-1 w-full">
+            <CardHeader>
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="md:hidden" onClick={onBack}>
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div>
+                        <CardTitle>Customer Master Report</CardTitle>
+                        <CardDescription>A list of all customers in the system.</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Customer Name</TableHead>
+                            <TableHead>Phone Number</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Address</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {customers.map((customer) => (
+                            <TableRow key={customer.customer_id}>
+                                <TableCell>{customer.customer_first_name} {customer.customer_last_name}</TableCell>
+                                <TableCell>{customer.phone_number}</TableCell>
+                                <TableCell>{customer.email_address}</TableCell>
+                                <TableCell>{customer.address_line1}, {customer.city}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+};
+
+const ReportFilters = ({ reportName, onBack, onShowReport }: { reportName: string, onBack: () => void, onShowReport: (data: User[]) => void }) => {
     const report = allReports.find(r => r.name === reportName);
     const filters = report?.filters || [];
     const { company_id } = useLocation();
     const { toast } = useToast();
     const [customers, setCustomers] = useState<User[]>([]);
+    const [isFetching, setIsFetching] = useState(false);
 
     useEffect(() => {
         async function fetchCustomers() {
@@ -113,9 +155,30 @@ const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () 
 
     const hasFilter = (filterName: string) => filters.includes(filterName);
 
-    const handleViewReport = () => {
+    const handlePrintReport = () => {
         if (reportName === 'Customer Master Report') {
             window.open(`/reports-print/customer-report/print?company_id=${company_id}`, '_blank');
+        } else {
+            toast({
+                title: "Coming Soon",
+                description: "This report is not yet available for printing.",
+            });
+        }
+    };
+
+    const handleViewReport = async () => {
+        if (reportName === 'Customer Master Report') {
+            setIsFetching(true);
+             try {
+                const response = await fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`);
+                if (!response.ok) throw new Error('Failed to fetch customers for report');
+                const data = await response.json();
+                onShowReport(data || []);
+            } catch (error) {
+                 toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customer report data.'});
+            } finally {
+                setIsFetching(false);
+            }
         } else {
             toast({
                 title: "Coming Soon",
@@ -235,8 +298,15 @@ const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () 
                     )}
                  </div>
             </CardContent>
-            <CardFooter>
-                 <Button onClick={handleViewReport}>View Report</Button>
+            <CardFooter className="gap-2">
+                 <Button onClick={handleViewReport} disabled={isFetching}>
+                     {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
+                     View Report
+                 </Button>
+                 <Button variant="outline" onClick={handlePrintReport}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print
+                </Button>
             </CardFooter>
         </Card>
     )
@@ -264,6 +334,24 @@ const ReportList = ({ reports, selectedReport, onSelectReport }: {
 
 export default function ReportsPage() {
     const [selectedReport, setSelectedReport] = useState<string | null>(null);
+    const [viewingReport, setViewingReport] = useState(false);
+    const [reportData, setReportData] = useState<User[]>([]);
+
+    const handleShowReport = (data: User[]) => {
+        setReportData(data);
+        setViewingReport(true);
+    };
+
+    const handleBackToFilters = () => {
+        setViewingReport(false);
+        setReportData([]);
+    };
+    
+    const handleSelectReport = (name: string) => {
+        setSelectedReport(name);
+        setViewingReport(false);
+        setReportData([]);
+    }
 
   return (
     <div className="flex flex-col gap-6">
@@ -287,7 +375,7 @@ export default function ReportsPage() {
                         <ReportList 
                             reports={category.reports}
                             selectedReport={selectedReport}
-                            onSelectReport={setSelectedReport}
+                            onSelectReport={handleSelectReport}
                         />
                     </AccordionContent>
                 </Card>
@@ -296,9 +384,17 @@ export default function ReportsPage() {
            </Accordion>
         </div>
 
-        <div className={cn("md:col-span-3", !selectedReport && "hidden md:flex")}>
+        <div className={cn("md:col-span-3 w-full", !selectedReport && "hidden md:flex")}>
           {selectedReport ? (
-            <ReportFilters reportName={selectedReport} onBack={() => setSelectedReport(null)} />
+            viewingReport ? (
+                <CustomerReportView customers={reportData} onBack={handleBackToFilters} />
+            ) : (
+                <ReportFilters 
+                    reportName={selectedReport} 
+                    onBack={() => setSelectedReport(null)} 
+                    onShowReport={handleShowReport}
+                />
+            )
           ) : (
              <div className="flex w-full items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[400px]">
                 <p className="text-muted-foreground">Select a report to see filters</p>
