@@ -37,35 +37,40 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
 
   const fetchExistingImages = useCallback(async () => {
     if (!productId || !companyId) return;
-    
-    const variantsToFetch = productVariants?.length > 0 ? productVariants : [];
-    if (variantsToFetch.length === 0) return;
+
+    let variantsToFetch = productVariants;
+
+    // If there are no variants, it might be a simple product where the variant ID is the same as the product ID.
+    if (!variantsToFetch || variantsToFetch.length === 0) {
+      variantsToFetch = [{ id: productId, sku: 'default', product_id: productId }];
+    }
 
     let allImages: ProductImage[] = [];
 
     try {
-        for (const variant of variantsToFetch) {
-            const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
-            if (response.ok) {
-                const data = await response.json();
-                if (Array.isArray(data)) {
-                    allImages = [...allImages, ...data];
-                }
-            } else {
-                 const errorData = await response.json();
-                 if (errorData.error !== "No records found") {
-                    console.error(`Failed to fetch images for variant ${variant.id}:`, errorData.message || response.statusText);
-                 }
-            }
+      for (const variant of variantsToFetch) {
+        if (!variant.id) continue;
+        const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data)) {
+            allImages = [...allImages, ...data];
+          }
+        } else {
+          const errorData = await response.json();
+          if (errorData.error !== "No records found") {
+            console.error(`Failed to fetch images for variant ${variant.id}:`, errorData.message || response.statusText);
+          }
         }
+      }
     } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Could not load existing product images." });
+      toast({ variant: "destructive", title: "Error", description: "Could not load existing product images." });
     }
     
     const uniqueImages = Array.from(new Map(allImages.map(img => [img.id, img])).values());
     setUploadedImages(uniqueImages);
 
-}, [productId, companyId, productVariants, toast]);
+  }, [productId, companyId, productVariants, toast]);
 
 
   useEffect(() => {
@@ -73,6 +78,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
       if (productVariants && productVariants.length > 0) {
         setSelectedVariantId(productVariants[0].id);
       } else if (productId) {
+        // Fallback for products without explicit variants
         setSelectedVariantId(productId);
       } else {
          setSelectedVariantId('');
@@ -143,6 +149,8 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
       }
       
       setFileToUpload(null);
+      // After upload, refresh the images
+      fetchExistingImages();
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -157,7 +165,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
   };
 
   const hasVariants = productVariants && productVariants.length > 0;
-  const isUploadDisabled = isUploading || !fileToUpload || (hasVariants && !selectedVariantId);
+  const isUploadDisabled = isUploading || !fileToUpload || !selectedVariantId;
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
