@@ -46,10 +46,16 @@ const salesReports = [
     { name: 'Sales Summary Report', href: '/reports/sales-summary', filters: ['dateRange', 'location', 'user'] },
 ];
 
+const purchasingReports = [
+    { name: 'Purchase Order Report', href: '/purchasing/purchase-orders', filters: ['dateRange', 'supplier', 'status'] },
+    { name: 'GRN Report', href: '/purchasing/grn', filters: ['dateRange', 'supplier'] },
+];
+
 const stockReports = [
     { name: 'Stock Balance Report', href: '/reports/stock-balance', filters: ['location', 'category', 'brand', 'item'] },
     { name: 'Bin Card Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
     { name: 'Stock Movement Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
+    { name: 'Stock Transfer Report', href: '/transfers', filters: ['dateRange', 'fromLocation', 'toLocation'] },
 ];
 
 const managementReports = [
@@ -58,7 +64,7 @@ const managementReports = [
     { name: 'Trial Balance', href: '#', filters: ['date'] },
 ];
 
-const allReports = [...masterReports, ...transactionReports, ...salesReports, ...stockReports, ...managementReports];
+const allReports = [...masterReports, ...transactionReports, ...salesReports, ...purchasingReports, ...stockReports, ...managementReports];
 
 
 const ReportFilters = ({ reportName }: { reportName: string }) => {
@@ -105,6 +111,18 @@ const ReportFilters = ({ reportName }: { reportName: string }) => {
                     {hasFilter('location') && (
                         <div className="space-y-1.5">
                             <Label>Location</Label>
+                            <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                        </div>
+                    )}
+                     {hasFilter('fromLocation') && (
+                        <div className="space-y-1.5">
+                            <Label>From Location</Label>
+                            <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                        </div>
+                    )}
+                     {hasFilter('toLocation') && (
+                        <div className="space-y-1.5">
+                            <Label>To Location</Label>
                             <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
                         </div>
                     )}
@@ -209,10 +227,11 @@ export default function ReportsPage() {
       </div>
 
       <Tabs defaultValue="sale" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="master">Master</TabsTrigger>
           <TabsTrigger value="transaction">Transaction</TabsTrigger>
           <TabsTrigger value="sale">Sale</TabsTrigger>
+          <TabsTrigger value="purchasing">Purchasing</TabsTrigger>
           <TabsTrigger value="stock">Stock</TabsTrigger>
           <TabsTrigger value="management">Management</TabsTrigger>
         </TabsList>
@@ -224,6 +243,9 @@ export default function ReportsPage() {
         </TabsContent>
         <TabsContent value="sale">
             <ReportList title="Sales Reports" reports={salesReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} />
+        </TabsContent>
+        <TabsContent value="purchasing">
+            <ReportList title="Purchasing Reports" reports={purchasingReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} />
         </TabsContent>
         <TabsContent value="stock">
             <ReportList title="Stock Reports" reports={stockReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} />
