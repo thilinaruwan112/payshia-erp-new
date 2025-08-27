@@ -460,14 +460,22 @@ export function OrderPanel({
 
   return (
     <div className="flex flex-col h-full bg-card">
-      <header className="p-4 border-b border-border flex items-center justify-between">
-        <h2 className="text-xl font-bold">{orderName}</h2>
-        {isDrawer && (
-            <Button variant="ghost" size="icon" onClick={onClose}>
-                <X className="h-5 w-5" />
-            </Button>
-        )}
-      </header>
+      <Dialog open={isEditOrderOpen} onOpenChange={setEditOrderOpen}>
+        <header className="p-4 border-b border-border flex items-center justify-between">
+            <h2 className="text-xl font-bold">{orderName}</h2>
+            <div className="flex items-center">
+                 <DialogTrigger asChild>
+                    <Button variant="ghost" size="icon"><Settings className="h-5 w-5" /></Button>
+                 </DialogTrigger>
+                {isDrawer && (
+                    <Button variant="ghost" size="icon" onClick={onClose}>
+                        <X className="h-5 w-5" />
+                    </Button>
+                )}
+            </div>
+        </header>
+        <EditOrderDialog order={order} onUpdateDetails={onUpdateDetails} availableTables={availableTables} availableStewards={availableStewards} onClose={() => setEditOrderOpen(false)} />
+      </Dialog>
       
       {steward && (
            <div className='p-2 px-4 border-b border-border bg-muted/30'>
