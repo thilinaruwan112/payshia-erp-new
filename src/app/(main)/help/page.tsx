@@ -5,7 +5,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { BotMessageSquare, Contact, Landmark, LayoutDashboard, Package, Receipt, ShoppingCart } from 'lucide-react';
+import { BotMessageSquare, Contact, Landmark, LayoutDashboard, Package, Receipt, ShoppingCart, Terminal } from 'lucide-react';
 
 const features = [
   {
@@ -112,6 +112,35 @@ const features = [
         <li>The system will show a list of pending invoices for that customer. Select the invoice you want to apply the payment to.</li>
         <li>The system will display the balance due. Enter the <strong>Amount to Pay</strong> and select the <strong>Payment Method</strong> (e.g., Cash, Card).</li>
         <li>Click <strong>"Save Receipt"</strong>. This will record the payment and update the invoice's payment status accordingly.</li>
+      </ul>
+    `,
+  },
+  {
+    icon: <Terminal className="h-6 w-6 text-primary" />,
+    title: 'How to Use the POS',
+    description: `
+      The POS system is designed for fast, in-person transactions.
+      <br/><br/>
+      <strong>Getting Started:</strong>
+      <ul class="list-disc pl-6 mt-2 space-y-1">
+        <li>Launch the POS from the main dashboard or by navigating to <strong>POS System</strong> in the sidebar.</li>
+        <li>If you have multiple POS-enabled locations, you will be prompted to select one.</li>
+      </ul>
+      <br/>
+      <strong>Making a Sale:</strong>
+      <ul class="list-decimal pl-6 mt-2 space-y-2">
+        <li><strong>Create an Order:</strong> Click "New Order" to choose between Take Away, Delivery, Retail, or select a table for Dine-In. If Dine-In, you will be prompted to select a steward.</li>
+        <li><strong>Add Items:</strong> Click on product cards from the grid to add them to the cart. You can also use a barcode scanner to find products quickly. A dialog will appear to confirm quantity and add any item-specific discounts.</li>
+        <li><strong>Manage Cart:</strong> The right-hand panel shows the current order. Here you can adjust quantities, remove items, add an overall discount, or apply a service charge.</li>
+        <li><strong>Hold / KOT:</strong> For restaurant environments, click "Hold" to save the order and send a Kitchen Order Ticket (KOT) to the kitchen printer. You can retrieve held orders later.</li>
+        <li><strong>Payment:</strong> Click "Proceed to Payment". You can select Cash or Card, enter the tendered amount if needed, and confirm to complete the sale. A receipt will be generated for printing.</li>
+      </ul>
+      <br/>
+       <strong>Other Actions:</strong>
+      <ul class="list-disc pl-6 mt-2 space-y-1">
+        <li><strong>Returns & Refunds:</strong> Use the "Return" button to process customer returns, either with an invoice or manually. Use the "Refund" button to process refunds for returned items.</li>
+        <li><strong>Pending Invoices:</strong> View and settle pending credit invoices for customers.</li>
+        <li><strong>Today's Sales:</strong> Get a quick summary of the current day's sales for your location.</li>
       </ul>
     `,
   },
