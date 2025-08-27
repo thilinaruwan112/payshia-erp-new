@@ -159,7 +159,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                 url = `https://server-erp.payshia.com/purchase-orders/filter/`;
             } else if (reportName === 'Sales Summary Report') {
                 url = `https://server-erp.payshia.com/invoices/filter/hold/by-company-status`;
-                params.append('invoice_status', '1'); // Assuming 1 is for completed sales
+                params.append('invoice_status', '1');
             } else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
                  setIsFetching(false);
