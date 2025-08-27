@@ -18,7 +18,7 @@ export default function LegalLayout({
           </Link>
           <nav className="ml-auto hidden md:flex items-center gap-4 sm:gap-6">
             <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4">About</Link>
-            <Link href="/#pricing" className="text-sm font-medium hover:underline underline-offset-4">Pricing</Link>
+            <Link href="/pricing" className="text-sm font-medium hover:underline underline-offset-4">Pricing</Link>
             <Link href="/contact" className="text-sm font-medium hover:underline underline-offset-4">Contact</Link>
             <Link href="/whats-new" className="text-sm font-medium hover:underline underline-offset-4">What's New</Link>
           </nav>
