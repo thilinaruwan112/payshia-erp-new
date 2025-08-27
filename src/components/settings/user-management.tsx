@@ -45,6 +45,12 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
+interface CompanyUser {
+  id: string;
+  company_id: string;
+  user_id: string;
+}
+
 function InviteUserDialog({ onInvite }: { onInvite: (email: string, role: string) => Promise<void> }) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('user');
@@ -110,19 +116,39 @@ export function UserManagement() {
   const { company_id } = useLocation();
 
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchCompanyUsers() {
       if (!company_id) {
         setIsLoading(false);
         return;
       }
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/users/company/${company_id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch users');
+        const [companyUsersRes, allUsersRes] = await Promise.all([
+          fetch('https://server-erp.payshia.com/company-users'),
+          fetch('https://server-erp.payshia.com/users'),
+        ]);
+
+        if (!companyUsersRes.ok) throw new Error('Failed to fetch company user links');
+        if (!allUsersRes.ok) throw new Error('Failed to fetch all users');
+
+        const companyUsersData = await companyUsersRes.json();
+        const allUsersData = await allUsersRes.json();
+        
+        if (companyUsersData.status !== 'success' || allUsersData.status !== 'success') {
+          throw new Error('API returned an error status');
         }
-        const data = await response.json();
-        setUsers(data || []);
+
+        const companyUserLinks: CompanyUser[] = companyUsersData.data || [];
+        const allUsers: User[] = allUsersData.data || [];
+
+        const userIdsForCompany = companyUserLinks
+          .filter(link => link.company_id === String(company_id))
+          .map(link => link.user_id);
+          
+        const usersInCompany = allUsers.filter(user => userIdsForCompany.includes(user.id));
+        
+        setUsers(usersInCompany);
+
       } catch (error) {
         toast({
           variant: 'destructive',
@@ -133,7 +159,7 @@ export function UserManagement() {
         setIsLoading(false);
       }
     }
-    fetchUsers();
+    fetchCompanyUsers();
   }, [toast, company_id]);
   
   const handleInvite = async (email: string, role: string) => {
@@ -141,8 +167,6 @@ export function UserManagement() {
         title: 'Invitation Sent (Simulated)',
         description: `An invitation has been sent to ${email} for the ${role} role.`,
     });
-    // In a real app, this would call an API endpoint:
-    // await fetch('/api/invite-user', { method: 'POST', body: JSON.stringify({ email, role, company_id }) });
   };
 
   return (
