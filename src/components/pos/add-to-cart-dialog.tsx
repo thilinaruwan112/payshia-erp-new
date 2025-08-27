@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -44,6 +43,7 @@ export function AddToCartDialog({
   const { currencySymbol } = useCurrency();
   
   const isAlaCarte = product?.recipe_type === 'ala cart';
+  const isOpen = !!product;
 
 
   useEffect(() => {
@@ -87,7 +87,7 @@ export function AddToCartDialog({
     }
   }, [product, currentLocation, company_id, toast, isAlaCarte]);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = useCallback(() => {
     if (product) {
       const numQuantity = parseFloat(quantity);
       const numDiscount = parseFloat(discount);
@@ -110,7 +110,7 @@ export function AddToCartDialog({
         onAddToCart(product, numQuantity, numDiscount, batchData);
       }
     }
-  };
+  }, [product, quantity, discount, isAlaCarte, selectedBatch, onAddToCart, toast]);
 
   const handleNumpadClick = (value: string) => {
     if (value === 'C') {
@@ -152,9 +152,8 @@ export function AddToCartDialog({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, quantity, discount, product, selectedBatch, onClose, onAddToCart]);
+  }, [isOpen, quantity, discount, product, selectedBatch, onClose, onAddToCart, handleAddToCart]);
 
-  const isOpen = !!product;
   const discountedPrice = product ? (product.price as number) - parseFloat(discount) : 0;
   const currentBatchStock = selectedBatch ? JSON.parse(selectedBatch).stock_balance : 0;
 
