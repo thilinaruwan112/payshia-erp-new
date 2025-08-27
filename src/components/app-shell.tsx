@@ -210,14 +210,14 @@ const navItems = [
         { href: '/reports/customer-report', label: 'Customer Report', icon: Contact },
     ],
   },
-  {
-    label: 'AI Tools',
-    icon: Fingerprint,
-    subItems: [
-      { href: '/logistics', label: 'Logistics Assistant', icon: Truck },
-      { href: '/inventory/forecast', label: 'Inventory Forecasting', icon: TrendingUp },
-    ],
-  },
+  // {
+  //   label: 'AI Tools',
+  //   icon: Fingerprint,
+  //   subItems: [
+  //     { href: '/logistics', label: 'Logistics Assistant', icon: Truck },
+  //     { href: '/inventory/forecast', label: 'Inventory Forecasting', icon: TrendingUp },
+  //   ],
+  // },
   {
     label: 'Settings',
     icon: Settings,
