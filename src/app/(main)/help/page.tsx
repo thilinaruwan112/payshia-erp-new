@@ -5,7 +5,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { BotMessageSquare, Contact, Landmark, LayoutDashboard, Package, ShoppingCart } from 'lucide-react';
+import { BotMessageSquare, Contact, Landmark, LayoutDashboard, Package, Receipt, ShoppingCart } from 'lucide-react';
 
 const features = [
   {
@@ -47,7 +47,7 @@ const features = [
         <li>Click <strong>"Save Product"</strong>. You will then be prompted to upload images.</li>
       </ul>
       <br/>
-       <strong>Step 3: Set Initial Stock Levels</strong>
+       <strong>Step 3: Set Initial Stock Levels (First Time Only)</strong>
        <p class='mt-1 mb-2'>After creating a product, you need to tell the system how many you have in stock for the first time. This is a one-time setup for new products.</p>
       <ul class="list-decimal pl-6 mt-2 space-y-2">
         <li>Go to <strong>Inventory & Products > Opening Stock</strong>.</li>
@@ -85,6 +85,33 @@ const features = [
         <li>The orders page shows a table view on desktop and a mobile-friendly card view on smaller devices.</li>
         <li>Use the actions dropdown on each order to view details or process shipments.</li>
         <li>Status badges (e.g., Pending, Shipped) give you a quick look at the order's current state.</li>
+      </ul>
+    `,
+  },
+   {
+    icon: <Receipt className="h-6 w-6 text-primary" />,
+    title: 'Invoices and Payments',
+    description: `
+      This guide covers how to create an invoice for a customer and record their payment.
+      <br/><br/>
+      <strong>Step 1: Create an Invoice</strong>
+      <ul class="list-decimal pl-6 mt-2 space-y-2">
+        <li>Navigate to <strong>Sales > Invoices</strong> and click the "New Invoice" button.</li>
+        <li>Select the <strong>Invoice Type</strong> (Retail or Wholesale) and the <strong>Customer</strong>.</li>
+        <li>Add products to the invoice by selecting them from the dropdown in the "Invoice Items" section.</li>
+        <li>Specify the <strong>Quantity</strong> and <strong>Unit Price</strong> for each item. The system will automatically calculate the total.</li>
+        <li>Add any overall discounts or service charges at the bottom if necessary.</li>
+        <li>Click <strong>"Save Invoice"</strong>. The system will generate the invoice, which will have a "Pending" payment status.</li>
+      </ul>
+      <br/>
+      <strong>Step 2: Record a Payment Receipt</strong>
+       <p class='mt-1 mb-2'>Once the customer pays for the invoice (fully or partially), you need to record it.</p>
+      <ul class="list-decimal pl-6 mt-2 space-y-2">
+        <li>Go to <strong>Sales > Receipts</strong> and click "New Receipt".</li>
+        <li>Select the same <strong>Customer</strong> you created the invoice for.</li>
+        <li>The system will show a list of pending invoices for that customer. Select the invoice you want to apply the payment to.</li>
+        <li>The system will display the balance due. Enter the <strong>Amount to Pay</strong> and select the <strong>Payment Method</strong> (e.g., Cash, Card).</li>
+        <li>Click <strong>"Save Receipt"</strong>. This will record the payment and update the invoice's payment status accordingly.</li>
       </ul>
     `,
   },
