@@ -39,35 +39,45 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     if (!productId || !companyId) return;
 
     let allImages: ProductImage[] = [];
-    // If productVariants is empty, it means it's a simple product.
-    // The variant ID might be the same as the product ID or based on a default variant.
-    // Let's create a temporary variant object to fetch images for the base product.
-    const variantsToFetch = productVariants?.length > 0 
-      ? productVariants 
-      : [{ id: productId, sku: 'default' }]; 
+    const variantsToFetch = productVariants?.length > 0 ? productVariants : [];
 
-    try {
-        for (const variant of variantsToFetch) {
-            const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
-            if (response.ok) {
+    if (variantsToFetch.length === 0 && productId) {
+        // Handle case for simple product with no variants from the initial prop
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}`);
+             if (response.ok) {
                 const data = await response.json();
                 if (Array.isArray(data)) {
                     allImages = [...allImages, ...data];
                 }
-            } else {
-                 const errorData = await response.json();
-                 if (errorData.error !== "No records found") {
-                    console.error(`Failed to fetch images for variant ${variant.id}:`, errorData.message || response.statusText);
-                 }
             }
+        } catch (error) {
+            console.error(`Failed to fetch images for simple product ${productId}:`, error);
         }
-        // Deduplicate images in case the API returns the same image for different variant checks
-        const uniqueImages = Array.from(new Map(allImages.map(img => [img.id, img])).values());
-        setUploadedImages(uniqueImages);
-
-    } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Could not load existing product images." });
+    } else {
+        try {
+            for (const variant of variantsToFetch) {
+                const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data)) {
+                        allImages = [...allImages, ...data];
+                    }
+                } else {
+                     const errorData = await response.json();
+                     if (errorData.error !== "No records found") {
+                        console.error(`Failed to fetch images for variant ${variant.id}:`, errorData.message || response.statusText);
+                     }
+                }
+            }
+        } catch (error) {
+            toast({ variant: "destructive", title: "Error", description: "Could not load existing product images." });
+        }
     }
+    
+    const uniqueImages = Array.from(new Map(allImages.map(img => [img.id, img])).values());
+    setUploadedImages(uniqueImages);
+
 }, [productId, companyId, productVariants, toast]);
 
 
@@ -76,7 +86,6 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
       if (productVariants && productVariants.length > 0) {
         setSelectedVariantId(productVariants[0].id);
       } else if (productId) {
-        // For products without variants, use the product ID as the variant ID
         setSelectedVariantId(productId);
       } else {
          setSelectedVariantId('');
@@ -86,7 +95,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     } else {
       setUploadedImages([]);
     }
-  }, [productVariants, isOpen, fetchExistingImages, productId]);
+  }, [isOpen, productId, productVariants, fetchExistingImages]);
 
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
