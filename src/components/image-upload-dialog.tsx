@@ -31,6 +31,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string>('');
+  const [imageType, setImageType] = useState<string>('other');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     formData.append('product_id', productId);
     formData.append('product_variant_id', selectedVariantId || productId); 
     formData.append('company_id', String(companyId));
-    formData.append('image_type', 'gallery');
+    formData.append('image_type', imageType);
     formData.append('created_by', 'admin');
 
     files.forEach(file => {
@@ -120,23 +121,38 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-6">
-          {hasVariants && (
-             <div className="space-y-2">
-                <Label htmlFor="variant-select">Select Variant</Label>
-                 <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
-                    <SelectTrigger id="variant-select">
-                        <SelectValue placeholder="Choose a variant to assign images to" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             {hasVariants && (
+                <div className="space-y-2">
+                    <Label htmlFor="variant-select">Select Variant</Label>
+                    <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
+                        <SelectTrigger id="variant-select">
+                            <SelectValue placeholder="Choose a variant to assign images to" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {productVariants.map(variant => (
+                                <SelectItem key={variant.id} value={variant.id}>
+                                    {variant.sku} {variant.color && `- ${variant.color}`} {variant.size && `- ${variant.size}`}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+             )}
+              <div className="space-y-2">
+                <Label htmlFor="image-type-select">Image Type</Label>
+                 <Select value={imageType} onValueChange={setImageType}>
+                    <SelectTrigger id="image-type-select">
+                        <SelectValue placeholder="Choose an image type" />
                     </SelectTrigger>
                     <SelectContent>
-                        {productVariants.map(variant => (
-                            <SelectItem key={variant.id} value={variant.id}>
-                                {variant.sku} {variant.color && `- ${variant.color}`} {variant.size && `- ${variant.size}`}
-                            </SelectItem>
-                        ))}
+                        <SelectItem value="front img">Front Image</SelectItem>
+                        <SelectItem value="2nd image">2nd Image</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                 </Select>
              </div>
-          )}
+          </div>
 
           <div
             {...getRootProps()}
