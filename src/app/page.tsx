@@ -99,7 +99,7 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-         <section className="w-full landing-page-aurora flex items-center min-h-[calc(100vh-80px)]">
+         <section className="relative w-full landing-page-aurora flex items-center min-h-[calc(100vh-80px)]">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-16">
               <div className="space-y-4">
@@ -133,6 +133,9 @@ export default function LandingPage() {
                 />
               </div>
             </div>
+          </div>
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
+            <ArrowDown className="h-8 w-8 text-foreground/50" />
           </div>
         </section>
 
