@@ -36,35 +36,34 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
   const { toast } = useToast();
 
   const fetchExistingImages = useCallback(async () => {
-     if (!productId || !companyId) return;
-      try {
-          let allImages: ProductImage[] = [];
-          
-          if (productVariants && productVariants.length > 0) {
-            for (const variant of productVariants) {
-                const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
-                if (response.ok) {
-                    const data: ProductImage[] = await response.json();
-                    if(Array.isArray(data)) {
-                        allImages = [...allImages, ...data];
-                    }
+    if (!productId || !companyId) return;
+
+    let allImages: ProductImage[] = [];
+    const variantsToFetch = productVariants?.length > 0 ? productVariants : [{ id: productId }]; // Handle products with no variants
+
+    try {
+        for (const variant of variantsToFetch) {
+            const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    allImages = [...allImages, ...data];
                 }
+            } else {
+                 const errorData = await response.json();
+                 if (errorData.error !== "No records found") { // Don't toast for "no records"
+                    console.error(`Failed to fetch images for variant ${variant.id}:`, errorData.message || response.statusText);
+                 }
             }
-          } else {
-             // Handle products with no variants, where variantId might be the same as productId
-             const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${productId}`);
-              if (response.ok) {
-                  const data: ProductImage[] = await response.json();
-                  if(Array.isArray(data)) {
-                      allImages = [...allImages, ...data];
-                  }
-              }
-          }
-          setUploadedImages(allImages);
-      } catch (error) {
-          toast({ variant: "destructive", title: "Error", description: "Could not load existing product images." });
-      }
-  }, [productId, companyId, productVariants, toast]);
+        }
+        // Deduplicate images in case the API returns the same image for different variant checks
+        const uniqueImages = Array.from(new Map(allImages.map(img => [img.id, img])).values());
+        setUploadedImages(uniqueImages);
+
+    } catch (error) {
+        toast({ variant: "destructive", title: "Error", description: "Could not load existing product images." });
+    }
+}, [productId, companyId, productVariants, toast]);
 
 
   useEffect(() => {
