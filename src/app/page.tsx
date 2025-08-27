@@ -189,11 +189,7 @@ export default function LandingPage() {
             {/* Desktop Circular Layout */}
             <div className="relative hidden md:flex items-center justify-center min-h-[30rem] w-full">
               <div
-                className="absolute flex items-center justify-center h-80 w-80 rounded-full"
-                style={{
-                  background:
-                    'radial-gradient(circle, hsl(var(--primary)/0.1) 0%, transparent 70%)',
-                }}
+                className="absolute flex items-center justify-center h-80 w-80 rounded-full bg-primary/10"
               >
                 <div className="text-center">
                   <h3 className="text-4xl font-bold text-primary">
@@ -397,6 +393,29 @@ export default function LandingPage() {
           </div>
         </section>
         
+        <SectionSeparator />
+
+        <section id="agents" className="w-full py-12 md:py-24 lg:py-32 bg-background">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Agents</div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Join Our Agent Network</h2>
+                <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Partner with us and grow your business. As a Payshia ERP agent, you'll get access to tools, training, and support to succeed.
+                </p>
+              </div>
+              <div className="mx-auto w-full max-w-sm space-y-2">
+                   <Button size="lg" asChild>
+                     <Link href="/agent-register">
+                      Become an Agent
+                    </Link>
+                   </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section className="w-full py-12 md:py-24 lg:py-32 bg-primary text-primary-foreground">
           <div className="container mx-auto grid items-center justify-center gap-4 px-4 text-center md:px-6">
             <div className="space-y-3">
