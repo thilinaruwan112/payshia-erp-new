@@ -36,11 +36,23 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
   const { toast } = useToast();
 
   const fetchExistingImages = useCallback(async () => {
-     if (!productId || !companyId || productVariants.length === 0) return;
+     if (!productId || !companyId) return;
       try {
           let allImages: ProductImage[] = [];
-          for (const variant of productVariants) {
-              const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
+          
+          if (productVariants && productVariants.length > 0) {
+            for (const variant of productVariants) {
+                const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
+                if (response.ok) {
+                    const data: ProductImage[] = await response.json();
+                    if(Array.isArray(data)) {
+                        allImages = [...allImages, ...data];
+                    }
+                }
+            }
+          } else {
+             // Handle products with no variants
+             const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${productId}`);
               if (response.ok) {
                   const data: ProductImage[] = await response.json();
                   if(Array.isArray(data)) {
