@@ -1,11 +1,12 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, ShoppingCart, Terminal, ChevronDown } from 'lucide-react';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, ShoppingCart, Terminal, ChevronDown, LogIn, Phone, Search, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SectionSeparator } from '@/components/section-separator';
 import Image from 'next/image';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const features = [
   {
@@ -68,67 +69,93 @@ const testimonials = [
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen landing-page-aurora">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto flex h-20 items-center px-4 lg:px-6">
-          <Link href="/" className="flex items-center justify-center">
-            <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={100} height={100} className="h-26 w-auto" />
-          </Link>
-          <nav className="ml-auto hidden md:flex items-center gap-4 sm:gap-6">
-            <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4">About</Link>
-            <Link href="/pricing" className="text-sm font-medium hover:underline underline-offset-4">Pricing</Link>
-            <Link href="/contact" className="text-sm font-medium hover:underline underline-offset-4">Contact</Link>
-            <Link href="/whats-new" className="text-sm font-medium hover:underline underline-offset-4">What's New</Link>
-          </nav>
-          <div className="ml-auto md:ml-4 flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <Link href="/login">
-                Login
-              </Link>
-            </Button>
-            <Button asChild>
-              <Link href="/register">
-                Sign Up
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-      <main className="flex-1">
-        <section className="relative w-full flex items-center justify-center text-center min-h-[calc(100vh-8rem)] py-12 md:py-24 lg:py-32 xl:py-48">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-4">
-                  <Image
-                    src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png"
-                    alt="Payshia ERP Logo"
-                    width={200}
-                    height={200}
-                    className="mx-auto"
-                  />
-                  <h1 className="text-4xl font-bold tracking-tighter sm:text-6xl xl:text-7xl/none text-foreground">
-                    The All-In-One Platform to Run Your Business
-                  </h1>
-                  <p className="max-w-[600px] mx-auto text-foreground/80 md:text-xl">
-                    Payshia ERP gives you the tools to manage everything from sales and inventory to accounting and human resources, all in one place.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row justify-center">
-                   <Button size="lg" asChild>
-                     <Link href="/register">
-                      Get Started for Free
-                    </Link>
-                   </Button>
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+       <header className="sticky top-0 z-50 w-full">
+            <div className="bg-[#1C463B] text-white">
+                <div className="container mx-auto flex h-12 items-center justify-between px-4 lg:px-6">
+                    <div className="flex items-center gap-6 text-sm">
+                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">Alumni</Link>
+                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">Quality Assurance</Link>
+                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">International</Link>
+                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">Resources</Link>
+                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">CSR Projects</Link>
+                        <Link href="#" className="hover:text-primary-foreground/80 transition-colors">Library</Link>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 hover:text-white">
+                           <LogIn className="mr-2 h-4 w-4" />
+                            Login
+                        </Button>
+                        <Button size="sm" className="bg-[#FFC107] text-black hover:bg-[#FFC107]/90">
+                           <Phone className="mr-2 h-4 w-4" />
+                            Contact Us
+                        </Button>
+                    </div>
                 </div>
             </div>
-          </div>
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
-            <a href="#ecosystem" aria-label="Scroll down">
-              <div className="h-12 w-12 rounded-full bg-muted/50 hover:bg-muted flex items-center justify-center animate-bounce">
-                <ChevronDown className="h-6 w-6 text-muted-foreground" />
-              </div>
-            </a>
-          </div>
+            <nav className="bg-background/80 backdrop-blur-sm border-b">
+                <div className="container mx-auto flex h-20 items-center justify-between px-4 lg:px-6">
+                    <Link href="/" className="flex items-center gap-2">
+                        <Image
+                        src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png"
+                        alt="Pharma College Logo"
+                        width={50}
+                        height={50}
+                        data-ai-hint="logo"
+                        />
+                        <span className="font-bold text-lg">CEYLON PHARMA COLLEGE</span>
+                    </Link>
+                     <div className="hidden lg:flex items-center gap-6 text-sm font-medium">
+                        <Link href="#" className="text-primary hover:text-primary/80 transition-colors">Home</Link>
+                        <Link href="#" className="hover:text-foreground/80 transition-colors">Certificate</Link>
+                        <Link href="#" className="hover:text-foreground/80 transition-colors">Courses</Link>
+                        <Link href="#" className="hover:text-foreground/80 transition-colors">Reviews</Link>
+                        <Link href="#" className="hover:text-foreground/80 transition-colors">Departments</Link>
+                        <Link href="#" className="hover:text-foreground/80 transition-colors">Students</Link>
+                        <Link href="#" className="hover:text-foreground/80 transition-colors">About</Link>
+                        <Link href="#" className="hover:text-foreground/80 transition-colors">Contact</Link>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon">
+                            <Search className="h-5 w-5" />
+                            <span className="sr-only">Search</span>
+                        </Button>
+                        <ThemeToggle />
+                    </div>
+                </div>
+            </nav>
+      </header>
+      <main className="flex-1">
+        <section className="relative w-full h-[calc(100vh-128px)] flex items-center justify-center text-white">
+            <Image
+                src="https://picsum.photos/1920/1080"
+                alt="Graduates"
+                layout="fill"
+                objectFit="cover"
+                className="brightness-75"
+                data-ai-hint="graduates smiling"
+            />
+            <div className="relative z-10 flex flex-col items-center text-center p-4">
+                <Image
+                    src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png"
+                    alt="Pharma College Logo"
+                    width={100}
+                    height={100}
+                    className="mb-4"
+                    data-ai-hint="logo"
+                />
+                <h1 className="text-4xl md:text-6xl font-bold !leading-tight tracking-tighter">
+                    Learn, Play &<br />
+                    Level up your Skill
+                </h1>
+                <div className="flex gap-4 mt-8">
+                    <Button size="lg" className="bg-[#1C463B] hover:bg-[#1C463B]/90">Apply Now</Button>
+                    <Button size="lg" variant="secondary">Student Login</Button>
+                </div>
+            </div>
+            <div className="absolute bottom-10 animate-bounce">
+                <ArrowDown className="h-8 w-8" />
+            </div>
         </section>
 
         <SectionSeparator />
@@ -144,7 +171,31 @@ export default function LandingPage() {
                 of truth for your entire business operation.
               </p>
             </div>
-            <div className="relative flex items-center justify-center min-h-[30rem] w-full">
+
+            {/* Mobile Grid Layout */}
+            <div className="grid grid-cols-2 gap-8 md:hidden">
+                {ecosystemFeatures.map((feature, index) => (
+                    <div key={index} className="flex flex-col items-center text-center">
+                        <div className="flex items-center justify-center h-20 w-20 rounded-full bg-black border-2 border-gray-800 shadow-lg">
+                            <feature.icon className="h-8 w-8 text-[#FF6B00]" />
+                        </div>
+                        <span className="mt-3 text-sm font-semibold text-white tracking-wider">{feature.name}</span>
+                    </div>
+                ))}
+                 <div className="col-span-2 flex flex-col items-center text-center">
+                    <div className="text-center mt-8">
+                        <h3 className="text-3xl font-bold text-[#FF6B00]">
+                            Payshia ERP
+                        </h3>
+                        <p className="text-xl text-[#FF6B00] opacity-80">
+                            Solutions
+                        </p>
+                    </div>
+                 </div>
+            </div>
+
+            {/* Desktop Circular Layout */}
+            <div className="relative hidden md:flex items-center justify-center min-h-[30rem] w-full">
               <div
                 className="absolute flex items-center justify-center h-80 w-80 rounded-full"
                 style={{
@@ -163,7 +214,7 @@ export default function LandingPage() {
               </div>
               {ecosystemFeatures.map((feature, index) => {
                 const angle = feature.angle * (Math.PI / 180);
-                const radius = 220; // Increased radius for more space
+                const radius = 220;
                 const x = radius * Math.cos(angle);
                 const y = radius * Math.sin(angle);
                 return (
