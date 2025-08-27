@@ -1,6 +1,10 @@
+
+'use client';
+
 import { KotPrintView } from '@/components/kot-print-view';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
+import Script from 'next/script';
 
 export default function KOTPrintPage({
   params,
@@ -17,8 +21,14 @@ export default function KOTPrintPage({
   }
 
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <KotPrintView invoiceId={invoiceId} companyId={companyId || null} />
-    </Suspense>
+    <>
+      <Script
+        src="https://unpkg.com/jsprintmanager/JSPrintManager.js"
+        strategy="beforeInteractive"
+      />
+      <Suspense fallback={<div>Loading...</div>}>
+        <KotPrintView invoiceId={invoiceId} companyId={companyId || null} />
+      </Suspense>
+    </>
   );
 }
