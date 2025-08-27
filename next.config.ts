@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
+      {
+        protocol: 'http',
+        hostname: 'content-provider.payshia.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
 };

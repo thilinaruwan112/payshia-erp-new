@@ -6,6 +6,7 @@ import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCir
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SectionSeparator } from '@/components/section-separator';
+import Image from 'next/image';
 
 const features = [
   {
@@ -72,7 +73,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center px-4 lg:px-6">
           <Link href="/" className="flex items-center justify-center gap-2">
-            <Truck className="h-6 w-6 text-primary" />
+            <Image src="http://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={32} height={32} />
             <span className="text-xl font-bold">Payshia ERP</span>
           </Link>
           <nav className="ml-auto hidden md:flex items-center gap-4 sm:gap-6">
@@ -132,7 +133,7 @@ export default function LandingPage() {
                 <div className="relative flex items-center justify-center h-96 w-96 mx-auto">
                     <div className="absolute flex items-center justify-center h-40 w-40 rounded-full bg-primary/10 border-2 border-dashed border-primary/20">
                          <div className="flex flex-col items-center text-center">
-                            <Truck className="h-10 w-10 text-primary" />
+                            <Image src="http://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={64} height={64} />
                             <h3 className="mt-2 text-xl font-bold text-primary">Payshia ERP</h3>
                          </div>
                     </div>

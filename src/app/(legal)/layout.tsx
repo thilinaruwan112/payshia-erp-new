@@ -1,7 +1,9 @@
 
+
 import { Truck } from "lucide-react";
 import Link from "next/link";
 import { Button } from '@/components/ui/button';
+import Image from "next/image";
 
 export default function LegalLayout({
   children,
@@ -13,7 +15,7 @@ export default function LegalLayout({
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center px-4 lg:px-6">
           <Link href="/" className="flex items-center justify-center gap-2">
-            <Truck className="h-6 w-6 text-primary" />
+            <Image src="http://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={32} height={32} />
             <span className="text-xl font-bold">Payshia ERP</span>
           </Link>
           <nav className="ml-auto hidden md:flex items-center gap-4 sm:gap-6">

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { type ReactNode, useState, useEffect } from 'react';
@@ -98,6 +99,7 @@ import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
+import Image from 'next/image';
 
 const navItems = [
   {
@@ -455,7 +457,7 @@ function UserMenu({ user }: { user: any }) {
 function Brand({ companyName }: { companyName: string }) {
   return (
     <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg">
-      <Truck className="h-6 w-6 text-primary" />
+      <Image src="http://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={32} height={32} />
       <span>{companyName}</span>
     </Link>
   );
