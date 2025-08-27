@@ -1,8 +1,7 @@
 
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, ShoppingCart, Terminal } from 'lucide-react';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, ShoppingCart, Terminal, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SectionSeparator } from '@/components/section-separator';
@@ -96,7 +95,7 @@ export default function LandingPage() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="w-full flex items-center justify-center text-center min-h-[calc(100vh-8rem)] py-12 md:py-24 lg:py-32 xl:py-48">
+        <section className="relative w-full flex items-center justify-center text-center min-h-[calc(100vh-8rem)] py-12 md:py-24 lg:py-32 xl:py-48">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-4">
@@ -122,6 +121,13 @@ export default function LandingPage() {
                    </Button>
                 </div>
             </div>
+          </div>
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2">
+            <a href="#ecosystem" aria-label="Scroll down">
+              <div className="h-12 w-12 rounded-full bg-muted/50 hover:bg-muted flex items-center justify-center animate-bounce">
+                <ChevronDown className="h-6 w-6 text-muted-foreground" />
+              </div>
+            </a>
           </div>
         </section>
 
