@@ -31,14 +31,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, UploadCloud, Loader2 } from "lucide-react";
+import { Trash2, UploadCloud, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import type { Product, Supplier, ProductVariant } from "@/lib/types";
+import type { Product, Supplier, ProductVariant, ProductImage } from "@/lib/types";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
 import { ImageUploadDialog } from "./image-upload-dialog";
+import Image from "next/image";
 
 type Category = {
   id: string;
@@ -114,15 +115,35 @@ export function ProductForm({ product }: ProductFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
-  const [savedProductId, setSavedProductId] = React.useState<string | null>(null);
-  const [savedVariants, setSavedVariants] = React.useState<ProductVariant[]>([]);
+  const [savedProductId, setSavedProductId] = React.useState<string | null>(product?.id || null);
+  const [savedVariants, setSavedVariants] = React.useState<ProductVariant[]>(product?.variants || []);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
   const [sizes, setSizes] = useState<Size[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [customFieldMasters, setCustomFieldMasters] = useState<CustomFieldMaster[]>([]);
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const { company_id } = useLocation();
+
+  const fetchProductImages = async () => {
+    if (!product || !company_id) return;
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${product.id}`);
+        if (!response.ok) throw new Error('Failed to fetch images');
+        const data = await response.json();
+        setProductImages(data || []);
+    } catch (error) {
+        toast({ variant: "destructive", title: "Error", description: "Could not load product images." });
+    }
+  }
+
+  useEffect(() => {
+    if (product) {
+      fetchProductImages();
+    }
+  }, [product, company_id]);
+
 
   useEffect(() => {
     async function fetchData(url: string, setData: Function, type: string) {
@@ -358,6 +379,23 @@ export function ProductForm({ product }: ProductFormProps) {
     }
   }
 
+  const handleDeleteImage = async (imageId: string) => {
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/product-images/${imageId}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete image');
+        }
+        setProductImages(prev => prev.filter(img => img.id !== imageId));
+        toast({ title: 'Image Deleted' });
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+    }
+  };
+
   const pageTitle = product ? `Edit Product: ${product.name}` : 'Create Product';
   const customFieldsInForm = form.watch('customFields');
 
@@ -514,13 +552,38 @@ export function ProductForm({ product }: ProductFormProps) {
                 <Card>
                     <CardHeader>
                         <CardTitle>Media</CardTitle>
-                        <CardDescription>Add images for your product.</CardDescription>
+                        <CardDescription>Images for this product.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                         <div className="border-2 border-dashed border-muted rounded-lg p-12 text-center hover:border-primary/50 transition-colors">
-                            <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
-                            <p className="mt-4 text-sm text-muted-foreground">Images can be added after saving the product.</p>
-                         </div>
+                        {productImages.length > 0 ? (
+                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {productImages.map(image => (
+                                    <div key={image.id} className="relative group">
+                                        <Image
+                                            src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${image.img_url}`}
+                                            alt={product?.name || 'Product image'}
+                                            width={150}
+                                            height={150}
+                                            className="rounded-lg object-cover aspect-square border"
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => handleDeleteImage(image.id)}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                           </div>
+                        ) : (
+                             <div className="border-2 border-dashed border-muted rounded-lg p-12 text-center hover:border-primary/50 transition-colors">
+                                <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                                <p className="mt-4 text-sm text-muted-foreground">No images uploaded. Add product details and save to upload images.</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
                 

@@ -27,6 +27,18 @@ export type GrnItem = {
     total_cost?: number;
 }
 
+export type ProductImage = {
+  id: string;
+  product_id: string;
+  product_variant_id: string;
+  company_id: string;
+  image_type: string;
+  img_url: string;
+  created_at: string;
+  created_by: string;
+};
+
+
 export type ProductVariant = {
   id: string;
   sku: string;
