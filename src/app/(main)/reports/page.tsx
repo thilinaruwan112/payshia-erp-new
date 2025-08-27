@@ -5,9 +5,9 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
@@ -25,48 +25,48 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 
 const masterReports = [
-  { name: 'Customer Master Report', href: '/reports/customer-report' },
-  { name: 'Supplier Master Report', href: '/reports/supplier-report' },
-  { name: 'Item Master Report', href: '/reports/stock-balance' },
+  { name: 'Customer Master Report', href: '/reports/customer-report', filters: ['customer'] },
+  { name: 'Supplier Master Report', href: '/reports/supplier-report', filters: ['supplier'] },
+  { name: 'Item Master Report', href: '/reports/stock-balance', filters: ['item', 'category', 'brand'] },
 ];
 
 const transactionReports = [
-  { name: 'Transaction Summary', href: '#' },
-  { name: 'Transaction by User', href: '#' },
+  { name: 'Transaction Summary', href: '#', filters: ['dateRange', 'location', 'user'] },
+  { name: 'Transaction by User', href: '#', filters: ['dateRange', 'user'] },
 ];
 
 const salesReports = [
-    { name: 'Credit Sales', href: '/reports/credit-sales-summary' },
-    { name: 'Credit Sales Summary Report', href: '/reports/credit-sales-summary' },
-    { name: 'Customer Order Report', href: '/reports/customer-report' },
-    { name: 'Day End Sale Report', href: '/reports/sales-summary' },
-    { name: 'Free Issue Report', href: '#' },
-    { name: 'Gift Vouchers', href: '#' },
-    { name: 'Hourly Sales Report', href: '/reports/sales-summary' },
-    { name: 'Invoice Report', href: '/reports/invoice-report' },
-    { name: 'Invoice Reprint Report', href: '#' },
-    { name: 'Item Movement Report', href: '/reports/bin-card' },
-    { name: 'Item Wise Sales', href: '#' },
-    { name: 'Receipt Report', href: '/sales/receipts' },
-    { name: 'Rep Commission Report', href: '#' },
-    { name: 'Sales Summary Report', href: '/reports/sales-summary' },
-    { name: 'Steward Wise Sale Report', href: '#' },
-    { name: 'User Wise Collection Report', href: '#' },
+    { name: 'Credit Sales Summary Report', href: '/reports/credit-sales-summary', filters: ['dateRange', 'customer', 'location'] },
+    { name: 'Customer Order Report', href: '/reports/customer-report', filters: ['dateRange', 'customer'] },
+    { name: 'Day End Sale Report', href: '/reports/sales-summary', filters: ['date', 'location'] },
+    { name: 'Hourly Sales Report', href: '/reports/sales-summary', filters: ['date', 'location'] },
+    { name: 'Invoice Report', href: '/reports/invoice-report', filters: ['dateRange', 'customer', 'status'] },
+    { name: 'Item Wise Sales', href: '#', filters: ['dateRange', 'item', 'category', 'brand', 'location'] },
+    { name: 'Receipt Report', href: '/sales/receipts', filters: ['dateRange', 'customer'] },
+    { name: 'Sales Summary Report', href: '/reports/sales-summary', filters: ['dateRange', 'location', 'user'] },
 ];
 
 const stockReports = [
-    { name: 'Stock Balance Report', href: '/reports/stock-balance' },
-    { name: 'Bin Card Report', href: '/reports/bin-card' },
-    { name: 'Stock Movement Report', href: '/reports/bin-card' },
+    { name: 'Stock Balance Report', href: '/reports/stock-balance', filters: ['location', 'category', 'brand', 'item'] },
+    { name: 'Bin Card Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
+    { name: 'Stock Movement Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
 ];
 
 const managementReports = [
-    { name: 'Profit & Loss Statement', href: '#' },
-    { name: 'Balance Sheet', href: '#' },
-    { name: 'Trial Balance', href: '#' },
+    { name: 'Profit & Loss Statement', href: '#', filters: ['dateRange'] },
+    { name: 'Balance Sheet', href: '#', filters: ['date'] },
+    { name: 'Trial Balance', href: '#', filters: ['date'] },
 ];
 
+const allReports = [...masterReports, ...transactionReports, ...salesReports, ...stockReports, ...managementReports];
+
+
 const ReportFilters = ({ reportName }: { reportName: string }) => {
+    const report = allReports.find(r => r.name === reportName);
+    const filters = report?.filters || [];
+
+    const hasFilter = (filterName: string) => filters.includes(filterName);
+
     return (
         <Card>
             <CardHeader>
@@ -74,98 +74,83 @@ const ReportFilters = ({ reportName }: { reportName: string }) => {
                 <CardDescription>Set your criteria before viewing the report.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-1.5">
-                        <Label>From Date</Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="outline" className="w-full justify-start font-normal">
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {format(new Date(), 'MM/dd/yyyy')}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
-                        </Popover>
-                    </div>
-                     <div className="space-y-1.5">
-                        <Label>To Date</Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="outline" className="w-full justify-start font-normal">
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {format(new Date(), 'MM/dd/yyyy')}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
-                        </Popover>
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label>Location</Label>
-                        <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
-                    </div>
-                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {hasFilter('dateRange') && (
+                        <>
+                        <div className="space-y-1.5">
+                            <Label>From Date</Label>
+                            <Popover>
+                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{format(new Date(), 'MM/dd/yyyy')}</Button></PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
+                            </Popover>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label>To Date</Label>
+                            <Popover>
+                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{format(new Date(), 'MM/dd/yyyy')}</Button></PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
+                            </Popover>
+                        </div>
+                        </>
+                    )}
+                     {hasFilter('date') && (
+                        <div className="space-y-1.5">
+                            <Label>Date</Label>
+                            <Popover>
+                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{format(new Date(), 'MM/dd/yyyy')}</Button></PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
+                            </Popover>
+                        </div>
+                    )}
+                    {hasFilter('location') && (
+                        <div className="space-y-1.5">
+                            <Label>Location</Label>
+                            <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                        </div>
+                    )}
+                     {hasFilter('customer') && (
                       <div className="space-y-1.5">
                         <Label>Customer</Label>
                         <Input placeholder="Search Customer" />
                     </div>
+                    )}
+                     {hasFilter('supplier') && (
                       <div className="space-y-1.5">
                         <Label>Supplier</Label>
                         <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
                     </div>
+                    )}
+                      {hasFilter('user') && (
                       <div className="space-y-1.5">
-                        <Label>Section</Label>
+                        <Label>User</Label>
                         <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
                     </div>
+                    )}
+                      {hasFilter('item') && (
+                        <div className="space-y-1.5">
+                            <Label>Item</Label>
+                            <Input placeholder="Search Item" />
+                        </div>
+                    )}
+                    {hasFilter('category') && (
+                         <div className="space-y-1.5">
+                            <Label>Category</Label>
+                            <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                        </div>
+                    )}
+                    {hasFilter('brand') && (
+                        <div className="space-y-1.5">
+                            <Label>Brand</Label>
+                            <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                        </div>
+                    )}
+                      {hasFilter('status') && (
+                        <div className="space-y-1.5">
+                            <Label>Status</Label>
+                            <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                        </div>
+                    )}
                  </div>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-1.5">
-                        <Label>Department</Label>
-                        <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
-                    </div>
-                      <div className="space-y-1.5">
-                        <Label>Category</Label>
-                        <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
-                    </div>
-                      <div className="space-y-1.5">
-                        <Label>Order Type</Label>
-                        <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
-                    </div>
-                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-1.5">
-                        <Label>Color Lables</Label>
-                        <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
-                    </div>
-                      <div className="space-y-1.5">
-                        <Label>Package Size</Label>
-                        <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
-                    </div>
-                      <div className="space-y-1.5">
-                        <Label>Model</Label>
-                        <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
-                    </div>
-                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-1.5">
-                        <Label>Brand</Label>
-                        <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
-                    </div>
-                     <div className="space-y-1.5">
-                        <Label>Cabinet</Label>
-                        <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
-                    </div>
-                     <div className="space-y-1.5">
-                        <Label>Item</Label>
-                        <Input placeholder="Search Item" />
-                    </div>
-                 </div>
-                 <div className="flex items-center space-x-2">
-                    <Checkbox id="group-by" />
-                    <Label htmlFor="group-by" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                        Group By RefCategory1
-                    </Label>
-                </div>
             </CardContent>
             <CardFooter>
                  <Button>View Report</Button>
@@ -176,7 +161,7 @@ const ReportFilters = ({ reportName }: { reportName: string }) => {
 
 const ReportList = ({ title, reports, selectedReport, onSelectReport }: { 
     title: string; 
-    reports: {name: string, href: string}[];
+    reports: {name: string, href: string, filters: string[]}[];
     selectedReport: string | null;
     onSelectReport: (name: string) => void;
 }) => (
@@ -212,7 +197,7 @@ const ReportList = ({ title, reports, selectedReport, onSelectReport }: {
 
 
 export default function ReportsPage() {
-    const [selectedReport, setSelectedReport] = useState<string | null>('Item Wise Sales');
+    const [selectedReport, setSelectedReport] = useState<string | null>('Sales Summary Report');
 
   return (
     <div className="flex flex-col gap-6">
