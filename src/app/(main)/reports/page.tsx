@@ -1,93 +1,112 @@
 
-'use client'
+'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AreaChart, CreditCard, FileText, LineChart, Star, Truck, User, Wallet } from 'lucide-react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 
-const reports = [
-    {
-        href: '/reports/sales-summary',
-        icon: <LineChart className="w-8 h-8" />,
-        title: 'Sales Summary',
-        description: 'Analyze sales performance and revenue.',
-    },
-    {
-        href: '/reports/stock-balance',
-        icon: <AreaChart className="w-8 h-8" />,
-        title: 'Stock Balance',
-        description: 'View current inventory levels across locations.',
-    },
-    {
-        href: '/reports/bin-card',
-        icon: <FileText className="w-8 h-8" />,
-        title: 'Bin Card',
-        description: 'Track the complete history of an item.',
-    },
-    {
-        href: '/reports/customer-statement',
-        icon: <User className="w-8 h-8" />,
-        title: 'Customer Statement',
-        description: 'Generate account statements for customers.',
-    },
-    {
-        href: '/reports/credit-sales-summary',
-        icon: <CreditCard className="w-8 h-8" />,
-        title: 'Credit Sales Summary',
-        description: 'Review all sales made on credit.',
-    },
-    {
-        href: '/reports/invoice-report',
-        icon: <FileText className="w-8 h-8" />,
-        title: 'Invoice Report',
-        description: 'A detailed breakdown of all invoices.',
-    },
-    {
-        href: '/reports/supplier-report',
-        icon: <Truck className="w-8 h-8" />,
-        title: 'Supplier Report',
-        description: 'Analyze purchasing activity by supplier.',
-    },
-    {
-        href: '/reports/supplier-balance',
-        icon: <Wallet className="w-8 h-8" />,
-        title: 'Supplier Balance',
-        description: 'View outstanding balances for suppliers.',
-    },
-    {
-        href: '/reports/customer-report',
-        icon: <Star className="w-8 h-8" />,
-        title: 'Customer Report',
-        description: 'Detailed insights into your customer base.',
-    }
+const masterReports = [
+  { name: 'Customer Master Report', href: '/reports/customer-report' },
+  { name: 'Supplier Master Report', href: '/reports/supplier-report' },
+  { name: 'Item Master Report', href: '/reports/stock-balance' },
 ];
 
-export default function ReportsIndexPage() {
-    return (
-        <div className="flex flex-col gap-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Reports Center</h1>
-                <p className="text-muted-foreground">
-                    Access all your business analytics and insights from one place.
-                </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+const transactionReports = [
+  { name: 'Transaction Summary', href: '#' },
+  { name: 'Transaction by User', href: '#' },
+];
+
+const salesReports = [
+    { name: 'Credit Sales', href: '/reports/credit-sales-summary' },
+    { name: 'Credit Sales Summary Report', href: '/reports/credit-sales-summary' },
+    { name: 'Customer Order Report', href: '/reports/customer-report' },
+    { name: 'Day End Sale Report', href: '/reports/sales-summary' },
+    { name: 'Free Issue Report', href: '#' },
+    { name: 'Gift Vouchers', href: '#' },
+    { name: 'Hourly Sales Report', href: '/reports/sales-summary' },
+    { name: 'Invoice Report', href: '/reports/invoice-report' },
+    { name: 'Invoice Reprint Report', href: '#' },
+    { name: 'Item Movement Report', href: '/reports/bin-card' },
+    { name: 'Item Wise Sales', href: '#' },
+    { name: 'Receipt Report', href: '/sales/receipts' },
+    { name: 'Rep Commission Report', href: '#' },
+    { name: 'Sales Summary Report', href: '/reports/sales-summary' },
+    { name: 'Steward Wise Sale Report', href: '#' },
+    { name: 'User Wise Collection Report', href: '#' },
+];
+
+const stockReports = [
+    { name: 'Stock Balance Report', href: '/reports/stock-balance' },
+    { name: 'Bin Card Report', href: '/reports/bin-card' },
+    { name: 'Stock Movement Report', href: '/reports/bin-card' },
+];
+
+const managementReports = [
+    { name: 'Profit & Loss Statement', href: '#' },
+    { name: 'Balance Sheet', href: '#' },
+    { name: 'Trial Balance', href: '#' },
+];
+
+const ReportList = ({ title, reports }: { title: string, reports: {name: string, href: string}[] }) => (
+    <Card>
+        <CardHeader>
+            <CardTitle className="text-xl">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="divide-y">
                 {reports.map((report) => (
-                    <Link href={report.href} key={report.href}>
-                        <Card className="h-full hover:border-primary hover:shadow-lg transition-all flex flex-col">
-                            <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-                                <div className="p-3 bg-muted rounded-full text-primary">
-                                    {report.icon}
-                                </div>
-                                <CardTitle>{report.title}</CardTitle>
-                            </CardHeader>
-                            <CardContent className="flex-1">
-                                <CardDescription>{report.description}</CardDescription>
-                            </CardContent>
-                        </Card>
+                     <Link key={report.name} href={report.href}>
+                        <div className="py-3 px-2 hover:bg-muted/50 cursor-pointer rounded-md">
+                           {report.name}
+                        </div>
                     </Link>
                 ))}
             </div>
-        </div>
-    );
+        </CardContent>
+    </Card>
+)
+
+
+export default function ReportsPage() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Reports Center</h1>
+        <p className="text-muted-foreground">
+          Access all your business analytics and insights from one place.
+        </p>
+      </div>
+
+      <Tabs defaultValue="sale" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="master">Master</TabsTrigger>
+          <TabsTrigger value="transaction">Transaction</TabsTrigger>
+          <TabsTrigger value="sale">Sale</TabsTrigger>
+          <TabsTrigger value="stock">Stock</TabsTrigger>
+          <TabsTrigger value="management">Management</TabsTrigger>
+        </TabsList>
+        <TabsContent value="master">
+            <ReportList title="Master Reports" reports={masterReports} />
+        </TabsContent>
+        <TabsContent value="transaction">
+            <ReportList title="Transaction Reports" reports={transactionReports} />
+        </TabsContent>
+        <TabsContent value="sale">
+            <ReportList title="Sales Reports" reports={salesReports} />
+        </TabsContent>
+        <TabsContent value="stock">
+            <ReportList title="Stock Reports" reports={stockReports} />
+        </TabsContent>
+         <TabsContent value="management">
+            <ReportList title="Management Reports" reports={managementReports} />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 }
