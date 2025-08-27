@@ -113,6 +113,18 @@ const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () 
 
     const hasFilter = (filterName: string) => filters.includes(filterName);
 
+    const handleViewReport = () => {
+        if (reportName === 'Customer Master Report') {
+            window.open(`/reports-print/customer-report/print?company_id=${company_id}`, '_blank');
+        } else {
+            toast({
+                title: "Coming Soon",
+                description: "This report is not yet available for viewing.",
+            });
+        }
+    };
+
+
     return (
         <Card className="flex-1 w-full">
             <CardHeader>
@@ -224,13 +236,7 @@ const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () 
                  </div>
             </CardContent>
             <CardFooter>
-                 {reportName === 'Customer Master Report' ? (
-                     <Button asChild>
-                         <Link href="/crm/customers">View Customer List</Link>
-                     </Button>
-                 ) : (
-                    <Button>View Report</Button>
-                 )}
+                 <Button onClick={handleViewReport}>View Report</Button>
             </CardFooter>
         </Card>
     )
