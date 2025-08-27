@@ -1,5 +1,4 @@
 
-
 import {
   Accordion,
   AccordionContent,
@@ -49,7 +48,7 @@ const features = [
       </ul>
       <br/>
        <strong>Step 3: Set Initial Stock Levels</strong>
-       <p class='mt-1 mb-2'>After creating a product, you need to tell the system how many you have in stock.</p>
+       <p class='mt-1 mb-2'>After creating a product, you need to tell the system how many you have in stock for the first time. This is a one-time setup for new products.</p>
       <ul class="list-decimal pl-6 mt-2 space-y-2">
         <li>Go to <strong>Inventory & Products > Opening Stock</strong>.</li>
         <li>Select the product you just created from the dropdown. This will show all its variants.</li>
@@ -58,9 +57,17 @@ const features = [
         <li>Click <strong>"Save Opening Stock"</strong>. Your inventory levels are now set.</li>
       </ul>
       <br/>
-       <strong>Step 4: Manage Stock (Ongoing)</strong>
+       <strong>Step 4: Add New Stock (Ongoing)</strong>
+       <p class='mt-1 mb-2'>After setting the initial stock, all future stock additions should be done through the purchasing process to maintain accurate records.</p>
       <ul class="list-decimal pl-6 mt-2 space-y-2">
-        <li><strong>Purchasing:</strong> When you buy more stock, use the <strong>Purchasing > Goods Received Notes (GRN)</strong> module to add new inventory. This will automatically update your stock levels.</li>
+        <li>First, create a <strong>Purchase Order (PO)</strong> by navigating to <strong>Purchasing > Purchase Orders</strong> and clicking "New PO". Fill in the supplier and the items you are ordering.</li>
+        <li>When you receive the goods from the supplier, go to <strong>Purchasing > Goods Received Notes (GRN)</strong>.</li>
+        <li>Find the corresponding PO in the "Receivable POs" tab and click "Create GRN".</li>
+        <li>Verify the quantities received, enter batch numbers and expiry dates, and save the GRN. This will automatically update your stock levels for the received items.</li>
+      </ul>
+       <br/>
+       <strong>Step 5: Manage Stock (Ongoing)</strong>
+      <ul class="list-decimal pl-6 mt-2 space-y-2">
         <li><strong>Sales:</strong> When you sell items through the <strong>POS System</strong> or create an <strong>Invoice</strong>, stock levels will be automatically deducted.</li>
         <li><strong>Transfers:</strong> To move stock between your locations, use the <strong>Inventory & Products > Stock Transfers</strong> feature.</li>
         <li><strong>Dashboard:</strong> Monitor overall stock levels, view top products, and see low stock alerts on the <strong>Inventory Dashboard</strong>.</li>
