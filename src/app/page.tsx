@@ -279,82 +279,82 @@ export default function LandingPage() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-12 mt-12">
-              {/* Basic Plan */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Basic</CardTitle>
-                  <CardDescription>Perfect for small businesses and startups.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-baseline">
-                    <span className="text-4xl font-bold">$15</span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />5 Users</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />2 Locations</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />1,000 Products</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Email Support</li>
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full">
-                    Choose Plan
-                  </Button>
-                </CardFooter>
-              </Card>
+            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-12 mt-12">
+                {/* Free Plan */}
+                <Card>
+                    <CardHeader>
+                    <CardTitle>Free</CardTitle>
+                    <CardDescription>Perfect for getting started and exploring the platform.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                    <div className="flex items-baseline">
+                        <span className="text-4xl font-bold">Rs.0</span>
+                        <span className="text-muted-foreground">/month</span>
+                    </div>
+                    <ul className="space-y-2 text-sm">
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />1 User</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />1 Location</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 25 Products</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Community Support</li>
+                    </ul>
+                    </CardContent>
+                    <CardFooter>
+                        <Button className="w-full" asChild>
+                            <Link href="/register">Get Started</Link>
+                        </Button>
+                    </CardFooter>
+                </Card>
 
-              {/* Pro Plan */}
-              <Card className="border-primary ring-2 ring-primary">
-                <CardHeader>
-                  <CardTitle>Pro</CardTitle>
-                  <CardDescription>For growing businesses that need more power.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-baseline">
-                    <span className="text-4xl font-bold">$45</span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-                   <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />20 Users</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />10 Locations</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />10,000 Products</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Priority Support</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />AI Logistics</li>
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full">
-                    Upgrade to Pro
-                  </Button>
-                </CardFooter>
-              </Card>
-              
-              {/* Enterprise Plan */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Enterprise</CardTitle>
-                  <CardDescription>Advanced features for scaling businesses.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                   <div className="flex items-baseline">
-                    <span className="text-4xl font-bold">$99</span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-                   <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Users</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Locations</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Products</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />24/7 Phone Support</li>
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full" variant="outline">
-                    Contact Sales
-                  </Button>
-                </CardFooter>
-              </Card>
+                {/* Standard Plan */}
+                <Card className="border-primary ring-2 ring-primary">
+                    <CardHeader>
+                    <CardTitle>Standard</CardTitle>
+                    <CardDescription>For growing businesses that need more power.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold">Rs.3500</span>
+                         <span className="text-muted-foreground line-through">Rs.5000</span>
+                        <span className="text-muted-foreground">/month</span>
+                    </div>
+                    <ul className="space-y-2 text-sm">
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 10 Users</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 5 Locations</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 1000 Products</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Email Support</li>
+                    </ul>
+                    </CardContent>
+                    <CardFooter>
+                    <Button className="w-full">
+                        Choose Plan
+                    </Button>
+                    </CardFooter>
+                </Card>
+                
+                {/* Pro Plan */}
+                <Card>
+                    <CardHeader>
+                    <CardTitle>Pro</CardTitle>
+                    <CardDescription>Advanced features for scaling businesses.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                    <div className="flex items-baseline">
+                        <span className="text-4xl font-bold">Rs.10000</span>
+                        <span className="text-muted-foreground">/month</span>
+                    </div>
+                    <ul className="space-y-2 text-sm">
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Users</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Locations</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Products</li>
+                        <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Priority Support</li>
+                    </ul>
+                    </CardContent>
+                    <CardFooter>
+                    <Button className="w-full" variant="outline">
+                        Choose Plan
+                    </Button>
+                    </CardFooter>
+                </Card>
             </div>
           </div>
         </section>
@@ -433,3 +433,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
