@@ -58,7 +58,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
   };
 
   const handleUpload = async () => {
-    if (!productId || !companyId || files.length === 0 || !selectedVariantId) {
+    if (!productId || !companyId || files.length === 0 || (productVariants.length > 0 && !selectedVariantId)) {
       toast({
         variant: 'destructive',
         title: 'Upload Error',
@@ -70,8 +70,10 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
 
     const formData = new FormData();
     formData.append('product_id', productId);
-    formData.append('product_variant_id', selectedVariantId);
+    // If there are variants, a variant must be selected. If no variants, this ID may not be needed, but we pass the product ID as a fallback.
+    formData.append('product_variant_id', selectedVariantId || productId); 
     formData.append('company_id', String(companyId));
+    formData.append('image_type', 'gallery');
     formData.append('created_by', 'admin'); // Replace with actual user later
 
     files.forEach(file => {
