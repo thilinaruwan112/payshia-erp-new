@@ -208,7 +208,7 @@ export default function ProductsPage() {
                           alt={product.name}
                           className="aspect-square rounded-md object-cover"
                           height="64"
-                          src={'https://placehold.co/64x64.png'}
+                          src={product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${product.product_image_url}` : "https://placehold.co/64x64.png"}
                           width="64"
                           data-ai-hint="product photo"
                         />
@@ -282,3 +282,4 @@ export default function ProductsPage() {
     </>
   );
 }
+
