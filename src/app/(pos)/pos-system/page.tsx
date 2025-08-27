@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
@@ -86,6 +86,49 @@ export default function POSPage() {
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
   const [isReturnDialogOpen, setReturnDialogOpen] = useState(false);
   const [isRefundDialogOpen, setRefundDialogOpen] = useState(false);
+
+  // Barcode scanning state
+  const [barcode, setBarcode] = useState('');
+
+  const handleBarcodeScan = useCallback((scannedCode: string) => {
+    const product = posProducts.find(p => p.variant.sku === scannedCode);
+    if (product) {
+        toast({ title: "Product Found!", description: `Opening details for ${product.variantName}` });
+        setSelectedProduct(product);
+    } else {
+        toast({ variant: 'destructive', title: "Not Found", description: `No product found with barcode: ${scannedCode}`});
+    }
+  }, [posProducts, toast]);
+
+
+  useEffect(() => {
+    let barcodeTimeout: NodeJS.Timeout;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Enter') {
+            if (barcode.length > 2) { // Minimum length for a barcode
+                handleBarcodeScan(barcode);
+            }
+            setBarcode(''); // Reset after enter
+            return;
+        }
+
+        // Ignore control keys, function keys, etc.
+        if (event.key.length === 1) {
+            setBarcode(prev => prev + event.key);
+        }
+        
+        // Clear the buffer after a short delay to prevent accidental concatenation
+        clearTimeout(barcodeTimeout);
+        barcodeTimeout = setTimeout(() => setBarcode(''), 200);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        clearTimeout(barcodeTimeout);
+    };
+  }, [barcode, handleBarcodeScan]);
 
 
   useEffect(() => {
