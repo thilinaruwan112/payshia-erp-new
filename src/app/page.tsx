@@ -101,7 +101,7 @@ export default function LandingPage() {
       <main className="flex-1">
          <section className="relative w-full landing-page-aurora flex items-center min-h-[calc(100vh-80px)]">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-16">
+            <div className="flex flex-col items-center text-center">
               <div className="space-y-4">
                 <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary font-semibold">
                   Payshia ERP
@@ -109,11 +109,11 @@ export default function LandingPage() {
                 <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-foreground">
                   Scalable & Modular Web-Based ERP
                 </h1>
-                <p className="max-w-[600px] text-muted-foreground md:text-xl">
+                <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl">
                   An all-in-one solution for managing your sales channels, locations,
                   inventory, and orders with powerful AI features.
                 </p>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                <div className="flex flex-col gap-2 min-[400px]:flex-row justify-center">
                   <Button asChild size="lg">
                     <Link href="/register">Get Started</Link>
                   </Button>
@@ -121,16 +121,6 @@ export default function LandingPage() {
                     <Link href="/dashboard">Live Demo</Link>
                   </Button>
                 </div>
-              </div>
-              <div className="hidden lg:block">
-                <Image
-                  src="https://picsum.photos/600/400"
-                  width={600}
-                  height={400}
-                  alt="Dashboard Preview"
-                  className="mx-auto aspect-video overflow-hidden rounded-xl object-cover"
-                  data-ai-hint="dashboard analytics"
-                />
               </div>
             </div>
           </div>
