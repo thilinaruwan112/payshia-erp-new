@@ -123,7 +123,7 @@ export default function LandingPage() {
                       <Link href="/register">Get Started</Link>
                     </Button>
                     <Button asChild variant="outline" size="lg">
-                      <Link href="/dashboard">Live Demo</Link>
+                      <Link href="https://wa.me/94770481363" target="_blank" rel="noopener noreferrer">Live Demo</Link>
                     </Button>
                   </div>
                 </div>
