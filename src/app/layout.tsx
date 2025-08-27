@@ -8,6 +8,7 @@ import { NProgressComponent } from '@/components/ui/nprogress';
 export const metadata: Metadata = {
   title: 'Payshia ERP',
   description: 'A scalable and modular web-based ERP system.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -24,6 +25,11 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Poppins:400,500,600,700&family=Roboto:400,500,700&display=swap"
           rel="stylesheet"
         ></link>
+        <link rel="icon" href="http://content-provider.payshia.com/payshia-erp/app-icon/favicon.ico" sizes="any" />
+        <link rel="icon" href="http://content-provider.payshia.com/payshia-erp/app-icon/favicon-16x16.png" type="image/png" sizes="16x16" />
+        <link rel="icon" href="http://content-provider.payshia.com/payshia-erp/app-icon/favicon-32x32.png" type="image/png" sizes="32x32" />
+        <link rel="apple-touch-icon" href="http://content-provider.payshia.com/payshia-erp/app-icon/apple-touch-icon.png" />
+        <meta name="theme-color" content="#fb5d01" />
       </head>
       <body className="font-body antialiased">
         <Suspense>
