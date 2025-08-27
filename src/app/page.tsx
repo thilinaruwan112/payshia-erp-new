@@ -105,7 +105,7 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-         <section className="relative w-full landing-page-aurora flex items-center min-h-[calc(100vh-64px)]">
+         <section className="relative w-full landing-page-aurora flex items-center min-h-screen">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
@@ -152,13 +152,13 @@ export default function LandingPage() {
 
         
 
-        <section id="ecosystem" className="w-full py-12 md:py-24 lg:py-32 bg-[#1C1C1C]">
+        <section id="ecosystem" className="w-full py-12 md:py-24 lg:py-32 bg-background">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center text-center mb-12 md:mb-20">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-white">
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl text-foreground">
                 A Complete ERP Ecosystem
               </h2>
-              <p className="max-w-[900px] mx-auto text-gray-400 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed mt-4">
+              <p className="max-w-[900px] mx-auto text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed mt-4">
                 All modules are seamlessly integrated to provide a single source
                 of truth for your entire business operation.
               </p>
@@ -168,18 +168,18 @@ export default function LandingPage() {
             <div className="grid grid-cols-2 gap-8 md:hidden">
                 {ecosystemFeatures.map((feature, index) => (
                     <div key={index} className="flex flex-col items-center text-center">
-                        <div className="flex items-center justify-center h-20 w-20 rounded-full bg-black border-2 border-gray-800 shadow-lg">
-                            <feature.icon className="h-8 w-8 text-[#FF6B00]" />
+                        <div className="flex items-center justify-center h-20 w-20 rounded-full bg-muted border-2 border-border shadow-lg">
+                            <feature.icon className="h-8 w-8 text-primary" />
                         </div>
-                        <span className="mt-3 text-sm font-semibold text-white tracking-wider">{feature.name}</span>
+                        <span className="mt-3 text-sm font-semibold text-foreground tracking-wider">{feature.name}</span>
                     </div>
                 ))}
                  <div className="col-span-2 flex flex-col items-center text-center">
                     <div className="text-center mt-8">
-                        <h3 className="text-3xl font-bold text-[#FF6B00]">
+                        <h3 className="text-3xl font-bold text-primary">
                             Payshia ERP
                         </h3>
-                        <p className="text-xl text-[#FF6B00] opacity-80">
+                        <p className="text-xl text-primary/80 opacity-80">
                             Solutions
                         </p>
                     </div>
@@ -192,14 +192,14 @@ export default function LandingPage() {
                 className="absolute flex items-center justify-center h-80 w-80 rounded-full"
                 style={{
                   background:
-                    'radial-gradient(circle, rgba(255,107,0,0.15) 0%, rgba(255,107,0,0) 70%)',
+                    'radial-gradient(circle, hsl(var(--primary)/0.1) 0%, transparent 70%)',
                 }}
               >
                 <div className="text-center">
-                  <h3 className="text-4xl font-bold text-[#FF6B00]">
+                  <h3 className="text-4xl font-bold text-primary">
                     Payshia ERP
                   </h3>
-                  <p className="text-2xl text-[#FF6B00] opacity-80">
+                  <p className="text-2xl text-primary/80">
                     Solutions
                   </p>
                 </div>
@@ -218,10 +218,10 @@ export default function LandingPage() {
                       transition: 'transform 0.3s ease',
                     }}
                   >
-                    <div className="flex items-center justify-center h-20 w-20 rounded-full bg-black border-2 border-gray-800 shadow-lg group-hover:border-[#FF6B00] transition-colors duration-300">
-                      <feature.icon className="h-8 w-8 text-[#FF6B00]" />
+                    <div className="flex items-center justify-center h-20 w-20 rounded-full bg-background border-2 border-border shadow-lg group-hover:border-primary transition-colors duration-300">
+                      <feature.icon className="h-8 w-8 text-primary" />
                     </div>
-                    <span className="mt-3 text-sm font-semibold text-white tracking-wider">
+                    <span className="mt-3 text-sm font-semibold text-foreground tracking-wider">
                       {feature.name}
                     </span>
                   </div>
@@ -229,8 +229,8 @@ export default function LandingPage() {
               })}
             </div>
             <div className="flex justify-center gap-4 mt-20">
-                <Button variant="outline" className="bg-transparent border-gray-600 text-white hover:bg-gray-800 hover:text-white">Explore Products</Button>
-                <Button className="bg-[#FF6B00] text-black hover:bg-[#FF8533]">Contact Sales</Button>
+                <Button variant="outline">Explore Products</Button>
+                <Button>Contact Sales</Button>
             </div>
           </div>
         </section>
