@@ -199,15 +199,6 @@ const navItems = [
     icon: BarChart3,
     subItems: [
         { href: '/reports', label: 'Reports Center', icon: LayoutGrid },
-        { href: '/reports/sales-summary', label: 'Sales Summary', icon: TrendingUp },
-        { href: '/reports/stock-balance', label: 'Stock Balance', icon: AreaChart },
-        { href: '/reports/bin-card', label: 'Bin Card', icon: History },
-        { href: '/reports/customer-statement', label: 'Customer Statement', icon: Users },
-        { href: '/reports/credit-sales-summary', label: 'Credit Sales', icon: CreditCard },
-        { href: '/reports/invoice-report', label: 'Invoice Report', icon: FileText },
-        { href: '/reports/supplier-report', label: 'Supplier Report', icon: Truck },
-        { href: '/reports/supplier-balance', label: 'Supplier Balance', icon: Wallet },
-        { href: '/reports/customer-report', label: 'Customer Report', icon: Contact },
     ],
   },
   // {
