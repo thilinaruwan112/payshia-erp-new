@@ -103,6 +103,7 @@ export default function LandingPage() {
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center text-center">
               <div className="space-y-4">
+                 <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={100} height={100} className="mx-auto" />
                 <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary font-semibold">
                   Payshia ERP
                 </div>
