@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useEffect, useState, Suspense } from 'react';
-import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand, PurchaseOrder } from '@/lib/types';
+import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand, PurchaseOrder, Invoice } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -31,7 +31,7 @@ interface ProductWithVariants {
     product: Product;
     variants: ProductVariant[];
 }
-type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[];
+type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[] | Invoice[];
 
 interface Category { id: string; name: string };
 interface CustomField { id: string; field_name: string; }
@@ -47,7 +47,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
 }) => {
     const report = allReports.find(r => r.name === reportName);
     const filters = report?.filters || [];
-    const { company_id } = useLocation();
+    const { company_id, availableLocations } = useLocation();
     const { toast } = useToast();
     const [customers, setCustomers] = useState<User[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -133,6 +133,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             }))
         )
     ];
+    const locationOptions = [{ value: 'all', label: 'All Locations' }, ...availableLocations.map(l => ({ value: l.location_id, label: l.location_name }))];
     const categoryOptions = [{ value: 'all', label: 'All Categories' }, ...categories.map(c => ({ value: c.id, label: c.name }))];
     const brandOptions = [{ value: 'all', label: 'All Brands' }, ...brands.map(b => ({ value: b.id, label: b.name }))];
     const collectionOptions = [{ value: 'all', label: 'All Collections' }, ...collections.map(c => ({ value: c.id, label: c.title }))];
@@ -156,15 +157,18 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                  url = `https://server-erp.payshia.com/products/with-variants`;
             } else if (reportName === 'Purchase Order Report') {
                 url = `https://server-erp.payshia.com/purchase-orders/filter/`;
-                if (dateRange?.from) {
-                    params.append('from_date', format(dateRange.from, 'yyyy-MM-dd'));
-                    // If only 'from' is selected, use it for 'to' as well for a single-day range
-                    params.append('to_date', format(dateRange.to || dateRange.from, 'yyyy-MM-dd'));
-                }
+            } else if (reportName === 'Sales Summary Report') {
+                url = `https://server-erp.payshia.com/invoices/filter/hold/by-company-status`;
+                params.append('invoice_status', '1'); // Assuming 1 is for completed sales
             } else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
                  setIsFetching(false);
                  return;
+            }
+            
+            if (dateRange?.from) {
+                params.append('from_date', format(dateRange.from, 'yyyy-MM-dd'));
+                params.append('to_date', format(dateRange.to || dateRange.from, 'yyyy-MM-dd'));
             }
             
             const finalUrl = `${url}?${params.toString()}`;
@@ -247,19 +251,19 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                     {hasFilter('location') && (
                         <div className="space-y-1.5">
                             <Label>Location</Label>
-                            <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                            <Combobox options={locationOptions} value={filterValues['location'] || ''} onChange={(value) => handleFilterChange('location', value)} placeholder="Select location..." notFoundText="No locations found." />
                         </div>
                     )}
                      {hasFilter('fromLocation') && (
                         <div className="space-y-1.5">
                             <Label>From Location</Label>
-                            <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                            <Combobox options={locationOptions} value={filterValues['fromLocation'] || ''} onChange={(value) => handleFilterChange('fromLocation', value)} placeholder="Select location..." notFoundText="No locations found." />
                         </div>
                     )}
                      {hasFilter('toLocation') && (
                         <div className="space-y-1.5">
                             <Label>To Location</Label>
-                            <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                            <Combobox options={locationOptions} value={filterValues['toLocation'] || ''} onChange={(value) => handleFilterChange('toLocation', value)} placeholder="Select location..." notFoundText="No locations found." />
                         </div>
                     )}
                      {hasFilter('customer') && (

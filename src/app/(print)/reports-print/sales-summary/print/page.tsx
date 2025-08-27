@@ -3,30 +3,69 @@
 
 import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, Suspense } from 'react';
-import type { Invoice } from '@/lib/types';
+import type { Invoice, User } from '@/lib/types';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface Company {
+    id: string;
+    company_name: string;
+    company_address: string;
+    company_city: string;
+    company_email: string;
+    company_telephone: string;
+}
 
 function PrintViewContent() {
   const searchParams = useSearchParams();
+  const { toast } = useToast();
   const [reportData, setReportData] = useState<Invoice[]>([]);
+  const [customers, setCustomers] = useState<User[]>([]);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const fromDate = searchParams.get('from');
   const toDate = searchParams.get('to');
-  const location = searchParams.get('location');
+  const locationName = searchParams.get('location');
   const dataString = searchParams.get('data');
+  const companyId = searchParams.get('company_id');
 
   useEffect(() => {
-    if (dataString) {
-      setReportData(JSON.parse(decodeURIComponent(dataString)));
+    async function fetchData() {
+        if (!companyId) return;
+        setIsLoading(true);
+        try {
+            if (dataString) {
+                setReportData(JSON.parse(decodeURIComponent(dataString)));
+            }
+            const [companyRes, customerRes] = await Promise.all([
+                 fetch(`https://server-erp.payshia.com/companies/${companyId}`),
+                 fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${companyId}`),
+            ]);
+            if(companyRes.ok) setCompany(await companyRes.json());
+            if(customerRes.ok) setCustomers(await customerRes.json());
+
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to load report data.' });
+        } finally {
+            setIsLoading(false);
+        }
     }
-  }, [dataString]);
+    fetchData();
+  }, [dataString, companyId, toast]);
 
   useEffect(() => {
-    if (reportData.length > 0) {
+    if (reportData.length > 0 && !isLoading) {
       document.title = `Sale Summary Report - ${fromDate} to ${toDate}`;
       setTimeout(() => window.print(), 1000);
     }
-  }, [reportData, fromDate, toDate]);
+  }, [reportData, fromDate, toDate, isLoading]);
+
+  const getCustomerName = (customerId: string) => {
+    const customer = customers.find(c => c.customer_id === customerId);
+    return customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : 'Walk-in Customer';
+  }
 
   const totals = React.useMemo(() => {
     return reportData.reduce((acc, inv) => {
@@ -38,26 +77,27 @@ function PrintViewContent() {
     }, { subTotal: 0, discount: 0, charge: 0, grandTotal: 0, return: 0 });
   }, [reportData]);
   
+  if (isLoading) {
+    return <div className="p-8"><Skeleton className="h-[800px] w-full" /></div>;
+  }
+  
   return (
     <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
         <header className="flex justify-between items-start pb-4 border-b">
             <div>
-                <h1 className="text-lg font-bold">Payshia Software Solutions</h1>
-                <p>#533A3, Rathnapura Road</p>
-                <p>Pelmadulla, 70070</p>
-                <p>Tel: 0770481363 / 0721185012</p>
-                <p>Email: info@payshia.com</p>
-                <p>Web: www.payshia.com</p>
+                <h1 className="text-lg font-bold">{company?.company_name || "Your Company"}</h1>
+                <p>{company?.company_address}</p>
+                <p>{company?.company_telephone}</p>
             </div>
             <div className="text-right">
                 <h2 className="text-2xl font-bold uppercase">Sale Summary Report</h2>
                 <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
                     <span className="font-semibold">From Date:</span>
-                    <span>{fromDate}</span>
+                    <span>{fromDate || 'N/A'}</span>
                     <span className="font-semibold">To Date:</span>
-                    <span>{toDate}</span>
+                    <span>{toDate || 'N/A'}</span>
                     <span className="font-semibold">Location:</span>
-                    <span>{location}</span>
+                    <span>{locationName || 'All'}</span>
                 </div>
             </div>
         </header>
@@ -82,7 +122,7 @@ function PrintViewContent() {
                         <tr key={invoice.id} className="border-b">
                             <td className="p-2 border border-gray-300">{format(new Date(invoice.invoice_date), 'yyyy-MM-dd')}</td>
                             <td className="p-2 border border-gray-300">{invoice.invoice_number}</td>
-                            <td className="p-2 border border-gray-300">{(invoice as any).customerName}</td>
+                            <td className="p-2 border border-gray-300">{getCustomerName(invoice.customer_code)}</td>
                             <td className="p-2 border border-gray-300 text-right font-mono">{parseFloat(invoice.inv_amount).toFixed(2)}</td>
                             <td className="p-2 border border-gray-300 text-right font-mono">{parseFloat(invoice.discount_amount).toFixed(2)}</td>
                             <td className="p-2 border border-gray-300 text-right font-mono">{parseFloat(invoice.service_charge).toFixed(2)}</td>

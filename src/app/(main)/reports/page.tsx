@@ -3,20 +3,15 @@
 
 import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, Suspense, useCallback } from 'react';
-import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand, PurchaseOrder } from '@/lib/types';
+import type { User, Supplier, Product, ProductVariant, PurchaseOrder, Invoice } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { ReportFilters } from '@/components/reports/report-filters';
 import { ReportList } from '@/components/reports/report-list';
 import { CustomerReportView } from '@/components/reports/customer-report-view';
 import { SupplierReportView } from '@/components/reports/supplier-report-view';
 import { ItemMasterReportView } from '@/components/reports/item-master-report-view';
 import { PurchaseOrderReportView } from '@/components/reports/purchase-order-report-view';
+import { SalesSummaryReportView } from '@/components/reports/sales-summary-report-view';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import jsPDF from 'jspdf';
@@ -28,12 +23,13 @@ interface ProductWithVariants {
     product: Product;
     variants: ProductVariant[];
 }
-type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[];
+type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[] | Invoice[];
 
 function ReportsPage() {
     const searchParams = useSearchParams();
     const [selectedReport, setSelectedReport] = useState<string | null>(null);
     const [reportData, setReportData] = useState<ReportData>([]);
+    const [customers, setCustomers] = useState<User[]>([]);
     const { company_id } = useLocation();
     const { toast } = useToast();
 
@@ -46,6 +42,20 @@ function ReportsPage() {
         setReportData([]);
     }, []);
     
+    useEffect(() => {
+        // Fetch customers once for use in other reports like Sales Summary
+        async function fetchInitialData() {
+             if (!company_id) return;
+             try {
+                const res = await fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`);
+                if (res.ok) setCustomers(await res.json());
+             } catch (error) {
+                 console.error("Failed to fetch initial customer data", error);
+             }
+        }
+        fetchInitialData();
+    }, [company_id]);
+
     const handlePrintReport = useCallback(() => {
         if (!company_id) return;
         let url = '';
@@ -57,6 +67,9 @@ function ReportsPage() {
              url = `/reports-print/item-master-report/print?company_id=${company_id}`;
         } else if (selectedReport === 'Purchase Order Report') {
             url = `/reports-print/purchase-order-report/print?company_id=${company_id}`;
+        } else if (selectedReport === 'Sales Summary Report') {
+            const reportDataString = encodeURIComponent(JSON.stringify(reportData));
+            url = `/reports-print/sales-summary/print?company_id=${company_id}&data=${reportDataString}`;
         }
         
         if (url) {
@@ -64,7 +77,7 @@ function ReportsPage() {
         } else {
              toast({ title: "Coming Soon", description: "This report is not yet available for printing." });
         }
-    }, [selectedReport, company_id, toast]);
+    }, [selectedReport, company_id, toast, reportData]);
 
     const handleExportCSV = useCallback(() => {
         if (reportData.length === 0) {
@@ -218,6 +231,9 @@ function ReportsPage() {
                          )}
                          {reportData.length > 0 && selectedReport === 'Purchase Order Report' && (
                             <PurchaseOrderReportView purchaseOrders={reportData as PurchaseOrder[]} />
+                         )}
+                          {reportData.length > 0 && selectedReport === 'Sales Summary Report' && (
+                            <SalesSummaryReportView invoices={reportData as Invoice[]} customers={customers} />
                          )}
                     </div>
                 ) : (
