@@ -121,8 +121,12 @@ export type User = {
   name: string;
   customer_first_name?: string;
   customer_last_name?: string;
+  first_name?: string;
+  last_name?: string;
+  user_name?: string;
   email_address?: string;
   role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer' | 'Cashier' | string;
+  acc_type?: string;
   avatar?: string;
   loyaltyPoints?: number;
   email?: string;

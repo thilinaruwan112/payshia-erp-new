@@ -187,17 +187,17 @@ export function UserManagement() {
                     <div className="flex items-center gap-3">
                       <Avatar>
                         <AvatarImage src={user.avatar} alt={user.name} />
-                        <AvatarFallback>{user.name?.charAt(0) || 'U'}</AvatarFallback>
+                        <AvatarFallback>{user.first_name?.charAt(0) || 'U'}{user.last_name?.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.id}</p>
+                        <p className="font-medium">{user.first_name} {user.last_name}</p>
+                        <p className="text-sm text-muted-foreground">{user.user_name}</p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    <Badge variant="outline">{user.role}</Badge>
+                    <Badge variant="outline">{user.acc_type}</Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                      <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
