@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useSearchParams } from 'next/navigation';
@@ -635,7 +636,7 @@ const ReportList = ({ reports, selectedReport, onSelectReport }: {
 )
 
 
-export default function ReportsPage() {
+function ReportsPage() {
     const searchParams = useSearchParams();
     const [selectedReport, setSelectedReport] = useState<string | null>(null);
     const [reportData, setReportData] = useState<ReportData>([]);
@@ -842,3 +843,4 @@ function ReportsPageWrapper() {
 }
 
 export default ReportsPageWrapper;
+
