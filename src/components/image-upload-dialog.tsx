@@ -51,7 +51,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
                 }
             }
           } else {
-             // Handle products with no variants
+             // Handle products with no variants, where variantId might be the same as productId
              const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${productId}`);
               if (response.ok) {
                   const data: ProductImage[] = await response.json();
