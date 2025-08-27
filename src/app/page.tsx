@@ -2,10 +2,10 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote } from 'lucide-react';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-
+import { SectionSeparator } from '@/components/section-separator';
 
 const features = [
   {
@@ -33,6 +33,15 @@ const features = [
     name: 'HRM',
     description: 'Manage your employees, payroll, and attendance all in one place.',
   },
+];
+
+const ecosystemFeatures = [
+    { name: "Inventory", icon: Package, angle: 0 },
+    { name: "Sales", icon: DollarSign, angle: 60 },
+    { name: "CRM", icon: Users, angle: 120 },
+    { name: "Purchasing", icon: ShoppingCart, angle: 180 },
+    { name: "HRM", icon: Briefcase, angle: 240 },
+    { name: "Accounting", icon: LayoutDashboard, angle: 300 },
 ];
 
 
@@ -81,10 +90,9 @@ export default function LandingPage() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
+        <section className="w-full flex items-center justify-center text-center min-h-[calc(100vh-4rem)] py-12 md:py-24 lg:py-32 xl:py-48">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-1 lg:gap-12">
-              <div className="flex flex-col justify-center space-y-4 text-center">
+            <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-4">
                   <h1 className="text-4xl font-bold tracking-tighter sm:text-6xl xl:text-7xl/none text-foreground">
                     The All-In-One Platform to Run Your Business
@@ -100,10 +108,46 @@ export default function LandingPage() {
                     </Link>
                    </Button>
                 </div>
-              </div>
             </div>
           </div>
         </section>
+
+        <SectionSeparator />
+
+        <section id="ecosystem" className="w-full py-12 md:py-24 lg:py-32 bg-background/50">
+            <div className="container mx-auto px-4 md:px-6">
+                <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+                    <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Our Ecosystem</div>
+                    <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">A Complete ERP Ecosystem</h2>
+                    <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                        All modules are seamlessly integrated to provide a single source of truth for your entire business operation.
+                    </p>
+                </div>
+                <div className="relative flex items-center justify-center h-96 w-96 mx-auto">
+                    <div className="absolute flex items-center justify-center h-40 w-40 rounded-full bg-primary/10 border-2 border-dashed border-primary/20">
+                         <div className="flex flex-col items-center text-center">
+                            <Truck className="h-10 w-10 text-primary" />
+                            <h3 className="mt-2 text-xl font-bold text-primary">Payshia ERP</h3>
+                         </div>
+                    </div>
+                    {ecosystemFeatures.map((feature, index) => {
+                        const angle = feature.angle * (Math.PI / 180);
+                        const x = 125 * Math.cos(angle);
+                        const y = 125 * Math.sin(angle);
+                        return (
+                            <div key={index} className="absolute flex flex-col items-center text-center group" style={{ transform: `translate(${x}px, ${y}px)`}}>
+                                <div className="flex items-center justify-center h-20 w-20 rounded-full bg-background border shadow-md group-hover:bg-primary transition-colors duration-300">
+                                    <feature.icon className="h-8 w-8 text-muted-foreground group-hover:text-primary-foreground" />
+                                </div>
+                                <span className="mt-2 text-sm font-semibold">{feature.name}</span>
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+        </section>
+
+        <SectionSeparator />
         
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
           <div className="container mx-auto px-4 md:px-6">
@@ -133,6 +177,8 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        <SectionSeparator />
 
         <section id="pricing" className="w-full py-12 md:py-24 lg:py-32 bg-background">
           <div className="container mx-auto px-4 md:px-6">
@@ -225,6 +271,8 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <SectionSeparator />
+
         <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
@@ -297,3 +345,4 @@ export default function LandingPage() {
     </div>
   );
 }
+
