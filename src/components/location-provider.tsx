@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, useMemo, useEffect } from '
 import type { Location } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { usePathname } from 'next/navigation';
+import { LocationSelectionDialog } from './location-selection-dialog';
 
 interface LocationContextType {
   currentLocation: Location | null;
@@ -35,6 +36,17 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const storedLocation = sessionStorage.getItem('currentLocation');
+    if (storedLocation) {
+        try {
+            setCurrentLocation(JSON.parse(storedLocation));
+        } catch (e) {
+            console.error("Failed to parse stored location", e);
+        }
+    }
+  }, [])
+
+  useEffect(() => {
     async function fetchLocations() {
       if (!company_id) {
           setIsLoading(false);
@@ -53,23 +65,18 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
 
         setAvailableLocations(companyLocations);
 
-        if (companyLocations.length > 0) {
+        if (companyLocations.length > 0 && !sessionStorage.getItem('currentLocation')) {
             if (isPos) {
                 const posEnabledLocations = companyLocations.filter(loc => loc.pos_status === "1");
-                if (posEnabledLocations.length > 0) {
-                     setAvailableLocations(posEnabledLocations);
-                     // Auto-select if only one POS location is available
-                     if (posEnabledLocations.length === 1) {
-                         setCurrentLocation(posEnabledLocations[0]);
-                     }
-                } else {
-                    // No POS locations, clear available locations for POS
-                    setAvailableLocations([]);
-                }
+                setAvailableLocations(posEnabledLocations);
+                 if (posEnabledLocations.length === 1) {
+                    handleSetCurrentLocation(posEnabledLocations[0]);
+                 }
             } else {
-                 const defaultLocation = companyLocations.find(l => l.location_name === 'Main Branch') || companyLocations[0];
-                 setCurrentLocation(defaultLocation || null);
+                // If not in POS and no location is set, the dialog will be shown by the condition below.
             }
+        } else if (companyLocations.length > 0 && sessionStorage.getItem('currentLocation')) {
+            // Location is already set, do nothing.
         }
 
       } catch (error) {
@@ -85,18 +92,30 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     fetchLocations();
   }, [toast, isPos, company_id]);
 
+  const handleSetCurrentLocation = (location: Location) => {
+    setCurrentLocation(location);
+    sessionStorage.setItem('currentLocation', JSON.stringify(location));
+  };
+
 
   const value = useMemo(() => ({
     currentLocation,
-    setCurrentLocation,
+    setCurrentLocation: handleSetCurrentLocation,
     availableLocations,
     isLoading,
     company_id
   }), [currentLocation, availableLocations, isLoading, company_id]);
 
+  const showLocationDialog = !isLoading && !isPos && availableLocations.length > 0 && !currentLocation;
+
   return (
     <LocationContext.Provider value={value as LocationContextType}>
-      {children}
+        <LocationSelectionDialog 
+            open={showLocationDialog}
+            locations={availableLocations}
+            onSelectLocation={handleSetCurrentLocation}
+        />
+        {!showLocationDialog && children}
     </LocationContext.Provider>
   );
 }
