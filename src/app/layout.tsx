@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -11,12 +12,12 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   icons: {
     icon: [
-        { url: 'http://content-provider.payshia.com/payshia-erp/app-icon/favicon.ico', sizes: 'any', type: 'image/x-icon' },
-        { url: 'http://content-provider.payshia.com/payshia-erp/app-icon/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-        { url: 'http://content-provider.payshia.com/payshia-erp/app-icon/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+        { url: 'https://content-provider.payshia.com/payshia-erp/app-icon/favicon.ico', sizes: 'any', type: 'image/x-icon' },
+        { url: 'https://content-provider.payshia.com/payshia-erp/app-icon/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+        { url: 'https://content-provider.payshia.com/payshia-erp/app-icon/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
     ],
     apple: [
-      { url: 'http://content-provider.payshia.com/payshia-erp/app-icon/apple-touch-icon.png' },
+      { url: 'https://content-provider.payshia.com/payshia-erp/app-icon/apple-touch-icon.png' },
     ],
   },
 };
