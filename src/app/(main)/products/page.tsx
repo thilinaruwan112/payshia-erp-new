@@ -20,7 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MoreHorizontal, PlusCircle, Star, Trash2, UploadCloud } from 'lucide-react';
-import type { Product, InventoryItem, ProductVariant } from '@/lib/types';
+import type { Product, InventoryItem, ProductVariant, ProductImage } from '@/lib/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +43,7 @@ import { ImageUploadDialog } from '@/components/image-upload-dialog';
 
 interface ProductWithVariants extends Product {
   variants: ProductVariant[];
+  frontImageUrl?: string | null;
 }
 
 
@@ -74,20 +75,40 @@ export default function ProductsPage() {
       
       const productsData: Product[] = await productsResponse.json();
       
-      // Fetch variants for each product
-      const productsWithVariants = await Promise.all(
+      const productsWithDetails = await Promise.all(
         productsData.map(async (p) => {
           const detailsResponse = await fetch(`https://server-erp.payshia.com/products/details/${p.id}`);
           if (!detailsResponse.ok) {
-            console.error(`Failed to fetch variants for product ${p.id}`);
-            return { ...p, variants: [] };
+            console.error(`Failed to fetch details for product ${p.id}`);
+            return { ...p, variants: [], frontImageUrl: p.product_image_url };
           }
           const detailsData = await detailsResponse.json();
-          return { ...p, price: parseFloat(p.price as any), variants: detailsData.variants || [] };
+
+          // Fetch the front image specifically
+          let frontImageUrl: string | null = null;
+          if (detailsData.variants && detailsData.variants.length > 0) {
+              const firstVariant = detailsData.variants[0];
+              const imageResponse = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${p.id}&product_variant_id=${firstVariant.id}`);
+              if (imageResponse.ok) {
+                  const images: ProductImage[] = await imageResponse.json();
+                  const frontImage = images.find(img => img.image_type === 'front img');
+                  frontImageUrl = frontImage ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}` : null;
+              }
+          }
+           if (!frontImageUrl) {
+            frontImageUrl = p.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${p.product_image_url}` : null;
+          }
+
+          return { 
+            ...p, 
+            price: parseFloat(p.price as any), 
+            variants: detailsData.variants || [],
+            frontImageUrl: frontImageUrl,
+          };
         })
       );
       
-      setProducts(productsWithVariants);
+      setProducts(productsWithDetails);
       setPlanDetails(limitResponse);
 
     } catch (error) {
@@ -240,7 +261,7 @@ export default function ProductsPage() {
                           <Image
                             alt={product.name}
                             className="aspect-square rounded-md object-cover"
-                            src={product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${product.product_image_url}` : "https://placehold.co/64x64.png"}
+                            src={product.frontImageUrl || "https://placehold.co/64x64.png"}
                             width={64}
                             height={64}
                             data-ai-hint="product photo"
