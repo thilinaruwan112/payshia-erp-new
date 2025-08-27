@@ -457,14 +457,14 @@ export default function POSPage() {
     const customer = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
 
     const newActiveOrder: ActiveOrder = {
-        id: `order-${Date.now()}`,
-        name: `Loaded ${invoice.invoice_number}`,
-        cart: loadedCartItems,
-        discount: parseFloat(invoice.discount_amount) - loadedCartItems.reduce((acc, item) => acc + (item.itemDiscount || 0), 0),
-        serviceCharge: parseFloat(invoice.service_charge),
-        customer: customer,
-        orderType: (invoice.remark?.split(' ')[0] as any) || 'Retail', // Infer type from remark
-        originalInvoiceNumber: invoice.invoice_number,
+      id: `order-${Date.now()}`,
+      name: `Loaded ${invoice.invoice_number}`,
+      cart: loadedCartItems,
+      discount: parseFloat(invoice.discount_amount) - loadedCartItems.reduce((acc, item) => acc + (item.itemDiscount || 0), 0),
+      serviceCharge: parseFloat(invoice.service_charge),
+      customer: customer,
+      orderType: (invoice.remark?.split(' ')[0] as any) || 'Retail', // Infer type from remark
+      originalInvoiceNumber: invoice.invoice_number,
     };
     
     setActiveOrders(prev => [...prev, newActiveOrder]);
@@ -636,7 +636,7 @@ export default function POSPage() {
                     </div>
                 </div>
                 <div className="flex-1 flex overflow-hidden">
-                    <div className="flex-1 p-4">
+                    <div className="flex-1 p-4 overflow-y-auto">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[calc(100vh-250px)]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
                     ) : (
@@ -674,7 +674,7 @@ export default function POSPage() {
                         <DrawerTrigger asChild>
                             <Button className="w-full h-16 text-lg shadow-lg">
                                 <div className="flex items-center justify-between w-full">
-                                    <div className='flex items-center gap-2'><ShoppingCart className="h-6 w-6" /><span>View {currentOrder.name}</span><Badge variant="secondary" className="text-base">{totalItems}</Badge></div>
+                                    <div className='flex items-center gap-2'><ShoppingCart className="mr-2 h-6 w-6" /><span>View {currentOrder.name}</span><Badge variant="secondary" className="text-base">{totalItems}</Badge></div>
                                     <span className='font-bold'>{currencySymbol}{orderTotals.total.toFixed(2)}</span>
                                 </div>
                             </Button>
@@ -689,4 +689,3 @@ export default function POSPage() {
     </>
   );
 }
-
