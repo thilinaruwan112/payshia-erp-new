@@ -38,6 +38,7 @@ import React, { useState, useEffect } from "react";
 import type { Product, Supplier } from "@/lib/types";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
+import { ImageUploadDialog } from "./image-upload-dialog";
 
 type Category = {
   id: string;
@@ -112,6 +113,8 @@ export function ProductForm({ product }: ProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
+  const [savedProductId, setSavedProductId] = React.useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
@@ -307,6 +310,7 @@ export function ProductForm({ product }: ProductFormProps) {
       }
 
       const productId = product?.id || result.product.id;
+      setSavedProductId(productId);
 
       if (data.customFields && data.customFields.length > 0) {
         for (const cf of data.customFields) {
@@ -332,8 +336,7 @@ export function ProductForm({ product }: ProductFormProps) {
         title: product ? "Product Updated" : "Product Created",
         description: result.message || "The product has been saved successfully.",
       });
-      router.push('/products');
-      router.refresh();
+      setUploadDialogOpen(true);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({
@@ -351,6 +354,18 @@ export function ProductForm({ product }: ProductFormProps) {
 
 
   return (
+    <>
+    <ImageUploadDialog
+      isOpen={isUploadDialogOpen}
+      onOpenChange={setUploadDialogOpen}
+      productId={savedProductId}
+      companyId={company_id}
+      onUploadComplete={() => {
+        setUploadDialogOpen(false);
+        router.push('/products');
+        router.refresh();
+      }}
+    />
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -494,8 +509,7 @@ export function ProductForm({ product }: ProductFormProps) {
                     <CardContent>
                          <div className="border-2 border-dashed border-muted rounded-lg p-12 text-center hover:border-primary/50 transition-colors">
                             <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
-                            <p className="mt-4 text-sm text-muted-foreground">Drag and drop images here, or click to browse.</p>
-                            <Button variant="outline" type="button" className="mt-4">Browse Files</Button>
+                            <p className="mt-4 text-sm text-muted-foreground">Images can be added after saving the product.</p>
                          </div>
                     </CardContent>
                 </Card>
@@ -848,5 +862,6 @@ export function ProductForm({ product }: ProductFormProps) {
         </div>
       </form>
     </Form>
+    </>
   );
 }
