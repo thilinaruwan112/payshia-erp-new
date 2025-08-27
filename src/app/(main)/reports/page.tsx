@@ -227,7 +227,7 @@ export default function ReportsPage() {
       </div>
 
       <Tabs defaultValue="sale" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6">
           <TabsTrigger value="master">Master</TabsTrigger>
           <TabsTrigger value="transaction">Transaction</TabsTrigger>
           <TabsTrigger value="sale">Sale</TabsTrigger>
