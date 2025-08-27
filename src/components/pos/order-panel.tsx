@@ -401,7 +401,7 @@ export function OrderPanel({
             description: `Invoice #${result.invoice_number} created.`
         });
         
-        window.open(`/sales-print/invoices/${result.invoice_id}/print?company_id=${company_id}`, '_blank');
+        window.open(`/sales-print/invoices/${result.id}/print?company_id=${company_id}`, '_blank');
         
         setPaymentOpen(false);
         onClearCart(orderId);
@@ -462,27 +462,11 @@ export function OrderPanel({
     <div className="flex flex-col h-full bg-card">
       <header className="p-4 border-b border-border flex items-center justify-between">
         <h2 className="text-xl font-bold">{orderName}</h2>
-        <div className="flex items-center gap-1">
-            <Dialog open={isEditOrderOpen} onOpenChange={setEditOrderOpen}>
-                <DialogTrigger asChild>
-                     <Button variant="ghost" size="icon">
-                        <Settings className="h-5 w-5" />
-                    </Button>
-                </DialogTrigger>
-                <EditOrderDialog 
-                    order={order}
-                    onUpdateDetails={onUpdateDetails}
-                    availableTables={availableTables}
-                    availableStewards={availableStewards}
-                    onClose={() => setEditOrderOpen(false)}
-                />
-            </Dialog>
-             {isDrawer && (
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                    <X className="h-5 w-5" />
-                </Button>
-            )}
-        </div>
+        {isDrawer && (
+            <Button variant="ghost" size="icon" onClick={onClose}>
+                <X className="h-5 w-5" />
+            </Button>
+        )}
       </header>
       
       {steward && (
