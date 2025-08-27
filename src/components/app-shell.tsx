@@ -58,6 +58,7 @@ import {
   Utensils,
   PackagePlus,
   LayoutList,
+  UserCog,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -215,6 +216,7 @@ const navItems = [
     subItems: [
       { href: '/settings/profile', label: 'Profile', icon: Users },
       { href: '/settings/users', label: 'Users', icon: Users },
+      { href: '/settings/roles', label: 'Roles & Permissions', icon: UserCog },
       { href: '/locations', label: 'Locations', icon: Warehouse },
       { href: '/settings/tables', label: 'Dine-in Tables', icon: Utensils },
       { href: '/billing', label: 'Billing & Plans', icon: CreditCard },
