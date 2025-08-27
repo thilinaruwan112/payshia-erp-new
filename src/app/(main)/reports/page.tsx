@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, ArrowLeft } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -67,7 +67,7 @@ const managementReports = [
 const allReports = [...masterReports, ...transactionReports, ...salesReports, ...purchasingReports, ...stockReports, ...managementReports];
 
 
-const ReportFilters = ({ reportName }: { reportName: string }) => {
+const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () => void }) => {
     const report = allReports.find(r => r.name === reportName);
     const filters = report?.filters || [];
 
@@ -76,8 +76,15 @@ const ReportFilters = ({ reportName }: { reportName: string }) => {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Filters for: {reportName}</CardTitle>
-                <CardDescription>Set your criteria before viewing the report.</CardDescription>
+                <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="md:hidden" onClick={onBack}>
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div>
+                        <CardTitle>Filters for: {reportName}</CardTitle>
+                        <CardDescription>Set your criteria before viewing the report.</CardDescription>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent className="space-y-4">
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -183,39 +190,30 @@ const ReportList = ({ title, reports, selectedReport, onSelectReport }: {
     selectedReport: string | null;
     onSelectReport: (name: string) => void;
 }) => (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="lg:col-span-1">
-            <CardHeader>
-                <CardTitle className="text-xl">{title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="flex flex-col">
-                    {reports.map((report) => (
-                        <button key={report.name} onClick={() => onSelectReport(report.name)}
-                            className={cn(
-                                "text-left py-3 px-2 rounded-md",
-                                selectedReport === report.name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/50'
-                            )}
-                        >
-                            {report.name}
-                        </button>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
-        <div className="lg:col-span-2">
-            {selectedReport ? <ReportFilters reportName={selectedReport} /> : (
-                <div className="flex items-center justify-center h-full border-2 border-dashed rounded-lg">
-                    <p className="text-muted-foreground">Select a report to see filters</p>
-                </div>
-            )}
-        </div>
-    </div>
+    <Card>
+        <CardHeader>
+            <CardTitle className="text-xl">{title}</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="flex flex-col">
+                {reports.map((report) => (
+                    <button key={report.name} onClick={() => onSelectReport(report.name)}
+                        className={cn(
+                            "text-left py-3 px-2 rounded-md",
+                            selectedReport === report.name ? 'bg-primary text-primary-foreground' : 'hover:bg-muted/50'
+                        )}
+                    >
+                        {report.name}
+                    </button>
+                ))}
+            </div>
+        </CardContent>
+    </Card>
 )
 
 
 export default function ReportsPage() {
-    const [selectedReport, setSelectedReport] = useState<string | null>('Sales Summary Report');
+    const [selectedReport, setSelectedReport] = useState<string | null>(null);
 
   return (
     <div className="flex flex-col gap-6">
@@ -235,24 +233,23 @@ export default function ReportsPage() {
           <TabsTrigger value="stock">Stock</TabsTrigger>
           <TabsTrigger value="management">Management</TabsTrigger>
         </TabsList>
-        <TabsContent value="master">
-            <ReportList title="Master Reports" reports={masterReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} />
-        </TabsContent>
-        <TabsContent value="transaction">
-            <ReportList title="Transaction Reports" reports={transactionReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} />
-        </TabsContent>
-        <TabsContent value="sale">
-            <ReportList title="Sales Reports" reports={salesReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} />
-        </TabsContent>
-        <TabsContent value="purchasing">
-            <ReportList title="Purchasing Reports" reports={purchasingReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} />
-        </TabsContent>
-        <TabsContent value="stock">
-            <ReportList title="Stock Reports" reports={stockReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} />
-        </TabsContent>
-         <TabsContent value="management">
-            <ReportList title="Management Reports" reports={managementReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} />
-        </TabsContent>
+         <div className="mt-6 md:grid md:grid-cols-3 md:gap-8">
+            <div className={cn("md:col-span-1", selectedReport && "hidden md:block")}>
+                 <TabsContent value="master" className="mt-0"><ReportList title="Master Reports" reports={masterReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
+                 <TabsContent value="transaction" className="mt-0"><ReportList title="Transaction Reports" reports={transactionReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
+                 <TabsContent value="sale" className="mt-0"><ReportList title="Sales Reports" reports={salesReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
+                 <TabsContent value="purchasing" className="mt-0"><ReportList title="Purchasing Reports" reports={purchasingReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
+                 <TabsContent value="stock" className="mt-0"><ReportList title="Stock Reports" reports={stockReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
+                 <TabsContent value="management" className="mt-0"><ReportList title="Management Reports" reports={managementReports} selectedReport={selectedReport} onSelectReport={setSelectedReport} /></TabsContent>
+            </div>
+            <div className="md:col-span-2">
+                {selectedReport ? <ReportFilters reportName={selectedReport} onBack={() => setSelectedReport(null)} /> : (
+                    <div className="hidden md:flex items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[300px]">
+                        <p className="text-muted-foreground">Select a report to see filters</p>
+                    </div>
+                )}
+            </div>
+        </div>
       </Tabs>
     </div>
   );
