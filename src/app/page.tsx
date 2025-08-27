@@ -1,7 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, ShoppingCart, Terminal, ChevronDown, LogIn, Phone, Search, ArrowDown } from 'lucide-react';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, ShoppingCart, Terminal, ChevronDown, LogIn, Phone, Search, ArrowDown, Building } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SectionSeparator } from '@/components/section-separator';
@@ -74,22 +74,22 @@ const testimonials = [
 
 const premiumAgents = [
     {
-        name: 'Kasun Perera',
+        name: 'Innovate Solutions',
         location: 'Colombo, Sri Lanka',
         avatar: 'https://i.pravatar.cc/150?u=agent1',
     },
     {
-        name: 'Nimali Silva',
+        name: 'Kandy Tech Partners',
         location: 'Kandy, Sri Lanka',
         avatar: 'https://i.pravatar.cc/150?u=agent2',
     },
     {
-        name: 'Suresh Kumar',
+        name: 'Jaffna Business Systems',
         location: 'Jaffna, Sri Lanka',
         avatar: 'https://i.pravatar.cc/150?u=agent3',
     },
     {
-        name: 'Fatima Rizwan',
+        name: 'Galle Enterprise Group',
         location: 'Galle, Sri Lanka',
         avatar: 'https://i.pravatar.cc/150?u=agent4',
     }
@@ -429,7 +429,7 @@ export default function LandingPage() {
               </div>
               <div className="mx-auto w-full max-w-sm space-y-2">
                    <Button size="lg" asChild>
-                     <Link href="/agent-register">
+                     <Link href="/register">
                       Become an Agent
                     </Link>
                    </Button>
@@ -454,10 +454,9 @@ export default function LandingPage() {
                 <div className="mx-auto grid max-w-5xl items-stretch gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-4 mt-12">
                     {premiumAgents.map((agent) => (
                         <Card key={agent.name} className="flex flex-col text-center items-center p-6 hover:shadow-lg transition-shadow">
-                            <Avatar className="w-24 h-24 mb-4 border-2 border-primary">
-                                <AvatarImage src={agent.avatar} alt={agent.name} data-ai-hint="profile photo"/>
-                                <AvatarFallback>{agent.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                            </Avatar>
+                             <div className="flex items-center justify-center h-24 w-24 mb-4 rounded-full bg-primary/10 border-2 border-primary">
+                                <Building className="h-10 w-10 text-primary" />
+                            </div>
                             <CardHeader className="p-0">
                                 <CardTitle className="text-lg">{agent.name}</CardTitle>
                                 <CardDescription>{agent.location}</CardDescription>
