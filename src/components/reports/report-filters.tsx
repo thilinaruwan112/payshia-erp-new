@@ -113,14 +113,14 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
         fetchDropdownData();
     }, [reportName, filters, company_id, toast]);
 
-    const customerOptions = customers.map(c => ({
+    const customerOptions = [{ value: 'all', label: 'All Customers' }, ...customers.map(c => ({
         value: c.customer_id,
         label: `${c.customer_first_name} ${c.customer_last_name}`,
-    }));
-     const supplierOptions = suppliers.map(s => ({
+    }))];
+     const supplierOptions = [{ value: 'all', label: 'All Suppliers' }, ...suppliers.map(s => ({
         value: s.supplier_id,
         label: s.supplier_name,
-    }));
+    }))];
     const itemOptions = [
         { value: 'all', label: 'All Items' },
         ...products.flatMap(p => 
@@ -130,12 +130,12 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             }))
         )
     ];
-    const categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
-    const brandOptions = brands.map(b => ({ value: b.id, label: b.name }));
-    const collectionOptions = collections.map(c => ({ value: c.id, label: c.title }));
-    const colorOptions = colors.map(c => ({ value: c.id, label: c.name }));
-    const sizeOptions = sizes.map(s => ({ value: s.id, label: s.value }));
-    const customFieldOptions = customFields.map(f => ({ value: f.id, label: f.field_name }));
+    const categoryOptions = [{ value: 'all', label: 'All Categories' }, ...categories.map(c => ({ value: c.id, label: c.name }))];
+    const brandOptions = [{ value: 'all', label: 'All Brands' }, ...brands.map(b => ({ value: b.id, label: b.name }))];
+    const collectionOptions = [{ value: 'all', label: 'All Collections' }, ...collections.map(c => ({ value: c.id, label: c.title }))];
+    const colorOptions = [{ value: 'all', label: 'All Colors' }, ...colors.map(c => ({ value: c.id, label: c.name }))];
+    const sizeOptions = [{ value: 'all', label: 'All Sizes' }, ...sizes.map(s => ({ value: s.id, label: s.value }))];
+    const customFieldOptions = [{ value: 'all', label: 'All Fields' }, ...customFields.map(f => ({ value: f.id, label: f.field_name }))];
 
     const hasFilter = (filterName: string) => filters.includes(filterName);
 
