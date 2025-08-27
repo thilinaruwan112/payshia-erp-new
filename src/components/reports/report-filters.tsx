@@ -13,9 +13,8 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, ArrowLeft, Printer, Eye, Loader2, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import { CalendarIcon, ArrowLeft, Printer, Eye, Loader2, FileDown } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -24,6 +23,9 @@ import { Label } from '@/components/ui/label';
 import { useLocation } from '@/components/location-provider';
 import { Combobox } from '@/components/ui/combobox';
 import { allReports } from '@/lib/report-list';
+import { DateRange } from 'react-day-picker';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 interface ProductWithVariants {
     product: Product;
@@ -60,6 +62,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
     
     // State for filter values
     const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+    const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
 
     const handleFilterChange = (filterName: string, value: string) => {
         setFilterValues(prev => ({ ...prev, [filterName]: value }));
@@ -183,22 +186,45 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             <CardContent className="space-y-4">
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {hasFilter('dateRange') && (
-                        <>
-                        <div className="space-y-1.5">
-                            <Label>From Date</Label>
-                            <Popover>
-                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{'Select...'}</Button></PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
+                        <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
+                            <Label>Date Range</Label>
+                             <Popover>
+                                <PopoverTrigger asChild>
+                                <Button
+                                    id="date"
+                                    variant={"outline"}
+                                    className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !dateRange && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {dateRange?.from ? (
+                                    dateRange.to ? (
+                                        <>
+                                        {format(dateRange.from, "LLL dd, y")} -{" "}
+                                        {format(dateRange.to, "LLL dd, y")}
+                                        </>
+                                    ) : (
+                                        format(dateRange.from, "LLL dd, y")
+                                    )
+                                    ) : (
+                                    <span>Pick a date range</span>
+                                    )}
+                                </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    initialFocus
+                                    mode="range"
+                                    defaultMonth={dateRange?.from}
+                                    selected={dateRange}
+                                    onSelect={setDateRange}
+                                    numberOfMonths={2}
+                                />
+                                </PopoverContent>
                             </Popover>
                         </div>
-                        <div className="space-y-1.5">
-                            <Label>To Date</Label>
-                            <Popover>
-                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{'Select...'}</Button></PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
-                            </Popover>
-                        </div>
-                        </>
                     )}
                      {hasFilter('date') && (
                         <div className="space-y-1.5">
