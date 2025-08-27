@@ -39,7 +39,12 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     if (!productId || !companyId) return;
 
     let allImages: ProductImage[] = [];
-    const variantsToFetch = productVariants?.length > 0 ? productVariants : [{ id: productId }]; // Handle products with no variants
+    // If productVariants is empty, it means it's a simple product.
+    // The variant ID might be the same as the product ID or based on a default variant.
+    // Let's create a temporary variant object to fetch images for the base product.
+    const variantsToFetch = productVariants?.length > 0 
+      ? productVariants 
+      : [{ id: productId, sku: 'default' }]; 
 
     try {
         for (const variant of variantsToFetch) {
@@ -51,7 +56,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
                 }
             } else {
                  const errorData = await response.json();
-                 if (errorData.error !== "No records found") { // Don't toast for "no records"
+                 if (errorData.error !== "No records found") {
                     console.error(`Failed to fetch images for variant ${variant.id}:`, errorData.message || response.statusText);
                  }
             }
@@ -68,18 +73,20 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
 
   useEffect(() => {
     if (isOpen) {
-      if (productVariants && productVariants.length === 1) {
+      if (productVariants && productVariants.length > 0) {
         setSelectedVariantId(productVariants[0].id);
+      } else if (productId) {
+        // For products without variants, use the product ID as the variant ID
+        setSelectedVariantId(productId);
       } else {
-        setSelectedVariantId('');
+         setSelectedVariantId('');
       }
       setFileToUpload(null);
       fetchExistingImages();
     } else {
-      // Reset state when dialog closes
       setUploadedImages([]);
     }
-  }, [productVariants, isOpen, fetchExistingImages]);
+  }, [productVariants, isOpen, fetchExistingImages, productId]);
 
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -99,7 +106,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
   };
 
   const handleUpload = async () => {
-    if (!productId || !companyId || !fileToUpload || (productVariants.length > 0 && !selectedVariantId)) {
+    if (!productId || !companyId || !fileToUpload || !selectedVariantId) {
       toast({
         variant: 'destructive',
         title: 'Upload Error',
@@ -111,10 +118,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
 
     const formData = new FormData();
     formData.append('product_id', productId);
-    // If there are no variants, the variant ID is the same as the product ID on some schemas.
-    // Use the selected variant ID if available, otherwise fall back to the product ID itself.
-    const finalVariantId = hasVariants ? selectedVariantId : productId;
-    formData.append('product_variant_id', finalVariantId);
+    formData.append('product_variant_id', selectedVariantId);
     formData.append('company_id', String(companyId));
     formData.append('image_type', imageType);
     formData.append('created_by', 'admin');
