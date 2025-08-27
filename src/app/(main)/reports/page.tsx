@@ -85,19 +85,12 @@ const reportCategories = [
 
 const allReports = reportCategories.flatMap(cat => cat.reports);
 
-const CustomerReportView = ({ customers, onBack }: { customers: User[], onBack: () => void }) => {
+const CustomerReportView = ({ customers }: { customers: User[] }) => {
     return (
-        <Card className="flex-1 w-full">
+        <Card className="w-full mt-8">
             <CardHeader>
-                <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="md:hidden" onClick={onBack}>
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                    <div>
-                        <CardTitle>Customer Master Report</CardTitle>
-                        <CardDescription>A list of all customers in the system.</CardDescription>
-                    </div>
-                </div>
+                <CardTitle>Customer Master Report</CardTitle>
+                <CardDescription>A list of all customers in the system.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -125,7 +118,12 @@ const CustomerReportView = ({ customers, onBack }: { customers: User[], onBack: 
     );
 };
 
-const ReportFilters = ({ reportName, onBack, onShowReport }: { reportName: string, onBack: () => void, onShowReport: (data: User[]) => void }) => {
+const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport }: { 
+    reportName: string, 
+    onBack: () => void, 
+    onShowReport: (data: User[]) => void,
+    onPrintReport: () => void,
+}) => {
     const report = allReports.find(r => r.name === reportName);
     const filters = report?.filters || [];
     const { company_id } = useLocation();
@@ -155,17 +153,6 @@ const ReportFilters = ({ reportName, onBack, onShowReport }: { reportName: strin
     }));
 
     const hasFilter = (filterName: string) => filters.includes(filterName);
-
-    const handlePrintReport = () => {
-        if (reportName === 'Customer Master Report') {
-            window.open(`/reports-print/customer-report/print?company_id=${company_id}`, '_blank');
-        } else {
-            toast({
-                title: "Coming Soon",
-                description: "This report is not yet available for printing.",
-            });
-        }
-    };
 
     const handleViewReport = async () => {
         if (reportName === 'Customer Master Report') {
@@ -203,7 +190,7 @@ const ReportFilters = ({ reportName, onBack, onShowReport }: { reportName: strin
                 </div>
             </CardHeader>
             <CardContent className="space-y-4">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {hasFilter('dateRange') && (
                         <>
                         <div className="space-y-1.5">
@@ -304,7 +291,7 @@ const ReportFilters = ({ reportName, onBack, onShowReport }: { reportName: strin
                      {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                      View Report
                  </Button>
-                 <Button variant="outline" onClick={handlePrintReport}>
+                 <Button variant="outline" onClick={onPrintReport}>
                     <Printer className="mr-2 h-4 w-4" />
                     Print
                 </Button>
@@ -337,15 +324,12 @@ export default function ReportsPage() {
     const [selectedReport, setSelectedReport] = useState<string | null>(null);
     const [viewingReport, setViewingReport] = useState(false);
     const [reportData, setReportData] = useState<User[]>([]);
+    const { company_id } = useLocation();
+    const { toast } = useToast();
 
     const handleShowReport = (data: User[]) => {
         setReportData(data);
         setViewingReport(true);
-    };
-
-    const handleBackToFilters = () => {
-        setViewingReport(false);
-        setReportData([]);
     };
     
     const handleSelectReport = (name: string) => {
@@ -353,6 +337,18 @@ export default function ReportsPage() {
         setViewingReport(false);
         setReportData([]);
     }
+    
+    const handlePrintReport = () => {
+        if (selectedReport === 'Customer Master Report') {
+            window.open(`/reports-print/customer-report/print?company_id=${company_id}`, '_blank');
+        } else {
+            toast({
+                title: "Coming Soon",
+                description: "This report is not yet available for printing.",
+            });
+        }
+    };
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -387,15 +383,15 @@ export default function ReportsPage() {
 
         <div className={cn("md:col-span-3 w-full", !selectedReport && "hidden md:flex")}>
           {selectedReport ? (
-            viewingReport ? (
-                <CustomerReportView customers={reportData} onBack={handleBackToFilters} />
-            ) : (
+            <div className="w-full">
                 <ReportFilters 
                     reportName={selectedReport} 
                     onBack={() => setSelectedReport(null)} 
                     onShowReport={handleShowReport}
+                    onPrintReport={handlePrintReport}
                 />
-            )
+                 {viewingReport && <CustomerReportView customers={reportData} />}
+            </div>
           ) : (
              <div className="flex w-full items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[400px]">
                 <p className="text-muted-foreground">Select a report to see filters</p>
@@ -406,4 +402,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
