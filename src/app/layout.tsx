@@ -6,10 +6,38 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Suspense } from 'react';
 import { NProgressComponent } from '@/components/ui/nprogress';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://payshia-erp.web.app';
+
 export const metadata: Metadata = {
-  title: 'Payshia ERP',
-  description: 'A scalable and modular web-based ERP system.',
+  title: {
+    default: 'Payshia ERP: All-In-One Business Management System',
+    template: '%s | Payshia ERP',
+  },
+  description: 'A scalable and modular web-based ERP system for managing sales, inventory, CRM, accounting, and more. Featuring AI-powered tools to streamline your operations.',
+  keywords: ['ERP', 'business management', 'inventory', 'CRM', 'accounting', 'HRM', 'POS', 'sales', 'logistics', 'AI', 'Payshia'],
   manifest: '/manifest.json',
+  openGraph: {
+    title: 'Payshia ERP: Scalable & Modular Web-Based ERP',
+    description: 'An all-in-one solution for managing your sales channels, locations, inventory, and orders with powerful AI features.',
+    url: siteUrl,
+    siteName: 'Payshia ERP',
+    images: [
+      {
+        url: 'https://content-provider.payshia.com/payshia-erp/seo/payshia-erp-seo-site-image-optimized.webp',
+        width: 1200,
+        height: 630,
+        alt: 'Payshia ERP Dashboard showing key business metrics.',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Payshia ERP: Scalable & Modular Web-Based ERP',
+    description: 'An all-in-one solution for managing your sales channels, locations, inventory, and orders with powerful AI features.',
+    images: ['https://content-provider.payshia.com/payshia-erp/seo/payshia-erp-seo-site-image-optimized.webp'],
+  },
   icons: {
     icon: [
         { url: 'https://content-provider.payshia.com/payshia-erp/app-icon/favicon.ico', sizes: 'any', type: 'image/x-icon' },
@@ -19,6 +47,16 @@ export const metadata: Metadata = {
     apple: [
       { url: 'https://content-provider.payshia.com/payshia-erp/app-icon/apple-touch-icon.png' },
     ],
+    other: [
+        {
+            rel: 'android-chrome-192x192',
+            url: 'https://content-provider.payshia.com/payshia-erp/app-icon/android-chrome-192x192.png'
+        },
+        {
+            rel: 'android-chrome-512x512',
+            url: 'https://content-provider.payshia.com/payshia-erp/app-icon/android-chrome-512x512.png'
+        }
+    ]
   },
 };
 
