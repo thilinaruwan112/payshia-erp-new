@@ -12,7 +12,7 @@ import {
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, ArrowLeft, Printer, Eye, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarIcon, ArrowLeft, Printer, Eye, Loader2, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -26,6 +26,8 @@ import { type User, type Supplier, type Brand } from '@/lib/types';
 import { Combobox } from '@/components/ui/combobox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 
 const reportCategories = [
@@ -35,26 +37,6 @@ const reportCategories = [
             { name: 'Customer Master Report', href: '/reports/customer-report', filters: ['customer'] },
             { name: 'Supplier Master Report', href: '/reports/supplier-report', filters: ['supplier'] },
             { name: 'Item Master Report', href: '/reports/stock-balance', filters: ['item', 'category', 'brand'] },
-        ]
-    },
-    { 
-        name: 'Transaction', 
-        reports: [
-            { name: 'Transaction Summary', href: '#', filters: ['dateRange', 'location', 'user'] },
-            { name: 'Transaction by User', href: '#', filters: ['dateRange', 'user'] },
-        ]
-    },
-    { 
-        name: 'Sale', 
-        reports: [
-            { name: 'Credit Sales Summary Report', href: '/reports/credit-sales-summary', filters: ['dateRange', 'customer', 'location'] },
-            { name: 'Customer Order Report', href: '/reports/customer-report', filters: ['dateRange', 'customer'] },
-            { name: 'Day End Sale Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
-            { name: 'Hourly Sales Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
-            { name: 'Invoice Report', href: '/reports/invoice-report', filters: ['dateRange', 'customer', 'status'] },
-            { name: 'Item Wise Sales', href: '#', filters: ['dateRange', 'item', 'category', 'brand', 'location'] },
-            { name: 'Receipt Report', href: '/sales/receipts', filters: ['dateRange', 'customer'] },
-            { name: 'Sales Summary Report', href: '/reports/sales-summary', filters: ['dateRange', 'location', 'user'] },
         ]
     },
     {
@@ -71,6 +53,19 @@ const reportCategories = [
             { name: 'Stock Transfer Report', href: '/transfers', filters: ['dateRange', 'fromLocation', 'toLocation'] },
             { name: 'Bin Card Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
             { name: 'Stock Movement Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
+        ]
+    },
+    { 
+        name: 'Sale', 
+        reports: [
+            { name: 'Credit Sales Summary Report', href: '/reports/credit-sales-summary', filters: ['dateRange', 'customer', 'location'] },
+            { name: 'Customer Order Report', href: '/reports/customer-report', filters: ['dateRange', 'customer'] },
+            { name: 'Day End Sale Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
+            { name: 'Hourly Sales Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
+            { name: 'Invoice Report', href: '/reports/invoice-report', filters: ['dateRange', 'customer', 'status'] },
+            { name: 'Item Wise Sales', href: '#', filters: ['dateRange', 'item', 'category', 'brand', 'location'] },
+            { name: 'Receipt Report', href: '/sales/receipts', filters: ['dateRange', 'customer'] },
+            { name: 'Sales Summary Report', href: '/reports/sales-summary', filters: ['dateRange', 'location', 'user'] },
         ]
     },
     { 
@@ -168,11 +163,12 @@ const CustomerReportView = ({ customers }: { customers: User[] }) => {
     );
 };
 
-const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport }: { 
+const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, reportData }: { 
     reportName: string, 
     onBack: () => void, 
     onShowReport: (data: User[]) => void,
     onPrintReport: () => void,
+    reportData: User[],
 }) => {
     const report = allReports.find(r => r.name === reportName);
     const filters = report?.filters || [];
@@ -225,6 +221,51 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport }: {
         }
     };
 
+    const handleExportCSV = () => {
+        if (reportData.length === 0) {
+            toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
+            return;
+        }
+        const headers = ["Customer Name", "Phone Number", "Email", "Address"];
+        const rows = reportData.map(customer => [
+            `"${customer.customer_first_name} ${customer.customer_last_name}"`,
+            customer.phone_number,
+            customer.email_address,
+            `"${customer.address_line1}, ${customer.city}"`
+        ]);
+
+        const csvContent = "data:text/csv;charset=utf-8," 
+            + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+
+        const link = document.createElement("a");
+        link.setAttribute("href", encodeURI(csvContent));
+        link.setAttribute("download", "customer_report.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    const handleExportPDF = () => {
+        if (reportData.length === 0) {
+            toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
+            return;
+        }
+
+        const doc = new jsPDF();
+        doc.text("Customer Master Report", 14, 16);
+        autoTable(doc, {
+            head: [['Customer Name', 'Phone Number', 'Email', 'Address']],
+            body: reportData.map(customer => [
+                `${customer.customer_first_name} ${customer.customer_last_name}`,
+                customer.phone_number,
+                customer.email_address,
+                `${customer.address_line1}, ${customer.city}`
+            ]),
+            startY: 25,
+        });
+
+        doc.save('customer_report.pdf');
+    }
 
     return (
         <Card className="flex-1 w-full">
@@ -336,7 +377,7 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport }: {
                     )}
                  </div>
             </CardContent>
-            <CardFooter className="gap-2">
+            <CardFooter className="gap-2 flex-wrap">
                  <Button onClick={handleViewReport} disabled={isFetching}>
                      {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                      View Report
@@ -344,6 +385,14 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport }: {
                  <Button variant="outline" onClick={onPrintReport}>
                     <Printer className="mr-2 h-4 w-4" />
                     Print
+                </Button>
+                <Button variant="outline" onClick={handleExportCSV} disabled={reportData.length === 0}>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export CSV
+                </Button>
+                <Button variant="outline" onClick={handleExportPDF} disabled={reportData.length === 0}>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Export PDF
                 </Button>
             </CardFooter>
         </Card>
@@ -372,19 +421,16 @@ const ReportList = ({ reports, selectedReport, onSelectReport }: {
 
 export default function ReportsPage() {
     const [selectedReport, setSelectedReport] = useState<string | null>(null);
-    const [viewingReport, setViewingReport] = useState(false);
     const [reportData, setReportData] = useState<User[]>([]);
     const { company_id } = useLocation();
     const { toast } = useToast();
 
     const handleShowReport = (data: User[]) => {
         setReportData(data);
-        setViewingReport(true);
     };
     
     const handleSelectReport = (name: string) => {
         setSelectedReport(name);
-        setViewingReport(false);
         setReportData([]);
     }
     
@@ -433,14 +479,15 @@ export default function ReportsPage() {
 
         <div className={cn("md:col-span-3 w-full", !selectedReport && "hidden md:flex")}>
           {selectedReport ? (
-            <div className="w-full">
+            <div className="w-full space-y-8">
                 <ReportFilters 
                     reportName={selectedReport} 
                     onBack={() => setSelectedReport(null)} 
                     onShowReport={handleShowReport}
                     onPrintReport={handlePrintReport}
+                    reportData={reportData}
                 />
-                 {viewingReport && <CustomerReportView customers={reportData} />}
+                 {reportData.length > 0 && <CustomerReportView customers={reportData} />}
             </div>
           ) : (
              <div className="flex w-full items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[400px]">
@@ -452,4 +499,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
