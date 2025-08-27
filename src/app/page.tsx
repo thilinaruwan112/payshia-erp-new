@@ -105,7 +105,7 @@ export default function LandingPage() {
       </header>
 
       <main className="flex-1">
-         <section className="relative w-full landing-page-aurora flex items-center min-h-screen">
+         <section className="relative w-full landing-page-aurora flex items-center min-h-[calc(100vh-4rem)]">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
