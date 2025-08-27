@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { PosProduct, StockInfo } from '@/app/(pos)/pos-system/page';
 import {
   Dialog,
@@ -113,23 +113,46 @@ export function AddToCartDialog({
   };
 
   const handleNumpadClick = (value: string) => {
-    if (quantity === '0' || quantity === '1') {
-      if (value === '.') {
-        setQuantity(quantity + value);
-      } else {
-        setQuantity(value);
-      }
-    } else if (value === '.' && quantity.includes('.')) {
-      return; // Do not add multiple decimals
+    if (value === 'C') {
+        handleClear();
+        return;
     }
-     else {
-      setQuantity(quantity + value);
-    }
+    setQuantity(prev => {
+        if (value === '.') {
+            return prev.includes('.') ? prev : prev + '.';
+        }
+        return prev === '0' ? value : prev + value;
+    });
   };
 
   const handleClear = () => {
-    setQuantity('1');
+    setQuantity('0');
   };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const { key } = event;
+      if (/[0-9.]/.test(key)) {
+        handleNumpadClick(key);
+      } else if (key === 'Enter') {
+        event.preventDefault();
+        handleAddToCart();
+      } else if (key === 'Backspace') {
+        setQuantity(q => q.slice(0, -1) || '0');
+      } else if (key.toLowerCase() === 'c') {
+        handleClear();
+      } else if (key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, quantity, discount, product, selectedBatch, onClose, onAddToCart]);
 
   const isOpen = !!product;
   const discountedPrice = product ? (product.price as number) - parseFloat(discount) : 0;
