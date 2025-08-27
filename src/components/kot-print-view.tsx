@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
+import { useSearchParams } from 'next/navigation';
 
 interface KotPrintViewProps {
   invoiceId: string;
@@ -29,6 +30,9 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const { toast } = useToast();
   const kotRef = useRef<HTMLDivElement>(null);
   const [isJspmConnected, setIsJspmConnected] = useState(false);
+  const searchParams = useSearchParams();
+  const fullKot = searchParams.get('fulKot') === '1';
+
 
   useEffect(() => {
     async function fetchProducts() {
@@ -70,33 +74,37 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         const invoiceData: Invoice = await response.json();
         setInvoice(invoiceData);
 
-        const unprintedItems =
-          invoiceData.items?.filter((item) => item.printed_status !== '1') || [];
-
-        if (unprintedItems.length > 0) {
-          setItemsToPrint(unprintedItems);
-          try {
-            const updateResponse = await fetch(
-              `https://server-erp.payshia.com/transaction-invoice-items/printed?company_id=${companyId}&invoice_number=${invoiceData.invoice_number}`,
-              {
-                method: 'PUT',
-              }
-            );
-            if (!updateResponse.ok) {
-              throw new Error('Failed to update printed status.');
-            }
-            console.log('Successfully updated printed status for new items.');
-          } catch (updateError) {
-            console.error('Status Update Error:', updateError);
-            toast({
-              variant: 'destructive',
-              title: 'Status Update Failed',
-              description:
-                'Could not mark items as printed. The kitchen might receive a duplicate order.',
-            });
-          }
+        if (fullKot) {
+            setItemsToPrint(invoiceData.items || []);
         } else {
-          setItemsToPrint([]);
+            const unprintedItems =
+            invoiceData.items?.filter((item) => item.printed_status !== '1') || [];
+            
+            if (unprintedItems.length > 0) {
+                setItemsToPrint(unprintedItems);
+                try {
+                    const updateResponse = await fetch(
+                    `https://server-erp.payshia.com/transaction-invoice-items/printed?company_id=${companyId}&invoice_number=${invoiceData.invoice_number}`,
+                    {
+                        method: 'PUT',
+                    }
+                    );
+                    if (!updateResponse.ok) {
+                    throw new Error('Failed to update printed status.');
+                    }
+                    console.log('Successfully updated printed status for new items.');
+                } catch (updateError) {
+                    console.error('Status Update Error:', updateError);
+                    toast({
+                    variant: 'destructive',
+                    title: 'Status Update Failed',
+                    description:
+                        'Could not mark items as printed. The kitchen might receive a duplicate order.',
+                    });
+                }
+            } else {
+                 setItemsToPrint([]);
+            }
         }
       } catch (error) {
         toast({
@@ -113,7 +121,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     }
 
     fetchInvoiceData();
-  }, [invoiceId, companyId, toast]);
+  }, [invoiceId, companyId, toast, fullKot]);
 
    useEffect(() => {
     if (typeof window !== "undefined") {
