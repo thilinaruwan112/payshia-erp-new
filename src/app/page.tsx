@@ -75,7 +75,13 @@ export default function LandingPage() {
             <Truck className="h-6 w-6 text-primary" />
             <span className="text-xl font-bold">Payshia ERP</span>
           </Link>
-          <nav className="ml-auto flex gap-4 sm:gap-6">
+          <nav className="ml-auto hidden md:flex items-center gap-4 sm:gap-6">
+            <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4">About</Link>
+            <Link href="#pricing" className="text-sm font-medium hover:underline underline-offset-4">Pricing</Link>
+            <Link href="/contact" className="text-sm font-medium hover:underline underline-offset-4">Contact</Link>
+            <Link href="/whats-new" className="text-sm font-medium hover:underline underline-offset-4">What's New</Link>
+          </nav>
+          <div className="ml-auto md:ml-4 flex items-center gap-2">
             <Button variant="ghost" asChild>
               <Link href="/login">
                 Login
@@ -86,7 +92,7 @@ export default function LandingPage() {
                 Sign Up
               </Link>
             </Button>
-          </nav>
+          </div>
         </div>
       </header>
       <main className="flex-1">
@@ -345,4 +351,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
