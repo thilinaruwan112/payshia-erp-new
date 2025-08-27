@@ -255,7 +255,7 @@ export default function ReportsPage() {
           {selectedReport ? (
             <ReportFilters reportName={selectedReport} onBack={() => setSelectedReport(null)} />
           ) : (
-             <div className="flex items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[400px]">
+             <div className="flex w-full items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[400px]">
                 <p className="text-muted-foreground">Select a report to see filters</p>
             </div>
           )}
