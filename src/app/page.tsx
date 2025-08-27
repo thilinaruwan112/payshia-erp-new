@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, Terminal, LayoutGrid, Calculator, Boxes, Badge } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SectionSeparator } from '@/components/section-separator';
 
 
 const features = [
@@ -114,7 +115,7 @@ export default function LandingPage() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32">
+        <section className="w-full min-h-[calc(100vh-4rem)] flex items-center">
           <div className="container mx-auto px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
               <div className="flex flex-col justify-center space-y-4">
@@ -148,6 +149,8 @@ export default function LandingPage() {
           </div>
         </section>
         
+        <SectionSeparator />
+
         <section id="solutions" className="w-full py-12 md:py-24 lg:py-32">
             <div className="container mx-auto px-4 md:px-6 text-center">
                  <div className="space-y-2 mb-16">
@@ -194,6 +197,8 @@ export default function LandingPage() {
             </div>
         </section>
 
+        <SectionSeparator />
+
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
@@ -222,6 +227,8 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        <SectionSeparator />
 
         <section id="pricing" className="w-full py-12 md:py-24 lg:py-32 bg-background">
           <div className="container mx-auto px-4 md:px-6">
@@ -324,6 +331,8 @@ export default function LandingPage() {
           </div>
         </section>
 
+        <SectionSeparator />
+
         <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
@@ -359,6 +368,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        <SectionSeparator />
+        
         <section className="w-full py-12 md:py-24 lg:py-32 bg-primary text-primary-foreground">
           <div className="container mx-auto grid items-center justify-center gap-4 px-4 text-center md:px-6">
             <div className="space-y-3">
