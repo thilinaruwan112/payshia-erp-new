@@ -163,23 +163,110 @@ const CustomerReportView = ({ customers }: { customers: User[] }) => {
     );
 };
 
+const SupplierReportView = ({ suppliers }: { suppliers: Supplier[] }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    const filteredSuppliers = suppliers.filter(supplier =>
+        supplier.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        supplier.contact_person.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        supplier.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredSuppliers.length / itemsPerPage);
+    const paginatedSuppliers = filteredSuppliers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    return (
+        <Card className="w-full">
+            <CardHeader>
+                <CardTitle>Supplier Master Report</CardTitle>
+                <CardDescription>A list of all suppliers in the system.</CardDescription>
+                <div className="pt-4">
+                    <Input
+                        placeholder="Search suppliers by name, contact, or email..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                        className="max-w-sm"
+                    />
+                </div>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Supplier Name</TableHead>
+                            <TableHead>Contact Person</TableHead>
+                            <TableHead>Phone</TableHead>
+                            <TableHead>Email</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {paginatedSuppliers.map((supplier) => (
+                            <TableRow key={supplier.supplier_id}>
+                                <TableCell>{supplier.supplier_name}</TableCell>
+                                <TableCell>{supplier.contact_person}</TableCell>
+                                <TableCell>{supplier.telephone}</TableCell>
+                                <TableCell>{supplier.email}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+             <CardFooter className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                    Showing {paginatedSuppliers.length} of {filteredSuppliers.length} suppliers.
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                        disabled={currentPage === 1}
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                     <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+            </CardFooter>
+        </Card>
+    );
+};
+
+type ReportData = User[] | Supplier[];
+
 const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, reportData }: { 
     reportName: string, 
     onBack: () => void, 
-    onShowReport: (data: User[]) => void,
+    onShowReport: (data: ReportData) => void,
     onPrintReport: () => void,
-    reportData: User[],
+    reportData: ReportData,
 }) => {
     const report = allReports.find(r => r.name === reportName);
     const filters = report?.filters || [];
     const { company_id } = useLocation();
     const { toast } = useToast();
     const [customers, setCustomers] = useState<User[]>([]);
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [isFetching, setIsFetching] = useState(false);
 
     useEffect(() => {
-        async function fetchCustomers() {
-            if (filters.includes('customer') && company_id) {
+        async function fetchDropdownData() {
+            if (!company_id) return;
+            if (filters.includes('customer')) {
                 try {
                     const response = await fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`);
                     if (!response.ok) throw new Error('Failed to fetch customers');
@@ -189,35 +276,52 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, report
                     toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customer list.'});
                 }
             }
+             if (filters.includes('supplier')) {
+                try {
+                    const response = await fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`);
+                    if (!response.ok) throw new Error('Failed to fetch suppliers');
+                    const data = await response.json();
+                    setSuppliers(data || []);
+                } catch (error) {
+                    toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch supplier list.'});
+                }
+            }
         }
-        fetchCustomers();
+        fetchDropdownData();
     }, [reportName, filters, company_id, toast]);
 
     const customerOptions = customers.map(c => ({
         value: c.customer_id,
         label: `${c.customer_first_name} ${c.customer_last_name}`,
     }));
+     const supplierOptions = suppliers.map(s => ({
+        value: s.supplier_id,
+        label: s.supplier_name,
+    }));
 
     const hasFilter = (filterName: string) => filters.includes(filterName);
 
     const handleViewReport = async () => {
-        if (reportName === 'Customer Master Report') {
-            setIsFetching(true);
-             try {
-                const response = await fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`);
-                if (!response.ok) throw new Error('Failed to fetch customers for report');
-                const data = await response.json();
-                onShowReport(data || []);
-            } catch (error) {
-                 toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customer report data.'});
-            } finally {
-                setIsFetching(false);
+        setIsFetching(true);
+        try {
+            let url = '';
+            if (reportName === 'Customer Master Report') {
+                url = `https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`;
+            } else if (reportName === 'Supplier Master Report') {
+                 url = `https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`;
+            } else {
+                 toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
+                 setIsFetching(false);
+                 return;
             }
-        } else {
-            toast({
-                title: "Coming Soon",
-                description: "This report is not yet available for viewing.",
-            });
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Failed to fetch ${reportName} data`);
+            const data = await response.json();
+            onShowReport(data || []);
+        } catch (error) {
+             toast({ variant: 'destructive', title: 'Error', description: `Could not fetch ${reportName} data.`});
+        } finally {
+            setIsFetching(false);
         }
     };
 
@@ -226,20 +330,37 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, report
             toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
             return;
         }
-        const headers = ["Customer Name", "Phone Number", "Email", "Address"];
-        const rows = reportData.map(customer => [
-            `"${customer.customer_first_name} ${customer.customer_last_name}"`,
-            customer.phone_number,
-            customer.email_address,
-            `"${customer.address_line1}, ${customer.city}"`
-        ]);
+
+        let headers: string[] = [];
+        let rows: string[][] = [];
+        let filename = 'report.csv';
+
+        if(reportName === 'Customer Master Report' && 'customer_first_name' in reportData[0]) {
+            headers = ["Customer Name", "Phone Number", "Email", "Address"];
+            rows = (reportData as User[]).map(customer => [
+                `"${customer.customer_first_name} ${customer.customer_last_name}"`,
+                customer.phone_number || '',
+                customer.email_address || '',
+                `"${customer.address_line1 || ''}, ${customer.city || ''}"`
+            ]);
+            filename = 'customer_report.csv';
+        } else if (reportName === 'Supplier Master Report' && 'supplier_name' in reportData[0]) {
+             headers = ["Supplier Name", "Contact Person", "Phone", "Email"];
+            rows = (reportData as Supplier[]).map(supplier => [
+                `"${supplier.supplier_name}"`,
+                `"${supplier.contact_person}"`,
+                supplier.telephone,
+                supplier.email
+            ]);
+            filename = 'supplier_report.csv';
+        }
 
         const csvContent = "data:text/csv;charset=utf-8," 
             + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
 
         const link = document.createElement("a");
         link.setAttribute("href", encodeURI(csvContent));
-        link.setAttribute("download", "customer_report.csv");
+        link.setAttribute("download", filename);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -250,21 +371,36 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, report
             toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
             return;
         }
-
+        
         const doc = new jsPDF();
-        doc.text("Customer Master Report", 14, 16);
-        autoTable(doc, {
-            head: [['Customer Name', 'Phone Number', 'Email', 'Address']],
-            body: reportData.map(customer => [
-                `${customer.customer_first_name} ${customer.customer_last_name}`,
-                customer.phone_number,
-                customer.email_address,
-                `${customer.address_line1}, ${customer.city}`
-            ]),
-            startY: 25,
-        });
+        doc.text(reportName, 14, 16);
 
-        doc.save('customer_report.pdf');
+        let head: string[][] = [];
+        let body: (string | number)[][] = [];
+        let filename = 'report.pdf';
+
+        if(reportName === 'Customer Master Report' && 'customer_first_name' in reportData[0]) {
+            head = [['Customer Name', 'Phone Number', 'Email', 'Address']];
+            body = (reportData as User[]).map(customer => [
+                `${customer.customer_first_name} ${customer.customer_last_name}`,
+                customer.phone_number || '',
+                customer.email_address || '',
+                `${customer.address_line1 || ''}, ${customer.city || ''}`
+            ]);
+            filename = 'customer_report.pdf';
+        } else if (reportName === 'Supplier Master Report' && 'supplier_name' in reportData[0]) {
+            head = [['Supplier Name', 'Contact Person', 'Phone', 'Email']];
+            body = (reportData as Supplier[]).map(supplier => [
+                supplier.supplier_name,
+                supplier.contact_person,
+                supplier.telephone,
+                supplier.email,
+            ]);
+            filename = 'supplier_report.pdf';
+        }
+
+        autoTable(doc, { head, body, startY: 25 });
+        doc.save(filename);
     }
 
     return (
@@ -342,14 +478,20 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, report
                      {hasFilter('supplier') && (
                       <div className="space-y-1.5">
                         <Label>Supplier</Label>
-                        <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                         <Combobox
+                            options={supplierOptions}
+                            value={''}
+                            onChange={() => {}}
+                            placeholder="Select a supplier..."
+                            notFoundText="No suppliers found."
+                        />
                     </div>
                     )}
                       {hasFilter('user') && (
                       <div className="space-y-1.5">
                         <Label>User</Label>
                         <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
-                    </div>
+                      </div>
                     )}
                       {hasFilter('item') && (
                         <div className="space-y-1.5">
@@ -421,11 +563,11 @@ const ReportList = ({ reports, selectedReport, onSelectReport }: {
 
 export default function ReportsPage() {
     const [selectedReport, setSelectedReport] = useState<string | null>(null);
-    const [reportData, setReportData] = useState<User[]>([]);
+    const [reportData, setReportData] = useState<ReportData>([]);
     const { company_id } = useLocation();
     const { toast } = useToast();
 
-    const handleShowReport = (data: User[]) => {
+    const handleShowReport = (data: ReportData) => {
         setReportData(data);
     };
     
@@ -437,6 +579,8 @@ export default function ReportsPage() {
     const handlePrintReport = () => {
         if (selectedReport === 'Customer Master Report') {
             window.open(`/reports-print/customer-report/print?company_id=${company_id}`, '_blank');
+        } else if (selectedReport === 'Supplier Master Report') {
+            window.open(`/reports-print/supplier-report/print?company_id=${company_id}`, '_blank');
         } else {
             toast({
                 title: "Coming Soon",
@@ -493,7 +637,10 @@ export default function ReportsPage() {
                     </div>
                 )}
                  {reportData.length > 0 && selectedReport === 'Customer Master Report' && (
-                    <CustomerReportView customers={reportData} />
+                    <CustomerReportView customers={reportData as User[]} />
+                 )}
+                 {reportData.length > 0 && selectedReport === 'Supplier Master Report' && (
+                    <SupplierReportView suppliers={reportData as Supplier[]} />
                  )}
             </div>
         </div>
