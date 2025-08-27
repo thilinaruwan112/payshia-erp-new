@@ -10,7 +10,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, ArrowLeft } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -20,6 +20,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useLocation } from '@/components/location-provider';
+import { useToast } from '@/hooks/use-toast';
+import { type User, type Supplier, type Brand } from '@/lib/types';
+import { Combobox } from '@/components/ui/combobox';
 
 
 const reportCategories = [
@@ -79,15 +83,38 @@ const reportCategories = [
 
 const allReports = reportCategories.flatMap(cat => cat.reports);
 
-
 const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () => void }) => {
     const report = allReports.find(r => r.name === reportName);
     const filters = report?.filters || [];
+    const { company_id } = useLocation();
+    const { toast } = useToast();
+    const [customers, setCustomers] = useState<User[]>([]);
+
+    useEffect(() => {
+        async function fetchCustomers() {
+            if (filters.includes('customer') && company_id) {
+                try {
+                    const response = await fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`);
+                    if (!response.ok) throw new Error('Failed to fetch customers');
+                    const data = await response.json();
+                    setCustomers(data || []);
+                } catch (error) {
+                    toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customer list.'});
+                }
+            }
+        }
+        fetchCustomers();
+    }, [reportName, filters, company_id, toast]);
+
+    const customerOptions = customers.map(c => ({
+        value: c.customer_id,
+        label: `${c.customer_first_name} ${c.customer_last_name}`,
+    }));
 
     const hasFilter = (filterName: string) => filters.includes(filterName);
 
     return (
-        <Card>
+        <Card className="flex-1 w-full">
             <CardHeader>
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" className="md:hidden" onClick={onBack}>
@@ -149,7 +176,13 @@ const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () 
                      {hasFilter('customer') && (
                       <div className="space-y-1.5">
                         <Label>Customer</Label>
-                        <Input placeholder="Search Customer" />
+                        <Combobox
+                            options={customerOptions}
+                            value={''}
+                            onChange={() => {}}
+                            placeholder="Select a customer..."
+                            notFoundText="No customers found."
+                        />
                     </div>
                     )}
                      {hasFilter('supplier') && (
@@ -191,7 +224,13 @@ const ReportFilters = ({ reportName, onBack }: { reportName: string, onBack: () 
                  </div>
             </CardContent>
             <CardFooter>
-                 <Button>View Report</Button>
+                 {reportName === 'Customer Master Report' ? (
+                     <Button asChild>
+                         <Link href="/crm/customers">View Customer List</Link>
+                     </Button>
+                 ) : (
+                    <Button>View Report</Button>
+                 )}
             </CardFooter>
         </Card>
     )
@@ -229,16 +268,16 @@ export default function ReportsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8 items-start">
-        <div className={cn("md:col-span-1 lg:col-span-1", selectedReport && "hidden md:block")}>
-           <Accordion type="single" collapsible className="w-full space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
+        <div className={cn("md:col-span-1", selectedReport && "hidden md:block")}>
+           <Accordion type="single" collapsible className="w-full space-y-4 md:space-y-0 md:border-0 md:p-0">
             {reportCategories.map((category, index) => (
-              <AccordionItem value={`item-${index}`} key={category.name} className="border-b-0">
-                <Card>
+              <AccordionItem value={`item-${index}`} key={category.name} className="border-b-0 md:border-b">
+                <Card className="md:shadow-none md:border-0 md:rounded-none">
                     <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline">
                         {category.name}
                     </AccordionTrigger>
-                    <AccordionContent className="p-2 pt-0">
+                    <AccordionContent className="p-2 pt-0 md:p-0 md:pb-4">
                         <ReportList 
                             reports={category.reports}
                             selectedReport={selectedReport}
@@ -251,7 +290,7 @@ export default function ReportsPage() {
            </Accordion>
         </div>
 
-        <div className={cn("md:col-span-2 lg:col-span-3", !selectedReport && "hidden md:flex")}>
+        <div className={cn("md:col-span-3", !selectedReport && "hidden md:flex")}>
           {selectedReport ? (
             <ReportFilters reportName={selectedReport} onBack={() => setSelectedReport(null)} />
           ) : (
