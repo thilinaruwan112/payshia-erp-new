@@ -54,7 +54,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, companyId, 
 
     const formData = new FormData();
     formData.append('product_id', productId);
-    formData.append('company_id', String(company_id));
+    formData.append('company_id', String(companyId));
     formData.append('created_by', 'admin'); // Replace with actual user later
 
     files.forEach(file => {
