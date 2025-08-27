@@ -41,14 +41,19 @@ import { useCurrency } from '@/components/currency-provider';
 import { useLocation } from '@/components/location-provider';
 import { ImageUploadDialog } from '@/components/image-upload-dialog';
 
+interface ProductWithVariants extends Product {
+  variants: ProductVariant[];
+}
+
+
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithVariants[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [planDetails, setPlanDetails] = useState({ hasAccess: true, limit: Infinity, usage: 0, name: '...' });
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isUploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [selectedProductForUpload, setSelectedProductForUpload] = useState<Product | null>(null);
+  const [selectedProductForUpload, setSelectedProductForUpload] = useState<ProductWithVariants | null>(null);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
   const { company_id } = useLocation();
@@ -68,9 +73,21 @@ export default function ProductsPage() {
       if (!productsResponse.ok) throw new Error('Failed to fetch products');
       
       const productsData: Product[] = await productsResponse.json();
-      const parsedData = productsData.map(p => ({...p, price: parseFloat(p.price as any)}));
-
-      setProducts(parsedData);
+      
+      // Fetch variants for each product
+      const productsWithVariants = await Promise.all(
+        productsData.map(async (p) => {
+          const detailsResponse = await fetch(`https://server-erp.payshia.com/products/details/${p.id}`);
+          if (!detailsResponse.ok) {
+            console.error(`Failed to fetch variants for product ${p.id}`);
+            return { ...p, variants: [] };
+          }
+          const detailsData = await detailsResponse.json();
+          return { ...p, price: parseFloat(p.price as any), variants: detailsData.variants || [] };
+        })
+      );
+      
+      setProducts(productsWithVariants);
       setPlanDetails(limitResponse);
 
     } catch (error) {
@@ -214,7 +231,6 @@ export default function ProductsPage() {
                 ) : (
                   products.map((product) => {
                     const totalStock = (product.variants || []).reduce((sum, variant) => {
-                        // Assuming stock property exists on variant, otherwise you need another source
                         return sum + (Number(variant.stock) || 0);
                     }, 0);
                     
@@ -224,9 +240,9 @@ export default function ProductsPage() {
                           <Image
                             alt={product.name}
                             className="aspect-square rounded-md object-cover"
-                            height="64"
                             src={product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${product.product_image_url}` : "https://placehold.co/64x64.png"}
-                            width="64"
+                            width={64}
+                            height={64}
                             data-ai-hint="product photo"
                           />
                         </TableCell>
