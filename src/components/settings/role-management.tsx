@@ -17,16 +17,27 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
+import { useState } from 'react';
+import { PermissionEditDialog } from './permission-edit-dialog';
+import type { Role } from '@/lib/types';
 
-// Mock data for roles
-const roles = [
-  { id: '1', name: 'Administrator', description: 'Has full access to all features.', userCount: 2 },
-  { id: '2', name: 'Sales Agent', description: 'Can manage customers and sales orders.', userCount: 5 },
-  { id: '3', name: 'Inventory Manager', description: 'Can manage products, stock, and purchasing.', userCount: 3 },
+
+const initialRoles: Role[] = [
+  { id: '1', name: 'Administrator', description: 'Has full access to all features.', userCount: 2, permissions: ['*:*'] },
+  { id: '2', name: 'Sales Agent', description: 'Can manage customers and sales orders.', userCount: 5, permissions: ['sales:view', 'sales:create', 'crm:view', 'crm:create', 'crm:edit'] },
+  { id: '3', name: 'Inventory Manager', description: 'Can manage products, stock, and purchasing.', userCount: 3, permissions: ['inventory:view', 'inventory:create', 'inventory:edit', 'purchasing:view', 'purchasing:create'] },
 ];
 
 export function RoleManagement() {
+  const [roles, setRoles] = useState<Role[]>(initialRoles);
+  
+  const handlePermissionsUpdate = (roleId: string, updatedPermissions: string[]) => {
+    setRoles(prevRoles => prevRoles.map(role => 
+        role.id === roleId ? { ...role, permissions: updatedPermissions } : role
+    ));
+  };
+
 
   return (
     <Card>
@@ -61,9 +72,11 @@ export function RoleManagement() {
                   <TableCell>{role.description}</TableCell>
                   <TableCell className="hidden sm:table-cell">{role.userCount}</TableCell>
                   <TableCell className="text-right">
-                     <Button size="sm" variant="outline">
-                        Edit Permissions
-                    </Button>
+                    <PermissionEditDialog role={role} onPermissionsUpdate={handlePermissionsUpdate}>
+                        <Button size="sm" variant="outline">
+                            Edit Permissions
+                        </Button>
+                    </PermissionEditDialog>
                   </TableCell>
                 </TableRow>
               ))}

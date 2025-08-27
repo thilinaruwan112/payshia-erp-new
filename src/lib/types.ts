@@ -526,3 +526,11 @@ export type TransactionReturn = {
   is_active: string;
   stock_entries?: (StockEntry & {product?: Product})[];
 }
+
+export type Role = {
+  id: string;
+  name: string;
+  description: string;
+  userCount: number;
+  permissions: string[];
+}
