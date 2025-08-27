@@ -2,10 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote, Terminal, LayoutGrid, Calculator, Boxes, Badge } from 'lucide-react';
+import { Briefcase, DollarSign, LayoutDashboard, Package, Truck, Users, CheckCircle, Quote } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SectionSeparator } from '@/components/section-separator';
 
 
 const features = [
@@ -34,39 +33,6 @@ const features = [
     name: 'HRM',
     description: 'Manage your employees, payroll, and attendance all in one place.',
   },
-];
-
-const solutions = [
-    {
-        name: 'ERP',
-        icon: <LayoutGrid className="h-10 w-10" />,
-        className: 'top-0 left-1/2 -translate-x-1/2',
-    },
-    {
-        name: 'POS',
-        icon: <Terminal className="h-10 w-10" />,
-        className: 'top-1/4 -translate-y-1/4 right-0 translate-x-1/4',
-    },
-    {
-        name: 'CRM',
-        icon: <Users className="h-10 w-10" />,
-        className: 'bottom-1/4 translate-y-1/4 right-0 translate-x-1/4',
-    },
-    {
-        name: 'HRM',
-        icon: <Briefcase className="h-10 w-10" />,
-        className: 'bottom-0 left-1/2 -translate-x-1/2',
-    },
-    {
-        name: 'Accounting',
-        icon: <Calculator className="h-10 w-10" />,
-        className: 'bottom-1/4 translate-y-1/4 left-0 -translate-x-1/4',
-    },
-    {
-        name: 'Inventory',
-        icon: <Boxes className="h-10 w-10" />,
-        className: 'top-1/4 -translate-y-1/4 left-0 -translate-x-1/4',
-    },
 ];
 
 
@@ -115,19 +81,19 @@ export default function LandingPage() {
         </div>
       </header>
       <main className="flex-1">
-        <section className="w-full min-h-[calc(100vh-4rem)] flex items-center">
+        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
-              <div className="flex flex-col justify-center space-y-4">
+            <div className="grid gap-6 lg:grid-cols-1 lg:gap-12">
+              <div className="flex flex-col justify-center space-y-4 text-center">
                 <div className="space-y-4">
-                  <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none text-foreground">
+                  <h1 className="text-4xl font-bold tracking-tighter sm:text-6xl xl:text-7xl/none text-foreground">
                     The All-In-One Platform to Run Your Business
                   </h1>
-                  <p className="max-w-[600px] text-foreground/80 md:text-xl">
+                  <p className="max-w-[600px] mx-auto text-foreground/80 md:text-xl">
                     Payshia ERP gives you the tools to manage everything from sales and inventory to accounting and human resources, all in one place.
                   </p>
                 </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
+                <div className="flex flex-col gap-2 min-[400px]:flex-row justify-center">
                    <Button size="lg" asChild>
                      <Link href="/register">
                       Get Started for Free
@@ -135,70 +101,10 @@ export default function LandingPage() {
                    </Button>
                 </div>
               </div>
-               <div className="flex items-center justify-center">
-                 <img
-                    src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxidXNpbmVzc3xlbnwwfHx8fDE3NTQ5MTQ3MzR8MA&ixlib=rb-4.1.0&q=80&w=1080"
-                    width="600"
-                    height="400"
-                    alt="Hero"
-                    className="mx-auto aspect-video overflow-hidden rounded-xl object-cover"
-                    data-ai-hint="erp system dashboard"
-                  />
-               </div>
             </div>
           </div>
         </section>
         
-        <SectionSeparator />
-
-        <section id="solutions" className="w-full py-12 md:py-24 lg:py-32">
-            <div className="container mx-auto px-4 md:px-6 text-center">
-                 <div className="space-y-2 mb-16">
-                    <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Our Solutions</div>
-                    <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">A Complete Business Ecosystem</h2>
-                    <p className="max-w-[900px] mx-auto text-foreground/80 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                    From point-of-sale to human resources, our integrated modules work together to give you a seamless experience.
-                    </p>
-                </div>
-
-                 <div className="relative h-96 w-96 mx-auto hidden md:block">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="h-64 w-64 rounded-full bg-primary/5 flex items-center justify-center text-center p-8">
-                            <h3 className="text-2xl font-bold text-primary">Payshia ERP Solutions</h3>
-                        </div>
-                    </div>
-
-                    {solutions.map((solution, index) => (
-                        <div key={index} className={`absolute flex flex-col items-center gap-2 text-foreground ${solution.className}`}>
-                            <div className="bg-background text-primary p-4 rounded-full shadow-lg border">
-                                {solution.icon}
-                            </div>
-                            <span className="font-semibold text-sm">{solution.name}</span>
-                        </div>
-                    ))}
-                 </div>
-                 
-                 {/* Mobile/Tablet grid layout */}
-                 <div className="grid grid-cols-2 md:hidden gap-8 mt-12">
-                     {solutions.map((solution, index) => (
-                        <div key={index} className="flex flex-col items-center gap-2 text-foreground">
-                            <div className="bg-background text-primary p-4 rounded-full shadow-lg border">
-                                {solution.icon}
-                            </div>
-                            <span className="font-semibold text-sm">{solution.name}</span>
-                        </div>
-                    ))}
-                 </div>
-
-                 <div className="flex justify-center gap-4 mt-16">
-                    <Button size="lg" variant="outline">Explore Products</Button>
-                    <Button size="lg">Contact Sales</Button>
-                </div>
-            </div>
-        </section>
-
-        <SectionSeparator />
-
         <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
@@ -228,8 +134,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <SectionSeparator />
-
         <section id="pricing" className="w-full py-12 md:py-24 lg:py-32 bg-background">
           <div className="container mx-auto px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
@@ -241,49 +145,22 @@ export default function LandingPage() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-7xl items-start gap-8 mt-12 sm:grid-cols-1 lg:grid-cols-3">
-              {/* Free Plan */}
+            <div className="mx-auto grid max-w-5xl items-center gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-12 mt-12">
+              {/* Basic Plan */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Free</CardTitle>
-                  <CardDescription>Perfect for getting started and exploring the platform.</CardDescription>
+                  <CardTitle>Basic</CardTitle>
+                  <CardDescription>Perfect for small businesses and startups.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-baseline">
-                    <span className="text-4xl font-bold">Rs.0</span>
+                    <span className="text-4xl font-bold">$15</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
                   <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />1 User</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />1 Location</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 25 Products</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Community Support</li>
-                  </ul>
-                </CardContent>
-                <CardFooter>
-                  <Button className="w-full" disabled>
-                    Current Plan
-                  </Button>
-                </CardFooter>
-              </Card>
-
-              {/* Standard Plan */}
-              <Card className="border-primary ring-2 ring-primary relative overflow-hidden">
-                <Badge className="absolute top-4 right-4">Most Popular</Badge>
-                <CardHeader>
-                  <CardTitle>Standard</CardTitle>
-                  <CardDescription>For growing businesses that need more power.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold">Rs.3500</span>
-                    <span className="text-muted-foreground line-through">Rs.5000</span>
-                    <span className="text-muted-foreground">/month</span>
-                  </div>
-                   <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 10 Users</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 5 Locations</li>
-                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Up to 1000 Products</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />5 Users</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />2 Locations</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />1,000 Products</li>
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Email Support</li>
                   </ul>
                 </CardContent>
@@ -293,45 +170,60 @@ export default function LandingPage() {
                   </Button>
                 </CardFooter>
               </Card>
-              
+
               {/* Pro Plan */}
-              <Card>
+              <Card className="border-primary ring-2 ring-primary">
                 <CardHeader>
                   <CardTitle>Pro</CardTitle>
-                  <CardDescription>Advanced features for scaling businesses.</CardDescription>
+                  <CardDescription>For growing businesses that need more power.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-baseline">
-                    <span className="text-4xl font-bold">Rs.10000</span>
+                    <span className="text-4xl font-bold">$45</span>
+                    <span className="text-muted-foreground">/month</span>
+                  </div>
+                   <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />20 Users</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />10 Locations</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />10,000 Products</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Priority Support</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />AI Logistics</li>
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full">
+                    Upgrade to Pro
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              {/* Enterprise Plan */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Enterprise</CardTitle>
+                  <CardDescription>Advanced features for scaling businesses.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                   <div className="flex items-baseline">
+                    <span className="text-4xl font-bold">$99</span>
                     <span className="text-muted-foreground">/month</span>
                   </div>
                    <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Users</li>
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Locations</li>
                     <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Unlimited Products</li>
-                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />Priority Support</li>
+                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" />24/7 Phone Support</li>
                   </ul>
                 </CardContent>
                 <CardFooter>
                   <Button className="w-full" variant="outline">
-                    Choose Plan
+                    Contact Sales
                   </Button>
                 </CardFooter>
               </Card>
             </div>
-            <div className="text-center mt-12">
-                <h3 className="text-xl font-bold">Enterprise Solution</h3>
-                <p className="text-muted-foreground max-w-2xl mx-auto mt-2">
-                    For large-scale operations with custom needs, we offer a tailored Enterprise plan. Get everything in Pro, plus a dedicated account manager, custom integrations, and 24/7 phone support.
-                </p>
-                <p className="mt-4">
-                    Contact us at <a href="mailto:sales@payshia.com" className="font-semibold text-primary underline">sales@payshia.com</a> or <a href="tel:+94770481363" className="font-semibold text-primary underline">+94 770 481 363</a> to get a custom quote.
-                </p>
-            </div>
           </div>
         </section>
-
-        <SectionSeparator />
 
         <section id="testimonials" className="w-full py-12 md:py-24 lg:py-32 bg-muted/40">
           <div className="container mx-auto px-4 md:px-6">
@@ -368,8 +260,6 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-
-        <SectionSeparator />
         
         <section className="w-full py-12 md:py-24 lg:py-32 bg-primary text-primary-foreground">
           <div className="container mx-auto grid items-center justify-center gap-4 px-4 text-center md:px-6">
