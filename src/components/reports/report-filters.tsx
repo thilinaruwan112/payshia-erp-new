@@ -157,7 +157,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                  url = `https://server-erp.payshia.com/products/with-variants`;
             } else if (reportName === 'Purchase Order Report') {
                 url = `https://server-erp.payshia.com/purchase-orders/filter/`;
-            } else if (reportName === 'Sales Summary Report') {
+            } else if (reportName === 'Sales Summary Report' || reportName === 'Invoice Report') {
                 url = `https://server-erp.payshia.com/invoices/filter/hold/by-company-status`;
                 params.append('invoice_status', '1');
             } else if (reportName === 'GRN Report') {

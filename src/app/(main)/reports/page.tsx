@@ -13,6 +13,7 @@ import { ItemMasterReportView } from '@/components/reports/item-master-report-vi
 import { PurchaseOrderReportView } from '@/components/reports/purchase-order-report-view';
 import { SalesSummaryReportView } from '@/components/reports/sales-summary-report-view';
 import { GrnReportView } from '@/components/reports/grn-report-view';
+import { InvoiceReportView } from '@/components/reports/invoice-report-view';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import jsPDF from 'jspdf';
@@ -68,9 +69,10 @@ function ReportsPage() {
              url = `/reports-print/item-master-report/print?company_id=${company_id}`;
         } else if (selectedReport === 'Purchase Order Report') {
             url = `/reports-print/purchase-order-report/print?company_id=${company_id}`;
-        } else if (selectedReport === 'Sales Summary Report') {
+        } else if (selectedReport === 'Sales Summary Report' || selectedReport === 'Invoice Report') {
             const reportDataString = encodeURIComponent(JSON.stringify(reportData));
-            url = `/reports-print/sales-summary/print?company_id=${company_id}&data=${reportDataString}`;
+            const reportPath = selectedReport === 'Invoice Report' ? 'invoice-report' : 'sales-summary';
+            url = `/reports-print/${reportPath}/print?company_id=${company_id}&data=${reportDataString}`;
         } else if (selectedReport === 'GRN Report') {
              url = `/reports-print/grn-report/print?company_id=${company_id}`;
         }
@@ -240,6 +242,9 @@ function ReportsPage() {
                          )}
                          {reportData.length > 0 && selectedReport === 'GRN Report' && (
                             <GrnReportView grns={reportData as GoodsReceivedNote[]} />
+                         )}
+                         {reportData.length > 0 && selectedReport === 'Invoice Report' && (
+                            <InvoiceReportView invoices={reportData as Invoice[]} customers={customers} />
                          )}
                     </div>
                 ) : (
