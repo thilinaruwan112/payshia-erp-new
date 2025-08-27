@@ -129,17 +129,26 @@ export function ProductForm({ product }: ProductFormProps) {
   const fetchProductImages = async () => {
     if (!product || !company_id) return;
     try {
-        const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${product.id}`);
-        if (!response.ok) throw new Error('Failed to fetch images');
-        const data = await response.json();
-        setProductImages(data || []);
+        let allImages: ProductImage[] = [];
+        if (product.variants && product.variants.length > 0) {
+            for (const variant of product.variants) {
+                const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variant.id}`);
+                if (response.ok) {
+                    const data: ProductImage[] = await response.json();
+                    if(Array.isArray(data)) {
+                        allImages = [...allImages, ...data];
+                    }
+                }
+            }
+        }
+        setProductImages(allImages);
     } catch (error) {
         toast({ variant: "destructive", title: "Error", description: "Could not load product images." });
     }
   }
 
   useEffect(() => {
-    if (product) {
+    if (product && company_id) {
       fetchProductImages();
     }
   }, [product, company_id]);
