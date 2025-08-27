@@ -1,6 +1,12 @@
 
 'use client';
 
+import { useSearchParams } from 'next/navigation';
+import React, { useEffect, useState, Suspense } from 'react';
+import type { User, Supplier, Brand, Product, ProductVariant } from '@/lib/types';
+import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 import {
   Card,
   CardContent,
@@ -10,7 +16,6 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, ArrowLeft, Printer, Eye, Loader2, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -21,11 +26,8 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useLocation } from '@/components/location-provider';
-import { useToast } from '@/hooks/use-toast';
-import { type User, type Supplier, type Brand } from '@/lib/types';
 import { Combobox } from '@/components/ui/combobox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -79,6 +81,13 @@ const reportCategories = [
 ];
 
 const allReports = reportCategories.flatMap(cat => cat.reports);
+
+type Category = { id: string; name: string };
+interface ProductWithVariants {
+    product: Product;
+    variants: ProductVariant[];
+}
+type ReportData = User[] | Supplier[] | ProductWithVariants[];
 
 const CustomerReportView = ({ customers }: { customers: User[] }) => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -246,13 +255,100 @@ const SupplierReportView = ({ suppliers }: { suppliers: Supplier[] }) => {
     );
 };
 
-type ReportData = User[] | Supplier[];
+const ItemMasterReportView = ({ products }: { products: ProductWithVariants[] }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
-const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, reportData }: { 
+    const allVariants = products.flatMap(p => p.variants.map(v => ({ ...v, productName: p.product.name, category: p.product.category, brand: 'N/A' })));
+
+    const filteredItems = allVariants.filter(item =>
+        item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.sku.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+    return (
+        <Card className="w-full">
+            <CardHeader>
+                <CardTitle>Item Master Report</CardTitle>
+                <CardDescription>A list of all product variants in the system.</CardDescription>
+                <div className="pt-4">
+                    <Input
+                        placeholder="Search by product name or SKU..."
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                        className="max-w-sm"
+                    />
+                </div>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Product Name</TableHead>
+                            <TableHead>SKU</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Brand</TableHead>
+                            <TableHead className="text-right">Stock</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {paginatedItems.map((item) => (
+                            <TableRow key={item.id}>
+                                <TableCell>{item.productName}</TableCell>
+                                <TableCell>{item.sku}</TableCell>
+                                <TableCell>{item.category}</TableCell>
+                                <TableCell>{item.brand}</TableCell>
+                                <TableCell className="text-right">{item.stock || 0}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+             <CardFooter className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                    Showing {paginatedItems.length} of {filteredItems.length} items.
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                        disabled={currentPage === 1}
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                     <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
+                </div>
+            </CardFooter>
+        </Card>
+    );
+};
+
+
+const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, onExportCsv, onExportPdf, reportData }: { 
     reportName: string, 
     onBack: () => void, 
     onShowReport: (data: ReportData) => void,
     onPrintReport: () => void,
+    onExportCsv: () => void,
+    onExportPdf: () => void,
     reportData: ReportData,
 }) => {
     const report = allReports.find(r => r.name === reportName);
@@ -261,30 +357,34 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, report
     const { toast } = useToast();
     const [customers, setCustomers] = useState<User[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [brands, setBrands] = useState<Brand[]>([]);
     const [isFetching, setIsFetching] = useState(false);
 
     useEffect(() => {
         async function fetchDropdownData() {
             if (!company_id) return;
-            if (filters.includes('customer')) {
-                try {
-                    const response = await fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`);
-                    if (!response.ok) throw new Error('Failed to fetch customers');
+            const fetchData = async (url: string, setData: React.Dispatch<React.SetStateAction<any[]>>, type: string) => {
+                 try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`Failed to fetch ${type}`);
                     const data = await response.json();
-                    setCustomers(data || []);
+                    setData(data || []);
                 } catch (error) {
-                    toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customer list.'});
+                    toast({ variant: 'destructive', title: 'Error', description: `Could not fetch ${type} list.`});
                 }
             }
-             if (filters.includes('supplier')) {
-                try {
-                    const response = await fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`);
-                    if (!response.ok) throw new Error('Failed to fetch suppliers');
-                    const data = await response.json();
-                    setSuppliers(data || []);
-                } catch (error) {
-                    toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch supplier list.'});
-                }
+            if (filters.includes('customer')) {
+                fetchData(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`, setCustomers, 'customers');
+            }
+            if (filters.includes('supplier')) {
+                fetchData(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`, setSuppliers, 'suppliers');
+            }
+            if (filters.includes('category')) {
+                fetchData(`https://server-erp.payshia.com/master-categories/company?company_id=${company_id}`, setCategories, 'categories');
+            }
+            if (filters.includes('brand')) {
+                fetchData(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`, setBrands, 'brands');
             }
         }
         fetchDropdownData();
@@ -298,6 +398,8 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, report
         value: s.supplier_id,
         label: s.supplier_name,
     }));
+    const categoryOptions = categories.map(c => ({ value: c.id, label: c.name }));
+    const brandOptions = brands.map(b => ({ value: b.id, label: b.name }));
 
     const hasFilter = (filterName: string) => filters.includes(filterName);
 
@@ -309,6 +411,8 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, report
                 url = `https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`;
             } else if (reportName === 'Supplier Master Report') {
                  url = `https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`;
+            } else if (reportName === 'Item Master Report') {
+                 url = `https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`;
             } else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
                  setIsFetching(false);
@@ -317,91 +421,13 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, report
             const response = await fetch(url);
             if (!response.ok) throw new Error(`Failed to fetch ${reportName} data`);
             const data = await response.json();
-            onShowReport(data || []);
+            onShowReport(reportName === 'Item Master Report' ? data.products || [] : data || []);
         } catch (error) {
              toast({ variant: 'destructive', title: 'Error', description: `Could not fetch ${reportName} data.`});
         } finally {
             setIsFetching(false);
         }
     };
-
-    const handleExportCSV = () => {
-        if (reportData.length === 0) {
-            toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
-            return;
-        }
-
-        let headers: string[] = [];
-        let rows: string[][] = [];
-        let filename = 'report.csv';
-
-        if(reportName === 'Customer Master Report' && 'customer_first_name' in reportData[0]) {
-            headers = ["Customer Name", "Phone Number", "Email", "Address"];
-            rows = (reportData as User[]).map(customer => [
-                `"${customer.customer_first_name} ${customer.customer_last_name}"`,
-                customer.phone_number || '',
-                customer.email_address || '',
-                `"${customer.address_line1 || ''}, ${customer.city || ''}"`
-            ]);
-            filename = 'customer_report.csv';
-        } else if (reportName === 'Supplier Master Report' && 'supplier_name' in reportData[0]) {
-             headers = ["Supplier Name", "Contact Person", "Phone", "Email"];
-            rows = (reportData as Supplier[]).map(supplier => [
-                `"${supplier.supplier_name}"`,
-                `"${supplier.contact_person}"`,
-                supplier.telephone,
-                supplier.email
-            ]);
-            filename = 'supplier_report.csv';
-        }
-
-        const csvContent = "data:text/csv;charset=utf-8," 
-            + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-
-        const link = document.createElement("a");
-        link.setAttribute("href", encodeURI(csvContent));
-        link.setAttribute("download", filename);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-    
-    const handleExportPDF = () => {
-        if (reportData.length === 0) {
-            toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
-            return;
-        }
-        
-        const doc = new jsPDF();
-        doc.text(reportName, 14, 16);
-
-        let head: string[][] = [];
-        let body: (string | number)[][] = [];
-        let filename = 'report.pdf';
-
-        if(reportName === 'Customer Master Report' && 'customer_first_name' in reportData[0]) {
-            head = [['Customer Name', 'Phone Number', 'Email', 'Address']];
-            body = (reportData as User[]).map(customer => [
-                `${customer.customer_first_name} ${customer.customer_last_name}`,
-                customer.phone_number || '',
-                customer.email_address || '',
-                `${customer.address_line1 || ''}, ${customer.city || ''}`
-            ]);
-            filename = 'customer_report.pdf';
-        } else if (reportName === 'Supplier Master Report' && 'supplier_name' in reportData[0]) {
-            head = [['Supplier Name', 'Contact Person', 'Phone', 'Email']];
-            body = (reportData as Supplier[]).map(supplier => [
-                supplier.supplier_name,
-                supplier.contact_person,
-                supplier.telephone,
-                supplier.email,
-            ]);
-            filename = 'supplier_report.pdf';
-        }
-
-        autoTable(doc, { head, body, startY: 25 });
-        doc.save(filename);
-    }
 
     return (
         <Card className="flex-1 w-full">
@@ -502,13 +528,13 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, report
                     {hasFilter('category') && (
                          <div className="space-y-1.5">
                             <Label>Category</Label>
-                            <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                            <Combobox options={categoryOptions} value="" onChange={() => {}} placeholder="Select category..." notFoundText="No categories found." />
                         </div>
                     )}
                     {hasFilter('brand') && (
                         <div className="space-y-1.5">
                             <Label>Brand</Label>
-                            <Select><SelectTrigger><SelectValue placeholder="All" /></SelectTrigger><SelectContent><SelectItem value="all">All</SelectItem></SelectContent></Select>
+                            <Combobox options={brandOptions} value="" onChange={() => {}} placeholder="Select brand..." notFoundText="No brands found." />
                         </div>
                     )}
                       {hasFilter('status') && (
@@ -528,11 +554,11 @@ const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport, report
                     <Printer className="mr-2 h-4 w-4" />
                     Print
                 </Button>
-                <Button variant="outline" onClick={handleExportCSV} disabled={reportData.length === 0}>
+                <Button variant="outline" onClick={onExportCsv} disabled={reportData.length === 0}>
                     <FileDown className="mr-2 h-4 w-4" />
                     Export CSV
                 </Button>
-                <Button variant="outline" onClick={handleExportPDF} disabled={reportData.length === 0}>
+                <Button variant="outline" onClick={onExportPdf} disabled={reportData.length === 0}>
                     <FileDown className="mr-2 h-4 w-4" />
                     Export PDF
                 </Button>
@@ -577,18 +603,100 @@ export default function ReportsPage() {
     }
     
     const handlePrintReport = () => {
+        if (!company_id) return;
+        let url = '';
         if (selectedReport === 'Customer Master Report') {
-            window.open(`/reports-print/customer-report/print?company_id=${company_id}`, '_blank');
+            url = `/reports-print/customer-report/print?company_id=${company_id}`;
         } else if (selectedReport === 'Supplier Master Report') {
-            window.open(`/reports-print/supplier-report/print?company_id=${company_id}`, '_blank');
+            url = `/reports-print/supplier-report/print?company_id=${company_id}`;
+        } else if (selectedReport === 'Item Master Report') {
+             url = `/reports-print/item-master-report/print?company_id=${company_id}`;
+        }
+        
+        if (url) {
+            window.open(url, '_blank');
         } else {
-            toast({
-                title: "Coming Soon",
-                description: "This report is not yet available for printing.",
-            });
+             toast({ title: "Coming Soon", description: "This report is not yet available for printing." });
         }
     };
 
+    const handleExportCSV = () => {
+        if (reportData.length === 0) {
+            toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
+            return;
+        }
+
+        let headers: string[] = [];
+        let rows: string[][] = [];
+        let filename = 'report.csv';
+
+        if(selectedReport === 'Customer Master Report' && reportData.length > 0 && 'customer_first_name' in reportData[0]) {
+            headers = ["Customer Name", "Phone Number", "Email", "Address"];
+            rows = (reportData as User[]).map(customer => [
+                `"${customer.customer_first_name} ${customer.customer_last_name}"`,
+                customer.phone_number || '',
+                customer.email_address || '',
+                `"${customer.address_line1 || ''}, ${customer.city || ''}"`
+            ]);
+            filename = 'customer_report.csv';
+        } else if (selectedReport === 'Supplier Master Report' && reportData.length > 0 && 'supplier_name' in reportData[0]) {
+             headers = ["Supplier Name", "Contact Person", "Phone", "Email"];
+            rows = (reportData as Supplier[]).map(supplier => [
+                `"${supplier.supplier_name}"`,
+                `"${supplier.contact_person}"`,
+                supplier.telephone,
+                supplier.email
+            ]);
+            filename = 'supplier_report.csv';
+        }
+
+        const csvContent = "data:text/csv;charset=utf-8," 
+            + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+
+        const link = document.createElement("a");
+        link.setAttribute("href", encodeURI(csvContent));
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+    
+    const handleExportPDF = () => {
+        if (reportData.length === 0) {
+            toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
+            return;
+        }
+        
+        const doc = new jsPDF();
+        doc.text(selectedReport || 'Report', 14, 16);
+
+        let head: string[][] = [];
+        let body: (string | number)[][] = [];
+        let filename = 'report.pdf';
+
+        if(selectedReport === 'Customer Master Report' && reportData.length > 0 && 'customer_first_name' in reportData[0]) {
+            head = [['Customer Name', 'Phone Number', 'Email', 'Address']];
+            body = (reportData as User[]).map(customer => [
+                `${customer.customer_first_name} ${customer.customer_last_name}`,
+                customer.phone_number || '',
+                customer.email_address || '',
+                `${customer.address_line1 || ''}, ${customer.city || ''}`
+            ]);
+            filename = 'customer_report.pdf';
+        } else if (selectedReport === 'Supplier Master Report' && reportData.length > 0 && 'supplier_name' in reportData[0]) {
+            head = [['Supplier Name', 'Contact Person', 'Phone', 'Email']];
+            body = (reportData as Supplier[]).map(supplier => [
+                supplier.supplier_name,
+                supplier.contact_person,
+                supplier.telephone,
+                supplier.email,
+            ]);
+            filename = 'supplier_report.pdf';
+        }
+
+        autoTable(doc, { head, body, startY: 25 });
+        doc.save(filename);
+    }
 
   return (
     <div className="flex flex-col gap-6">
@@ -624,24 +732,31 @@ export default function ReportsPage() {
         <div className={cn("md:col-span-3 w-full", !selectedReport && "hidden md:flex")}>
             <div className="w-full space-y-8">
                 {selectedReport ? (
-                    <ReportFilters 
-                        reportName={selectedReport} 
-                        onBack={() => setSelectedReport(null)} 
-                        onShowReport={handleShowReport}
-                        onPrintReport={handlePrintReport}
-                        reportData={reportData}
-                    />
+                     <div className="w-full space-y-8">
+                        <ReportFilters 
+                            reportName={selectedReport} 
+                            onBack={() => setSelectedReport(null)} 
+                            onShowReport={handleShowReport}
+                            onPrintReport={handlePrintReport}
+                            onExportCsv={handleExportCSV}
+                            onExportPdf={handleExportPDF}
+                            reportData={reportData}
+                        />
+                         {reportData.length > 0 && selectedReport === 'Customer Master Report' && (
+                            <CustomerReportView customers={reportData as User[]} />
+                         )}
+                         {reportData.length > 0 && selectedReport === 'Supplier Master Report' && (
+                            <SupplierReportView suppliers={reportData as Supplier[]} />
+                         )}
+                          {reportData.length > 0 && selectedReport === 'Item Master Report' && (
+                            <ItemMasterReportView products={reportData as ProductWithVariants[]} />
+                         )}
+                    </div>
                 ) : (
                     <div className="flex w-full items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[400px]">
                         <p className="text-muted-foreground">Select a report to see filters</p>
                     </div>
                 )}
-                 {reportData.length > 0 && selectedReport === 'Customer Master Report' && (
-                    <CustomerReportView customers={reportData as User[]} />
-                 )}
-                 {reportData.length > 0 && selectedReport === 'Supplier Master Report' && (
-                    <SupplierReportView suppliers={reportData as Supplier[]} />
-                 )}
             </div>
         </div>
       </div>
