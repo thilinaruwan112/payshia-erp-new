@@ -183,7 +183,7 @@ export default function Dashboard() {
       </div>
 
        <div className="grid grid-cols-1 gap-6">
-         <Link href="/pos-system" target="_blank" rel="noopener noreferrer">
+         <Link href="/pos-system">
             <Card className="hover:border-primary transition-colors cursor-pointer h-full">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Point of Sale (POS)</CardTitle>
