@@ -101,27 +101,39 @@ export default function LandingPage() {
       <main className="flex-1">
          <section className="relative w-full landing-page-aurora flex items-center min-h-[calc(100vh-80px)]">
           <div className="container mx-auto px-4 md:px-6">
-            <div className="flex flex-col items-center text-center">
-              <div className="space-y-4">
-                 <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={100} height={100} className="mx-auto" />
-                <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm text-primary font-semibold">
-                  Payshia ERP
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
+                <div className="space-y-4">
+                  <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={150} height={150} className="mx-auto lg:mx-0" />
+                  <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-foreground">
+                    Scalable & Modular Web-Based ERP
+                  </h1>
+                  <p className="max-w-[600px] mx-auto lg:mx-0 text-muted-foreground md:text-xl">
+                    An all-in-one solution for managing your sales channels, locations,
+                    inventory, and orders with powerful AI features.
+                  </p>
+                  <div className="flex flex-col gap-2 min-[400px]:flex-row justify-center lg:justify-start">
+                    <Button asChild size="lg">
+                      <Link href="/register">Get Started</Link>
+                    </Button>
+                    <Button asChild variant="outline" size="lg">
+                      <Link href="/dashboard">Live Demo</Link>
+                    </Button>
+                  </div>
                 </div>
-                <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl text-foreground">
-                  Scalable & Modular Web-Based ERP
-                </h1>
-                <p className="max-w-[600px] mx-auto text-muted-foreground md:text-xl">
-                  An all-in-one solution for managing your sales channels, locations,
-                  inventory, and orders with powerful AI features.
-                </p>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row justify-center">
-                  <Button asChild size="lg">
-                    <Link href="/register">Get Started</Link>
-                  </Button>
-                  <Button asChild variant="outline" size="lg">
-                    <Link href="/dashboard">Live Demo</Link>
-                  </Button>
-                </div>
+              </div>
+              <div className="hidden lg:grid grid-cols-2 gap-4">
+                 {features.slice(0, 4).map((feature, index) => (
+                    <Card key={index} className="bg-background/40 backdrop-blur-sm border-white/20">
+                      <CardHeader className="flex-row items-center gap-4 pb-2">
+                        {feature.icon}
+                        <CardTitle className="text-base">{feature.name}</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-xs text-muted-foreground">{feature.description}</p>
+                      </CardContent>
+                    </Card>
+                 ))}
               </div>
             </div>
           </div>
