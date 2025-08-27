@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { PosProduct, StockInfo } from '@/app/(pos)/pos-system/page';
 import {
   Dialog,
@@ -41,6 +42,7 @@ export function AddToCartDialog({
   const { currentLocation, company_id } = useLocation();
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
+  const quantityInputRef = useRef<HTMLInputElement>(null);
   
   const isAlaCarte = product?.recipe_type === 'ala cart';
   const isOpen = !!product;
@@ -84,6 +86,11 @@ export function AddToCartDialog({
       setQuantity('1');
       setDiscount('0');
       fetchStock();
+      // Focus quantity input when dialog opens
+      setTimeout(() => {
+        quantityInputRef.current?.focus();
+        quantityInputRef.current?.select();
+      }, 100);
     }
   }, [product, currentLocation, company_id, toast, isAlaCarte]);
 
@@ -152,8 +159,8 @@ export function AddToCartDialog({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, quantity, discount, product, selectedBatch, onClose, onAddToCart, handleAddToCart]);
-
+  }, [isOpen, handleAddToCart]);
+  
   const discountedPrice = product ? (product.price as number) - parseFloat(discount) : 0;
   const currentBatchStock = selectedBatch ? JSON.parse(selectedBatch).stock_balance : 0;
 
@@ -234,6 +241,7 @@ export function AddToCartDialog({
                  )}
               </div>
               <Input 
+                ref={quantityInputRef}
                 readOnly 
                 value={quantity}
                 className="h-14 text-3xl font-bold text-right mb-4"
