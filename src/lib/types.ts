@@ -1,4 +1,5 @@
 
+
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -62,6 +63,7 @@ export type Product = {
   display_name?: string | null;
   collectionProductId?: string; // Used for collection product association
   supplier?: string;
+  recipe_type?: 'standard' | 'a_la_carte' | 'item_recipe';
 };
 
 export type Location = {
@@ -230,6 +232,7 @@ export type StockEntry = {
     company_id: string;
     transaction_type: string;
     product_variant_id: string;
+    product?: Product;
 }
 
 export type StockTransfer = {
@@ -346,7 +349,7 @@ export type InvoiceItem = {
     cost_price: number | string;
     is_active?: number;
     hold_status?: number;
-    printed_status?: number;
+    printed_status?: '1' | '0' | number;
     company_id?: string;
     added_date?: string;
     invoice_number?: string;
@@ -454,6 +457,7 @@ export type CartItem = {
 
 export type StockInfo = {
     product_id: string;
+    product_variant_id: string;
     expire_date: string;
     patch_code: string;
     total_in: string;

@@ -35,7 +35,7 @@ import { Trash2, UploadCloud, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import type { Product, Supplier } from "@/lib/types";
+import type { Product, Supplier, ProductVariant } from "@/lib/types";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
 import { ImageUploadDialog } from "./image-upload-dialog";
@@ -115,6 +115,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
   const [savedProductId, setSavedProductId] = React.useState<string | null>(null);
+  const [savedVariants, setSavedVariants] = React.useState<ProductVariant[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [colors, setColors] = useState<Color[]>([]);
@@ -311,8 +312,14 @@ export function ProductForm({ product }: ProductFormProps) {
         throw new Error(result.message || 'Something went wrong');
       }
 
-      const productId = product?.id || result.product.id;
+      const returnedProduct = result.product;
+      const productId = returnedProduct.id;
+      
+      const detailsResponse = await fetch(`https://server-erp.payshia.com/products/details/${productId}`);
+      const detailsData = await detailsResponse.json();
+
       setSavedProductId(productId);
+      setSavedVariants(detailsData.variants);
 
       if (data.customFields && data.customFields.length > 0) {
         for (const cf of data.customFields) {
@@ -362,6 +369,7 @@ export function ProductForm({ product }: ProductFormProps) {
       onOpenChange={setUploadDialogOpen}
       productId={savedProductId}
       companyId={company_id}
+      productVariants={savedVariants}
       onUploadComplete={() => {
         setUploadDialogOpen(false);
         router.push('/products');
@@ -867,4 +875,3 @@ export function ProductForm({ product }: ProductFormProps) {
     </>
   );
 }
-

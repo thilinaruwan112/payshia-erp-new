@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -14,19 +14,35 @@ import { Button } from './ui/button';
 import { useDropzone } from 'react-dropzone';
 import { UploadCloud, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { ProductVariant } from '@/lib/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Label } from './ui/label';
 
 interface ImageUploadDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   productId: string | null;
+  productVariants: ProductVariant[];
   companyId: number | null;
   onUploadComplete: () => void;
 }
 
-export function ImageUploadDialog({ isOpen, onOpenChange, productId, companyId, onUploadComplete }: ImageUploadDialogProps) {
+export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVariants, companyId, onUploadComplete }: ImageUploadDialogProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState<string>('');
   const { toast } = useToast();
+
+  useEffect(() => {
+    // If there's only one variant, auto-select it.
+    if (productVariants && productVariants.length === 1) {
+      setSelectedVariantId(productVariants[0].id);
+    } else {
+      setSelectedVariantId(''); // Reset when variants change
+    }
+    setFiles([]); // Reset files when dialog re-opens with new data
+  }, [productVariants, isOpen]);
+
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(prev => [...prev, ...acceptedFiles]);
@@ -42,11 +58,11 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, companyId, 
   };
 
   const handleUpload = async () => {
-    if (!productId || !companyId || files.length === 0) {
+    if (!productId || !companyId || files.length === 0 || !selectedVariantId) {
       toast({
         variant: 'destructive',
         title: 'Upload Error',
-        description: 'Missing product ID, company ID, or files.',
+        description: 'Missing product ID, variant, company ID, or files.',
       });
       return;
     }
@@ -54,6 +70,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, companyId, 
 
     const formData = new FormData();
     formData.append('product_id', productId);
+    formData.append('product_variant_id', selectedVariantId);
     formData.append('company_id', String(companyId));
     formData.append('created_by', 'admin'); // Replace with actual user later
 
@@ -89,6 +106,9 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, companyId, 
     }
   };
 
+  const hasVariants = productVariants && productVariants.length > 0;
+  const isUploadDisabled = isUploading || files.length === 0 || (hasVariants && !selectedVariantId);
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
@@ -99,6 +119,24 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, companyId, 
           </DialogDescription>
         </DialogHeader>
         <div className="py-4 space-y-6">
+          {hasVariants && (
+             <div className="space-y-2">
+                <Label htmlFor="variant-select">Select Variant</Label>
+                 <Select value={selectedVariantId} onValueChange={setSelectedVariantId}>
+                    <SelectTrigger id="variant-select">
+                        <SelectValue placeholder="Choose a variant to assign images to" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {productVariants.map(variant => (
+                            <SelectItem key={variant.id} value={variant.id}>
+                                {variant.sku} {variant.color && `- ${variant.color}`} {variant.size && `- ${variant.size}`}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+             </div>
+          )}
+
           <div
             {...getRootProps()}
             className={`p-12 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors ${
@@ -145,7 +183,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, companyId, 
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isUploading}>
               Skip
             </Button>
-            <Button onClick={handleUpload} disabled={isUploading || files.length === 0}>
+            <Button onClick={handleUpload} disabled={isUploadDisabled}>
                 {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Upload {files.length > 0 ? `(${files.length})` : ''}
             </Button>
