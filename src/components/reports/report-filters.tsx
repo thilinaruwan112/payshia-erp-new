@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react';
-import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand } from '@/lib/types';
+import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand, PurchaseOrder } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -29,7 +29,7 @@ interface ProductWithVariants {
     product: Product;
     variants: ProductVariant[];
 }
-type ReportData = User[] | Supplier[] | ProductWithVariants[];
+type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[];
 
 interface Category { id: string; name: string };
 interface CustomField { id: string; field_name: string; }
@@ -149,6 +149,8 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                  url = `https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`;
             } else if (reportName === 'Item Master Report') {
                  url = `https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`;
+            } else if (reportName === 'Purchase Order Report') {
+                url = `https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`;
             } else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
                  setIsFetching(false);

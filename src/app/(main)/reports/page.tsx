@@ -1,9 +1,9 @@
 
-'use client';
+'use client'
 
 import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, Suspense, useCallback } from 'react';
-import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand } from '@/lib/types';
+import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand, PurchaseOrder } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import {
   Card,
@@ -16,6 +16,7 @@ import { ReportList } from '@/components/reports/report-list';
 import { CustomerReportView } from '@/components/reports/customer-report-view';
 import { SupplierReportView } from '@/components/reports/supplier-report-view';
 import { ItemMasterReportView } from '@/components/reports/item-master-report-view';
+import { PurchaseOrderReportView } from '@/components/reports/purchase-order-report-view';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import jsPDF from 'jspdf';
@@ -27,7 +28,7 @@ interface ProductWithVariants {
     product: Product;
     variants: ProductVariant[];
 }
-type ReportData = User[] | Supplier[] | ProductWithVariants[];
+type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[];
 
 function ReportsPage() {
     const searchParams = useSearchParams();
@@ -54,6 +55,8 @@ function ReportsPage() {
             url = `/reports-print/supplier-report/print?company_id=${company_id}`;
         } else if (selectedReport === 'Item Master Report') {
              url = `/reports-print/item-master-report/print?company_id=${company_id}`;
+        } else if (selectedReport === 'Purchase Order Report') {
+            url = `/reports-print/purchase-order-report/print?company_id=${company_id}`;
         }
         
         if (url) {
@@ -212,6 +215,9 @@ function ReportsPage() {
                          )}
                           {reportData.length > 0 && selectedReport === 'Item Master Report' && (
                             <ItemMasterReportView products={reportData as ProductWithVariants[]} />
+                         )}
+                         {reportData.length > 0 && selectedReport === 'Purchase Order Report' && (
+                            <PurchaseOrderReportView purchaseOrders={reportData as PurchaseOrder[]} />
                          )}
                     </div>
                 ) : (
