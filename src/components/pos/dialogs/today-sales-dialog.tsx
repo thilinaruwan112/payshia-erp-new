@@ -16,6 +16,7 @@ import { format, isToday } from 'date-fns';
 import { useCurrency } from '@/components/currency-provider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { DialogClose } from '@radix-ui/react-dialog';
 
 interface TodaySalesDialogProps {
   isOpen: boolean;
@@ -86,9 +87,11 @@ export function TodaySalesDialog({
             <Button variant="ghost" size="icon" onClick={fetchInvoices} disabled={isLoading}>
               <RefreshCcw className={cn("h-5 w-5", isLoading && "animate-spin")} />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
-              <X className="h-5 w-5" />
-            </Button>
+            <DialogClose asChild>
+                <Button variant="ghost" size="icon">
+                    <X className="h-5 w-5" />
+                </Button>
+            </DialogClose>
           </div>
         </DialogHeader>
         <div className="p-6 space-y-4">
