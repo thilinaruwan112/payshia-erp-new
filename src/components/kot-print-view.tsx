@@ -1,15 +1,25 @@
+
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import type { Invoice, InvoiceItem, Product } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import html2canvas from 'html2canvas';
 
 interface KotPrintViewProps {
   invoiceId: string;
   companyId: string | null;
 }
+
+// Extend the Window interface for JSPrintManager
+declare global {
+  interface Window {
+      JSPM: any;
+  }
+}
+
 
 export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -17,6 +27,8 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [itemsToPrint, setItemsToPrint] = useState<InvoiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const kotRef = useRef<HTMLDivElement>(null);
+  const [isJspmConnected, setIsJspmConnected] = useState(false);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -63,7 +75,6 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
 
         if (unprintedItems.length > 0) {
           setItemsToPrint(unprintedItems);
-          // Update the status of these items
           try {
             const updateResponse = await fetch(
               `https://server-erp.payshia.com/transaction-invoice-items/printed?company_id=${companyId}&invoice_number=${invoiceData.invoice_number}`,
@@ -104,12 +115,102 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     fetchInvoiceData();
   }, [invoiceId, companyId, toast]);
 
+   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const initJSPM = () => {
+        if (!window.JSPM) {
+          console.error("JSPM script not loaded! Make sure the client app is running.");
+          return;
+        }
+        try {
+            const { JSPrintManager } = window.JSPM;
+            JSPrintManager.auto_reconnect = true;
+            JSPrintManager.start();
+
+            JSPrintManager.WS.onOpen = () => {
+                console.log("✅ JSPM Connected!");
+                setIsJspmConnected(true);
+            };
+
+            JSPrintManager.WS.onClose = () => {
+                console.log("❌ JSPM Disconnected!");
+                setIsJspmConnected(false);
+            };
+        } catch (error) {
+            console.error("Failed to initialize JSPM:", error);
+        }
+      };
+      // Give JSPM a moment to load on the window object
+      setTimeout(initJSPM, 500);
+    }
+  }, []);
+
+  const handlePrint = async () => {
+    if (!kotRef.current) return;
+
+    if (!window.JSPM || !isJspmConnected) {
+        console.warn("JSPM not ready or not connected. Falling back to browser print.");
+        setTimeout(() => window.print(), 500);
+        return;
+    }
+
+    try {
+        const element = kotRef.current;
+        const canvas = await html2canvas(element, { scale: 2, backgroundColor: null });
+
+        const b64Prefix = "data:image/png;base64,";
+        const imgBase64DataUri = canvas.toDataURL("image/png");
+        const imgBase64Content = imgBase64DataUri.substring(b64Prefix.length);
+
+        const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
+
+        const cpj = new ClientPrintJob();
+        // IMPORTANT: Change "Microsoft Print to PDF" to the actual name of your kitchen printer.
+        const myPrinter = new InstalledPrinter("Microsoft Print to PDF"); 
+        
+        cpj.clientPrinter = myPrinter;
+
+        const myImageFile = new PrintFile(
+            imgBase64Content,
+            FileSourceType.Base64,
+            `KOT-${invoice?.invoice_number}.png`,
+            1
+        );
+        cpj.files.push(myImageFile);
+
+        cpj.sendToClient();
+
+        setTimeout(() => {
+            window.close();
+        }, 3000);
+
+    } catch (error) {
+        console.error("Printing error:", error);
+        alert("An error occurred while printing. Please try again.");
+    }
+  };
+
+
   useEffect(() => {
     if (!isLoading && invoice && products.length > 0 && itemsToPrint.length > 0) {
       document.title = `KOT - ${invoice.invoice_number}`;
-      setTimeout(() => window.print(), 500);
+       // Wait for JSPM to connect before printing
+      if (isJspmConnected) {
+        handlePrint();
+      } else {
+        // Fallback or wait logic if JSPM is not yet connected
+        const timeout = setTimeout(() => {
+            if (isJspmConnected) {
+                handlePrint();
+            } else {
+                console.warn("JSPM did not connect in time, falling back to browser print.");
+                window.print();
+            }
+        }, 2000); // Wait 2 seconds for connection
+        return () => clearTimeout(timeout);
+      }
     }
-  }, [isLoading, invoice, products, itemsToPrint]);
+  }, [isLoading, invoice, products, itemsToPrint, isJspmConnected]);
 
   const getProductName = (productId: number) => {
     return (
@@ -165,7 +266,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }
 
   return (
-    <div className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
+    <div ref={kotRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
       <div className="text-center mb-2">
         <h1 className="font-bold text-xl">K.O.T</h1>
       </div>
