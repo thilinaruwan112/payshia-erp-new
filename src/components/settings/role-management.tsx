@@ -24,9 +24,10 @@ import type { Role } from '@/lib/types';
 
 
 const initialRoles: Role[] = [
-  { id: '1', name: 'Administrator', description: 'Has full access to all features.', userCount: 2, permissions: ['*:*'] },
-  { id: '2', name: 'Sales Agent', description: 'Can manage customers and sales orders.', userCount: 5, permissions: ['sales:view', 'sales:create', 'crm:view', 'crm:create', 'crm:edit'] },
-  { id: '3', name: 'Inventory Manager', description: 'Can manage products, stock, and purchasing.', userCount: 3, permissions: ['inventory:view', 'inventory:create', 'inventory:edit', 'purchasing:view', 'purchasing:create'] },
+  { id: '1', name: 'Super Admin', description: 'Has full, unrestricted access to all features.', userCount: 1, permissions: ['*:*'] },
+  { id: '2', name: 'Admin', description: 'Has access to most features, excluding critical system settings.', userCount: 1, permissions: ['sales:view', 'sales:create', 'sales:edit', 'sales:delete', 'crm:view', 'crm:create', 'crm:edit', 'crm:delete', 'inventory:view', 'inventory:create', 'inventory:edit', 'inventory:delete', 'inventory:transfer', 'purchasing:view', 'purchasing:create', 'purchasing:approve', 'purchasing:receive', 'settings:view', 'settings:edit', 'settings:users'] },
+  { id: '3', name: 'Sales Agent', description: 'Can manage customers and sales orders.', userCount: 5, permissions: ['sales:view', 'sales:create', 'crm:view', 'crm:create', 'crm:edit'] },
+  { id: '4', name: 'Inventory Manager', description: 'Can manage products, stock, and purchasing.', userCount: 3, permissions: ['inventory:view', 'inventory:create', 'inventory:edit', 'purchasing:view', 'purchasing:create', 'purchasing:receive'] },
 ];
 
 export function RoleManagement() {
