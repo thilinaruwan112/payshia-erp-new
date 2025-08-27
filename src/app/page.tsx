@@ -72,8 +72,8 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen landing-page-aurora">
       <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
         <div className="container mx-auto flex h-16 items-center px-4 lg:px-6">
-          <Link href="/" className="flex items-center justify-center gap-2">
-            <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={100} height={100} />
+          <Link href="/" className="flex items-center justify-center">
+            <Image src="https://content-provider.payshia.com/payshia-erp/branding/Transparent-01u.png" alt="Payshia ERP Logo" width={100} height={100} className="h-[100px] w-auto" />
           </Link>
           <nav className="ml-auto hidden md:flex items-center gap-4 sm:gap-6">
             <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4">About</Link>
