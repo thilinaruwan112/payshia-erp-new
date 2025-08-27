@@ -26,6 +26,7 @@ import { allReports } from '@/lib/report-list';
 import { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
 interface ProductWithVariants {
     product: Product;
@@ -49,6 +50,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
     const filters = report?.filters || [];
     const { company_id, availableLocations } = useLocation();
     const { toast } = useToast();
+    const router = useRouter();
     const [customers, setCustomers] = useState<User[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
     const [products, setProducts] = useState<ProductWithVariants[]>([]);
@@ -185,6 +187,35 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             setIsFetching(false);
         }
     };
+    
+    const handlePrintReportWithParams = () => {
+        if (!company_id) return;
+        let printUrl = '';
+
+        if (reportName === 'Customer Master Report') printUrl = `/reports-print/customer-report/print?company_id=${company_id}`;
+        else if (reportName === 'Supplier Master Report') printUrl = `/reports-print/supplier-report/print?company_id=${company_id}`;
+        else if (reportName === 'Item Master Report') printUrl = `/reports-print/item-master-report/print?company_id=${company_id}`;
+        else if (reportName === 'Purchase Order Report') printUrl = `/reports-print/purchase-order-report/print?company_id=${company_id}`;
+        else if (reportName === 'GRN Report') printUrl = `/reports-print/grn-report/print?company_id=${company_id}`;
+        else if (reportName === 'Invoice Report') printUrl = `/reports-print/invoice-report/print?company_id=${company_id}`;
+        else if (reportName === 'Sales Summary Report') {
+            const params = new URLSearchParams({ company_id: String(company_id) });
+             if (dateRange?.from) params.append('from_date', format(dateRange.from, 'yyyy-MM-dd'));
+             if (dateRange?.to) params.append('to_date', format(dateRange.to, 'yyyy-MM-dd'));
+             if (filterValues['location'] && filterValues['location'] !== 'all') {
+                const loc = availableLocations.find(l => l.location_id === filterValues['location']);
+                if (loc) params.append('location', loc.location_name);
+             }
+             printUrl = `/reports-print/sales-summary/print?${params.toString()}`;
+        }
+        
+        if (printUrl) {
+            window.open(printUrl, '_blank');
+        } else {
+             toast({ title: "Coming Soon", description: "This report is not yet available for printing." });
+        }
+    }
+
 
     return (
         <Card className="flex-1 w-full">
@@ -354,7 +385,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                      {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                      View Report
                  </Button>
-                 <Button variant="outline" onClick={onPrintReport}>
+                 <Button variant="outline" onClick={handlePrintReportWithParams}>
                     <Printer className="mr-2 h-4 w-4" />
                     Print
                 </Button>

@@ -25,10 +25,9 @@ function PrintViewContent() {
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  const fromDate = searchParams.get('from');
-  const toDate = searchParams.get('to');
+  const fromDate = searchParams.get('from_date');
+  const toDate = searchParams.get('to_date');
   const locationName = searchParams.get('location');
-  const dataString = searchParams.get('data');
   const companyId = searchParams.get('company_id');
 
   useEffect(() => {
@@ -36,15 +35,27 @@ function PrintViewContent() {
         if (!companyId) return;
         setIsLoading(true);
         try {
-            if (dataString) {
-                setReportData(JSON.parse(decodeURIComponent(dataString)));
-            }
-            const [companyRes, customerRes] = await Promise.all([
+             const params = new URLSearchParams({ 
+                company_id: companyId, 
+                invoice_status: '1',
+                ...(fromDate && { from_date: fromDate }),
+                ...(toDate && { to_date: toDate }),
+            });
+            const url = `https://server-erp.payshia.com/invoices/filter/hold/by-company-status?${params.toString()}`;
+
+            const [companyRes, customerRes, invoiceRes] = await Promise.all([
                  fetch(`https://server-erp.payshia.com/companies/${companyId}`),
                  fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${companyId}`),
+                 fetch(url)
             ]);
+            
             if(companyRes.ok) setCompany(await companyRes.json());
             if(customerRes.ok) setCustomers(await customerRes.json());
+            if (invoiceRes.ok) {
+                setReportData(await invoiceRes.json());
+            } else {
+                 throw new Error('Failed to fetch invoice data');
+            }
 
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to load report data.' });
@@ -53,7 +64,7 @@ function PrintViewContent() {
         }
     }
     fetchData();
-  }, [dataString, companyId, toast]);
+  }, [companyId, fromDate, toDate, toast]);
 
   useEffect(() => {
     if (reportData.length > 0 && !isLoading) {
@@ -93,9 +104,9 @@ function PrintViewContent() {
                 <h2 className="text-2xl font-bold uppercase">Sale Summary Report</h2>
                 <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
                     <span className="font-semibold">From Date:</span>
-                    <span>{fromDate || 'N/A'}</span>
+                    <span>{fromDate ? format(new Date(fromDate), 'dd MMM, yyyy') : 'N/A'}</span>
                     <span className="font-semibold">To Date:</span>
-                    <span>{toDate || 'N/A'}</span>
+                    <span>{toDate ? format(new Date(toDate), 'dd MMM, yyyy') : 'N/A'}</span>
                     <span className="font-semibold">Location:</span>
                     <span>{locationName || 'All'}</span>
                 </div>

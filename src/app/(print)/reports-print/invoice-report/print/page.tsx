@@ -44,23 +44,35 @@ function PrintViewContent() {
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
-  const dataString = searchParams.get('data');
   const companyId = searchParams.get('company_id');
 
   useEffect(() => {
     async function fetchData() {
-        if (!companyId) return;
+        if (!companyId) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Company ID is missing.' });
+            setIsLoading(false);
+            return;
+        };
+
         setIsLoading(true);
         try {
-            if (dataString) {
-                setReportData(JSON.parse(decodeURIComponent(dataString)));
-            }
-            const [companyRes, customerRes] = await Promise.all([
+            const params = new URLSearchParams({ company_id: companyId, invoice_status: '1' });
+            
+            const url = `https://server-erp.payshia.com/invoices/filter/hold/by-company-status?${params.toString()}`;
+            const [companyRes, customerRes, invoiceRes] = await Promise.all([
                  fetch(`https://server-erp.payshia.com/companies/${companyId}`),
                  fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${companyId}`),
+                 fetch(url),
             ]);
+
             if(companyRes.ok) setCompany(await companyRes.json());
             if(customerRes.ok) setCustomers(await customerRes.json());
+            if(invoiceRes.ok) {
+                setReportData((await invoiceRes.json()) || []);
+            } else {
+                 throw new Error('Failed to fetch invoice data');
+            }
+
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to load report data.' });
         } finally {
@@ -68,7 +80,7 @@ function PrintViewContent() {
         }
     }
     fetchData();
-  }, [dataString, companyId, toast]);
+  }, [companyId, toast]);
 
   useEffect(() => {
     if (reportData.length > 0 && !isLoading) {
