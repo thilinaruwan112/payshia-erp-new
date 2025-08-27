@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand, PurchaseOrder } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -127,7 +127,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
     const itemOptions = [
         { value: 'all', label: 'All Items' },
         ...products.flatMap(p => 
-            p.variants.map(v => ({
+            (p.variants || []).map(v => ({
                 value: v.id,
                 label: `${p.product.name} (${v.sku})`
             }))
@@ -156,8 +156,11 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                  url = `https://server-erp.payshia.com/products/with-variants`;
             } else if (reportName === 'Purchase Order Report') {
                 url = `https://server-erp.payshia.com/purchase-orders/filter/`;
-                if(dateRange?.from) params.append('from_date', format(dateRange.from, 'yyyy-MM-dd'));
-                if(dateRange?.to) params.append('to_date', format(dateRange.to, 'yyyy-MM-dd'));
+                if (dateRange?.from) {
+                    params.append('from_date', format(dateRange.from, 'yyyy-MM-dd'));
+                    // If only 'from' is selected, use it for 'to' as well for a single-day range
+                    params.append('to_date', format(dateRange.to || dateRange.from, 'yyyy-MM-dd'));
+                }
             } else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
                  setIsFetching(false);
