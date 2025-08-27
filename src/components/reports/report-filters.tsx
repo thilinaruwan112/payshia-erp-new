@@ -146,20 +146,26 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
         setIsFetching(true);
         try {
             let url = '';
+            const params = new URLSearchParams({ company_id: String(company_id) });
+
             if (reportName === 'Customer Master Report') {
-                url = `https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`;
+                url = `https://server-erp.payshia.com/customers/company/filter/`;
             } else if (reportName === 'Supplier Master Report') {
-                 url = `https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`;
+                 url = `https://server-erp.payshia.com/suppliers/filter/by-company`;
             } else if (reportName === 'Item Master Report') {
-                 url = `https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`;
+                 url = `https://server-erp.payshia.com/products/with-variants`;
             } else if (reportName === 'Purchase Order Report') {
-                url = `https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`;
+                url = `https://server-erp.payshia.com/purchase-orders/filter/`;
+                if(dateRange?.from) params.append('from_date', format(dateRange.from, 'yyyy-MM-dd'));
+                if(dateRange?.to) params.append('to_date', format(dateRange.to, 'yyyy-MM-dd'));
             } else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
                  setIsFetching(false);
                  return;
             }
-            const response = await fetch(url);
+            
+            const finalUrl = `${url}?${params.toString()}`;
+            const response = await fetch(finalUrl);
             if (!response.ok) throw new Error(`Failed to fetch ${reportName} data`);
             const data = await response.json();
             onShowReport(reportName === 'Item Master Report' ? data.products || [] : data || []);
