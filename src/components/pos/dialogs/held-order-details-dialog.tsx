@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { useLocation } from '@/components/location-provider';
 
 interface HeldOrderDetailsDialogProps {
   isOpen: boolean;
@@ -41,15 +42,15 @@ export function HeldOrderDetailsDialog({
 }: HeldOrderDetailsDialogProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [heldOrders, setHeldOrders] = React.useState<Invoice[]>([]);
+  const { company_id } = useLocation();
 
-  // This is a simplified fetch, a real app might need company_id
   React.useEffect(() => {
     async function fetchHeldOrders() {
-      if (!isOpen) return;
+      if (!isOpen || !company_id) return;
       setIsLoading(true);
       try {
         const response = await fetch(
-          `https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=1&invoice_status=2`
+          `https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`
         );
         if (!response.ok) throw new Error('Failed to fetch held orders');
         const data: Invoice[] = await response.json();
@@ -61,7 +62,7 @@ export function HeldOrderDetailsDialog({
       }
     }
     fetchHeldOrders();
-  }, [isOpen]);
+  }, [isOpen, company_id]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
