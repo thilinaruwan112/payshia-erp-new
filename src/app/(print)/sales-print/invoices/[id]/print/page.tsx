@@ -6,7 +6,10 @@ import { Suspense } from 'react';
 
 function PrintInvoicePageContent({ params, searchParams }: { params: { id: string }, searchParams: { company_id?: string } }) {
   // We now pass the invoice number instead of the ID
-  return <InvoicePrintView id={params.id} companyId={searchParams.company_id || null} />;
+  const { id } = params;
+  const companyId = searchParams?.company_id || null;
+  
+  return <InvoicePrintView id={id} companyId={companyId} />;
 }
 
 export default function PrintInvoicePage({ params, searchParams }: { params: { id: string }, searchParams: { company_id?: string } }) {
