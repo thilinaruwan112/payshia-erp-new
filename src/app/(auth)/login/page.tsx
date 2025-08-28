@@ -15,12 +15,13 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Truck, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -146,9 +147,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <Link href="/" className="flex items-center gap-2 font-bold text-2xl mb-4">
-        <Truck className="h-8 w-8 text-primary" />
-        <span>Payshia ERP</span>
+      <Link href="/" className="flex flex-col items-center gap-4 mb-4">
+        <Image src="https://content-provider.payshia.com/payshia-erp/branding/payshia-erp-logo-01.webp" alt="Payshia ERP Logo" width={80} height={80} />
+        <span className="font-bold text-2xl">Payshia ERP</span>
       </Link>
       <Card className="w-full max-w-sm">
         <Form {...form}>
