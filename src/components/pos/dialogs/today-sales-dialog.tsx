@@ -72,8 +72,8 @@ export function TodaySalesDialog({
     }
   }, [isOpen, fetchInvoices]);
 
-  const handleReprint = (invoiceId: string) => {
-    window.open(`/pos/invoice/${invoiceId}/print`, '_blank');
+  const handleReprint = (invoiceId: string, companyId: string) => {
+    window.open(`/sales-print/invoices/${invoiceId}/print?company_id=${companyId}`, '_blank');
   };
 
   const totalSales = invoices.reduce((acc, inv) => acc + parseFloat(inv.grand_total), 0);
@@ -113,7 +113,7 @@ export function TodaySalesDialog({
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div className="font-bold text-lg text-right w-24">{currencySymbol}{parseFloat(inv.grand_total).toFixed(2)}</div>
-                                  <Button size="icon" variant="ghost" onClick={() => handleReprint(inv.invoice_number)}><Printer className="h-4 w-4" /></Button>
+                                  <Button size="icon" variant="ghost" onClick={() => handleReprint(inv.id, inv.company_id)}><Printer className="h-4 w-4" /></Button>
                                 </div>
                             </div>
                         ))}
