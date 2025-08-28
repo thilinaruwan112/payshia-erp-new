@@ -162,7 +162,11 @@ export function ProductForm({ product }: ProductFormProps) {
           throw new Error(`Failed to fetch ${type}`);
         }
         const data = await response.json();
-        setData(data);
+        if (type === 'products') {
+            setData(data.products || []);
+        } else {
+            setData(data || []);
+        }
       } catch (error) {
         console.error(error);
         toast({

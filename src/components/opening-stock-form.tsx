@@ -41,9 +41,9 @@ import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 
-interface ProductWithVariants {
+interface ProductWithVariantsResponse {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
 }
 
 const openingStockItemSchema = z.object({
@@ -67,7 +67,7 @@ export function OpeningStockForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [products, setProducts] = useState<ProductWithVariants[]>([]);
+  const [products, setProducts] = useState<ProductWithVariantsResponse[]>([]);
   const { company_id, currentLocation } = useLocation();
 
   const form = useForm<OpeningStockFormValues>({
@@ -90,7 +90,7 @@ export function OpeningStockForm() {
       if (!company_id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`);
+        const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
         if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
         setProducts(data.products || []);
@@ -107,11 +107,11 @@ export function OpeningStockForm() {
       const selectedProduct = products.find(p => p.product.id === productId);
       if (selectedProduct) {
           const variants = selectedProduct.variants.map(v => ({
-              productVariantId: v.id,
+              productVariantId: v.variant.id,
               productName: selectedProduct.product.name,
-              sku: v.sku,
+              sku: v.variant.sku,
               quantity: 0,
-              batchNumber: `OPEN-${v.sku}`,
+              batchNumber: `OPEN-${v.variant.sku}`,
               expiryDate: undefined,
           }));
           replace(variants);
