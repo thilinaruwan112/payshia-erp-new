@@ -92,7 +92,7 @@ export function InvoiceView({ id }: InvoiceViewProps) {
   }));
   
   const handlePrint = (showBankDetails: boolean) => {
-    const url = `/sales-print/invoices/${invoice.invoice_number}?showBankDetails=${showBankDetails}`;
+    const url = `/sales-print/invoices/${invoice.invoice_number}/print?company_id=${invoice.company_id}&showBankDetails=${showBankDetails}`;
     window.open(url, '_blank');
   };
 
