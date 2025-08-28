@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { User } from '@/lib/types';
-import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock, ChevronDown, Building, History, Utensils } from 'lucide-react';
+import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock, ChevronDown, Building, History, Utensils, Truck } from 'lucide-react';
 import { ThemeToggle } from '../theme-toggle';
 import Link from 'next/link';
 import { Button } from '../ui/button';
@@ -112,8 +112,9 @@ export function PosHeader({
 
   return (
     <header className="p-4 border-b border-border flex flex-wrap items-center gap-4 sticky top-0 bg-background z-10">
-      <Link href="/" className="text-xl font-bold mr-4 order-1">
-        Payshia ERP
+      <Link href="/" className="flex items-center gap-2 text-xl font-bold mr-4 order-1">
+        <Truck className="h-7 w-7 text-primary transform -scale-x-100" />
+        <span>Payshia POS</span>
       </Link>
       <DateTimeLocation />
       <div className="relative flex-1 w-full sm:w-auto sm:flex-grow-[2] order-3 sm:order-3">
@@ -131,7 +132,7 @@ export function PosHeader({
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-9 w-9">
-                        <AvatarImage src={cashier.avatar} alt={cashier.name} data-ai-hint="profile picture"/>
+                        <AvatarImage src={cashier.avatar} alt={cashier.name} data-ai-hint="profile photo"/>
                         <AvatarFallback>{cashier.name.charAt(0)}</AvatarFallback>
                     </Avatar>
                 </Button>
