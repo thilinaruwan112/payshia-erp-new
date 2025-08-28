@@ -401,7 +401,7 @@ export function OrderPanel({
             description: `Invoice #${result.invoice_number} created.`
         });
         
-        window.open(`/sales-print/invoices/${result.id}/print?company_id=${company_id}`, '_blank');
+        window.open(`/sales-print/invoices/${result.invoice_id}/print?company_id=${company_id}`, '_blank');
         
         setPaymentOpen(false);
         onClearCart(orderId);
