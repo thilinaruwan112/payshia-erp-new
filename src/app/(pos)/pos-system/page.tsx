@@ -37,9 +37,10 @@ export type OrderInfo = {
   total: number;
 };
 
-interface ProductWithVariants {
+interface ProductWithVariantsResponse {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant; images: any[] }[]; // Adjusted to new structure
+    product_images: any[];
 }
 
 interface CollectionProductLink {
@@ -165,7 +166,7 @@ export default function POSPage() {
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !customersResponse.ok) {
                 throw new Error('Failed to fetch POS data');
             }
-            const productsData: { products: ProductWithVariants[] } = await productsResponse.json();
+            const productsData: { products: ProductWithVariantsResponse[] } = await productsResponse.json();
             const collectionsData: Collection[] = await collectionsResponse.json();
             const brandsData: Brand[] = await brandsResponse.json();
             const customersData: User[] = await customersResponse.json();
@@ -188,26 +189,30 @@ export default function POSPage() {
             setBrands(brandsData || []);
             
             const flattenedProducts = (productsData.products || []).flatMap(p => {
-              if (!p.variants || p.variants.length === 0) {
-                 return [{
-                  ...p.product,
-                  price: parseFloat(p.product.price as any) || 0,
-                  min_price: parseFloat(p.product.min_price as any) || 0,
-                  wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
-                  cost_price: parseFloat(p.product.cost_price as any) || 0,
-                  variant: { id: p.product.id, sku: `SKU-${p.product.id}` },
-                  variantName: p.product.name,
-                }];
-              }
+                const mainImage = p.product_images.find(img => img.image_type === 'front img')?.img_url || p.product.product_image_url;
 
-              return p.variants.map(v => ({
-                  ...p.product,
-                  price: parseFloat(p.product.price as any) || 0,
-                  min_price: parseFloat(p.product.min_price as any) || 0,
-                  wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
-                  cost_price: parseFloat(p.product.cost_price as any) || 0,
-                  variant: v,
-                  variantName: [p.product.name, v.color, v.size].filter(Boolean).join(' - '),
+                if (!p.variants || p.variants.length === 0) {
+                    return [{
+                        ...p.product,
+                        product_image_url: mainImage,
+                        price: parseFloat(p.product.price as any) || 0,
+                        min_price: parseFloat(p.product.min_price as any) || 0,
+                        wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
+                        cost_price: parseFloat(p.product.cost_price as any) || 0,
+                        variant: { id: p.product.id, sku: `SKU-${p.product.id}` }, // Simplified variant
+                        variantName: p.product.name,
+                    }];
+                }
+
+                return p.variants.map(v => ({
+                    ...p.product,
+                    product_image_url: mainImage,
+                    price: parseFloat(p.product.price as any) || 0,
+                    min_price: parseFloat(p.product.min_price as any) || 0,
+                    wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
+                    cost_price: parseFloat(p.product.cost_price as any) || 0,
+                    variant: v.variant,
+                    variantName: [p.product.name, v.variant.color, v.variant.size].filter(Boolean).join(' - '),
                 }));
             });
             setPosProducts(flattenedProducts);

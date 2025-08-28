@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -17,6 +18,11 @@ interface ProductCardProps {
 
 export function ProductCard({ product, onSelect }: ProductCardProps) {
   const { currencySymbol } = useCurrency();
+  
+  const imageUrl = product.product_image_url 
+    ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${product.product_image_url}` 
+    : 'https://placehold.co/300x200.png';
+
   return (
     <Card
       className="overflow-hidden cursor-pointer hover:border-primary transition-colors group"
@@ -24,7 +30,7 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
     >
       <CardContent className="p-0">
         <Image
-          src={`https://placehold.co/300x200.png`}
+          src={imageUrl}
           alt={product.name}
           width={300}
           height={200}
