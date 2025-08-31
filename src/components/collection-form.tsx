@@ -118,7 +118,11 @@ export function CollectionForm({ collection }: CollectionFormProps) {
             await fetch('https://server-erp.payshia.com/collection-products', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ collection_id: collectionId, product_id: parseInt(productToAdd.id, 10) }),
+                body: JSON.stringify({ 
+                    collection_id: collectionId, 
+                    product_id: parseInt(productToAdd.id, 10),
+                    company_id: company_id 
+                }),
             });
         }
 
@@ -364,3 +368,5 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     </Form>
   );
 }
+
+    
