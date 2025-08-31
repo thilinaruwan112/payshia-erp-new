@@ -220,7 +220,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
         });
         
         // Open print view in new tab
-        window.open(`/purchasing/purchase-orders/${result.id}/print`, '_blank');
+        window.open(`/purchasing-print/purchase-orders/${result.id}`, '_blank');
 
         router.push('/purchasing/purchase-orders');
         router.refresh();
@@ -408,8 +408,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                 const quantity = watchedItems[index]?.quantity || 0;
                                 const total = cost * quantity;
                                 const selectedProductId = watchedItems[index]?.product_id;
-                                const productVariants = availableProducts.find(p => p.product.id === selectedProductId)?.variants || [];
-                                const variantOptions = productVariants.map(v => ({ value: v.variant.id, label: [v.variant.sku, v.variant.color, v.variant.size].filter(Boolean).join(' - ') }));
+                                const productData = availableProducts.find(p => p.product.id === selectedProductId);
+                                const variantOptions = (productData?.variants || []).map(v => ({ value: v.variant.id, label: [v.variant.sku, v.variant.color, v.variant.size].filter(Boolean).join(' - ') }));
 
                                 return (
                                     <TableRow key={field.id}>

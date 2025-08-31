@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { type PurchaseOrder, type Supplier, type Product, type ProductVariant, type Location } from '@/lib/types';
@@ -113,7 +112,7 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
   
   const handlePrint = () => {
     if (po) {
-      window.open(`/purchasing/purchase-orders/${po.id}/print`, '_blank');
+      window.open(`/purchasing-print/purchase-orders/${po.id}`, '_blank');
     }
   };
 
