@@ -57,7 +57,12 @@ export function ProductPickerDialog({ children, onProductsSelected }: ProductPic
                 try {
                     const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
                     if (!response.ok) {
-                        throw new Error('Failed to fetch products');
+                        toast({
+                            variant: "destructive",
+                            title: "Error",
+                            description: "Could not fetch products.",
+                        });
+                        return;
                     }
                     const data: { products: ProductWithApiResponse[] } = await response.json();
                     
