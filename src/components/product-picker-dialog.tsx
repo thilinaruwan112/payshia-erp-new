@@ -20,10 +20,12 @@ import { Skeleton } from "./ui/skeleton"
 import { useLocation } from "./location-provider"
 import { useToast } from "@/hooks/use-toast"
 
-interface ProductWithVariants {
-    product: Product;
-    variants: ProductVariant[];
+interface ProductWithApiResponse {
+  product: Product;
+  product_images: { img_url: string; image_type: string }[];
+  variants: { variant: ProductVariant }[];
 }
+
 
 // The item that will be displayed and selected in the dialog
 type SelectableVariant = {
@@ -31,6 +33,7 @@ type SelectableVariant = {
     name: string; // This will be the combined name, e.g., "T-Shirt - Small - Red"
     sku: string;
     productData: Product;
+    imageUrl?: string;
 };
 
 interface ProductPickerDialogProps {
@@ -52,26 +55,32 @@ export function ProductPickerDialog({ children, onProductsSelected }: ProductPic
             async function fetchProducts() {
                 setIsLoading(true);
                 try {
-                    const response = await fetch(`https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`);
+                    const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
                     if (!response.ok) {
                         throw new Error('Failed to fetch products');
                     }
-                    const data: { products: ProductWithVariants[] } = await response.json();
+                    const data: { products: ProductWithApiResponse[] } = await response.json();
                     
                     const variants: SelectableVariant[] = (data.products || []).flatMap(p => {
+                        const frontImage = p.product_images.find(img => img.image_type === 'front img');
+                        const imageUrl = frontImage ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}` : "https://placehold.co/64x64.png";
+
                         if (!p.variants || p.variants.length === 0) {
+                             // Handle case where product has no variants
                             return [{
-                                id: p.product.id, // Fallback to product id if no variant
+                                id: p.product.id,
                                 name: p.product.name,
-                                sku: `SKU-${p.product.id}`,
+                                sku: p.product.barcode || `SKU-${p.product.id}`,
                                 productData: p.product,
+                                imageUrl: imageUrl
                             }];
                         }
                         return p.variants.map(v => ({
-                            id: v.id,
-                            name: [p.product.name, v.color, v.size].filter(Boolean).join(' - '),
-                            sku: v.sku,
+                            id: v.variant.id,
+                            name: [p.product.name, v.variant.color, v.variant.size].filter(Boolean).join(' - '),
+                            sku: v.variant.sku,
                             productData: p.product,
+                            imageUrl: imageUrl
                         }));
                     });
 
@@ -145,7 +154,7 @@ export function ProductPickerDialog({ children, onProductsSelected }: ProductPic
                                     />
                                     <label htmlFor={`variant-${variant.id}`} className="flex items-center gap-4 cursor-pointer">
                                         <Image
-                                            src="https://placehold.co/64x64.png"
+                                            src={variant.imageUrl || "https://placehold.co/64x64.png"}
                                             alt={variant.name}
                                             width={48}
                                             height={48}
