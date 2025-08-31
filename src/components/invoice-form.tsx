@@ -49,6 +49,8 @@ type StockInfo = {
     total_in: string;
     total_out: string;
     stock_balance: string;
+    patch_code: string;
+    product_variant_id: string;
 }
 
 interface ProductWithApiResponse {
@@ -199,6 +201,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         const data = await response.json();
         const validBatches = data.grouped_by_expire_date.filter((batch: StockInfo) => parseFloat(batch.stock_balance) > 0);
         setStockInfo(prev => ({ ...prev, [index]: validBatches }));
+        form.setValue(`items.${index}.batchId`, ''); // Reset batch on product change
     } catch (error) {
         console.error(error);
         setStockInfo(prev => ({...prev, [index]: []}));
@@ -587,9 +590,8 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                                         </FormControl>
                                                         <SelectContent>
                                                             {(stockInfo[index] || []).map(stock => (
-                                                                <SelectItem key={stock.expire_date} value={stock.expire_date}>
-                                                                    EXP: {stock.expire_date === '0000-00-00' ? 'N/A' : format(new Date(stock.expire_date), 'dd/MM/yy')} 
-                                                                    (Qty: {parseFloat(stock.stock_balance).toFixed(2)})
+                                                                <SelectItem key={stock.patch_code} value={JSON.stringify(stock)}>
+                                                                    {stock.patch_code} (Qty: {parseFloat(stock.stock_balance).toFixed(2)})
                                                                 </SelectItem>
                                                             ))}
                                                         </SelectContent>
