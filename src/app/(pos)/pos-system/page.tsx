@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
@@ -148,7 +148,7 @@ export default function POSPage() {
 
   useEffect(() => {
     async function fetchPosData() {
-        if (!company_id) {
+        if (!company_id || !currentLocation) {
             setIsLoading(false);
             return;
         }
@@ -188,7 +188,11 @@ export default function POSPage() {
             setCollections(collectionsData || []);
             setBrands(brandsData || []);
             
-            const flattenedProducts = (productsData.products || []).flatMap(p => {
+            const locationFilteredProducts = (productsData.products || []).filter(p => 
+                p.product.available_locations?.split(',').includes(currentLocation.location_id)
+            );
+            
+            const flattenedProducts = locationFilteredProducts.flatMap(p => {
                 const mainImage = p.product_images.find(img => img.image_type === 'front img')?.img_url || p.product.product_image_url;
 
                 if (!p.variants || p.variants.length === 0) {
