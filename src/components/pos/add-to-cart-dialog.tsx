@@ -30,6 +30,13 @@ interface AddToCartDialogProps {
   onAddToCart: (product: PosProduct, quantity: number, discount: number, batch: StockInfo) => void;
 }
 
+const FormField = ({ label, value }: { label: string, value: React.ReactNode }) => (
+    <div className="space-y-1">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="font-bold text-base">{value}</p>
+    </div>
+);
+
 export function AddToCartDialog({
   product,
   onClose,
@@ -167,7 +174,7 @@ export function AddToCartDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-       <DialogContent className="max-w-4xl p-0 flex flex-col h-full sm:h-auto sm:max-h-[90vh]">
+       <DialogContent className="max-w-4xl p-0 flex flex-col h-full sm:h-auto sm:min-h-[70vh]">
         {product && (
           <>
             <DialogHeader className="p-6 pb-0">
@@ -271,10 +278,3 @@ export function AddToCartDialog({
     </Dialog>
   );
 }
-
-const FormField = ({ label, value }: { label: string, value: React.ReactNode }) => (
-    <div className="space-y-1">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="font-bold text-base">{value}</p>
-    </div>
-);
