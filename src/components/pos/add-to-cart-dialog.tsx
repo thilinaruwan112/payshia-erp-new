@@ -235,7 +235,7 @@ export function AddToCartDialog({
                 </div>
 
                 {/* Right Column: Numpad */}
-                <div className="flex flex-col">
+                <div className="flex flex-col h-full">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-semibold">Select Quantity</h3>
                         {!isAlaCarte && (
