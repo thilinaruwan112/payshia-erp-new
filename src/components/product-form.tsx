@@ -102,6 +102,8 @@ const productFormSchema = z.object({
   variants: z.array(variantSchema).min(1, { message: "At least one variant is required." }),
   supplier: z.array(z.string()).optional(),
   customFields: z.array(customFieldSchema).optional(),
+  base_location: z.string().min(1, { message: "Base location is required." }),
+  available_locations: z.array(z.string()).min(1, { message: "At least one location must be selected." }),
 });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
@@ -124,7 +126,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [customFieldMasters, setCustomFieldMasters] = useState<CustomFieldMaster[]>([]);
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
-  const { company_id } = useLocation();
+  const { company_id, availableLocations } = useLocation();
 
   const fetchProductImages = async () => {
     if (!product || !company_id) return;
@@ -216,6 +218,8 @@ export function ProductForm({ product }: ProductFormProps) {
         return foundSupplier ? foundSupplier.supplier_id : '';
     }).filter(Boolean) || [],
     customFields: [],
+    base_location: product?.base_location || "",
+    available_locations: product?.available_locations?.split(',') || [],
   };
 
   const form = useForm<ProductFormValues>({
@@ -312,11 +316,11 @@ export function ProductForm({ product }: ProductFormProps) {
       lead_time_days: 0,
       reorder_level_qty: 0,
       item_type: "finished_good",
-      base_location: "warehouse_a",
+      base_location: data.base_location,
       product_image_url: "",
       recipe_type: data.recipeType === 'a_la_carte' ? 'ala cart' : data.recipeType || 'standard',
       barcode: "",
-      available_locations: "warehouse_a",
+      available_locations: data.available_locations.join(','),
       variants: data.variants.map(v => ({
         id: v.id,
         sku: v.sku,
@@ -922,6 +926,80 @@ export function ProductForm({ product }: ProductFormProps) {
                                 </FormItem>
                             )}
                         />
+                        <div className="space-y-2">
+                           <FormField
+                                control={form.control}
+                                name="base_location"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Base Location</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                <SelectValue placeholder="Select the main location" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {availableLocations.map(loc => (
+                                                    <SelectItem key={loc.location_id} value={loc.location_id}>{loc.location_name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <FormField
+                                control={form.control}
+                                name="available_locations"
+                                render={() => (
+                                    <FormItem>
+                                        <div className="mb-4">
+                                            <FormLabel>Available Locations</FormLabel>
+                                            <FormDescription>
+                                                Select all locations where this product is available.
+                                            </FormDescription>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {availableLocations.map((location) => (
+                                                <FormField
+                                                    key={location.location_id}
+                                                    control={form.control}
+                                                    name="available_locations"
+                                                    render={({ field }) => (
+                                                        <FormItem
+                                                            key={location.location_id}
+                                                            className="flex flex-row items-center space-x-3 space-y-0"
+                                                        >
+                                                            <FormControl>
+                                                            <Checkbox
+                                                                checked={field.value?.includes(location.location_id)}
+                                                                onCheckedChange={(checked) => {
+                                                                return checked
+                                                                    ? field.onChange([...(field.value || []), location.location_id])
+                                                                    : field.onChange(
+                                                                        field.value?.filter(
+                                                                        (value) => value !== location.location_id
+                                                                        )
+                                                                    )
+                                                                }}
+                                                            />
+                                                            </FormControl>
+                                                            <FormLabel className="font-normal">
+                                                                {location.location_name}
+                                                            </FormLabel>
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                            ))}
+                                        </div>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                     </CardContent>
                 </Card>
                  <Card>
