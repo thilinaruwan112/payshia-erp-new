@@ -11,10 +11,10 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, Utensils } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
@@ -46,26 +46,29 @@ const OrderTypeSelection = ({ onSelectOrderType, onSelectTable, tables, isLoadin
 
     return (
         <div className="py-4">
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Take Away')}>Take Away</Card>
-                 <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Retail')}>Retail</Card>
-                 <Card className="p-8 text-center text-2xl font-semibold cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors" onClick={() => onSelectOrderType('Delivery')}>Delivery</Card>
+             <div className="grid grid-cols-3 gap-4 mb-8">
+                <Button variant="outline" className="h-24 text-lg" onClick={() => onSelectOrderType('Take Away')}>Take Away</Button>
+                <Button variant="outline" className="h-24 text-lg" onClick={() => onSelectOrderType('Retail')}>Retail</Button>
+                <Button variant="outline" className="h-24 text-lg" onClick={() => onSelectOrderType('Delivery')}>Delivery</Button>
             </div>
             <div>
-                <h2 className="text-2xl font-bold mb-4">Set Table</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                    {isLoadingTables ? Array.from({length: 8}).map((_, i) => <Card key={i} className="p-4 h-24 animate-pulse bg-muted"></Card>) : (
+                <h2 className="text-xl font-semibold mb-4">Set Table</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {isLoadingTables ? Array.from({length: 10}).map((_, i) => <Card key={i} className="p-4 h-28 animate-pulse bg-muted"></Card>) : (
                         tables.map(table => {
                             const inUse = isTableInUse(table.id);
                             return (
-                            <Card key={table.id} className={cn("p-4 transition-colors", inUse ? "bg-muted/50 cursor-not-allowed" : "cursor-pointer hover:border-primary")} onClick={() => handleTableClick(table)}>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <Badge>Dine-In</Badge>
-                                    <Badge variant={!inUse ? 'default' : 'destructive'} className={cn(!inUse && 'bg-green-500')}>
-                                        {!inUse ? 'Available' : 'In Use'}
-                                    </Badge>
-                                </div>
-                                <p className="text-lg font-bold">{table.table_name}</p>
+                            <Card key={table.id} className={cn("p-3 transition-colors flex flex-col justify-between h-28", inUse ? "bg-muted/50 cursor-not-allowed" : "cursor-pointer hover:border-primary")} onClick={() => handleTableClick(table)}>
+                               <div className="flex justify-between items-start">
+                                 <Badge variant="destructive" className="bg-orange-600">Dine-In</Badge>
+                                 <Badge variant={!inUse ? 'default' : 'destructive'} className={cn(!inUse && 'bg-green-600')}>
+                                    {!inUse ? 'Available' : 'In Use'}
+                                 </Badge>
+                               </div>
+                               <div>
+                                  <Utensils className="h-5 w-5 text-muted-foreground mb-1" />
+                                  <p className="text-sm font-bold truncate">{table.table_name}</p>
+                               </div>
                             </Card>
                         )})
                     )}
@@ -83,7 +86,7 @@ const StewardSelection = ({ onSelectSteward, onBack, stewards, isLoading }: { on
              {isLoading ? Array.from({length: 4}).map((_, i) => <Card key={i} className="p-4 h-40 animate-pulse bg-muted"></Card>) : (
                 stewards.map(steward => (
                     <Card key={steward.id} className="p-4 text-center cursor-pointer hover:border-primary" onClick={() => onSelectSteward(steward)}>
-                        <Avatar className="h-20 w-20 mx-auto"><AvatarImage src={steward.avatar} alt={steward.name} data-ai-hint="profile picture" /><AvatarFallback>{steward.name.split(' ').map(n => n[0]).join('')}</AvatarFallback></Avatar>
+                        <Avatar className="h-20 w-20 mx-auto"><AvatarImage src={steward.avatar} alt={steward.name} data-ai-hint="profile photo" /><AvatarFallback>{steward.name.split(' ').map(n => n[0]).join('')}</AvatarFallback></Avatar>
                         <p className="mt-2 font-semibold">{steward.name}</p><p className="text-xs text-muted-foreground">{steward.role}</p>
                     </Card>
                 ))
