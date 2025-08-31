@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -688,10 +687,10 @@ export default function POSPage() {
             <div className="flex-1 flex flex-col">
                 <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
-                         <Button variant="outline" size="sm" onClick={() => setTodaySalesDialogOpen(true)}><LineChart className="mr-2 h-4 w-4" />Sales</Button>
-                         <Button variant="outline" size="sm" onClick={() => setPendingInvoicesDialogOpen(true)}><Receipt className="mr-2 h-4 w-4" />Pending Invoices</Button>
-                        <Button variant="outline" size="sm" onClick={() => setReturnDialogOpen(true)}><Undo2 className="mr-2 h-4 w-4" />Return</Button>
-                        <Button variant="outline" size="sm" onClick={() => setRefundDialogOpen(true)}><Banknote className="mr-2 h-4 w-4" />Refund</Button>
+                         <Button variant="outline" size="sm" onClick={() => setTodaySalesDialogOpen(true)}><LineChart className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Sales</span></Button>
+                         <Button variant="outline" size="sm" onClick={() => setPendingInvoicesDialogOpen(true)}><Receipt className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Pending</span></Button>
+                        <Button variant="outline" size="sm" onClick={() => setReturnDialogOpen(true)}><Undo2 className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Return</span></Button>
+                        <Button variant="outline" size="sm" onClick={() => setRefundDialogOpen(true)}><Banknote className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Refund</span></Button>
                     </div>
                     <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={() => setHeldOrderDetailsDialogOpen(true)}><NotebookPen className="mr-2 h-4 w-4" />Held Orders</Button>
