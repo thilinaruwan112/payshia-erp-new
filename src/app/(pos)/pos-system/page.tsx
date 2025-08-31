@@ -71,7 +71,6 @@ export default function POSPage() {
   const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
   
-  const walkInCustomer = { id: 'user-4', name: 'Walk-in Customer', role: 'Customer', avatar: 'https://placehold.co/100x100.png?text=WC', loyaltyPoints: 0, email: 'walkin@payshia.com', phone: 'N/A', customer_id: '4' };
 
   const [currentCashier, setCurrentCashier] = useState<User | null>(null);
   const { currentLocation, isLoading: isLocationLoading, setCurrentLocation, availableLocations, company_id } = useLocation();
@@ -183,7 +182,7 @@ export default function POSPage() {
                 name: `${c.customer_first_name} ${c.customer_last_name}`,
                 role: 'Customer',
             }));
-            setCustomers([walkInCustomer, ...formattedCustomers]);
+            setCustomers(formattedCustomers);
 
             setCollections(collectionsData || []);
             setBrands(brandsData || []);
@@ -348,13 +347,21 @@ export default function POSPage() {
   const currentOrder = useMemo(() => activeOrders.find((order) => order.id === currentOrderId), [activeOrders, currentOrderId]);
   
   const createNewOrder = (orderType: ActiveOrder['orderType'], steward?: User, tableName?: string) => {
+    if (!customers[0]) {
+        toast({
+            variant: 'destructive',
+            title: 'No Customer Available',
+            description: 'Please add a customer before creating an order.',
+        });
+        return;
+    }
     const newOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
       name: tableName || orderType,
       cart: [],
       discount: 0,
       serviceCharge: 0,
-      customer: walkInCustomer,
+      customer: customers[0], // Default to the first available customer
       orderType,
       tableName,
       steward,
@@ -506,7 +513,11 @@ export default function POSPage() {
 
     const loadedCartItems = (await Promise.all(cartItemsPromises)).filter((item): item is CartItem => item !== null);
     
-    const customer = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
+    const customer = customers.find(c => c.customer_id === invoice.customer_code);
+    if (!customer) {
+        toast({variant: 'destructive', title: 'Customer not found', description: 'The customer for this held order could not be found.'});
+        return;
+    }
 
     const newActiveOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
