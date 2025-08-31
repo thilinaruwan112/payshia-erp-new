@@ -191,7 +191,7 @@ export function AddToCartDialog({
               </div>
               
                {!isAlaCarte ? (
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <FormField
                             label="Available Stock"
                             value={isLoadingStock ? <Loader2 className="h-4 w-4 animate-spin"/> : `${stockInfo?.totalStock || 0} ${product.stock_unit || 'Nos'}`}
@@ -214,7 +214,7 @@ export function AddToCartDialog({
                     </div>
                 ) : null}
               
-              <div className="mt-auto grid grid-cols-2 gap-4">
+              <div className="mt-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="item-discount">Item Discount</Label>
                   <Input 
