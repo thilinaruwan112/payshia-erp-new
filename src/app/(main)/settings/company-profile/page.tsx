@@ -1,379 +1,154 @@
 
 'use client';
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { useLocation } from "@/components/location-provider";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from 'react';
+import { useLocation } from '@/components/location-provider';
+import { useToast } from '@/hooks/use-toast';
+import type { Company } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Building2, Mail, Globe, Phone, User, Briefcase, Pencil } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 
-const companyFormSchema = z.object({
-  company_name: z.string().min(3, "Company name is required."),
-  company_address: z.string().min(3, "Address is required."),
-  company_address2: z.string().optional(),
-  company_city: z.string().min(2, "City is required."),
-  company_postalcode: z.string().optional(),
-  company_email: z.string().email("A valid email is required."),
-  company_telephone: z.string().min(10, "A valid phone number is required."),
-  company_telephone2: z.string().optional(),
-  owner_name: z.string().optional(),
-  job_position: z.string().optional(),
-  website: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
-  description: z.string().optional(),
-  vision: z.string().optional(),
-  mission: z.string().optional(),
-  founder_message: z.string().optional(),
-  org_logo: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
-  founder_photo: z.string().url("Please enter a valid URL.").optional().or(z.literal('')),
-});
+interface InfoLineProps {
+  icon: React.ElementType;
+  label: string;
+  value?: string | null;
+}
 
-type CompanyFormValues = z.infer<typeof companyFormSchema>;
+const InfoLine = ({ icon: Icon, label, value }: InfoLineProps) => {
+  if (!value) return null;
+  return (
+    <div className="flex items-start gap-3">
+      <Icon className="h-5 w-5 text-muted-foreground mt-1" />
+      <div>
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="font-semibold">{value}</p>
+      </div>
+    </div>
+  );
+};
 
 export default function CompanyProfilePage() {
-    const router = useRouter();
-    const { toast } = useToast();
-    const [isLoading, setIsLoading] = useState(false);
-    const { company_id } = useLocation();
+  const { company_id } = useLocation();
+  const { toast } = useToast();
+  const [company, setCompany] = useState<Company | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-    const form = useForm<CompanyFormValues>({
-        resolver: zodResolver(companyFormSchema),
-    });
-
-    useEffect(() => {
-        if (!company_id) return;
-        async function fetchCompanyData() {
-            try {
-                const response = await fetch(`https://server-erp.payshia.com/companies/${company_id}`);
-                if (!response.ok) throw new Error('Failed to fetch company data');
-                const data = await response.json();
-                form.reset(data);
-            } catch (error) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Error',
-                    description: 'Could not load company data.'
-                });
-            }
-        }
-        fetchCompanyData();
-    }, [company_id, form, toast]);
-
-    async function onSubmit(data: CompanyFormValues) {
-        if (!company_id) return;
+  useEffect(() => {
+    if (!company_id) {
+        setIsLoading(false);
+        return;
+    };
+    async function fetchCompanyData() {
         setIsLoading(true);
-        
         try {
-            const response = await fetch(`https://server-erp.payshia.com/companies/${company_id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to update company.');
-            }
-            
-            toast({
-                title: 'Company Profile Updated!',
-                description: 'Your company details have been saved.',
-            });
-            // Optionally update company name in local storage if changed
-            const companyName = form.getValues('company_name');
-            if (localStorage.getItem('companyName') !== companyName) {
-                localStorage.setItem('companyName', companyName);
-            }
-            router.refresh();
-
+            const response = await fetch(`https://server-erp.payshia.com/companies/${company_id}`);
+            if (!response.ok) throw new Error('Failed to fetch company data');
+            const data = await response.json();
+            setCompany(data);
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
             toast({
                 variant: 'destructive',
-                title: 'Operation Failed',
-                description: errorMessage,
+                title: 'Error',
+                description: 'Could not load company data.'
             });
         } finally {
             setIsLoading(false);
         }
     }
+    fetchCompanyData();
+  }, [company_id, toast]);
 
+  if (isLoading) {
     return (
         <div className="space-y-6">
+            <div className="flex items-center justify-between">
+                 <Skeleton className="h-9 w-64" />
+                 <Skeleton className="h-10 w-24" />
+            </div>
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="h-20 w-20 rounded-full" />
+                        <div className="space-y-2">
+                             <Skeleton className="h-7 w-72" />
+                             <Skeleton className="h-5 w-48" />
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 gap-8">
+                     <Skeleton className="h-12 w-full" />
+                     <Skeleton className="h-12 w-full" />
+                     <Skeleton className="h-12 w-full" />
+                     <Skeleton className="h-12 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
+
+  if (!company) {
+    return <p>No company data found.</p>
+  }
+  
+  const companyLogoUrl = company.org_logo && company.org_logo !== "no-logo.png" 
+    ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${company.org_logo}`
+    : `https://placehold.co/100x100.png?text=${company.company_name.charAt(0)}`;
+
+
+  return (
+    <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Company Profile</h1>
                 <p className="text-muted-foreground">Manage your company's information and branding.</p>
             </div>
-            <Card className="w-full max-w-4xl">
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)}>
-                        <CardHeader>
-                            <CardTitle>Company Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                        <FormField
-                                control={form.control}
-                                name="company_name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Company Name</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g. Payshia Software Solutions" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormField
-                                    control={form.control}
-                                    name="owner_name"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Owner Name</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g. Samantha Perera" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="job_position"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Job Position</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g. CEO" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormField
-                                    control={form.control}
-                                    name="company_email"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Company Email</FormLabel>
-                                        <FormControl>
-                                            <Input type="email" placeholder="e.g. contact@yourcompany.com" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="website"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Website</FormLabel>
-                                        <FormControl>
-                                            <Input type="url" placeholder="e.g. https://payshia.com" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormField
-                                    control={form.control}
-                                    name="company_telephone"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Primary Phone</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g. +94112233445" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="company_telephone2"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Secondary Phone (Optional)</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g. +94771234567" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <FormField
-                                control={form.control}
-                                name="company_address"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Address Line 1</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="e.g. 123, Galle Road" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <FormField
-                                    control={form.control}
-                                    name="company_address2"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Address Line 2 (Optional)</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g. Liberty Plaza" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="company_city"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>City</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g. Colombo" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="company_postalcode"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Postal Code</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="e.g. 10100" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <FormField
-                                control={form.control}
-                                name="description"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Company Description (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="A brief description of your company." {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormField
-                                    control={form.control}
-                                    name="org_logo"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Company Logo URL</FormLabel>
-                                        <FormControl>
-                                            <Input type="url" placeholder="https://example.com/logo.png" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                                <FormField
-                                    control={form.control}
-                                    name="founder_photo"
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormLabel>Founder Photo URL</FormLabel>
-                                        <FormControl>
-                                            <Input type="url" placeholder="https://example.com/founder.png" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </div>
-                            <FormField
-                                control={form.control}
-                                name="founder_message"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Founder's Message (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="A message from the founder." {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="mission"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Mission (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="Your company's mission." {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="vision"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Vision (Optional)</FormLabel>
-                                    <FormControl>
-                                        <Textarea placeholder="Your company's vision." {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </CardContent>
-                        <CardFooter className="flex justify-end">
-                            <Button type="submit" className="w-full sm:w-auto" disabled={isLoading}>
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Save Changes
-                            </Button>
-                        </CardFooter>
-                    </form>
-                </Form>
-            </Card>
+             <Button asChild>
+                <Link href="/settings/company-profile/edit">
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit Profile
+                </Link>
+            </Button>
         </div>
-    );
+        <Card className="w-full">
+            <CardHeader>
+                <div className="flex items-center gap-6">
+                    <Image src={companyLogoUrl} alt={`${company.company_name} Logo`} width={100} height={100} className="rounded-lg border bg-muted" data-ai-hint="logo" />
+                    <div>
+                        <CardTitle className="text-3xl">{company.company_name}</CardTitle>
+                        <CardDescription className="text-base">{company.description}</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                         <h3 className="text-lg font-semibold text-primary border-b pb-2">Contact Information</h3>
+                        <InfoLine icon={Building2} label="Address" value={`${company.company_address}, ${company.company_city}`} />
+                        <InfoLine icon={Mail} label="Email" value={company.company_email} />
+                        <InfoLine icon={Phone} label="Phone" value={company.company_telephone} />
+                         <InfoLine icon={Globe} label="Website" value={company.website} />
+                    </div>
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-primary border-b pb-2">Leadership</h3>
+                        <InfoLine icon={User} label="Owner / CEO" value={company.owner_name} />
+                        <InfoLine icon={Briefcase} label="Position" value={company.job_position} />
+                    </div>
+                </div>
+
+                 <div className="space-y-4 pt-6">
+                    <h3 className="text-lg font-semibold text-primary border-b pb-2">Company Statements</h3>
+                     <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+                        {company.mission && <div><h4>Mission</h4><p>{company.mission}</p></div>}
+                        {company.vision && <div><h4>Vision</h4><p>{company.vision}</p></div>}
+                        {company.founder_message && <div><h4>Founder's Message</h4><p>{company.founder_message}</p></div>}
+                     </div>
+                </div>
+            </CardContent>
+        </Card>
+    </div>
+  );
 }

@@ -76,6 +76,8 @@ export type Product = {
   collectionProductId?: string; // Used for collection product association
   supplier?: string;
   recipe_type?: 'standard' | 'a_la_carte' | 'item_recipe';
+  base_location?: string;
+  available_locations?: string;
 };
 
 export type Location = {
@@ -533,4 +535,27 @@ export type Role = {
   description: string;
   userCount: number;
   permissions: string[];
+}
+
+export type Company = {
+  id: string;
+  company_name: string;
+  company_address: string;
+  company_address2: string | null;
+  company_city: string;
+  company_postalcode: string | null;
+  company_email: string;
+  company_telephone: string;
+  company_telephone2: string | null;
+  owner_name: string | null;
+  job_position: string | null;
+  description: string | null;
+  vision: string | null;
+  mission: string | null;
+  founder_message: string | null;
+  org_logo: string | null;
+  founder_photo: string | null;
+  website: string | null;
+  created_by: string;
+  created_at: string;
 }
