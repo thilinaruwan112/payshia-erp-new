@@ -51,6 +51,12 @@ type StockInfo = {
     stock_balance: string;
 }
 
+interface ProductWithApiResponse {
+  product: Product;
+  variants: { variant: ProductVariant }[];
+}
+
+
 const invoiceItemSchema = z.object({
       sku: z.string().min(1, "Product is required."),
       productId: z.string().min(1),
@@ -77,13 +83,7 @@ const invoiceFormSchema = z.object({
 
 type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 
-interface ProductWithVariants {
-    product: Product;
-    variants: ProductVariant[];
-}
-
 interface InvoiceFormProps {
-    productsWithVariants: ProductWithVariants[];
     customers: User[];
     orders: Order[];
 }
@@ -93,7 +93,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const { toast } = useToast();
   const { currentLocation, company_id } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
-  const [productsWithVariants, setProductsWithVariants] = React.useState<ProductWithVariants[]>([]);
+  const [productsWithVariants, setProductsWithVariants] = React.useState<ProductWithApiResponse[]>([]);
   const [stockInfo, setStockInfo] = React.useState<Record<number, StockInfo[]>>({});
 
   React.useEffect(() => {
@@ -121,14 +121,16 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   }, [company_id, toast]);
 
 
-  const allSkus = productsWithVariants.flatMap(p => (p.variants || []).map(v => ({
-      label: `${p.product.name} (${v.sku})`,
-      value: v.id, // Use variant ID as value
+  const allSkus = productsWithVariants.flatMap(p => 
+    (p.variants || []).map(v => ({
+      key: `${p.product.id}-${v.variant.id}`, // Unique key
+      label: `${p.product.name} (${v.variant.sku})`,
+      value: v.variant.id, // Use variant ID as value
       productId: p.product.id,
       sellingPrice: parseFloat(String(p.product.price)),
       wholesalePrice: p.product.wholesale_price ? parseFloat(String(p.product.wholesale_price)) : parseFloat(String(p.product.price)),
       costPrice: p.product.cost_price ? parseFloat(String(p.product.cost_price)) : 0,
-      skuString: v.sku,
+      skuString: v.variant.sku,
   })));
   
   const defaultValues: Partial<InvoiceFormValues> = {
@@ -188,9 +190,9 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   }
 
   const handleProductSelect = async (productId: string, variantId: string, index: number) => {
-    if (!productId || !variantId) return;
+    if (!productId || !variantId || !company_id || !currentLocation) return;
     try {
-        const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=101&product_id=${productId}&product_variant_id=${variantId}`);
+        const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${productId}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
         if (!response.ok) {
             throw new Error("Failed to fetch stock");
         }
@@ -562,7 +564,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                                         </FormControl>
                                                         <SelectContent>
                                                             {allSkus.map(sku => (
-                                                                <SelectItem key={`${sku.productId}-${sku.value}`} value={sku.value}>{sku.label}</SelectItem>
+                                                                <SelectItem key={sku.key} value={sku.value}>{sku.label}</SelectItem>
                                                             ))}
                                                         </SelectContent>
                                                     </Select>
