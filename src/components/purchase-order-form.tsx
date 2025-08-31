@@ -45,6 +45,12 @@ import { Switch } from "./ui/switch";
 import { Combobox } from "./ui/combobox";
 import { useCurrency } from "./currency-provider";
 
+interface ProductWithApiResponse {
+  product: Product;
+  product_images: { img_url: string; image_type: string }[];
+  variants: { variant: ProductVariant }[];
+}
+
 const purchaseOrderItemSchema = z.object({
   product_id: z.string().min(1, "Product is required."),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
@@ -80,7 +86,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const { toast } = useToast();
   const { currentLocation, company_id } = useLocation();
   const { currencySymbol } = useCurrency();
-  const [availableProducts, setAvailableProducts] = useState<ProductWithVariants[]>([]);
+  const [availableProducts, setAvailableProducts] = useState<ProductWithApiResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   
@@ -179,7 +185,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
       is_active: data.is_active ? 1 : 0,
       items: data.items.map(item => {
         const productData = availableProducts.find(p => p.product.id === item.product_id);
-        const variant = productData?.variants.find(v => v.id === item.product_variant_id);
+        const variant = productData?.variants.find(v => v.variant.id === item.product_variant_id)?.variant;
         
         if (!variant) {
           throw new Error(`Variant details missing for product ID ${item.product_id}. Cannot create PO.`);
@@ -403,7 +409,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                 const total = cost * quantity;
                                 const selectedProductId = watchedItems[index]?.product_id;
                                 const productVariants = availableProducts.find(p => p.product.id === selectedProductId)?.variants || [];
-                                const variantOptions = productVariants.map(v => ({ value: v.id, label: [v.sku, v.color, v.size].filter(Boolean).join(' - ') }));
+                                const variantOptions = productVariants.map(v => ({ value: v.variant.id, label: [v.variant.sku, v.variant.color, v.variant.size].filter(Boolean).join(' - ') }));
 
                                 return (
                                     <TableRow key={field.id}>
