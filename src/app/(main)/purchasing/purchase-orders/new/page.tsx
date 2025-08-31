@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
-function NewPurchaseOrderPageContent() {
+export default function NewPurchaseOrderPage() {
   const { company_id } = useLocation();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,9 +53,4 @@ function NewPurchaseOrderPageContent() {
   }
 
   return <PurchaseOrderForm suppliers={suppliers} />;
-}
-
-
-export default function NewPurchaseOrderPage() {
-  return <NewPurchaseOrderPageContent />;
 }
