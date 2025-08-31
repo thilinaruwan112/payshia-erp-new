@@ -30,6 +30,7 @@ import { format } from 'date-fns';
 import { useLocation } from '../location-provider';
 import { Skeleton } from '../ui/skeleton';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 interface PosHeaderProps {
   searchTerm: string;
@@ -75,7 +76,7 @@ function DateTimeLocation() {
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                      <Button variant="outline" className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
+                        <MapPin className="mr-2 h-4 w-4" />
                         <span>{currentLocation.location_name}</span>
                         <ChevronDown className="h-3 w-3" />
                     </Button>
@@ -110,6 +111,13 @@ export function PosHeader({
   setSearchTerm,
   cashier,
 }: PosHeaderProps) {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push('/login');
+  };
+
 
   return (
     <header className="p-4 border-b border-border flex flex-wrap items-center gap-4 sticky top-0 bg-background z-10">
@@ -165,7 +173,7 @@ export function PosHeader({
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                 </DropdownMenuItem>
