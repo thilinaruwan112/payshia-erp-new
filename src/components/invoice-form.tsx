@@ -561,7 +561,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                                         </FormControl>
                                                         <SelectContent>
                                                             {allSkus.map(sku => (
-                                                                <SelectItem key={sku.value} value={sku.value}>{sku.label}</SelectItem>
+                                                                <SelectItem key={`${sku.productId}-${sku.value}`} value={sku.value}>{sku.label}</SelectItem>
                                                             ))}
                                                         </SelectContent>
                                                     </Select>
