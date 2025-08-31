@@ -252,7 +252,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         ref_hold: null,
         company_id: "1",
         items: data.items.map(item => ({
-            user_id: 1,
+            user_id: 1, // Default user_id as per example
             product_id: parseInt(item.productId),
             item_price: item.unitPrice,
             item_discount: item.discount || 0,
@@ -263,6 +263,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
             is_active: 1,
             hold_status: 0,
             printed_status: 1,
+            product_variant_id: parseInt(item.productVariantId),
             company_id: "1",
         }))
     };
@@ -285,7 +286,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
             description: `Invoice #${result.invoice_number} has been created.`,
         });
         
-        window.open(`/sales/invoices/${result.invoice_number}/print`, '_blank');
+        window.open(`/sales-print/invoices/${result.invoice_number}/print`, '_blank');
         
         router.push('/sales/invoices');
         router.refresh();
