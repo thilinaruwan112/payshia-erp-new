@@ -96,7 +96,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const { currentLocation, company_id } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
   const [productsWithVariants, setProductsWithVariants] = React.useState<ProductWithApiResponse[]>([]);
-  const [stockInfo, setStockInfo] = React.useState<Record<number, StockInfo[]>>({});
+  const [availableBatches, setAvailableBatches] = React.useState<Record<number, StockInfo[]>>({});
 
   React.useEffect(() => {
     async function fetchProducts() {
@@ -199,12 +199,12 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
             throw new Error("Failed to fetch stock");
         }
         const data = await response.json();
-        const validBatches = data.grouped_by_expire_date.filter((batch: StockInfo) => parseFloat(batch.stock_balance) > 0);
-        setStockInfo(prev => ({ ...prev, [index]: validBatches }));
+        const batches = data.grouped_by_expire_date.filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
+        setAvailableBatches(prev => ({ ...prev, [index]: batches }));
         form.setValue(`items.${index}.batchId`, ''); // Reset batch on product change
     } catch (error) {
         console.error(error);
-        setStockInfo(prev => ({...prev, [index]: []}));
+        setAvailableBatches(prev => ({...prev, [index]: []}));
         toast({variant: 'destructive', title: 'Error', description: 'Could not fetch stock for this product.'});
     }
   }
@@ -582,14 +582,14 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                             name={`items.${index}.batchId`}
                                             render={({ field }) => (
                                                 <FormItem>
-                                                    <Select onValueChange={field.onChange} value={field.value} disabled={!stockInfo[index]}>
+                                                    <Select onValueChange={field.onChange} value={field.value} disabled={!availableBatches[index]}>
                                                         <FormControl>
                                                             <SelectTrigger>
                                                                 <SelectValue placeholder="Select batch" />
                                                             </SelectTrigger>
                                                         </FormControl>
                                                         <SelectContent>
-                                                            {(stockInfo[index] || []).map(stock => (
+                                                            {(availableBatches[index] || []).map(stock => (
                                                                 <SelectItem key={stock.patch_code} value={JSON.stringify(stock)}>
                                                                     {stock.patch_code} (Qty: {parseFloat(stock.stock_balance).toFixed(2)})
                                                                 </SelectItem>
