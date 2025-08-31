@@ -433,6 +433,12 @@ function UserMenu({ user }: { user: any }) {
                 <span>Profile</span>
             </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+            <Link href="/settings/company-profile">
+                <Building2 className="mr-2 h-4 w-4" />
+                <span>Company Profile</span>
+            </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
