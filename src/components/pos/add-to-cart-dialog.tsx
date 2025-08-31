@@ -178,7 +178,7 @@ export function AddToCartDialog({
                 <p className="text-sm text-muted-foreground">{product.variant.sku || 'No SKU'}</p>
             </DialogHeader>
 
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 px-6 overflow-y-auto">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 px-6 overflow-y-auto md:overflow-y-hidden">
                 {/* Left Column: Product Info */}
                 <div className="flex flex-col">
                     <div className="bg-muted/50 rounded-lg p-4 flex justify-center items-center mb-4">
