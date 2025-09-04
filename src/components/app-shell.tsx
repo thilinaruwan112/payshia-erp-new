@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { type ReactNode, useState, useEffect } from 'react';
@@ -128,8 +127,12 @@ const navItems = [
       { href: '/service-center', label: 'Job Dashboard', icon: LayoutDashboard },
       { href: '/service-center/jobs/new', label: 'New Job', icon: PlusCircle },
       { href: '/service-center/find', label: 'Find Job', icon: Search },
-      { href: '/service-center/warranty', label: 'Warranty', icon: ShieldCheck },
     ],
+  },
+   {
+    href: '/service-center/warranty',
+    label: 'Warranty',
+    icon: ShieldCheck,
   },
   {
     label: 'CRM',
@@ -482,7 +485,7 @@ const isPathActive = (pathname: string, href?: string, subItems?: any[]) => {
   }
   if (!href) return false;
   
-  const exactMatchPaths = ['/dashboard', '/products', '/suppliers', '/reports', '/pos-system', '/help'];
+  const exactMatchPaths = ['/dashboard', '/products', '/suppliers', '/reports', '/pos-system', '/help', '/service-center/warranty'];
   if (exactMatchPaths.includes(href)) {
     return pathname === href;
   }

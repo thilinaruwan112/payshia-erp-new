@@ -7,6 +7,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from '@/components/ui/card';
 import {
   Table,
@@ -30,6 +31,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Warranty } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import React from 'react';
+import { Separator } from '@/components/ui/separator';
 
 const warranties: Warranty[] = [
     { id: 'WAR-001', customerName: 'John Doe', productName: 'Toyota Camry Engine', serialNumber: 'ABC-1234', purchaseDate: '2023-01-15', expiryDate: '2025-01-14', status: 'Active' },
@@ -78,54 +80,100 @@ export default function WarrantyPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Product / Serial No.</TableHead>
-                <TableHead className="hidden md:table-cell">Expiry Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {warranties.map((warranty) => (
-                <TableRow key={warranty.id}>
-                  <TableCell className="font-medium">{warranty.customerName}</TableCell>
-                  <TableCell>
-                    <p className="font-semibold">{warranty.productName}</p>
-                    <p className="text-xs text-muted-foreground">{warranty.serialNumber}</p>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">{new Date(warranty.expiryDate).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className={cn(getStatusColor(warranty.status))}>
-                        <ShieldCheck className="mr-1.5 h-3 w-3" />
-                        {warranty.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {/* Desktop Table View */}
+          <div className="hidden md:block">
+            <Table>
+                <TableHeader>
+                <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Product / Serial No.</TableHead>
+                    <TableHead className="hidden md:table-cell">Expiry Date</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>
+                    <span className="sr-only">Actions</span>
+                    </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                {warranties.map((warranty) => (
+                    <TableRow key={warranty.id}>
+                    <TableCell className="font-medium">{warranty.customerName}</TableCell>
+                    <TableCell>
+                        <p className="font-semibold">{warranty.productName}</p>
+                        <p className="text-xs text-muted-foreground">{warranty.serialNumber}</p>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">{new Date(warranty.expiryDate).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                        <Badge variant="secondary" className={cn(getStatusColor(warranty.status))}>
+                            <ShieldCheck className="mr-1.5 h-3 w-3" />
+                            {warranty.status}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem>View Details</DropdownMenuItem>
+                        </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
+          </div>
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+             {warranties.map((warranty) => (
+                <Card key={warranty.id}>
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <CardTitle className="text-base">{warranty.productName}</CardTitle>
+                                <CardDescription>{warranty.serialNumber}</CardDescription>
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                <Button size="icon" variant="ghost" className="-mt-2 -mr-2">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu</span>
+                                </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem>View Details</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <div>
+                            <p className="text-sm text-muted-foreground">Customer</p>
+                            <p className="font-medium">{warranty.customerName}</p>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="text-muted-foreground">Expires</span>
+                            <span>{new Date(warranty.expiryDate).toLocaleDateString()}</span>
+                        </div>
+                    </CardContent>
+                    <CardFooter>
+                         <Badge variant="secondary" className={cn("w-full justify-center py-2", getStatusColor(warranty.status))}>
+                            <ShieldCheck className="mr-1.5 h-3 w-3" />
+                            {warranty.status}
+                        </Badge>
+                    </CardFooter>
+                </Card>
+             ))}
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
