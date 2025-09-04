@@ -88,7 +88,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     setJobItems(prevItems => prevItems.filter(item => item.variant.id !== variantId));
   };
   
-  const totalCost = jobItems.reduce((acc, item) => acc + (item.price as number) * item.quantity, 0);
+  const totalCost = jobItems.reduce((acc, item) => acc + (parseFloat(String(item.price)) * item.quantity), 0);
 
   async function onSubmit(data: TechnicianReportValues) {
     setIsSubmitting(true);
@@ -186,8 +186,8 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                                    <TableRow key={item.variant.id}>
                                        <TableCell className="font-medium">{item.variantName}</TableCell>
                                        <TableCell><Input type="number" value={item.quantity} onChange={e => updateItemQuantity(item.variant.id, parseInt(e.target.value))} className="h-8" /></TableCell>
-                                       <TableCell className="text-right font-mono">{currencySymbol}{(item.price as number).toFixed(2)}</TableCell>
-                                       <TableCell className="text-right font-mono">{currencySymbol}{((item.price as number) * item.quantity).toFixed(2)}</TableCell>
+                                       <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(String(item.price)).toFixed(2)}</TableCell>
+                                       <TableCell className="text-right font-mono">{currencySymbol}{(parseFloat(String(item.price)) * item.quantity).toFixed(2)}</TableCell>
                                        <TableCell><Button variant="ghost" size="icon" onClick={() => removeItem(item.variant.id)}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button></TableCell>
                                    </TableRow>
                                ))}
