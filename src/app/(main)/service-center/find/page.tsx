@@ -171,13 +171,13 @@ export default function FindJobPage() {
             <CardDescription>Found {results.length} jobs matching your criteria.</CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="hidden md:block">
             <Table>
                 <TableHeader>
                 <TableRow>
                     <TableHead>Job ID</TableHead>
                     <TableHead>Customer / Item</TableHead>
-                    <TableHead className="hidden md:table-cell">Reported Issue</TableHead>
-                    <TableHead className="hidden sm:table-cell">Status</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>
                     <span className="sr-only">Actions</span>
                     </TableHead>
@@ -191,20 +191,12 @@ export default function FindJobPage() {
                         <p className="font-medium">{job.customer}</p>
                         <p className="text-sm text-muted-foreground">{job.item}</p>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                        {job.reportedIssue}
-                    </TableCell>
-                     <TableCell className="hidden sm:table-cell">
+                    <TableCell>
                         <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
                             {job.status}
                         </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                        <div className="sm:hidden">
-                            <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
-                                {job.status}
-                            </Badge>
-                        </div>
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button size="icon" variant="ghost">
@@ -224,6 +216,42 @@ export default function FindJobPage() {
                 ))}
                 </TableBody>
             </Table>
+            </div>
+             <div className="md:hidden space-y-4">
+              {results.map((job) => (
+                <Card key={job.id}>
+                   <CardHeader className="flex flex-row justify-between items-start pb-2">
+                        <div>
+                            <CardTitle className="text-base">{job.id}</CardTitle>
+                            <CardDescription className="text-xs">{new Date(job.date).toLocaleDateString()}</CardDescription>
+                        </div>
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="-mt-2 -mr-2">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                             <DropdownMenuItem asChild>
+                                <Link href={`/service-center/jobs/${job.id}`}>View/Edit Job</Link>
+                            </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        <div>
+                           <p className="font-medium">{job.customer}</p>
+                           <p className="text-sm text-muted-foreground">{job.item}</p>
+                        </div>
+                        <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
+                            {job.status}
+                        </Badge>
+                    </CardContent>
+                </Card>
+              ))}
+           </div>
         </CardContent>
       </Card>
     </div>

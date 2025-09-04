@@ -122,7 +122,7 @@ export default function ServiceCenterPage() {
                     A list of all ongoing and recent service jobs.
                 </CardDescription>
             </div>
-            <div className="relative">
+            <div className="relative w-full sm:w-auto">
                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                  <Input 
                     placeholder="Search by Job ID, customer, item..." 
@@ -137,69 +137,98 @@ export default function ServiceCenterPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Job ID</TableHead>
-                <TableHead>Customer / Item</TableHead>
-                <TableHead className="hidden md:table-cell">Reported Issue</TableHead>
-                <TableHead className="hidden sm:table-cell">Status</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({length: 3}).map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-64" /></TableCell>
-                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20" /></TableCell>
-                        <TableCell><Skeleton className="h-8 w-8" /></TableCell>
-                    </TableRow>
-                ))
-              ) : paginatedJobs.map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell className="font-mono">{job.id}</TableCell>
-                  <TableCell>
-                    <p className="font-medium">{job.customer}</p>
-                    <p className="text-sm text-muted-foreground">{job.item}</p>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                      {job.reportedIssue}
-                  </TableCell>
-                   <TableCell className="hidden sm:table-cell">
-                      <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
-                            {job.status}
-                      </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="sm:hidden">
+          {/* Desktop Table View */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Job ID</TableHead>
+                  <TableHead>Customer / Item</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({length: 3}).map((_, i) => (
+                      <TableRow key={i}>
+                          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                          <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                          <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                      </TableRow>
+                  ))
+                ) : paginatedJobs.map((job) => (
+                  <TableRow key={job.id}>
+                    <TableCell className="font-mono">{job.id}</TableCell>
+                    <TableCell>
+                      <p className="font-medium">{job.customer}</p>
+                      <p className="text-sm text-muted-foreground">{job.item}</p>
+                    </TableCell>
+                    <TableCell>
+                        <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
+                              {job.status}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/service-center/jobs/${job.id}`}>View/Edit Job</Link>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {/* Mobile Card View */}
+           <div className="md:hidden space-y-4">
+              {paginatedJobs.map((job) => (
+                <Card key={job.id}>
+                   <CardHeader className="flex flex-row justify-between items-start pb-2">
+                        <div>
+                            <CardTitle className="text-base">{job.id}</CardTitle>
+                            <CardDescription className="text-xs">{new Date(job.date).toLocaleDateString()}</CardDescription>
+                        </div>
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost" className="-mt-2 -mr-2">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                             <DropdownMenuItem asChild>
+                                <Link href={`/service-center/jobs/${job.id}`}>View/Edit Job</Link>
+                            </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        <div>
+                           <p className="font-medium">{job.customer}</p>
+                           <p className="text-sm text-muted-foreground">{job.item}</p>
+                        </div>
                         <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
                             {job.status}
                         </Badge>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem asChild>
-                           <Link href={`/service-center/jobs/${job.id}`}>View/Edit Job</Link>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
+                    </CardContent>
+                </Card>
               ))}
-            </TableBody>
-          </Table>
+           </div>
         </CardContent>
         <CardFooter className="flex items-center justify-between">
             <div className="text-xs text-muted-foreground">
