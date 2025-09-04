@@ -18,8 +18,12 @@ import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, ArrowLeft, Printer, FileText } from 'lucide-react';
+import { Loader2, ArrowLeft, Printer, FileText, PlusCircle, Trash2 } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
+import { ProductPickerDialog } from "@/components/product-picker-dialog";
+import type { Product, ProductVariant } from "@/lib/types";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useCurrency } from "@/components/currency-provider";
 
 const technicianReportSchema = z.object({
   technicianNotes: z.string().min(10, { message: "Technician notes must be at least 10 characters." }),
@@ -28,10 +32,14 @@ const technicianReportSchema = z.object({
 
 type TechnicianReportValues = z.infer<typeof technicianReportSchema>;
 
+type JobItem = Product & { variant: ProductVariant; variantName: string; quantity: number };
+
 export default function JobDetailsPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
   const router = useRouter();
+  const { currencySymbol } = useCurrency();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [jobItems, setJobItems] = useState<JobItem[]>([]);
 
   // Mock data - In a real app, you would fetch this based on params.id
   const jobDetails = {
@@ -39,7 +47,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     customer: 'John Doe',
     item: 'Toyota Camry (ABC-1234)',
     reportedIssues: 'Customer states there is a loud grinding noise from the front-right wheel when braking. Also requests an oil change.',
-    status: 'New',
+    status: 'In Progress',
     date: '2023-10-26',
     technicianReport: {
         notes: "",
@@ -55,9 +63,35 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     },
   });
 
+  const handleProductsSelected = (products: (Product & { variant: ProductVariant, variantName: string })[]) => {
+    const newJobItems: JobItem[] = products.map(p => ({
+      ...p,
+      quantity: 1, // Default quantity
+    }));
+    setJobItems(prevItems => {
+        const existingIds = new Set(prevItems.map(item => item.variant.id));
+        const filteredNewItems = newJobItems.filter(item => !existingIds.has(item.variant.id));
+        return [...prevItems, ...filteredNewItems];
+    });
+  };
+
+  const updateItemQuantity = (variantId: string, newQuantity: number) => {
+    setJobItems(prevItems => 
+      prevItems.map(item => 
+        item.variant.id === variantId ? { ...item, quantity: Math.max(0, newQuantity) } : item
+      )
+    );
+  };
+
+  const removeItem = (variantId: string) => {
+    setJobItems(prevItems => prevItems.filter(item => item.variant.id !== variantId));
+  };
+  
+  const totalCost = jobItems.reduce((acc, item) => acc + (item.price as number) * item.quantity, 0);
+
   async function onSubmit(data: TechnicianReportValues) {
     setIsSubmitting(true);
-    console.log({ jobId: params.id, ...data });
+    console.log({ jobId: params.id, report: data, items: jobItems });
     await new Promise(resolve => setTimeout(resolve, 1000));
     toast({
       title: 'Technician Report Saved',
@@ -74,17 +108,17 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
             Job Details: {jobDetails.id}
           </h1>
           <p className="text-muted-foreground">
-            View details and update the technician report.
+            View details, add parts, and update the technician report.
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            Back
           </Button>
-          <Button>
-            <Printer className="mr-2 h-4 w-4" />
-            Print Job Sheet
+           <Button>
+            <FileText className="mr-2 h-4 w-4" />
+            Generate Invoice
           </Button>
         </div>
       </div>
@@ -114,7 +148,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                     </div>
                 </CardContent>
             </Card>
-            <Card>
+             <Card>
                 <CardHeader>
                     <CardTitle>Reported Issues</CardTitle>
                 </CardHeader>
@@ -123,7 +157,53 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                 </CardContent>
             </Card>
         </div>
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-8">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Parts & Services</CardTitle>
+                        <CardDescription>Items used or services rendered for this job.</CardDescription>
+                    </div>
+                    <ProductPickerDialog onProductsSelected={handleProductsSelected}>
+                       <Button variant="outline"><PlusCircle className="mr-2 h-4 w-4" />Add Item</Button>
+                    </ProductPickerDialog>
+                </CardHeader>
+                 <CardContent>
+                   {jobItems.length > 0 ? (
+                       <Table>
+                           <TableHeader>
+                               <TableRow>
+                                   <TableHead>Item</TableHead>
+                                   <TableHead className="w-24">Qty</TableHead>
+                                   <TableHead className="w-32 text-right">Unit Price</TableHead>
+                                   <TableHead className="w-32 text-right">Total</TableHead>
+                                   <TableHead className="w-12"></TableHead>
+                               </TableRow>
+                           </TableHeader>
+                           <TableBody>
+                               {jobItems.map(item => (
+                                   <TableRow key={item.variant.id}>
+                                       <TableCell className="font-medium">{item.variantName}</TableCell>
+                                       <TableCell><Input type="number" value={item.quantity} onChange={e => updateItemQuantity(item.variant.id, parseInt(e.target.value))} className="h-8" /></TableCell>
+                                       <TableCell className="text-right font-mono">{currencySymbol}{(item.price as number).toFixed(2)}</TableCell>
+                                       <TableCell className="text-right font-mono">{currencySymbol}{((item.price as number) * item.quantity).toFixed(2)}</TableCell>
+                                       <TableCell><Button variant="ghost" size="icon" onClick={() => removeItem(item.variant.id)}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button></TableCell>
+                                   </TableRow>
+                               ))}
+                           </TableBody>
+                       </Table>
+                   ) : (
+                       <p className="text-sm text-muted-foreground text-center py-4">No parts or services have been added to this job.</p>
+                   )}
+                </CardContent>
+                {jobItems.length > 0 && (
+                    <CardFooter className="flex justify-end">
+                        <div className="text-lg font-bold">
+                            Total: <span className="font-mono">{currencySymbol}{totalCost.toFixed(2)}</span>
+                        </div>
+                    </CardFooter>
+                )}
+            </Card>
            <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
                 <Card>
@@ -144,23 +224,6 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                                     <Textarea
                                         placeholder="e.g. Front-right brake pads and rotor are worn and require replacement. Oil change completed..."
                                         className="resize-y min-h-[150px]"
-                                        {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="partsUsed"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Parts Used / Recommended</FormLabel>
-                                <FormControl>
-                                     <Textarea
-                                        placeholder="e.g. - 1x Front Brake Pad Set&#10;- 1x Front Right Rotor&#10;- 4L 5W-30 Synthetic Oil&#10;- 1x Oil Filter"
-                                        className="resize-y min-h-[100px]"
                                         {...field}
                                     />
                                 </FormControl>
