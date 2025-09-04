@@ -23,10 +23,12 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
+import { useLocation } from "@/components/location-provider";
+import type { Brand, User } from "@/lib/types";
 
 // Mock data, this would come from an API
 const customers = [
@@ -36,7 +38,7 @@ const customers = [
 
 const jobSheetFormSchema = z.object({
     customerId: z.string().min(1, "Customer is required."),
-    itemMake: z.string().min(2, "Item make/brand is required."),
+    brandId: z.string().min(1, "Item make/brand is required."),
     itemModel: z.string().min(1, "Item model is required."),
     itemSerialNo: z.string().min(3, "Serial/Registration number is required."),
     reportedIssues: z.string().min(10, "Please describe the issue(s)."),
@@ -48,6 +50,26 @@ export default function NewJobSheetPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const { company_id } = useLocation();
+
+  useEffect(() => {
+    async function fetchBrands() {
+        if (!company_id) return;
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`);
+            if (!response.ok) throw new Error("Failed to fetch brands");
+            setBrands(await response.json() || []);
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not fetch brands data.'
+            })
+        }
+    }
+    fetchBrands();
+  }, [company_id, toast]);
 
   const form = useForm<JobSheetFormValues>({
     resolver: zodResolver(jobSheetFormSchema),
@@ -66,6 +88,8 @@ export default function NewJobSheetPage() {
     setIsLoading(false);
     router.push('/service-center');
   }
+
+  const brandOptions = brands.map(brand => ({ value: brand.id, label: brand.name }));
 
   return (
     <Form {...form}>
@@ -118,13 +142,17 @@ export default function NewJobSheetPage() {
                         />
                         <FormField
                             control={form.control}
-                            name="itemMake"
+                            name="brandId"
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>Item Make / Brand</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="e.g. Toyota, Apple" {...field} />
-                                </FormControl>
+                                <Combobox
+                                    options={brandOptions}
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder="Select a brand..."
+                                    notFoundText="No brand found."
+                                />
                                 <FormMessage />
                                 </FormItem>
                             )}
