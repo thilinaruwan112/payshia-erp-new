@@ -112,7 +112,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button variant="outline" onClick={() => router.back()}>
+          <Button variant="outline" onClick={router.back}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
