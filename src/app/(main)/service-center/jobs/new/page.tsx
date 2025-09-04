@@ -36,9 +36,9 @@ const customers = [
 
 const jobSheetFormSchema = z.object({
     customerId: z.string().min(1, "Customer is required."),
-    vehicleMake: z.string().min(2, "Vehicle make is required."),
-    vehicleModel: z.string().min(1, "Vehicle model is required."),
-    vehicleRegNo: z.string().min(3, "Registration number is required."),
+    itemMake: z.string().min(2, "Item make/brand is required."),
+    itemModel: z.string().min(1, "Item model is required."),
+    itemSerialNo: z.string().min(3, "Serial/Registration number is required."),
     reportedIssues: z.string().min(10, "Please describe the issue(s)."),
 });
 
@@ -92,11 +92,11 @@ export default function NewJobSheetPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-2 space-y-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Vehicle & Customer Information</CardTitle>
+                        <CardTitle>Item & Customer Information</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField
@@ -118,12 +118,12 @@ export default function NewJobSheetPage() {
                         />
                         <FormField
                             control={form.control}
-                            name="vehicleMake"
+                            name="itemMake"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Vehicle Make</FormLabel>
+                                <FormLabel>Item Make / Brand</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="e.g. Toyota" {...field} />
+                                    <Input placeholder="e.g. Toyota, Apple" {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
@@ -131,12 +131,12 @@ export default function NewJobSheetPage() {
                         />
                         <FormField
                             control={form.control}
-                            name="vehicleModel"
+                            name="itemModel"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Vehicle Model</FormLabel>
+                                <FormLabel>Item Model</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="e.g. Camry" {...field} />
+                                    <Input placeholder="e.g. Camry, iPhone 15 Pro" {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
@@ -144,12 +144,12 @@ export default function NewJobSheetPage() {
                         />
                         <FormField
                             control={form.control}
-                            name="vehicleRegNo"
+                            name="itemSerialNo"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Registration No.</FormLabel>
+                                <FormLabel>Serial / Registration No.</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="e.g. ABC-1234" {...field} />
+                                    <Input placeholder="e.g. ABC-1234, SN:12345XYZ" {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>

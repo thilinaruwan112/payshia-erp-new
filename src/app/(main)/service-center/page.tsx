@@ -34,9 +34,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 // Mock data - in a real app, this would come from an API
 const jobs = [
-    { id: 'JOB-001', customer: 'John Doe', vehicle: 'Toyota Camry (ABC-1234)', reportedIssue: 'Engine making strange noise', status: 'New', date: '2023-10-26' },
-    { id: 'JOB-002', customer: 'Jane Smith', vehicle: 'Honda Civic (XYZ-5678)', reportedIssue: 'Brake inspection and replacement', status: 'In Progress', date: '2023-10-25' },
-    { id: 'JOB-003', customer: 'Jim Brown', vehicle: 'Ford Ranger (DEF-9012)', reportedIssue: 'Routine 50,000km service', status: 'Completed', date: '2023-10-24' },
+    { id: 'JOB-001', customer: 'John Doe', item: 'Toyota Camry (ABC-1234)', reportedIssue: 'Engine making strange noise', status: 'New', date: '2023-10-26' },
+    { id: 'JOB-002', customer: 'Jane Smith', item: 'Apple iPhone 14 Pro (SN: XYZ)', reportedIssue: 'Screen replacement', status: 'In Progress', date: '2023-10-25' },
+    { id: 'JOB-003', customer: 'Jim Brown', item: 'Ford Ranger (DEF-9012)', reportedIssue: 'Routine 50,000km service', status: 'Completed', date: '2023-10-24' },
 ];
 
 type JobStatus = 'New' | 'In Progress' | 'Awaiting Parts' | 'Completed' | 'Invoiced';
@@ -92,7 +92,7 @@ export default function ServiceCenterPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Job ID</TableHead>
-                <TableHead>Customer / Vehicle</TableHead>
+                <TableHead>Customer / Item</TableHead>
                 <TableHead className="hidden sm:table-cell">Reported Issue</TableHead>
                 <TableHead className="hidden md:table-cell">Status</TableHead>
                 <TableHead>
@@ -116,7 +116,7 @@ export default function ServiceCenterPage() {
                   <TableCell className="font-mono">{job.id}</TableCell>
                   <TableCell>
                     <p className="font-medium">{job.customer}</p>
-                    <p className="text-sm text-muted-foreground">{job.vehicle}</p>
+                    <p className="text-sm text-muted-foreground">{job.item}</p>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell max-w-sm truncate">{job.reportedIssue}</TableCell>
                   <TableCell className="hidden md:table-cell">
