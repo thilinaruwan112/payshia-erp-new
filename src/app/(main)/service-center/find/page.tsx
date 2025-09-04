@@ -176,7 +176,8 @@ export default function FindJobPage() {
                 <TableRow>
                     <TableHead>Job ID</TableHead>
                     <TableHead>Customer / Item</TableHead>
-                    <TableHead>Reported Issue</TableHead>
+                    <TableHead className="hidden md:table-cell">Reported Issue</TableHead>
+                    <TableHead className="hidden sm:table-cell">Status</TableHead>
                     <TableHead>
                     <span className="sr-only">Actions</span>
                     </TableHead>
@@ -190,15 +191,20 @@ export default function FindJobPage() {
                         <p className="font-medium">{job.customer}</p>
                         <p className="text-sm text-muted-foreground">{job.item}</p>
                     </TableCell>
-                    <TableCell>
-                        <p>{job.reportedIssue}</p>
-                        <div className="mt-1">
+                    <TableCell className="hidden md:table-cell">
+                        {job.reportedIssue}
+                    </TableCell>
+                     <TableCell className="hidden sm:table-cell">
+                        <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
+                            {job.status}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                        <div className="sm:hidden">
                             <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
                                 {job.status}
                             </Badge>
                         </div>
-                    </TableCell>
-                    <TableCell className="text-right">
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button size="icon" variant="ghost">

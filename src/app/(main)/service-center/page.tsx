@@ -142,7 +142,8 @@ export default function ServiceCenterPage() {
               <TableRow>
                 <TableHead>Job ID</TableHead>
                 <TableHead>Customer / Item</TableHead>
-                <TableHead>Reported Issue</TableHead>
+                <TableHead className="hidden md:table-cell">Reported Issue</TableHead>
+                <TableHead className="hidden sm:table-cell">Status</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -154,7 +155,8 @@ export default function ServiceCenterPage() {
                     <TableRow key={i}>
                         <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-64" /></TableCell>
+                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-64" /></TableCell>
+                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                     </TableRow>
                 ))
@@ -165,15 +167,20 @@ export default function ServiceCenterPage() {
                     <p className="font-medium">{job.customer}</p>
                     <p className="text-sm text-muted-foreground">{job.item}</p>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                       {job.reportedIssue}
-                      <div className="mt-1 md:hidden">
+                  </TableCell>
+                   <TableCell className="hidden sm:table-cell">
+                      <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
+                            {job.status}
+                      </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="sm:hidden">
                         <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
                             {job.status}
                         </Badge>
-                      </div>
-                  </TableCell>
-                  <TableCell className="text-right">
+                    </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button size="icon" variant="ghost">
