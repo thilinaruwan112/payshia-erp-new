@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLocation } from "@/components/location-provider";
 import type { Brand, User, Model, Warranty } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 
 // Mock data, this would come from an API
 const customers = [
