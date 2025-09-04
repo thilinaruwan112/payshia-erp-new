@@ -209,10 +209,10 @@ export default function POSPage() {
                 return p.variants.map(v => ({
                     ...p.product,
                     product_image_url: mainImage,
-                    price: parseFloat(p.product.price as any) || 0,
-                    min_price: parseFloat(p.product.min_price as any) || 0,
-                    wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
-                    cost_price: parseFloat(p.product.cost_price as any) || 0,
+                    price: parseFloat(v.variant.price as any) || 0,
+                    min_price: parseFloat(v.variant.min_price as any) || 0,
+                    wholesale_price: parseFloat(v.variant.wholesale_price as any) || 0,
+                    cost_price: parseFloat(v.variant.cost_price as any) || 0,
                     variant: v.variant,
                     variantName: [p.product.name, v.variant.color, v.variant.size].filter(Boolean).join(' - '),
                 }));
