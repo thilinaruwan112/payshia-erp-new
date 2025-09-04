@@ -56,7 +56,11 @@ export function CollectionForm({ collection }: CollectionFormProps) {
   
   const [selectedProducts, setSelectedProducts] = React.useState<Product[]>(collection?.products || []);
   const [coverImageFile, setCoverImageFile] = React.useState<File | null>(null);
-  const [imagePreview, setImagePreview] = React.useState<string | null>(collection?.cover_image_url || null);
+
+  const initialImageUrl = collection?.cover_image_url
+    ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${collection.cover_image_url}`
+    : null;
+  const [imagePreview, setImagePreview] = React.useState<string | null>(initialImageUrl);
 
   const defaultValues: Partial<CollectionFormValues> = {
     title: collection?.title || "",
@@ -283,7 +287,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                            {selectedProducts.map(product => (
                              <div key={product.id} className="relative group">
                                 <Image
-                                    src={product.product_image_url || "https://placehold.co/150x150.png"}
+                                    src={product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${product.product_image_url}` : "https://placehold.co/150x150.png"}
                                     alt={product.name}
                                     width={150}
                                     height={150}
@@ -291,6 +295,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                                     data-ai-hint="product photo"
                                 />
                                 <Button 
+                                    type="button"
                                     variant="destructive" 
                                     size="icon"
                                     className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
