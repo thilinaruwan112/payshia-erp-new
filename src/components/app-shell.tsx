@@ -61,6 +61,7 @@ import {
   UserCog,
   Wrench,
   Search,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -127,6 +128,7 @@ const navItems = [
       { href: '/service-center', label: 'Job Dashboard', icon: LayoutDashboard },
       { href: '/service-center/jobs/new', label: 'New Job', icon: PlusCircle },
       { href: '/service-center/find', label: 'Find Job', icon: Search },
+      { href: '/service-center/warranty', label: 'Warranty', icon: ShieldCheck },
     ],
   },
   {
@@ -227,7 +229,7 @@ const navItems = [
     icon: Settings,
     subItems: [
       { href: '/settings/profile', label: 'Profile', icon: Users },
-      { href: '/settings/users', label: 'Users', icon: Users },
+      { href: '/settings/users', label: 'Users', icon: UserCog },
       { href: '/settings/roles', label: 'Roles & Permissions', icon: UserCog },
       { href: '/locations', label: 'Locations', icon: Warehouse },
       { href: '/settings/tables', label: 'Dine-in Tables', icon: Utensils },

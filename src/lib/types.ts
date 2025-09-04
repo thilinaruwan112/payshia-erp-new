@@ -565,3 +565,15 @@ export type Company = {
   created_by: string;
   created_at: string;
 }
+
+export type Warranty = {
+    id: string;
+    customerId: string;
+    customerName: string;
+    productId: string;
+    productName: string;
+    serialNumber: string;
+    purchaseDate: string;
+    expiryDate: string;
+    status: 'Active' | 'Expired' | 'Void';
+}
