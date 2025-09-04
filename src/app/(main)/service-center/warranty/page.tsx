@@ -119,7 +119,9 @@ export default function WarrantyPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link href={`/service-center/warranty/${warranty.id}`}>View Details</Link>
+                            </DropdownMenuItem>
                         </DropdownMenuContent>
                         </DropdownMenu>
                     </TableCell>
@@ -147,7 +149,9 @@ export default function WarrantyPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem>View Details</DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                 <Link href={`/service-center/warranty/${warranty.id}`}>View Details</Link>
+                                </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
