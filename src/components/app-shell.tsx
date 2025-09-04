@@ -60,6 +60,7 @@ import {
   LayoutList,
   UserCog,
   Wrench,
+  Search,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -125,6 +126,7 @@ const navItems = [
     subItems: [
       { href: '/service-center', label: 'Job Dashboard', icon: LayoutDashboard },
       { href: '/service-center/jobs/new', label: 'New Job', icon: PlusCircle },
+      { href: '/service-center/find', label: 'Find Job', icon: Search },
     ],
   },
   {
