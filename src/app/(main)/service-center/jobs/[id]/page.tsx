@@ -26,6 +26,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useCurrency } from "@/components/currency-provider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const technicianReportSchema = z.object({
   technicianNotes: z.string().min(10, { message: "Technician notes must be at least 10 characters." }),
@@ -35,6 +38,26 @@ const technicianReportSchema = z.object({
 type TechnicianReportValues = z.infer<typeof technicianReportSchema>;
 
 type JobItem = Product & { variant: ProductVariant; variantName: string; quantity: number };
+
+type JobStatus = 'New' | 'In Progress' | 'Awaiting Parts' | 'Completed' | 'Invoiced';
+
+const getStatusColor = (status: JobStatus) => {
+  switch (status) {
+    case 'New':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+    case 'In Progress':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    case 'Awaiting Parts':
+        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+    case 'Completed':
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+    case 'Invoiced':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+  }
+};
+
 
 export default function JobDetailsPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
@@ -46,18 +69,18 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
   const [isInvoiceConfirmOpen, setIsInvoiceConfirmOpen] = useState(false);
 
   // Mock data - In a real app, you would fetch this based on params.id
-  const jobDetails = {
+  const [jobDetails, setJobDetails] = useState({
     id: id,
     customer: 'John Doe',
     item: 'Toyota Camry (ABC-1234)',
     reportedIssues: 'Customer states there is a loud grinding noise from the front-right wheel when braking. Also requests an oil change.',
-    status: 'In Progress',
+    status: 'In Progress' as JobStatus,
     date: '2023-10-26',
     technicianReport: {
         notes: "",
         partsUsed: "",
     }
-  };
+  });
 
   const form = useForm<TechnicianReportValues>({
     resolver: zodResolver(technicianReportSchema),
@@ -104,6 +127,14 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     setIsSubmitting(false);
   }
 
+  const handleStatusChange = (newStatus: JobStatus) => {
+    setJobDetails(prev => ({ ...prev, status: newStatus }));
+    toast({
+      title: 'Status Updated',
+      description: `Job status changed to "${newStatus}".`,
+    });
+  };
+
   const handleConfirmInvoice = () => {
     // In a real app, this would trigger the invoice creation API call
     toast({
@@ -146,9 +177,24 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                     <CardTitle>Job Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm">
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Status</span>
-                        <span className="font-semibold">{jobDetails.status}</span>
+                         <Select value={jobDetails.status} onValueChange={(value: JobStatus) => handleStatusChange(value)}>
+                            <SelectTrigger className="w-auto font-semibold border-none shadow-none focus:ring-0 !bg-transparent h-auto p-0">
+                                <SelectValue>
+                                    <Badge variant="secondary" className={cn("text-sm", getStatusColor(jobDetails.status))}>
+                                        {jobDetails.status}
+                                    </Badge>
+                                </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="New">New</SelectItem>
+                                <SelectItem value="In Progress">In Progress</SelectItem>
+                                <SelectItem value="Awaiting Parts">Awaiting Parts</SelectItem>
+                                <SelectItem value="Completed">Completed</SelectItem>
+                                <SelectItem value="Invoiced">Invoiced</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Date Opened</span>
