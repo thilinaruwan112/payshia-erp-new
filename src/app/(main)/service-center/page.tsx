@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Search } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -31,6 +31,7 @@ import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 
 // Mock data - in a real app, this would come from an API
 const jobs = [
@@ -62,6 +63,13 @@ const getStatusColor = (status: JobStatus) => {
 export default function ServiceCenterPage() {
   const { company_id } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState('');
+
+  const filteredJobs = jobs.filter(job => 
+    job.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    job.item.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -82,10 +90,23 @@ export default function ServiceCenterPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Current Jobs</CardTitle>
-          <CardDescription>
-            A list of all ongoing and recent service jobs.
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <CardTitle>Current Jobs</CardTitle>
+                <CardDescription>
+                    A list of all ongoing and recent service jobs.
+                </CardDescription>
+            </div>
+            <div className="relative">
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <Input 
+                    placeholder="Search by Job ID, customer, item..." 
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -111,7 +132,7 @@ export default function ServiceCenterPage() {
                         <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                     </TableRow>
                 ))
-              ) : jobs.map((job) => (
+              ) : filteredJobs.map((job) => (
                 <TableRow key={job.id}>
                   <TableCell className="font-mono">{job.id}</TableCell>
                   <TableCell>
