@@ -37,13 +37,14 @@ type JobItem = Product & { variant: ProductVariant; variantName: string; quantit
 export default function JobDetailsPage({ params }: { params: { id: string } }) {
   const { toast } = useToast();
   const router = useRouter();
+  const { id } = params;
   const { currencySymbol } = useCurrency();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [jobItems, setJobItems] = useState<JobItem[]>([]);
 
   // Mock data - In a real app, you would fetch this based on params.id
   const jobDetails = {
-    id: params.id,
+    id: id,
     customer: 'John Doe',
     item: 'Toyota Camry (ABC-1234)',
     reportedIssues: 'Customer states there is a loud grinding noise from the front-right wheel when braking. Also requests an oil change.',
@@ -91,11 +92,11 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
 
   async function onSubmit(data: TechnicianReportValues) {
     setIsSubmitting(true);
-    console.log({ jobId: params.id, report: data, items: jobItems });
+    console.log({ jobId: id, report: data, items: jobItems });
     await new Promise(resolve => setTimeout(resolve, 1000));
     toast({
       title: 'Technician Report Saved',
-      description: `The report for job #${params.id} has been updated.`,
+      description: `The report for job #${id} has been updated.`,
     });
     setIsSubmitting(false);
   }
@@ -112,7 +113,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
           </p>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button variant="outline" onClick={router.back}>
+          <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
