@@ -142,8 +142,7 @@ export default function ServiceCenterPage() {
               <TableRow>
                 <TableHead>Job ID</TableHead>
                 <TableHead>Customer / Item</TableHead>
-                <TableHead className="hidden sm:table-cell">Reported Issue</TableHead>
-                <TableHead className="hidden md:table-cell">Status</TableHead>
+                <TableHead>Reported Issue</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -155,8 +154,7 @@ export default function ServiceCenterPage() {
                     <TableRow key={i}>
                         <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-64" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-64" /></TableCell>
                         <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                     </TableRow>
                 ))
@@ -167,11 +165,13 @@ export default function ServiceCenterPage() {
                     <p className="font-medium">{job.customer}</p>
                     <p className="text-sm text-muted-foreground">{job.item}</p>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell max-w-sm truncate">{job.reportedIssue}</TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
-                        {job.status}
-                    </Badge>
+                  <TableCell>
+                      {job.reportedIssue}
+                      <div className="mt-1 md:hidden">
+                        <Badge variant="secondary" className={cn(getStatusColor(job.status as JobStatus))}>
+                            {job.status}
+                        </Badge>
+                      </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -226,5 +226,3 @@ export default function ServiceCenterPage() {
     </div>
   );
 }
-
-    
