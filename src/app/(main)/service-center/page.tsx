@@ -137,12 +137,6 @@ export default function ServiceCenterPage() {
                         <DropdownMenuItem asChild>
                            <Link href={`/service-center/jobs/${job.id}`}>View/Edit Job</Link>
                         </DropdownMenuItem>
-                         <DropdownMenuItem asChild>
-                           <Link href={`/service-center/jobs/${job.id}`}>Add Technician Report</Link>
-                        </DropdownMenuItem>
-                         <DropdownMenuItem asChild>
-                           <Link href={`/service-center/jobs/${job.id}`}>Create Invoice</Link>
-                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
