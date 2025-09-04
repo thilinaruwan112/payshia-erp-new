@@ -442,6 +442,12 @@ export type Brand = {
   description?: string;
 };
 
+export type Model = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
 export type Color = {
     id: string;
     name: string;

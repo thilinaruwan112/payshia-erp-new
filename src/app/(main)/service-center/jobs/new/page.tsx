@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,7 +28,7 @@ import { Loader2 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { Textarea } from "@/components/ui/textarea";
 import { useLocation } from "@/components/location-provider";
-import type { Brand, User } from "@/lib/types";
+import type { Brand, User, Model } from "@/lib/types";
 
 // Mock data, this would come from an API
 const customers = [
@@ -38,7 +39,7 @@ const customers = [
 const jobSheetFormSchema = z.object({
     customerId: z.string().min(1, "Customer is required."),
     brandId: z.string().min(1, "Item make/brand is required."),
-    itemModel: z.string().min(1, "Item model is required."),
+    modelId: z.string().min(1, "Item model is required."),
     itemSerialNo: z.string().min(3, "Serial/Registration number is required."),
     reportedIssues: z.string().min(10, "Please describe the issue(s)."),
 });
@@ -50,6 +51,7 @@ export default function NewJobSheetPage() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
   const { company_id } = useLocation();
 
   useEffect(() => {
@@ -67,7 +69,22 @@ export default function NewJobSheetPage() {
             })
         }
     }
+     async function fetchModels() {
+        if (!company_id) return;
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/master-models/company?company_id=${company_id}`);
+            if (!response.ok) throw new Error("Failed to fetch models");
+            setModels(await response.json() || []);
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not fetch models data.'
+            })
+        }
+    }
     fetchBrands();
+    fetchModels();
   }, [company_id, toast]);
 
   const form = useForm<JobSheetFormValues>({
@@ -89,6 +106,7 @@ export default function NewJobSheetPage() {
   }
 
   const brandOptions = brands.map(brand => ({ value: brand.id, label: brand.name }));
+  const modelOptions = models.map(model => ({ value: model.id, label: model.name }));
 
   return (
     <Form {...form}>
@@ -102,7 +120,7 @@ export default function NewJobSheetPage() {
             <Button
               variant="outline"
               type="button"
-              onClick={router.back}
+              onClick={() => router.back()}
               className="w-full"
               disabled={isLoading}
             >
@@ -119,7 +137,7 @@ export default function NewJobSheetPage() {
             <div className="lg:col-span-2 space-y-8">
                 <Card>
                     <CardHeader>
-                        <CardTitle>Item & Customer Information</CardTitle>
+                        <CardTitle>Item &amp; Customer Information</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField
@@ -156,15 +174,19 @@ export default function NewJobSheetPage() {
                                 </FormItem>
                             )}
                         />
-                        <FormField
+                         <FormField
                             control={form.control}
-                            name="itemModel"
+                            name="modelId"
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>Item Model</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="e.g. Camry, iPhone 15 Pro" {...field} />
-                                </FormControl>
+                                <Combobox
+                                    options={modelOptions}
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder="Select a model..."
+                                    notFoundText="No model found."
+                                />
                                 <FormMessage />
                                 </FormItem>
                             )}
@@ -173,7 +195,7 @@ export default function NewJobSheetPage() {
                             control={form.control}
                             name="itemSerialNo"
                             render={({ field }) => (
-                                <FormItem>
+                                <FormItem className="md:col-span-2">
                                 <FormLabel>Serial / Registration No.</FormLabel>
                                 <FormControl>
                                     <Input placeholder="e.g. ABC-1234, SN:12345XYZ" {...field} />

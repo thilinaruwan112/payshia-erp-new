@@ -84,7 +84,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-} from '@/components/ui/dropdown-menu';
+} from './ui/dropdown-menu';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import {
@@ -147,6 +147,7 @@ const navItems = [
       { href: '/products/categories', label: 'Categories', icon: LayoutList },
       { href: '/products/collections', label: 'Collections', icon: Archive },
       { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
+      { href: '/products/models', label: 'Models', icon: ShoppingBag },
       { href: '/products/colors', label: 'Colors', icon: SwatchBook },
       { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
       { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
