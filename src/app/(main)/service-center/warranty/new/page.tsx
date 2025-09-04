@@ -36,6 +36,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { addYears, format } from "date-fns";
+import { Textarea } from "@/components/ui/textarea";
 
 const warrantyFormSchema = z.object({
   customerId: z.string().min(1, "Customer is required."),
@@ -43,6 +44,7 @@ const warrantyFormSchema = z.object({
   serialNumber: z.string().min(1, "Serial number is required."),
   purchaseDate: z.date({ required_error: "A date is required." }),
   warrantyPeriod: z.enum(['6m', '1y', '2y', '3y', '5y']),
+  coverageDetails: z.string().optional(),
 });
 
 type WarrantyFormValues = z.infer<typeof warrantyFormSchema>;
@@ -57,6 +59,7 @@ export default function NewWarrantyPage() {
     defaultValues: {
       purchaseDate: new Date(),
       warrantyPeriod: '1y',
+      coverageDetails: '',
     },
     mode: "onChange",
   });
@@ -106,93 +109,112 @@ export default function NewWarrantyPage() {
                 <CardHeader>
                     <CardTitle>Warranty Details</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <FormField
-                        control={form.control}
-                        name="customerId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Customer</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select a customer" /></SelectTrigger></FormControl>
-                                <SelectContent><SelectItem value="cus-123">John Doe</SelectItem></SelectContent>
-                                </Select>
+                <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <FormField
+                            control={form.control}
+                            name="customerId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Customer</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a customer" /></SelectTrigger></FormControl>
+                                    <SelectContent><SelectItem value="cus-123">John Doe</SelectItem></SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="productId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Product</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a product" /></SelectTrigger></FormControl>
+                                    <SelectContent><SelectItem value="prod-abc">Toyota Camry Engine</SelectItem></SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="serialNumber"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Serial / Registration No.</FormLabel>
+                                <FormControl><Input placeholder="e.g. SN12345XYZ, ABC-1234" {...field} /></FormControl>
                                 <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="productId"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Product</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select a product" /></SelectTrigger></FormControl>
-                                <SelectContent><SelectItem value="prod-abc">Toyota Camry Engine</SelectItem></SelectContent>
-                                </Select>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="purchaseDate"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                <FormLabel>Purchase Date</FormLabel>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                                    </PopoverContent>
+                                </Popover>
                                 <FormMessage />
-                            </FormItem>
-                        )}
-                    />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="warrantyPeriod"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Warranty Period</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Select a period" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="6m">6 Months</SelectItem>
+                                        <SelectItem value="1y">1 Year</SelectItem>
+                                        <SelectItem value="2y">2 Years</SelectItem>
+                                        <SelectItem value="3y">3 Years</SelectItem>
+                                        <SelectItem value="5y">5 Years</SelectItem>
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <div className="space-y-2">
+                            <FormLabel>Expiry Date</FormLabel>
+                            <Input readOnly value={expiryDate ? format(expiryDate, "PPP") : "N/A"} disabled />
+                        </div>
+                    </div>
                      <FormField
                         control={form.control}
-                        name="serialNumber"
+                        name="coverageDetails"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Serial / Registration No.</FormLabel>
-                            <FormControl><Input placeholder="e.g. SN12345XYZ, ABC-1234" {...field} /></FormControl>
+                            <FormLabel>Coverage Details</FormLabel>
+                            <FormControl>
+                                <Textarea
+                                placeholder="Describe what this warranty covers, e.g., 'Parts and labor for engine defects', 'Screen replacement for one year'."
+                                className="resize-y min-h-[100px]"
+                                {...field}
+                                />
+                            </FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
                     />
-                     <FormField
-                        control={form.control}
-                        name="purchaseDate"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                            <FormLabel>Purchase Date</FormLabel>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                <FormControl>
-                                    <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                    {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                                </PopoverContent>
-                            </Popover>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="warrantyPeriod"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Warranty Period</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="Select a period" /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    <SelectItem value="6m">6 Months</SelectItem>
-                                    <SelectItem value="1y">1 Year</SelectItem>
-                                    <SelectItem value="2y">2 Years</SelectItem>
-                                    <SelectItem value="3y">3 Years</SelectItem>
-                                    <SelectItem value="5y">5 Years</SelectItem>
-                                </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                     <div className="space-y-2">
-                        <FormLabel>Expiry Date</FormLabel>
-                        <Input readOnly value={expiryDate ? format(expiryDate, "PPP") : "N/A"} disabled />
-                     </div>
                 </CardContent>
             </Card>
         </form>

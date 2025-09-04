@@ -576,4 +576,5 @@ export type Warranty = {
     purchaseDate: string;
     expiryDate: string;
     status: 'Active' | 'Expired' | 'Void';
+    coverageDetails?: string;
 }

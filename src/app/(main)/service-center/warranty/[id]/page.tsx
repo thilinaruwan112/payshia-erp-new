@@ -21,10 +21,10 @@ import { format } from 'date-fns';
 
 // Mock data until API is available
 const warranties: Warranty[] = [
-    { id: 'WAR-001', customerId: 'cus-123', customerName: 'John Doe', productName: 'Toyota Camry Engine', serialNumber: 'ABC-1234', purchaseDate: '2023-01-15', expiryDate: '2025-01-14', status: 'Active' },
-    { id: 'WAR-002', customerId: 'cus-456', customerName: 'Jane Smith', productName: 'Apple iPhone 14 Pro', serialNumber: 'SN:XYZ', purchaseDate: '2022-10-25', expiryDate: '2023-10-24', status: 'Expired' },
-    { id: 'WAR-003', customerId: 'cus-789', customerName: 'Jim Brown', productName: 'Ford Ranger Transmission', serialNumber: 'DEF-9012', purchaseDate: '2021-08-01', expiryDate: '2024-07-31', status: 'Active' },
-    { id: 'WAR-004', customerId: 'cus-101', customerName: 'Emily White', productName: 'Dell XPS 15 Laptop', serialNumber: 'SVC-TAG-123', purchaseDate: '2023-05-20', expiryDate: '2024-05-19', status: 'Active' },
+    { id: 'WAR-001', customerId: 'cus-123', customerName: 'John Doe', productName: 'Toyota Camry Engine', serialNumber: 'ABC-1234', purchaseDate: '2023-01-15', expiryDate: '2025-01-14', status: 'Active', coverageDetails: 'Covers engine block and internal parts against manufacturing defects. Labor included.' },
+    { id: 'WAR-002', customerId: 'cus-456', customerName: 'Jane Smith', productName: 'Apple iPhone 14 Pro', serialNumber: 'SN:XYZ', purchaseDate: '2022-10-25', expiryDate: '2023-10-24', status: 'Expired', coverageDetails: 'One-year limited warranty for manufacturing defects. Does not cover accidental damage.' },
+    { id: 'WAR-003', customerId: 'cus-789', customerName: 'Jim Brown', productName: 'Ford Ranger Transmission', serialNumber: 'DEF-9012', purchaseDate: '2021-08-01', expiryDate: '2024-07-31', status: 'Active', coverageDetails: '3-year/60,000km warranty on transmission parts.' },
+    { id: 'WAR-004', customerId: 'cus-101', customerName: 'Emily White', productName: 'Dell XPS 15 Laptop', serialNumber: 'SVC-TAG-123', purchaseDate: '2023-05-20', expiryDate: '2024-05-19', status: 'Active', coverageDetails: '1-year premium support with on-site service.' },
 ];
 
 const getStatusColor = (status: Warranty['status']) => {
@@ -117,6 +117,10 @@ export default function WarrantyDetailsPage({ params }: { params: { id: string }
                             <h4 className="text-sm font-medium text-muted-foreground">Expiry Date</h4>
                             <p className="font-semibold">{format(new Date(warranty.expiryDate), 'PPP')}</p>
                         </div>
+                    </div>
+                     <div className="space-y-2 pt-4 border-t">
+                        <h4 className="text-sm font-medium text-muted-foreground">Coverage Details</h4>
+                        <p className="text-base text-foreground/90 whitespace-pre-wrap">{warranty.coverageDetails || 'No specific coverage details were provided.'}</p>
                     </div>
                 </CardContent>
             </Card>
