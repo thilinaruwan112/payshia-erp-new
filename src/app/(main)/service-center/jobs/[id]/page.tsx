@@ -18,7 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, ArrowLeft, Printer, FileText, PlusCircle, Trash2, MinusCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, Printer, FileText, PlusCircle, Trash2, MinusCircle, ShieldCheck } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { ProductPickerDialog } from "@/components/product-picker-dialog";
 import type { Product, ProductVariant } from "@/lib/types";
@@ -76,6 +76,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     reportedIssues: 'Customer states there is a loud grinding noise from the front-right wheel when braking. Also requests an oil change.',
     status: 'In Progress' as JobStatus,
     date: '2023-10-26',
+    isWarrantyJob: id === 'JOB-001', // Mocking a warranty job
     technicianReport: {
         notes: "",
         partsUsed: "",
@@ -151,9 +152,16 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Job Details: {jobDetails.id}
-          </h1>
+          <div className="flex items-center gap-4">
+             <h1 className="text-3xl font-bold tracking-tight">
+                Job Details: {jobDetails.id}
+            </h1>
+            {jobDetails.isWarrantyJob && (
+                <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-base">
+                    <ShieldCheck className="mr-2 h-5 w-5" /> Warranty Job
+                </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground">
             View details, add parts, and update the technician report.
           </p>
