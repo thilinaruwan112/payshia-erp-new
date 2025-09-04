@@ -49,6 +49,10 @@ export type ProductVariant = {
   product_id?: string;
   barcode?: string | null;
   stock?: number;
+  price?: number | string;
+  cost_price?: number | string;
+  min_price?: number | string;
+  wholesale_price?: number | string;
 };
 
 export type Product = {
@@ -59,7 +63,7 @@ export type Product = {
   category_id?: string;
   brand_id?: string;
   variants: ProductVariant[];
-  price: number | string;
+  price?: number | string;
   status: 'active' | 'draft';
   stock_unit?: string;
   costPrice?: number | string;
