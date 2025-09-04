@@ -59,6 +59,7 @@ import {
   PackagePlus,
   LayoutList,
   UserCog,
+  Wrench,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -116,6 +117,14 @@ const navItems = [
       { href: '/orders', label: 'Orders', icon: ShoppingCart },
       { href: '/sales/invoices', label: 'Invoices', icon: FileText },
       { href: '/sales/receipts', label: 'Receipts', icon: Receipt },
+    ],
+  },
+  {
+    label: 'Service Center',
+    icon: Wrench,
+    subItems: [
+      { href: '/service-center', label: 'Job Dashboard', icon: LayoutDashboard },
+      { href: '/service-center/jobs/new', label: 'New Job', icon: PlusCircle },
     ],
   },
   {
