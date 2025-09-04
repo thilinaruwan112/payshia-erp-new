@@ -70,6 +70,7 @@ type CustomFieldMaster = {
 const variantSchema = z.object({
   id: z.string().optional(),
   sku: z.string().min(1, { message: "SKU is required." }),
+  barcode: z.string().optional(),
   colorId: z.string().optional(),
   sizeId: z.string().optional(),
 });
@@ -210,9 +211,10 @@ export function ProductForm({ product }: ProductFormProps) {
     variants: product?.variants?.map(v => ({
         id: v.id,
         sku: v.sku,
+        barcode: v.barcode || "",
         colorId: v.color_id ?? undefined,
         sizeId: v.size_id ?? undefined,
-    })) || [{ sku: "", colorId: "", sizeId: "" }],
+    })) || [{ sku: "", barcode: "", colorId: "", sizeId: "" }],
     supplier: product?.supplier?.split(',').map(sName => {
         const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
         return foundSupplier ? foundSupplier.supplier_id : '';
@@ -324,11 +326,11 @@ export function ProductForm({ product }: ProductFormProps) {
       variants: data.variants.map(v => ({
         id: v.id,
         sku: v.sku,
+        barcode: v.barcode || v.sku,
         color: colors.find(c => c.id === v.colorId)?.name || "",
         size: sizes.find(s => s.id === v.sizeId)?.value || "",
         color_id: v.colorId ? parseInt(v.colorId, 10) : undefined,
         size_id: v.sizeId ? parseInt(v.sizeId, 10) : undefined,
-        barcode: v.sku,
       })),
     };
     
@@ -767,7 +769,7 @@ export function ProductForm({ product }: ProductFormProps) {
                     </CardHeader>
                     <CardContent>
                         {fields.map((field, index) => (
-                           <div key={field.id} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end border p-4 rounded-md mb-4 relative">
+                           <div key={field.id} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end border p-4 rounded-md mb-4 relative">
                                 <FormField
                                     control={form.control}
                                     name={`variants.${index}.sku`}
@@ -781,6 +783,20 @@ export function ProductForm({ product }: ProductFormProps) {
                                         </FormItem>
                                     )}
                                 />
+                                 <FormField
+                                    control={form.control}
+                                    name={`variants.${index}.barcode`}
+                                    render={({ field }) => (
+                                        <FormItem className="col-span-full sm:col-span-1">
+                                        <FormLabel>Barcode</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="123456789012" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <div></div>
                                 <FormField
                                     control={form.control}
                                     name={`variants.${index}.colorId`}
@@ -827,7 +843,7 @@ export function ProductForm({ product }: ProductFormProps) {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => append({ sku: "", colorId: "", sizeId: "" })}
+                            onClick={() => append({ sku: "", colorId: "", sizeId: "", barcode: "" })}
                         >
                             Add another variant
                         </Button>
