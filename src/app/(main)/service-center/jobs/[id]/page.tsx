@@ -25,6 +25,7 @@ import type { Product, ProductVariant } from "@/lib/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrency } from "@/components/currency-provider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 
 const technicianReportSchema = z.object({
   technicianNotes: z.string().min(10, { message: "Technician notes must be at least 10 characters." }),
@@ -301,4 +302,3 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     </>
   );
 }
-
