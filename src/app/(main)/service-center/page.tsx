@@ -134,7 +134,9 @@ export default function ServiceCenterPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>View/Edit Job</DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                           <Link href={`/service-center/jobs/${job.id}`}>View/Edit Job</Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem>Add Technician Report</DropdownMenuItem>
                         <DropdownMenuItem>Create Invoice</DropdownMenuItem>
                       </DropdownMenuContent>
