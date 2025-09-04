@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -103,7 +102,7 @@ export default function NewJobSheetPage() {
             <Button
               variant="outline"
               type="button"
-              onClick={() => router.back()}
+              onClick={router.back}
               className="w-full"
               disabled={isLoading}
             >
