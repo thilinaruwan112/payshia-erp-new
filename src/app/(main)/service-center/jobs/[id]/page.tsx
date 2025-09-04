@@ -18,12 +18,13 @@ import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, ArrowLeft, Printer, FileText, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Printer, FileText, PlusCircle, Trash2, MinusCircle } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { ProductPickerDialog } from "@/components/product-picker-dialog";
 import type { Product, ProductVariant } from "@/lib/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useCurrency } from "@/components/currency-provider";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 const technicianReportSchema = z.object({
   technicianNotes: z.string().min(10, { message: "Technician notes must be at least 10 characters." }),
@@ -41,6 +42,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
   const { currencySymbol } = useCurrency();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [jobItems, setJobItems] = useState<JobItem[]>([]);
+  const [isInvoiceConfirmOpen, setIsInvoiceConfirmOpen] = useState(false);
 
   // Mock data - In a real app, you would fetch this based on params.id
   const jobDetails = {
@@ -101,7 +103,19 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
     setIsSubmitting(false);
   }
 
+  const handleConfirmInvoice = () => {
+    // In a real app, this would trigger the invoice creation API call
+    toast({
+        title: 'Invoice Generation Initiated',
+        description: `Invoice is being created for job #${id}.`,
+    });
+    setIsInvoiceConfirmOpen(false);
+    // Potentially redirect to the new invoice page
+    // router.push(`/sales/invoices/${newInvoiceId}`);
+  };
+
   return (
+    <>
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -117,7 +131,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-           <Button>
+           <Button onClick={() => setIsInvoiceConfirmOpen(true)} disabled={jobItems.length === 0}>
             <FileText className="mr-2 h-4 w-4" />
             Generate Invoice
           </Button>
@@ -175,7 +189,7 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                            <TableHeader>
                                <TableRow>
                                    <TableHead>Item</TableHead>
-                                   <TableHead className="w-24">Qty</TableHead>
+                                   <TableHead className="w-32">Qty</TableHead>
                                    <TableHead className="w-32 text-right">Unit Price</TableHead>
                                    <TableHead className="w-32 text-right">Total</TableHead>
                                    <TableHead className="w-12"></TableHead>
@@ -185,7 +199,13 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
                                {jobItems.map(item => (
                                    <TableRow key={item.variant.id}>
                                        <TableCell className="font-medium">{item.variantName}</TableCell>
-                                       <TableCell><Input type="number" value={item.quantity} onChange={e => updateItemQuantity(item.variant.id, parseInt(e.target.value))} className="h-8" /></TableCell>
+                                       <TableCell>
+                                            <div className="flex items-center gap-1">
+                                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateItemQuantity(item.variant.id, item.quantity - 1)}><MinusCircle className="h-4 w-4" /></Button>
+                                                <Input type="number" value={item.quantity} onChange={e => updateItemQuantity(item.variant.id, parseInt(e.target.value) || 0)} className="h-8 w-16 text-center" />
+                                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateItemQuantity(item.variant.id, item.quantity + 1)}><PlusCircle className="h-4 w-4" /></Button>
+                                            </div>
+                                       </TableCell>
                                        <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(String(item.price)).toFixed(2)}</TableCell>
                                        <TableCell className="text-right font-mono">{currencySymbol}{(parseFloat(String(item.price)) * item.quantity).toFixed(2)}</TableCell>
                                        <TableCell><Button variant="ghost" size="icon" onClick={() => removeItem(item.variant.id)}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button></TableCell>
@@ -245,5 +265,40 @@ export default function JobDetailsPage({ params }: { params: { id: string } }) {
         </div>
       </div>
     </div>
+    <Dialog open={isInvoiceConfirmOpen} onOpenChange={setIsInvoiceConfirmOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Confirm Invoice Generation</DialogTitle>
+                <DialogDescription>
+                    This will create a new invoice for job <strong>{jobDetails.id}</strong>. Please review the details below. This action cannot be undone.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <h4 className="font-semibold mb-2">Invoice Summary:</h4>
+                 <div className="border rounded-md p-4 space-y-2">
+                     <div className="flex justify-between"><span>Customer:</span><span className="font-medium">{jobDetails.customer}</span></div>
+                     <div className="flex justify-between"><span>Item:</span><span className="font-medium">{jobDetails.item}</span></div>
+                     <Separator />
+                     {jobItems.map(item => (
+                        <div key={item.variant.id} className="flex justify-between text-sm">
+                            <span>{item.variantName} x{item.quantity}</span>
+                            <span className="font-mono">{currencySymbol}{(parseFloat(String(item.price)) * item.quantity).toFixed(2)}</span>
+                        </div>
+                     ))}
+                     <Separator />
+                     <div className="flex justify-between font-bold text-lg">
+                        <span>Total:</span>
+                        <span className="font-mono">{currencySymbol}{totalCost.toFixed(2)}</span>
+                     </div>
+                 </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsInvoiceConfirmOpen(false)}>Cancel</Button>
+                <Button onClick={handleConfirmInvoice}>Confirm & Create Invoice</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
+
