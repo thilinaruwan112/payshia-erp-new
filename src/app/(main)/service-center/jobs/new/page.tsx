@@ -47,6 +47,8 @@ const jobSheetFormSchema = z.object({
     customerId: z.string().min(1, "Customer is required."),
     itemDescription: z.string().min(3, "Item description is required."),
     itemSerialNo: z.string().min(3, "Serial/Registration number is required."),
+    brandId: z.string().optional(),
+    modelId: z.string().optional(),
     reportedIssues: z.string().min(10, "Please describe the issue(s)."),
     isWarrantyJob: z.boolean().default(false),
     warrantyId: z.string().optional(),
@@ -60,11 +62,30 @@ export default function NewJobSheetPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [serialNumber, setSerialNumber] = useState("");
   const [foundWarranty, setFoundWarranty] = useState<(Warranty & { productName: string }) | null>(null);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
+  const { company_id } = useLocation();
 
   const form = useForm<JobSheetFormValues>({
     resolver: zodResolver(jobSheetFormSchema),
     mode: "onChange",
   });
+
+  useEffect(() => {
+    async function fetchData(url: string, setData: Function, type: string) {
+      if (!company_id) return;
+      try {
+        const response = await fetch(`${url}?company_id=${company_id}`);
+        if (response.ok) {
+          setData(await response.json());
+        }
+      } catch (error) {
+        console.error(`Failed to fetch ${type}:`, error);
+      }
+    }
+    fetchData('https://server-erp.payshia.com/brands/company', setBrands, 'brands');
+    fetchData('https://server-erp.payshia.com/master-models/company', setModels, 'models');
+  }, [company_id]);
 
   const handleWarrantySearch = () => {
     // Mock search
@@ -96,6 +117,9 @@ export default function NewJobSheetPage() {
     setIsLoading(false);
     router.push('/service-center');
   }
+  
+  const brandOptions = brands.map(b => ({ value: b.id, label: b.name }));
+  const modelOptions = models.map(m => ({ value: m.id, label: m.name }));
 
   return (
     <Form {...form}>
@@ -189,6 +213,30 @@ export default function NewJobSheetPage() {
                                 </FormItem>
                             )}
                         />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <FormField
+                                control={form.control}
+                                name="brandId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Brand</FormLabel>
+                                        <Combobox options={brandOptions} value={field.value || ""} onChange={field.onChange} placeholder="Select brand" notFoundText="No brand found." disabled={!!foundWarranty} />
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="modelId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Model</FormLabel>
+                                        <Combobox options={modelOptions} value={field.value || ""} onChange={field.onChange} placeholder="Select model" notFoundText="No model found." disabled={!!foundWarranty} />
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                     </CardContent>
                 </Card>
             </div>
