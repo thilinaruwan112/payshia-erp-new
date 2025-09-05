@@ -73,13 +73,14 @@ export function HeldOrderDetailsDialog({
             Select a held order to continue.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
+        <div className="relative h-[60vh] -mx-6 px-6">
+          <ScrollArea className="h-full w-full">
           {isLoading ? (
-            <div className="flex items-center justify-center h-64">
+            <div className="flex items-center justify-center h-full">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           ) : heldOrders.length > 0 ? (
-            <ScrollArea className="h-96">
+            <>
               {/* Desktop Table View */}
               <Table className="hidden md:table">
                 <TableHeader>
@@ -115,7 +116,7 @@ export function HeldOrderDetailsDialog({
                 </TableBody>
               </Table>
               {/* Mobile Card View */}
-               <div className="space-y-4 md:hidden">
+               <div className="space-y-4 md:hidden p-1">
                  {heldOrders.map((order) => (
                     <Card key={order.id}>
                       <CardHeader>
@@ -144,14 +145,15 @@ export function HeldOrderDetailsDialog({
                     </Card>
                  ))}
                </div>
-            </ScrollArea>
+            </>
           ) : (
-            <p className="text-center text-muted-foreground py-10">
+            <p className="text-center text-muted-foreground pt-10">
               No orders are currently on hold.
             </p>
           )}
+          </ScrollArea>
         </div>
-        <DialogFooter>
+        <DialogFooter className="pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
