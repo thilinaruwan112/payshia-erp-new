@@ -208,6 +208,10 @@ export default function POSPage() {
 
                 return p.variants.map(v => {
                     const variantFrontImage = v.images.find(img => img.image_type === 'front img')?.img_url;
+                    
+                    const variantAttributes = [v.variant.color, v.variant.size].filter(Boolean).join(' - ');
+                    const variantName = variantAttributes ? `${p.product.name} - ${variantAttributes}` : `${p.product.name} (${v.variant.sku})`;
+
                     return {
                         ...p.product,
                         product_image_url: variantFrontImage || mainProductFrontImage,
@@ -216,7 +220,7 @@ export default function POSPage() {
                         wholesale_price: parseFloat(v.variant.wholesale_price as any) || 0,
                         cost_price: parseFloat(v.variant.cost_price as any) || 0,
                         variant: v.variant,
-                        variantName: [p.product.name, v.variant.color, v.variant.size].filter(Boolean).join(' - '),
+                        variantName,
                     };
                 });
             });
