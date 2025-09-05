@@ -70,8 +70,13 @@ type CustomFieldMaster = {
 const variantSchema = z.object({
   id: z.string().optional(),
   sku: z.string().min(1, { message: "SKU is required." }),
+  barcode: z.string().optional(),
   colorId: z.string().optional(),
   sizeId: z.string().optional(),
+  price: z.coerce.number().min(0, { message: "Selling Price must be a positive number." }),
+  cost_price: z.coerce.number().optional(),
+  min_price: z.coerce.number().optional(),
+  wholesale_price: z.coerce.number().optional(),
 });
 
 const customFieldSchema = z.object({
@@ -92,12 +97,6 @@ const productFormSchema = z.object({
   status: z.enum(["active", "draft"]),
   categoryId: z.string().min(1, { message: "Please select a category." }),
   brandId: z.string().optional(),
-  sellingPrice: z.coerce.number().min(0, { message: "Selling Price must be a positive number." }),
-  costPrice: z.coerce.number().optional(),
-  minPrice: z.coerce.number().optional(),
-  wholesalePrice: z.coerce.number().optional(),
-  price2: z.coerce.number().optional(),
-  foreignPrice: z.coerce.number().optional(),
   recipeType: z.enum(["standard", "a_la_carte", "item_recipe"]).optional(),
   variants: z.array(variantSchema).min(1, { message: "At least one variant is required." }),
   supplier: z.array(z.string()).optional(),
@@ -200,19 +199,18 @@ export function ProductForm({ product }: ProductFormProps) {
     status: product?.status || "active",
     categoryId: product?.category_id || "",
     brandId: product?.brand_id || "",
-    sellingPrice: product?.price ? parseFloat(String(product.price)) : 0,
-    costPrice: product?.cost_price ? parseFloat(String(product.cost_price)) : 0,
-    minPrice: product?.min_price ? parseFloat(String(product.min_price)) : 0,
-    wholesalePrice: product?.wholesale_price ? parseFloat(String(product.wholesale_price)) : 0,
-    price2: product?.price2 || 0,
-    foreignPrice: product?.foreignPrice || 0,
     recipeType: product?.recipe_type || "standard",
     variants: product?.variants?.map(v => ({
         id: v.id,
         sku: v.sku,
+        barcode: v.barcode || "",
         colorId: v.color_id ?? undefined,
         sizeId: v.size_id ?? undefined,
-    })) || [{ sku: "", colorId: "", sizeId: "" }],
+        price: v.price ? parseFloat(String(v.price)) : 0,
+        cost_price: v.cost_price ? parseFloat(String(v.cost_price)) : 0,
+        min_price: v.min_price ? parseFloat(String(v.min_price)) : 0,
+        wholesale_price: v.wholesale_price ? parseFloat(String(v.wholesale_price)) : 0,
+    })) || [{ sku: "", barcode: "", colorId: "", sizeId: "", price: 0 }],
     supplier: product?.supplier?.split(',').map(sName => {
         const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
         return foundSupplier ? foundSupplier.supplier_id : '';
@@ -301,10 +299,11 @@ export function ProductForm({ product }: ProductFormProps) {
       category: selectedCategory?.name || "",
       category_id: parseInt(data.categoryId, 10),
       brand_id: data.brandId ? parseInt(data.brandId, 10) : undefined,
-      price: data.sellingPrice,
-      cost_price: data.costPrice || 0,
-      min_price: data.minPrice || 0,
-      wholesale_price: data.wholesalePrice || 0,
+      // Main price is now optional
+      price: data.variants[0]?.price || 0,
+      cost_price: data.variants[0]?.cost_price || 0,
+      min_price: data.variants[0]?.min_price || 0,
+      wholesale_price: data.variants[0]?.wholesale_price || 0,
       stock_unit: data.stockUnit || "PCS",
       status: data.status,
       sinhala_name: data.sinhalaName || "",
@@ -324,11 +323,15 @@ export function ProductForm({ product }: ProductFormProps) {
       variants: data.variants.map(v => ({
         id: v.id,
         sku: v.sku,
+        barcode: v.barcode || v.sku,
         color: colors.find(c => c.id === v.colorId)?.name || "",
         size: sizes.find(s => s.id === v.sizeId)?.value || "",
         color_id: v.colorId ? parseInt(v.colorId, 10) : undefined,
         size_id: v.sizeId ? parseInt(v.sizeId, 10) : undefined,
-        barcode: v.sku,
+        price: v.price,
+        cost_price: v.cost_price,
+        min_price: v.min_price,
+        wholesale_price: v.wholesale_price,
       })),
     };
     
@@ -676,98 +679,12 @@ export function ProductForm({ product }: ProductFormProps) {
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Pricing</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="sellingPrice"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Selling Price</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="costPrice"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Cost</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="minPrice"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Minimum Price</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="wholesalePrice"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Wholesale Price</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="price2"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Price 2</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="foreignPrice"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Foreign Price</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" placeholder="0.00" {...field} startIcon="Rs" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
                         <CardTitle>Variants</CardTitle>
-                        <CardDescription>Add variants like size or color. Each variant must have a unique SKU.</CardDescription>
+                        <CardDescription>Add variants like size or color. Each variant must have a unique SKU and its own price.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {fields.map((field, index) => (
-                           <div key={field.id} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end border p-4 rounded-md mb-4 relative">
+                           <div key={field.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-6 items-end border p-4 rounded-md mb-4 relative">
                                 <FormField
                                     control={form.control}
                                     name={`variants.${index}.sku`}
@@ -781,6 +698,20 @@ export function ProductForm({ product }: ProductFormProps) {
                                         </FormItem>
                                     )}
                                 />
+                                 <FormField
+                                    control={form.control}
+                                    name={`variants.${index}.barcode`}
+                                    render={({ field }) => (
+                                        <FormItem className="col-span-full sm:col-span-1">
+                                        <FormLabel>Barcode</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="123456789012" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <div></div>
                                 <FormField
                                     control={form.control}
                                     name={`variants.${index}.colorId`}
@@ -815,6 +746,52 @@ export function ProductForm({ product }: ProductFormProps) {
                                         </FormItem>
                                     )}
                                 />
+                                 <div></div>
+                                 {/* Pricing fields */}
+                                  <FormField
+                                    control={form.control}
+                                    name={`variants.${index}.price`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Selling Price</FormLabel>
+                                            <FormControl><Input type="number" placeholder="0.00" {...field} startIcon="Rs" /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                  <FormField
+                                    control={form.control}
+                                    name={`variants.${index}.cost_price`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Cost</FormLabel>
+                                            <FormControl><Input type="number" placeholder="0.00" {...field} startIcon="Rs" /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                 <FormField
+                                    control={form.control}
+                                    name={`variants.${index}.min_price`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Min Price</FormLabel>
+                                            <FormControl><Input type="number" placeholder="0.00" {...field} startIcon="Rs" /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name={`variants.${index}.wholesale_price`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Wholesale</FormLabel>
+                                            <FormControl><Input type="number" placeholder="0.00" {...field} startIcon="Rs" /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
                                {fields.length > 1 && (
                                 <Button type="button" variant="ghost" size="icon" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveVariant(index)}>
                                     <Trash2 className="h-4 w-4" />
@@ -827,7 +804,7 @@ export function ProductForm({ product }: ProductFormProps) {
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => append({ sku: "", colorId: "", sizeId: "" })}
+                            onClick={() => append({ sku: "", barcode: "", colorId: "", sizeId: "", price: 0 })}
                         >
                             Add another variant
                         </Button>

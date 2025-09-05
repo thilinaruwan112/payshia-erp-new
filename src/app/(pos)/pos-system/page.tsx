@@ -191,12 +191,12 @@ export default function POSPage() {
             );
             
             const flattenedProducts = locationFilteredProducts.flatMap(p => {
-                const mainImage = p.product_images.find(img => img.image_type === 'front img')?.img_url || p.product.product_image_url;
+                const mainProductFrontImage = p.product_images.find(img => img.image_type === 'front img')?.img_url || p.product.product_image_url;
 
                 if (!p.variants || p.variants.length === 0) {
                     return [{
                         ...p.product,
-                        product_image_url: mainImage,
+                        product_image_url: mainProductFrontImage,
                         price: parseFloat(p.product.price as any) || 0,
                         min_price: parseFloat(p.product.min_price as any) || 0,
                         wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
@@ -206,16 +206,23 @@ export default function POSPage() {
                     }];
                 }
 
-                return p.variants.map(v => ({
-                    ...p.product,
-                    product_image_url: mainImage,
-                    price: parseFloat(p.product.price as any) || 0,
-                    min_price: parseFloat(p.product.min_price as any) || 0,
-                    wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
-                    cost_price: parseFloat(p.product.cost_price as any) || 0,
-                    variant: v.variant,
-                    variantName: [p.product.name, v.variant.color, v.variant.size].filter(Boolean).join(' - '),
-                }));
+                return p.variants.map(v => {
+                    const variantFrontImage = v.images.find(img => img.image_type === 'front img')?.img_url;
+                    
+                    const variantAttributes = [v.variant.color, v.variant.size].filter(Boolean).join(' - ');
+                    const variantName = variantAttributes ? `${p.product.name} - ${variantAttributes}` : `${p.product.name} (${v.variant.sku})`;
+
+                    return {
+                        ...p.product,
+                        product_image_url: variantFrontImage || mainProductFrontImage,
+                        price: parseFloat(v.variant.price as any) || 0,
+                        min_price: parseFloat(v.variant.min_price as any) || 0,
+                        wholesale_price: parseFloat(v.variant.wholesale_price as any) || 0,
+                        cost_price: parseFloat(v.variant.cost_price as any) || 0,
+                        variant: v.variant,
+                        variantName,
+                    };
+                });
             });
             setPosProducts(flattenedProducts);
         } catch (error) {

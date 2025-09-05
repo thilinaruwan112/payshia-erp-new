@@ -38,7 +38,6 @@ const collectionFormSchema = z.object({
     message: "Collection title must be at least 3 characters.",
   }),
   description: z.string().optional(),
-  cover_image_url: z.string().optional(),
   status: z.enum(["active", "draft"]),
   products: z.array(z.string()).optional(),
 });
@@ -56,11 +55,16 @@ export function CollectionForm({ collection }: CollectionFormProps) {
   const { company_id } = useLocation();
   
   const [selectedProducts, setSelectedProducts] = React.useState<Product[]>(collection?.products || []);
+  const [coverImageFile, setCoverImageFile] = React.useState<File | null>(null);
+
+  const initialImageUrl = collection?.cover_image_url
+    ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${collection.cover_image_url}`
+    : null;
+  const [imagePreview, setImagePreview] = React.useState<string | null>(initialImageUrl);
 
   const defaultValues: Partial<CollectionFormValues> = {
     title: collection?.title || "",
     description: collection?.description || "",
-    cover_image_url: collection?.cover_image_url || "",
     status: collection?.status || "active",
     products: selectedProducts.map(p => p.id),
   };
@@ -72,6 +76,24 @@ export function CollectionForm({ collection }: CollectionFormProps) {
   });
 
   const { setValue } = form;
+  
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setCoverImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setCoverImageFile(null);
+    setImagePreview(null);
+  };
+
 
   async function onSubmit(data: CollectionFormValues) {
     if (!company_id) {
@@ -82,21 +104,19 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     const url = collection ? `https://server-erp.payshia.com/collections/${collection.id}` : 'https://server-erp.payshia.com/collections';
     const method = collection ? 'PUT' : 'POST';
 
-    const collectionPayload = {
-      title: data.title,
-      description: data.description,
-      cover_image_url: data.cover_image_url,
-      status: data.status,
-      company_id: company_id,
-    };
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('description', data.description || '');
+    formData.append('status', data.status);
+    formData.append('company_id', String(company_id));
+    if (coverImageFile) {
+        formData.append('image', coverImageFile);
+    }
     
     try {
         const response = await fetch(url, {
             method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(collectionPayload),
+            body: formData,
         });
 
         const result = await response.json();
@@ -145,7 +165,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     }
   }
 
-  const handleProductsSelected = (newlySelected: (Product & { variant: any; variantName: any; })[]) => {
+  const handleProductsSelected = (newlySelected: (Product & { variant: any; variantName: string; })[]) => {
     const updatedProducts = [...selectedProducts];
     newlySelected.forEach(newProduct => {
         // Use product id for uniqueness check
@@ -267,7 +287,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                            {selectedProducts.map(product => (
                              <div key={product.id} className="relative group">
                                 <Image
-                                    src={product.product_image_url || "https://placehold.co/150x150.png"}
+                                    src={product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${product.product_image_url}` : "https://placehold.co/150x150.png"}
                                     alt={product.name}
                                     width={150}
                                     height={150}
@@ -275,6 +295,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                                     data-ai-hint="product photo"
                                 />
                                 <Button 
+                                    type="button"
                                     variant="destructive" 
                                     size="icon"
                                     className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -330,10 +351,10 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center justify-center gap-4">
-                  {form.watch('cover_image_url') ? (
+                  {imagePreview ? (
                     <div className="relative">
                        <Image
-                        src="https://placehold.co/200x200.png"
+                        src={imagePreview}
                         alt="Cover image preview"
                         width={200}
                         height={200}
@@ -341,25 +362,24 @@ export function CollectionForm({ collection }: CollectionFormProps) {
                         data-ai-hint="collection cover photo"
                       />
                        <Button 
+                          type="button"
                           variant="destructive" 
                           size="icon"
                           className="absolute top-1 right-1 h-6 w-6"
-                          onClick={() => form.setValue('cover_image_url', '')}
+                          onClick={removeImage}
                       >
                           <X className="h-4 w-4" />
                       </Button>
                     </div>
                   ) : (
-                    <div className="w-full border-2 border-dashed border-muted rounded-lg p-8 text-center hover:border-primary/50 transition-colors">
-                      <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
-                      <p className="mt-4 text-sm text-muted-foreground">
-                        No image uploaded
-                      </p>
-                    </div>
+                     <label htmlFor="cover-image-upload" className="w-full border-2 border-dashed border-muted rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                        <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <p className="mt-4 text-sm text-muted-foreground">
+                            Click to upload image
+                        </p>
+                    </label>
                   )}
-                  <Button variant="outline" type="button" className="w-full">
-                    Upload Image
-                  </Button>
+                  <Input id="cover-image-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
                 </CardContent>
               </Card>
           </div>
@@ -368,5 +388,3 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     </Form>
   );
 }
-
-    

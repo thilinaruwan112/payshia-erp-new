@@ -182,56 +182,61 @@ export default function CollectionsPage() {
                     </TableRow>
                  ))
               ) : (
-                collections.map((collection) => (
-                    <TableRow key={collection.id}>
-                    <TableCell className="hidden sm:table-cell">
-                        <Image
-                            alt={collection.title}
-                            className="aspect-square rounded-md object-cover"
-                            height="64"
-                            src={`https://placehold.co/64x64.png`}
-                            width="64"
-                            data-ai-hint="collection photo"
-                        />
-                    </TableCell>
-                    <TableCell className="font-medium">{collection.title}</TableCell>
-                    <TableCell className="hidden md:table-cell truncate max-w-sm">{collection.description}</TableCell>
-                    <TableCell className="hidden sm:table-cell text-center">{collection.productCount}</TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                        <Badge variant={collection.status === 'active' ? 'default' : 'secondary'} className={cn(
-                            collection.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : ''
-                        )}>
-                            {collection.status}
-                        </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                            <Link href={`/products/collections/${collection.id}`}>Edit</Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onSelect={() => {
-                                  setSelectedCollection(collection);
-                                  setIsConfirmOpen(true);
-                              }}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                    </TableRow>
-                ))
+                collections.map((collection) => {
+                    const imageUrl = collection.cover_image_url
+                        ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${collection.cover_image_url}`
+                        : `https://placehold.co/64x64.png`;
+                    return (
+                        <TableRow key={collection.id}>
+                        <TableCell className="hidden sm:table-cell">
+                            <Image
+                                alt={collection.title}
+                                className="aspect-square rounded-md object-cover"
+                                height="64"
+                                src={imageUrl}
+                                width="64"
+                                data-ai-hint="collection photo"
+                            />
+                        </TableCell>
+                        <TableCell className="font-medium">{collection.title}</TableCell>
+                        <TableCell className="hidden md:table-cell truncate max-w-sm">{collection.description}</TableCell>
+                        <TableCell className="hidden sm:table-cell text-center">{collection.productCount}</TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                            <Badge variant={collection.status === 'active' ? 'default' : 'secondary'} className={cn(
+                                collection.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : ''
+                            )}>
+                                {collection.status}
+                            </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="icon" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem asChild>
+                                <Link href={`/products/collections/${collection.id}`}>Edit</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-destructive"
+                                  onSelect={() => {
+                                      setSelectedCollection(collection);
+                                      setIsConfirmOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                        </TableRow>
+                    )
+                })
               )}
             </TableBody>
           </Table>

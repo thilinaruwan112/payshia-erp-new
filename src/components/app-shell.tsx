@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { type ReactNode, useState, useEffect } from 'react';
@@ -60,6 +59,8 @@ import {
   LayoutList,
   UserCog,
   Wrench,
+  Search,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -84,7 +85,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-} from '@/components/ui/dropdown-menu';
+} from './ui/dropdown-menu';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import {
@@ -125,7 +126,13 @@ const navItems = [
     subItems: [
       { href: '/service-center', label: 'Job Dashboard', icon: LayoutDashboard },
       { href: '/service-center/jobs/new', label: 'New Job', icon: PlusCircle },
+      { href: '/service-center/find', label: 'Find Job', icon: Search },
     ],
+  },
+   {
+    href: '/service-center/warranty',
+    label: 'Warranty',
+    icon: ShieldCheck,
   },
   {
     label: 'CRM',
@@ -147,6 +154,7 @@ const navItems = [
       { href: '/products/categories', label: 'Categories', icon: LayoutList },
       { href: '/products/collections', label: 'Collections', icon: Archive },
       { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
+      { href: '/products/models', label: 'Models', icon: ShoppingBag },
       { href: '/products/colors', label: 'Colors', icon: SwatchBook },
       { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
       { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
@@ -224,7 +232,7 @@ const navItems = [
     icon: Settings,
     subItems: [
       { href: '/settings/profile', label: 'Profile', icon: Users },
-      { href: '/settings/users', label: 'Users', icon: Users },
+      { href: '/settings/users', label: 'Users', icon: UserCog },
       { href: '/settings/roles', label: 'Roles & Permissions', icon: UserCog },
       { href: '/locations', label: 'Locations', icon: Warehouse },
       { href: '/settings/tables', label: 'Dine-in Tables', icon: Utensils },
@@ -477,7 +485,7 @@ const isPathActive = (pathname: string, href?: string, subItems?: any[]) => {
   }
   if (!href) return false;
   
-  const exactMatchPaths = ['/dashboard', '/products', '/suppliers', '/reports', '/pos-system', '/help'];
+  const exactMatchPaths = ['/dashboard', '/products', '/suppliers', '/reports', '/pos-system', '/help', '/service-center/warranty'];
   if (exactMatchPaths.includes(href)) {
     return pathname === href;
   }

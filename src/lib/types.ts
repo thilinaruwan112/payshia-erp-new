@@ -49,6 +49,10 @@ export type ProductVariant = {
   product_id?: string;
   barcode?: string | null;
   stock?: number;
+  price?: number | string;
+  cost_price?: number | string;
+  min_price?: number | string;
+  wholesale_price?: number | string;
 };
 
 export type Product = {
@@ -59,7 +63,7 @@ export type Product = {
   category_id?: string;
   brand_id?: string;
   variants: ProductVariant[];
-  price: number | string;
+  price?: number | string;
   status: 'active' | 'draft';
   stock_unit?: string;
   costPrice?: number | string;
@@ -442,6 +446,12 @@ export type Brand = {
   description?: string;
 };
 
+export type Model = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
 export type Color = {
     id: string;
     name: string;
@@ -558,4 +568,17 @@ export type Company = {
   website: string | null;
   created_by: string;
   created_at: string;
+}
+
+export type Warranty = {
+    id: string;
+    customerId: string;
+    customerName: string;
+    productId: string;
+    productName: string;
+    serialNumber: string;
+    purchaseDate: string;
+    expiryDate: string;
+    status: 'Active' | 'Expired' | 'Void';
+    coverageDetails?: string;
 }
