@@ -367,7 +367,7 @@ export function OrderPanel({
             cost_price: item.product.costPrice || 0,
             is_active: 1,
             hold_status: 0,
-            printed_status: 1,
+            printed_status: 0,
             product_variant_id: parseInt(item.product.variant.id, 10),
             company_id: company_id,
         })),
@@ -647,5 +647,3 @@ export function OrderPanel({
     </div>
   );
 }
-
-    
