@@ -298,7 +298,7 @@ export function OrderPanel({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
-  onHoldAndKitchen,
+  onHoldAndKitchen: onHoldAndKitchenProp,
   isDrawer,
   onClose,
   setDiscount,
@@ -374,6 +374,85 @@ export function OrderPanel({
     };
   };
 
+  const handleHoldAndKitchen = async () => {
+    if (!order || !cashierName || !company_id || !currentLocation) return;
+    if (cart.length === 0) {
+      toast({
+        variant: 'default',
+        title: 'Cannot Process Empty Order',
+        description: 'Add items to the cart first.',
+      });
+      return;
+    }
+
+    const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
+
+    if (order.originalInvoiceNumber) {
+        // This is an existing held order, so we update it.
+        const updatePayload = {
+            grand_total: orderTotals.total,
+            discount_amount: totalDiscount,
+            service_charge: orderTotals.serviceCharge,
+            remark: `${orderType} order (updated)`,
+            table_id: availableTables.find(t => t.table_name === tableName)?.id ? parseInt(availableTables.find(t => t.table_name === tableName)!.id, 10) : 0,
+            order_ready_status: 1,
+            items: cart.map(item => ({
+                user_id: parseInt(cashierName, 10), // Assuming cashierName can be parsed to ID
+                product_id: parseInt(item.product.id, 10),
+                item_price: item.product.price,
+                item_discount: item.itemDiscount || 0,
+                quantity: item.quantity,
+                customer_id: parseInt(customer.customer_id, 10),
+                table_id: availableTables.find(t => t.table_name === tableName)?.id ? parseInt(availableTables.find(t => t.table_name === tableName)!.id, 10) : 0,
+                cost_price: item.product.costPrice || 0,
+                product_variant_id: parseInt(item.product.variant.id, 10),
+            })),
+        };
+
+        try {
+            const response = await fetch(`https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${order.originalInvoiceNumber}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatePayload),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Failed to update held order.');
+            
+            toast({ title: 'Order Updated!', description: 'Held order has been updated.', icon: <ChefHat className="h-6 w-6 text-green-500" /> });
+             // Print KOT only for newly added items
+            window.open(`/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
+            onClearCart(orderId);
+        } catch (error) {
+             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+             toast({ variant: 'destructive', title: 'Error Updating Order', description: errorMessage });
+        }
+
+    } else {
+        // This is a new order, create a new held invoice.
+        const payload = createInvoicePayload('2');
+        if (!payload) return;
+
+        try {
+          const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.message || 'Failed to send to kitchen.');
+          
+          toast({ title: 'KOT Sent!', description: `Order sent to the kitchen.`, icon: <ChefHat className="h-6 w-6 text-green-500" /> });
+          
+          window.open(`/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
+          
+          onClearCart(orderId);
+        } catch (error) {
+           const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+           toast({ variant: 'destructive', title: 'Error Sending KOT', description: errorMessage });
+        }
+    }
+  };
+
   const handleSuccessfulPayment = async (paymentMethod: string, tenderedAmount: number) => {
     toast({
       title: 'Payment Processing...',
@@ -401,7 +480,7 @@ export function OrderPanel({
             description: `Invoice #${result.invoice_number} created.`
         });
         
-        window.open(`/sales-print/invoices/${result.invoice_id}/print?company_id=${company_id}`, '_blank');
+        window.open(`/pos/receipt/${result.receipt.id}`, '_blank');
         
         setPaymentOpen(false);
         onClearCart(orderId);
@@ -421,7 +500,7 @@ export function OrderPanel({
   }
 
   const handleGuestReceipt = () => {
-    if (!order || order.cart.length === 0) {
+    if (!order || cart.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Cart is empty',
@@ -434,7 +513,7 @@ export function OrderPanel({
         orderName: order.name,
         cashierName: cashierName,
         customerName: order.customer.name,
-        items: order.cart.map(item => ({ 
+        items: cart.map(item => ({ 
             name: item.product.variantName, 
             quantity: item.quantity,
             price: item.product.price,
