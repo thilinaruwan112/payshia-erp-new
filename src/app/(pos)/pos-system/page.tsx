@@ -390,25 +390,26 @@ export default function POSPage() {
     }
 
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
-    const costValue = currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0);
   
     // UPDATE LOGIC (PUT)
     if (currentOrder.originalInvoiceNumber) {
+      const itemsToUpdate = currentOrder.cart.filter(item => !item.originalItemId);
+
       const updatePayload = {
         grand_total: orderTotals.total,
         discount_amount: totalDiscount,
         service_charge: orderTotals.serviceCharge,
         remark: `${currentOrder.orderType} order (updated)`,
-        table_id: availableTables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(availableTables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
+        table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
         order_ready_status: 1,
-        items: currentOrder.cart.map(item => ({
-          user_id: parseInt(currentCashier.id, 10),
+        items: itemsToUpdate.map(item => ({
+          user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
           product_id: parseInt(item.product.id, 10),
           item_price: item.product.price,
           item_discount: item.itemDiscount || 0,
           quantity: item.quantity,
           customer_id: parseInt(currentOrder.customer.customer_id, 10),
-          table_id: availableTables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(availableTables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
+          table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
           cost_price: item.product.costPrice || 0,
           product_variant_id: parseInt(item.product.variant.id, 10),
         })),
@@ -454,13 +455,13 @@ export default function POSPage() {
         created_by: currentCashier.name, 
         is_active: 1, 
         steward_id: currentOrder.steward?.id || "N/A",
-        cost_value: costValue, 
+        cost_value: currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0),
         remark: `${currentOrder.orderType} order`, 
         ref_hold: "direct",
         company_id: String(company_id),
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
-            user_id: parseInt(currentCashier.id, 10),
+            user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
             product_id: parseInt(item.product.id, 10), 
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0, 
