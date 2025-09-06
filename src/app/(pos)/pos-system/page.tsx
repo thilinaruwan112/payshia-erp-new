@@ -394,60 +394,60 @@ export default function POSPage() {
   
     // UPDATE LOGIC (PUT)
     if (currentOrder.originalInvoiceNumber) {
-       const itemsToUpdatePayload = currentOrder.cart
-        .map(item => {
-            const newItemQty = item.quantity;
-            const originalQty = item.originalQuantity || 0;
-            const qtyToAdd = newItemQty - originalQty;
+        const itemsToUpdatePayload = currentOrder.cart
+            .map(item => {
+                const newItemQty = item.quantity;
+                const originalQty = item.originalQuantity || 0;
+                const qtyToAdd = newItemQty - originalQty;
+                
+                if (qtyToAdd > 0) {
+                    return {
+                        user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
+                        product_id: parseInt(item.product.id, 10),
+                        item_price: item.product.price,
+                        item_discount: item.itemDiscount || 0,
+                        quantity: qtyToAdd,
+                        customer_id: parseInt(currentOrder.customer.customer_id, 10),
+                        table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
+                        cost_price: item.product.costPrice || 0,
+                        product_variant_id: parseInt(item.product.variant.id, 10),
+                    };
+                }
+                return null;
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
 
-            if (qtyToAdd > 0) {
-                return {
-                    user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
-                    product_id: parseInt(item.product.id, 10),
-                    item_price: item.product.price,
-                    item_discount: 0, // Discounts on new items might need separate logic
-                    quantity: qtyToAdd,
-                    customer_id: parseInt(currentOrder.customer.customer_id, 10),
-                    table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
-                    cost_price: item.product.costPrice || 0,
-                    product_variant_id: parseInt(item.product.variant.id, 10),
-                };
-            }
-            return null;
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null);
-
-      const updatePayload = {
-        grand_total: orderTotals.total,
-        discount_amount: totalDiscount,
-        service_charge: orderTotals.serviceCharge,
-        remark: `${currentOrder.orderType} order (updated)`,
-        table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
-        order_ready_status: 1,
-        items: itemsToUpdatePayload,
-      };
+        const updatePayload = {
+            grand_total: orderTotals.total,
+            discount_amount: totalDiscount,
+            service_charge: orderTotals.serviceCharge,
+            remark: `${currentOrder.orderType} order (updated)`,
+            table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
+            order_ready_status: 1,
+            items: itemsToUpdatePayload,
+        };
       
-      const url = `https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${currentOrder.originalInvoiceNumber}`;
+        const url = `https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${currentOrder.originalInvoiceNumber}`;
   
-      try {
-        const response = await fetch(url, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatePayload),
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.message || 'Failed to update held invoice.');
-  
-        toast({ title: 'Order Updated!', description: `Held order ${currentOrder.originalInvoiceNumber} has been updated.` });
-        if(itemsToUpdatePayload.length > 0) {
-            window.open(`/pos/kot/${currentOrder.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
+        try {
+            const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatePayload),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Failed to update held invoice.');
+    
+            toast({ title: 'Order Updated!', description: `Held order ${currentOrder.originalInvoiceNumber} has been updated.` });
+            if(itemsToUpdatePayload.length > 0) {
+                window.open(`/pos/kot/${currentOrder.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
+            }
+            onClearCart(currentOrderId!);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast({ variant: 'destructive', title: 'Error Updating Order', description: errorMessage });
         }
-        onClearCart(orderId);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        toast({ variant: 'destructive', title: 'Error Updating Order', description: errorMessage });
-      }
-      return;
+        return;
     }
   
     // CREATE LOGIC (POST)
