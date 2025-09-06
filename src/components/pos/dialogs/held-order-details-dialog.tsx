@@ -66,92 +66,96 @@ export function HeldOrderDetailsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl flex flex-col h-[80vh]">
         <DialogHeader>
           <DialogTitle>Held Orders</DialogTitle>
           <DialogDescription>
             Select a held order to continue.
           </DialogDescription>
         </DialogHeader>
-        <div className="py-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin" />
+        <div className="flex-1 relative -mx-6 px-6">
+          <ScrollArea className="absolute inset-0 h-full w-full">
+            <div className="px-1 py-4">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : heldOrders.length > 0 ? (
+                <>
+                  {/* Desktop Table View */}
+                  <Table className="hidden md:table">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Invoice #</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {heldOrders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell>{order.invoice_number}</TableCell>
+                          <TableCell>
+                            {customers.find((c) => c.customer_id === order.customer_code)?.name ||
+                              'Walk-in'}
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(order.invoice_date), 'dd/MM/yy')}
+                          </TableCell>
+                          <TableCell className="text-right font-mono">
+                            ${parseFloat(order.grand_total).toFixed(2)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" onClick={() => onLoadOrder(order)}>
+                              Load
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {/* Mobile Card View */}
+                  <div className="space-y-4 md:hidden p-1">
+                    {heldOrders.map((order) => (
+                        <Card key={order.id}>
+                          <CardHeader>
+                            <CardTitle className="text-base">{order.invoice_number}</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Customer</span>
+                                <span>{customers.find((c) => c.customer_id === order.customer_code)?.name || 'Walk-in'}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Date</span>
+                                <span>{format(new Date(order.invoice_date), 'dd/MM/yy')}</span>
+                              </div>
+                              <Separator />
+                              <div className="flex justify-between font-bold">
+                                <span>Amount</span>
+                                <span className="font-mono">${parseFloat(order.grand_total).toFixed(2)}</span>
+                              </div>
+                          </CardContent>
+                          <CardFooter>
+                            <Button className="w-full" size="sm" onClick={() => onLoadOrder(order)}>
+                                Load Order
+                              </Button>
+                          </CardFooter>
+                        </Card>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <p className="text-center text-muted-foreground pt-10">
+                  No orders are currently on hold.
+                </p>
+              )}
             </div>
-          ) : heldOrders.length > 0 ? (
-            <ScrollArea className="h-96">
-              {/* Desktop Table View */}
-              <Table className="hidden md:table">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Invoice #</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {heldOrders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell>{order.invoice_number}</TableCell>
-                      <TableCell>
-                        {customers.find((c) => c.customer_id === order.customer_code)?.name ||
-                          'Walk-in'}
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(order.invoice_date), 'dd/MM/yy')}
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        ${parseFloat(order.grand_total).toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" onClick={() => onLoadOrder(order)}>
-                          Load
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {/* Mobile Card View */}
-               <div className="space-y-4 md:hidden">
-                 {heldOrders.map((order) => (
-                    <Card key={order.id}>
-                      <CardHeader>
-                        <CardTitle className="text-base">{order.invoice_number}</CardTitle>
-                      </CardHeader>
-                       <CardContent className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Customer</span>
-                            <span>{customers.find((c) => c.customer_id === order.customer_code)?.name || 'Walk-in'}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Date</span>
-                            <span>{format(new Date(order.invoice_date), 'dd/MM/yy')}</span>
-                          </div>
-                           <Separator />
-                           <div className="flex justify-between font-bold">
-                            <span>Amount</span>
-                            <span className="font-mono">${parseFloat(order.grand_total).toFixed(2)}</span>
-                          </div>
-                       </CardContent>
-                       <CardFooter>
-                         <Button className="w-full" size="sm" onClick={() => onLoadOrder(order)}>
-                            Load Order
-                          </Button>
-                       </CardFooter>
-                    </Card>
-                 ))}
-               </div>
-            </ScrollArea>
-          ) : (
-            <p className="text-center text-muted-foreground py-10">
-              No orders are currently on hold.
-            </p>
-          )}
+          </ScrollArea>
         </div>
-        <DialogFooter>
+        <DialogFooter className="pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>

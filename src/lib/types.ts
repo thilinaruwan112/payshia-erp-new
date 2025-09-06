@@ -1,5 +1,4 @@
 
-
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -73,6 +72,7 @@ export type Product = {
   price2?: number;
   foreignPrice?: number;
   product_image_url?: string;
+  frontImageUrl?: string | null;
   print_name?: string;
   sinhala_name?: string;
   tamil_name?: string | null;

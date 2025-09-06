@@ -367,7 +367,7 @@ export function OrderPanel({
             cost_price: item.product.costPrice || 0,
             is_active: 1,
             hold_status: 0,
-            printed_status: 1,
+            printed_status: 0,
             product_variant_id: parseInt(item.product.variant.id, 10),
             company_id: company_id,
         })),
@@ -529,7 +529,7 @@ export function OrderPanel({
               {cart.map((item) => (
                 <div key={item.uniqueId} className="p-4 flex gap-4">
                   <Image
-                    src={`https://placehold.co/64x64.png`}
+                    src={item.product.frontImageUrl || `https://placehold.co/64x64.png`}
                     alt={item.product.name}
                     width={64}
                     height={64}
