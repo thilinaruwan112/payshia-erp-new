@@ -298,7 +298,7 @@ export function OrderPanel({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
-  onHoldAndKitchen: onHoldAndKitchenProp,
+  onHoldAndKitchen,
   isDrawer,
   onClose,
   setDiscount,
@@ -356,7 +356,7 @@ export function OrderPanel({
         ref_hold: status === '1' ? refHoldValue : null,
         company_id: company_id,
         items: cart.map(item => ({
-            user_id: 1, // Default user_id as per example
+            user_id: parseInt(steward?.id || '1', 10), // Default user_id as per example
             product_id: parseInt(item.product.id, 10),
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0,
@@ -369,89 +369,9 @@ export function OrderPanel({
             printed_status: 0,
             product_variant_id: parseInt(item.product.variant.id, 10),
             company_id: company_id,
-        })),
+        }))
     };
   };
-
-  const handleHoldAndKitchen = async () => {
-    if (!order || !cashierName || !company_id || !currentLocation) return;
-    if (cart.length === 0) {
-      toast({
-        variant: 'default',
-        title: 'Cannot Process Empty Order',
-        description: 'Add items to the cart first.',
-      });
-      return;
-    }
-  
-    const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
-    const costValue = cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0);
-  
-    // UPDATE LOGIC (PUT)
-    if (order.originalInvoiceNumber) {
-      const updatePayload = {
-        grand_total: orderTotals.total,
-        discount_amount: totalDiscount,
-        service_charge: orderTotals.serviceCharge,
-        remark: `${order.orderType} order (updated)`,
-        table_id: availableTables.find(t => t.table_name === order.tableName)?.id ? parseInt(availableTables.find(t => t.table_name === order.tableName)!.id, 10) : 0,
-        order_ready_status: 1,
-        items: cart.map(item => ({
-          user_id: parseInt(cashierName, 10), // Assuming cashierName can be parsed to an ID
-          product_id: parseInt(item.product.id, 10),
-          item_price: item.product.price,
-          item_discount: item.itemDiscount || 0,
-          quantity: item.quantity,
-          customer_id: parseInt(order.customer.customer_id, 10),
-          table_id: availableTables.find(t => t.table_name === order.tableName)?.id ? parseInt(availableTables.find(t => t.table_name === order.tableName)!.id, 10) : 0,
-          cost_price: item.product.costPrice || 0,
-          product_variant_id: parseInt(item.product.variant.id, 10),
-        })),
-      };
-      
-      const url = `https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${order.originalInvoiceNumber}`;
-  
-      try {
-        const response = await fetch(url, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatePayload),
-        });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.message || 'Failed to update held invoice.');
-  
-        toast({ title: 'Order Updated!', description: `Held order ${order.originalInvoiceNumber} has been updated.` });
-        window.open(`/pos/kot/${order.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
-        onClearCart(orderId);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        toast({ variant: 'destructive', title: 'Error Updating Order', description: errorMessage });
-      }
-      return;
-    }
-  
-    // CREATE LOGIC (POST)
-    const payload = createInvoicePayload('2');
-    if (!payload) return;
-  
-    try {
-      const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.message || 'Failed to send to kitchen.');
-  
-      toast({ title: 'KOT Sent!', description: 'Order sent to the kitchen.', icon: <ChefHat className="h-6 w-6 text-green-500" /> });
-      window.open(`/pos/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
-      onClearCart(orderId);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      toast({ variant: 'destructive', title: 'Error Sending KOT', description: errorMessage });
-    }
-  };
-  
 
   const handleSuccessfulPayment = async (paymentMethod: string, tenderedAmount: number) => {
     toast({
@@ -608,7 +528,7 @@ export function OrderPanel({
               {cart.map((item) => (
                 <div key={item.uniqueId} className="p-4 flex gap-4">
                   <Image
-                    src={item.product.frontImageUrl || `https://placehold.co/64x64.png`}
+                    src={item.product.imageUrl || `https://placehold.co/64x64.png`}
                     alt={item.product.name}
                     width={64}
                     height={64}
@@ -698,7 +618,7 @@ export function OrderPanel({
               </DialogTrigger>
               <DiscountDialog setDiscount={setDiscount} onClose={() => setDiscountOpen(false)} />
             </Dialog>
-             <Button variant="outline" onClick={handleHoldAndKitchen} disabled={cart.length === 0} className="h-12">
+             <Button variant="outline" onClick={onHoldAndKitchen} disabled={cart.length === 0} className="h-12">
                 <Notebook className="mr-2 h-4 w-4" /> Hold
             </Button>
              <Button variant="secondary" onClick={handleGuestReceipt} disabled={cart.length === 0} className="h-12">

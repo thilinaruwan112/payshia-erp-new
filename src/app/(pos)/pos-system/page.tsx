@@ -565,6 +565,7 @@ export default function POSPage() {
             quantity: parseFloat(String(item.quantity)),
             itemDiscount: parseFloat(String(item.item_discount)),
             batch: firstAvailableBatch,
+            originalItemId: item.id,
         };
     });
 

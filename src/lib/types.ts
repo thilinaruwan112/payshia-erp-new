@@ -1,4 +1,5 @@
 
+
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -477,10 +478,11 @@ export type ActiveOrder = {
 
 export type CartItem = {
   uniqueId?: string;
-  product: Product & { variant: ProductVariant; variantName: string };
+  product: Product & { variant: ProductVariant; variantName: string, imageUrl?: string };
   quantity: number;
   itemDiscount?: number;
   batch: StockInfo;
+  originalItemId?: string; // Add this to track items loaded from a held invoice
 };
 
 export type StockInfo = {
