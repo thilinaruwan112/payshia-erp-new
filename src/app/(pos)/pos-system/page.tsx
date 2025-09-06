@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -393,7 +394,28 @@ export default function POSPage() {
   
     // UPDATE LOGIC (PUT)
     if (currentOrder.originalInvoiceNumber) {
-      const itemsToUpdate = currentOrder.cart.filter(item => !item.originalItemId);
+       const itemsToUpdatePayload = currentOrder.cart
+        .map(item => {
+            const newItemQty = item.quantity;
+            const originalQty = item.originalQuantity || 0;
+            const qtyToAdd = newItemQty - originalQty;
+
+            if (qtyToAdd > 0) {
+                return {
+                    user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
+                    product_id: parseInt(item.product.id, 10),
+                    item_price: item.product.price,
+                    item_discount: 0, // Discounts on new items might need separate logic
+                    quantity: qtyToAdd,
+                    customer_id: parseInt(currentOrder.customer.customer_id, 10),
+                    table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
+                    cost_price: item.product.costPrice || 0,
+                    product_variant_id: parseInt(item.product.variant.id, 10),
+                };
+            }
+            return null;
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
 
       const updatePayload = {
         grand_total: orderTotals.total,
@@ -402,17 +424,7 @@ export default function POSPage() {
         remark: `${currentOrder.orderType} order (updated)`,
         table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
         order_ready_status: 1,
-        items: itemsToUpdate.map(item => ({
-          user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
-          product_id: parseInt(item.product.id, 10),
-          item_price: item.product.price,
-          item_discount: item.itemDiscount || 0,
-          quantity: item.quantity,
-          customer_id: parseInt(currentOrder.customer.customer_id, 10),
-          table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
-          cost_price: item.product.costPrice || 0,
-          product_variant_id: parseInt(item.product.variant.id, 10),
-        })),
+        items: itemsToUpdatePayload,
       };
       
       const url = `https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${currentOrder.originalInvoiceNumber}`;
@@ -427,7 +439,9 @@ export default function POSPage() {
         if (!response.ok) throw new Error(result.message || 'Failed to update held invoice.');
   
         toast({ title: 'Order Updated!', description: `Held order ${currentOrder.originalInvoiceNumber} has been updated.` });
-        window.open(`/pos/kot/${currentOrder.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
+        if(itemsToUpdatePayload.length > 0) {
+            window.open(`/pos/kot/${currentOrder.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
+        }
         onClearCart(orderId);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -506,26 +520,29 @@ export default function POSPage() {
       setSelectedProduct(null);
       return;
     }
-    const newCartItem: CartItem = { 
-        uniqueId: `${product.variant.id}-${batch.patch_code}-${Date.now()}`, 
-        product: {...product, imageUrl }, 
-        quantity, 
-        itemDiscount: discount, 
-        batch 
-    };
+    
     setActiveOrders((prevOrders) =>
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
+        
         const existingItemIndex = order.cart.findIndex(item => item.product.variant.id === product.variant.id && item.batch.patch_code === batch.patch_code);
         let newCart;
+        
         if (existingItemIndex > -1) {
             newCart = [...order.cart];
             newCart[existingItemIndex] = {
                 ...newCart[existingItemIndex],
                 quantity: newCart[existingItemIndex].quantity + quantity,
-                itemDiscount: (newCart[existingItemIndex].itemDiscount || 0) + discount
+                itemDiscount: (newCart[existingItemIndex].itemDiscount || 0) + discount,
             };
         } else {
+            const newCartItem: CartItem = { 
+                uniqueId: `${product.variant.id}-${batch.patch_code}-${Date.now()}`, 
+                product: {...product, imageUrl }, 
+                quantity, 
+                itemDiscount: discount, 
+                batch 
+            };
             newCart = [...order.cart, newCartItem];
         }
         return { ...order, cart: newCart };
@@ -547,26 +564,27 @@ export default function POSPage() {
         const product = findPosProduct(item.product_variant_id);
         if (!product) return null;
 
-        // Fetch stock for this specific item to get batch info.
-        // This is a simplification; a real scenario might need more robust batch tracking.
         if (!currentLocation || !company_id) return null;
-        const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}&location_id=${currentLocation.location_id}`);
-        if (!response.ok) return null;
-        const stockData = await response.json();
-        const firstAvailableBatch = stockData.grouped_by_expire_date.find((b: StockInfo) => parseFloat(b.stock_balance) > 0);
+        // The batch for a previously held item is not directly available, so we create a placeholder.
+        // The key is to know this item came from a held order to track quantity changes.
+        const placeholderBatch: StockInfo = {
+            product_id: item.product_id.toString(),
+            product_variant_id: item.product_variant_id || item.product_id.toString(),
+            patch_code: 'HELD', // Use a placeholder batch code
+            expire_date: 'N/A',
+            total_in: '0',
+            total_out: '0',
+            stock_balance: '9999', // Assume enough stock to load, validation is on adding more
+        };
         
-        if (!firstAvailableBatch) {
-             toast({ variant: 'destructive', title: 'Stock Error', description: `No available stock/batch for ${product.variantName}. Cannot load item.` });
-            return null;
-        }
-
         return {
-            uniqueId: `${product.variant.id}-${firstAvailableBatch.patch_code}-${Date.now()}`,
+            uniqueId: `${product.variant.id}-HELD-${item.id}`,
             product: product,
             quantity: parseFloat(String(item.quantity)),
             itemDiscount: parseFloat(String(item.item_discount)),
-            batch: firstAvailableBatch,
+            batch: placeholderBatch,
             originalItemId: item.id,
+            originalQuantity: parseFloat(String(item.quantity)),
         };
     });
 

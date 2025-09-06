@@ -73,7 +73,6 @@ export type Product = {
   price2?: number;
   foreignPrice?: number;
   product_image_url?: string;
-  frontImageUrl?: string | null;
   print_name?: string;
   sinhala_name?: string;
   tamil_name?: string | null;
@@ -478,11 +477,12 @@ export type ActiveOrder = {
 
 export type CartItem = {
   uniqueId?: string;
-  product: Product & { variant: ProductVariant; variantName: string, imageUrl?: string };
+  product: Product & { variant: ProductVariant; variantName: string; imageUrl?: string };
   quantity: number;
   itemDiscount?: number;
   batch: StockInfo;
-  originalItemId?: string; // Add this to track items loaded from a held invoice
+  originalItemId?: string;
+  originalQuantity?: number;
 };
 
 export type StockInfo = {
