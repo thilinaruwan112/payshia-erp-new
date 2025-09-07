@@ -164,6 +164,24 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     }
   };
 
+  const handleDeleteImage = async (imageId: string) => {
+    try {
+        const response = await fetch(`https://server-erp.payshia.com/product-images/${imageId}`, {
+            method: 'DELETE',
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete image');
+        }
+        setUploadedImages(prev => prev.filter(img => img.id !== imageId));
+        toast({ title: 'Image Deleted' });
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+    }
+  };
+
+
   const hasVariants = productVariants && productVariants.length > 0;
   const isUploadDisabled = isUploading || !fileToUpload || !selectedVariantId;
 
@@ -255,6 +273,14 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
                         className="w-full h-full object-cover"
                       />
                     </div>
+                    <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDeleteImage(image.id)}
+                    >
+                        <X className="h-4 w-4" />
+                    </Button>
                     <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs text-center p-1 rounded-b-md">
                         {image.image_type}
                     </div>

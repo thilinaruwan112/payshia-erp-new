@@ -34,7 +34,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, UploadCloud, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import type { Product, Supplier, ProductVariant, ProductImage } from "@/lib/types";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
@@ -127,7 +127,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const { company_id, availableLocations } = useLocation();
 
-  const fetchProductImages = async () => {
+  const fetchProductImages = useCallback(async () => {
     if (!product || !company_id) return;
     try {
         let allImages: ProductImage[] = [];
@@ -142,17 +142,18 @@ export function ProductForm({ product }: ProductFormProps) {
                 }
             }
         }
-        setProductImages(allImages);
+        const uniqueImages = Array.from(new Map(allImages.map(img => [img.id, img])).values());
+        setProductImages(uniqueImages);
     } catch (error) {
         toast({ variant: "destructive", title: "Error", description: "Could not load product images." });
     }
-  }
+  }, [product, company_id, toast]);
 
   useEffect(() => {
     if (product && company_id) {
       fetchProductImages();
     }
-  }, [product, company_id]);
+  }, [product, company_id, fetchProductImages]);
 
 
   useEffect(() => {
