@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -335,7 +334,7 @@ export function OrderPanel({
         return;
     }
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
-    const costValue = cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
+    const costValue = cart.reduce((acc, item) => acc + ((item.product.cost_price as number || 0) * item.quantity), 0);
     const refHoldValue = order.originalInvoiceNumber ? order.originalInvoiceNumber : "direct";
 
     const payload = {
@@ -369,7 +368,7 @@ export function OrderPanel({
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
             table_id: 0,
-            cost_price: item.product.costPrice || 0,
+            cost_price: item.product.cost_price || 0,
             is_active: 1,
             hold_status: 0,
             printed_status: 1,
