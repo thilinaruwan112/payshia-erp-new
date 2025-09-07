@@ -198,7 +198,7 @@ export default function POSPage() {
                 if (!p.variants || p.variants.length === 0) {
                     return [{
                         ...p.product,
-                        product_image_url: mainProductFrontImage,
+                        imageUrl: mainProductFrontImage ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${mainProductFrontImage}` : undefined,
                         price: parseFloat(p.product.price as any) || 0,
                         min_price: parseFloat(p.product.min_price as any) || 0,
                         wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
@@ -210,13 +210,14 @@ export default function POSPage() {
 
                 return p.variants.map(v => {
                     const variantFrontImage = v.images.find(img => img.image_type === 'front img')?.img_url;
-                    
+                    const finalImageUrl = variantFrontImage || mainProductFrontImage;
+
                     const variantAttributes = [v.variant.color, v.variant.size].filter(Boolean).join(' - ');
                     const variantName = variantAttributes ? `${p.product.name} - ${variantAttributes}` : `${p.product.name} (${v.variant.sku})`;
 
                     return {
                         ...p.product,
-                        product_image_url: variantFrontImage || mainProductFrontImage,
+                        imageUrl: finalImageUrl ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${finalImageUrl}` : undefined,
                         price: parseFloat(v.variant.price as any) || 0,
                         min_price: parseFloat(v.variant.min_price as any) || 0,
                         wholesale_price: parseFloat(v.variant.wholesale_price as any) || 0,
