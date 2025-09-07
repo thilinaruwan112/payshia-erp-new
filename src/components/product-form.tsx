@@ -574,64 +574,20 @@ export function ProductForm({ product }: ProductFormProps) {
                 </Card>
 
                 <Card>
-                    <CardHeader>
-                        <CardTitle>Media</CardTitle>
-                        <CardDescription>Images for this product.</CardDescription>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                         <div>
+                            <CardTitle>Media</CardTitle>
+                            <CardDescription>Images for this product.</CardDescription>
+                        </div>
+                        {savedProductId && (
+                            <Button type="button" variant="outline" size="sm" onClick={() => setUploadDialogOpen(true)}>
+                                <UploadCloud className="mr-2 h-4 w-4" />
+                                Upload Images
+                            </Button>
+                        )}
                     </CardHeader>
                     <CardContent>
-                        {frontImage && (
-                            <div className="mb-6">
-                                <h3 className="text-sm font-medium mb-2 text-muted-foreground">Front Image</h3>
-                                <div className="relative w-full max-w-xs">
-                                    <Image
-                                        src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}`}
-                                        alt={product?.name || 'Front image'}
-                                        width={400}
-                                        height={400}
-                                        className="rounded-lg object-cover aspect-square border"
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="icon"
-                                        className="absolute top-2 right-2 h-7 w-7"
-                                        onClick={() => handleDeleteImage(frontImage.id)}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-
-                        {otherImages.length > 0 && (
-                             <div>
-                                <h3 className="text-sm font-medium mb-2 text-muted-foreground">{frontImage ? 'Other Images' : 'Images'}</h3>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                                    {otherImages.map(image => (
-                                        <div key={image.id} className="relative group">
-                                            <Image
-                                                src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${image.img_url}`}
-                                                alt={product?.name || 'Product image'}
-                                                width={150}
-                                                height={150}
-                                                className="rounded-lg object-cover aspect-square border"
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="destructive"
-                                                size="icon"
-                                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                onClick={() => handleDeleteImage(image.id)}
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ))}
-                               </div>
-                             </div>
-                        )}
-                        
-                        {productImages.length === 0 && (
+                        {productImages.length === 0 ? (
                              <button
                                 type="button"
                                 className="w-full border-2 border-dashed border-muted rounded-lg p-12 text-center hover:border-primary/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
@@ -640,9 +596,63 @@ export function ProductForm({ product }: ProductFormProps) {
                              >
                                 <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
                                 <p className="mt-4 text-sm text-muted-foreground">
-                                    {savedProductId ? 'Click to upload images' : 'Save the product to enable image uploads'}
+                                    {savedProductId ? 'Click to upload images' : 'No images uploaded. Save the product to upload.'}
                                 </p>
                             </button>
+                        ) : (
+                            <>
+                                {frontImage && (
+                                    <div className="mb-6">
+                                        <h3 className="text-sm font-medium mb-2 text-muted-foreground">Front Image</h3>
+                                        <div className="relative w-full max-w-xs">
+                                            <Image
+                                                src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}`}
+                                                alt={product?.name || 'Front image'}
+                                                width={400}
+                                                height={400}
+                                                className="rounded-lg object-cover aspect-square border"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="destructive"
+                                                size="icon"
+                                                className="absolute top-2 right-2 h-7 w-7"
+                                                onClick={() => handleDeleteImage(frontImage.id)}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {otherImages.length > 0 && (
+                                    <div>
+                                        <h3 className="text-sm font-medium mb-2 text-muted-foreground">{frontImage ? 'Other Images' : 'Images'}</h3>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                            {otherImages.map(image => (
+                                                <div key={image.id} className="relative group">
+                                                    <Image
+                                                        src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${image.img_url}`}
+                                                        alt={product?.name || 'Product image'}
+                                                        width={150}
+                                                        height={150}
+                                                        className="rounded-lg object-cover aspect-square border"
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        onClick={() => handleDeleteImage(image.id)}
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                    </div>
+                                    </div>
+                                )}
+                           </>
                         )}
                     </CardContent>
                 </Card>
