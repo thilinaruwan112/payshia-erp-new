@@ -10,6 +10,17 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Button } from './ui/button';
 import { useDropzone } from 'react-dropzone';
 import { UploadCloud, Image as ImageIcon, X, Loader2 } from 'lucide-react';
@@ -33,6 +44,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
   const [isUploading, setIsUploading] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string>('');
   const [imageType, setImageType] = useState<string>('other');
+  const [selectedImageForDeletion, setSelectedImageForDeletion] = useState<ProductImage | null>(null);
   const { toast } = useToast();
 
   const fetchExistingImages = useCallback(async () => {
@@ -164,20 +176,23 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     }
   };
 
-  const handleDeleteImage = async (imageId: string) => {
+  const handleDeleteImage = async () => {
+    if (!selectedImageForDeletion) return;
     try {
-        const response = await fetch(`https://server-erp.payshia.com/product-images/${imageId}`, {
+        const response = await fetch(`https://server-erp.payshia.com/product-images/${selectedImageForDeletion.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Failed to delete image');
         }
-        setUploadedImages(prev => prev.filter(img => img.id !== imageId));
+        setUploadedImages(prev => prev.filter(img => img.id !== selectedImageForDeletion.id));
         toast({ title: 'Image Deleted' });
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+    } finally {
+        setSelectedImageForDeletion(null);
     }
   };
 
@@ -273,14 +288,30 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleDeleteImage(image.id)}
-                    >
-                        <X className="h-4 w-4" />
-                    </Button>
+                    <AlertDialog>
+                       <AlertDialogTrigger asChild>
+                            <Button
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => setSelectedImageForDeletion(image)}
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
+                       </AlertDialogTrigger>
+                       <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete the image.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setSelectedImageForDeletion(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteImage}>Continue</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                     <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs text-center p-1 rounded-b-md">
                         {image.image_type}
                     </div>
