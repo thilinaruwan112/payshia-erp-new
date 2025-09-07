@@ -632,10 +632,17 @@ export function ProductForm({ product }: ProductFormProps) {
                         )}
                         
                         {productImages.length === 0 && (
-                            <div className="border-2 border-dashed border-muted rounded-lg p-12 text-center hover:border-primary/50 transition-colors">
+                             <button
+                                type="button"
+                                className="w-full border-2 border-dashed border-muted rounded-lg p-12 text-center hover:border-primary/50 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                                onClick={() => setUploadDialogOpen(true)}
+                                disabled={!savedProductId}
+                             >
                                 <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
-                                <p className="mt-4 text-sm text-muted-foreground">No images uploaded. Add product details and save to upload images.</p>
-                            </div>
+                                <p className="mt-4 text-sm text-muted-foreground">
+                                    {savedProductId ? 'Click to upload images' : 'Save the product to enable image uploads'}
+                                </p>
+                            </button>
                         )}
                     </CardContent>
                 </Card>
