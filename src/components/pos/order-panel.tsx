@@ -412,21 +412,8 @@ export function OrderPanel({
             description: `Invoice #${result.invoice_number} created.`
         });
         
-        // After successful invoice creation, fetch the associated receipt
-        try {
-            const receiptResponse = await fetch(`https://server-erp.payshia.com/receipts/invoice/${result.invoice_number}`);
-            if (receiptResponse.ok) {
-                const receipts: Receipt[] = await receiptResponse.json();
-                if (receipts && receipts.length > 0) {
-                    // Assuming the first receipt is the correct one for immediate printing
-                    const receiptId = receipts[0].id;
-                    window.open(`/pos/receipt/print/${receiptId}?company_id=${company_id}`, '_blank');
-                }
-            } else {
-                 console.error("Could not fetch receipt for printing.");
-            }
-        } catch (receiptError) {
-            console.error("Error fetching receipt after payment:", receiptError);
+        if (result.receipt_id) {
+          window.open(`/pos/receipt/print/${result.receipt_id}?company_id=${company_id}`, '_blank');
         }
         
         setPaymentOpen(false);
