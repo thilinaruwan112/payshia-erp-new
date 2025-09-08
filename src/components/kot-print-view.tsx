@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 interface KotPrintViewProps {
   invoiceId: string;
@@ -31,7 +31,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const kotRef = useRef<HTMLDivElement>(null);
   const [isJspmConnected, setIsJspmConnected] = useState(false);
   const searchParams = useSearchParams();
-  const dataParam = searchParams.get('data');
+  const fullKotParam = searchParams.get('fullKot');
 
 
   useEffect(() => {
@@ -58,62 +58,46 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
 
   useEffect(() => {
     async function fetchInvoiceData() {
-        if (dataParam) {
-            try {
-                const decodedData = JSON.parse(atob(dataParam));
-                setInvoice(decodedData.invoice);
-                setItemsToPrint(decodedData.new_items_added || []);
-                setIsLoading(false);
-            } catch (e) {
-                console.error("Failed to parse KOT data from URL", e);
-                toast({ variant: "destructive", title: "Error", description: "Invalid KOT data." });
-                setIsLoading(false);
-            }
-            return;
-        }
-
         if (!invoiceId || !companyId) {
             setIsLoading(false);
             return;
         }
 
-      setIsLoading(true);
-      try {
-        const response = await fetch(
-          `https://server-erp.payshia.com/pos-invoices/${invoiceId}/?company_id=${companyId}`
-        );
-        if (!response.ok) {
-          throw new Error('Failed to fetch invoice data for KOT.');
-        }
-        const invoiceData: Invoice = await response.json();
-        setInvoice(invoiceData);
+        setIsLoading(true);
+        try {
+            const url = `https://server-erp.payshia.com/pos-invoices?invoicenumber=${invoiceId}&company_id=${companyId}`;
+            const response = await fetch(url);
 
-        const unprintedItems =
-            invoiceData.items?.filter((item) => item.printed_status !== '1') || [];
-            
-        if (unprintedItems.length > 0) {
-            setItemsToPrint(unprintedItems);
-            // Optionally update status on server
-        } else {
-             setItemsToPrint([]);
-        }
+            if (!response.ok) {
+                throw new Error('Failed to fetch invoice data for KOT.');
+            }
+            const invoiceData: Invoice = await response.json();
+            setInvoice(invoiceData);
 
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Error Fetching KOT Data',
-          description:
-            error instanceof Error
-              ? error.message
-              : 'An unknown error occurred.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
+            let items;
+            if (fullKotParam) {
+                items = invoiceData.items || [];
+            } else {
+                 items = invoiceData.items?.filter((item) => item.printed_status !== '1') || [];
+            }
+            setItemsToPrint(items);
+
+        } catch (error) {
+            toast({
+            variant: 'destructive',
+            title: 'Error Fetching KOT Data',
+            description:
+                error instanceof Error
+                ? error.message
+                : 'An unknown error occurred.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     fetchInvoiceData();
-  }, [invoiceId, companyId, dataParam, toast]);
+  }, [invoiceId, companyId, toast, fullKotParam]);
 
    useEffect(() => {
     if (typeof window !== "undefined") {
