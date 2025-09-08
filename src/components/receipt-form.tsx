@@ -145,7 +145,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
 
     try {
         const [invoiceDetailsResponse, receiptsResponse] = await Promise.all([
-             fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`),
+             fetch(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${invoice.invoice_number}&company_id=${company_id}`),
              fetch(`https://server-erp.payshia.com/receipts/invoice/${invoice.invoice_number}`),
         ]);
 
