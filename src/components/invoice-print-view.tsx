@@ -37,7 +37,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
       if (!id || !companyId) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/pos-invoices/${id}/?company_id=${companyId}`);
+        const response = await fetch(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${id}&company_id=${companyId}`);
         if (!response.ok) {
            if (response.status === 404) notFound();
            throw new Error('Failed to fetch invoice data');
