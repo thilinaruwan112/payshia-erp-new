@@ -31,7 +31,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const kotRef = useRef<HTMLDivElement>(null);
   const [isJspmConnected, setIsJspmConnected] = useState(false);
   const searchParams = useSearchParams();
-  const fullKot = searchParams.get('fulKot') === '1';
+  const dataParam = searchParams.get('data');
 
 
   useEffect(() => {
@@ -57,12 +57,26 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }, [companyId, toast]);
 
   useEffect(() => {
-    if (!invoiceId || !companyId) {
-      setIsLoading(false);
-      return;
-    }
-
     async function fetchInvoiceData() {
+        if (dataParam) {
+            try {
+                const decodedData = JSON.parse(atob(dataParam));
+                setInvoice(decodedData.invoice);
+                setItemsToPrint(decodedData.new_items_added || []);
+                setIsLoading(false);
+            } catch (e) {
+                console.error("Failed to parse KOT data from URL", e);
+                toast({ variant: "destructive", title: "Error", description: "Invalid KOT data." });
+                setIsLoading(false);
+            }
+            return;
+        }
+
+        if (!invoiceId || !companyId) {
+            setIsLoading(false);
+            return;
+        }
+
       setIsLoading(true);
       try {
         const response = await fetch(
@@ -74,38 +88,16 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         const invoiceData: Invoice = await response.json();
         setInvoice(invoiceData);
 
-        if (fullKot) {
-            setItemsToPrint(invoiceData.items || []);
-        } else {
-            const unprintedItems =
+        const unprintedItems =
             invoiceData.items?.filter((item) => item.printed_status !== '1') || [];
             
-            if (unprintedItems.length > 0) {
-                setItemsToPrint(unprintedItems);
-                try {
-                    const updateResponse = await fetch(
-                    `https://server-erp.payshia.com/transaction-invoice-items/printed?company_id=${companyId}&invoice_number=${invoiceData.invoice_number}`,
-                    {
-                        method: 'PUT',
-                    }
-                    );
-                    if (!updateResponse.ok) {
-                    throw new Error('Failed to update printed status.');
-                    }
-                    console.log('Successfully updated printed status for new items.');
-                } catch (updateError) {
-                    console.error('Status Update Error:', updateError);
-                    toast({
-                    variant: 'destructive',
-                    title: 'Status Update Failed',
-                    description:
-                        'Could not mark items as printed. The kitchen might receive a duplicate order.',
-                    });
-                }
-            } else {
-                 setItemsToPrint([]);
-            }
+        if (unprintedItems.length > 0) {
+            setItemsToPrint(unprintedItems);
+            // Optionally update status on server
+        } else {
+             setItemsToPrint([]);
         }
+
       } catch (error) {
         toast({
           variant: 'destructive',
@@ -121,7 +113,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     }
 
     fetchInvoiceData();
-  }, [invoiceId, companyId, toast, fullKot]);
+  }, [invoiceId, companyId, dataParam, toast]);
 
    useEffect(() => {
     if (typeof window !== "undefined") {
