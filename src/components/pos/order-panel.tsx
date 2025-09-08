@@ -3,7 +3,7 @@
 
 import React from 'react';
 import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
-import type { User, Table as TableType, Location } from '@/lib/types';
+import type { User, Table as TableType, Location, Invoice } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -66,6 +66,23 @@ interface OrderPanelProps {
   customers: User[];
   onUpdateCustomer: (orderId: string, customer: User) => void;
 }
+
+type Receipt = {
+    id: string;
+    rec_number: string;
+    type: string;
+    is_active: string;
+    date: string;
+    amount: string;
+    created_by: string;
+    ref_id: string;
+    location_id: string;
+    customer_id: string;
+    today_invoice: string;
+    company_id: string;
+    now_time: string;
+};
+
 
 const PaymentDialog = ({
   orderTotals,
@@ -395,8 +412,21 @@ export function OrderPanel({
             description: `Invoice #${result.invoice_number} created.`
         });
         
-        if (result.receipt && result.receipt.id) {
-            window.open(`/pos/receipt/print/${result.receipt.id}`, '_blank');
+        // After successful invoice creation, fetch the associated receipt
+        try {
+            const receiptResponse = await fetch(`https://server-erp.payshia.com/receipts/invoice/${result.invoice_number}`);
+            if (receiptResponse.ok) {
+                const receipts: Receipt[] = await receiptResponse.json();
+                if (receipts && receipts.length > 0) {
+                    // Assuming the first receipt is the correct one for immediate printing
+                    const receiptId = receipts[0].id;
+                    window.open(`/pos/receipt/print/${receiptId}`, '_blank');
+                }
+            } else {
+                 console.error("Could not fetch receipt for printing.");
+            }
+        } catch (receiptError) {
+            console.error("Error fetching receipt after payment:", receiptError);
         }
         
         setPaymentOpen(false);
