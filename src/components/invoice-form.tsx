@@ -227,8 +227,8 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   async function onSubmit(data: InvoiceFormValues) {
     setIsLoading(true);
     
-    if (!currentLocation) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No location selected.' });
+    if (!currentLocation || !company_id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No location or company selected.' });
         setIsLoading(false);
         return;
     }
@@ -255,7 +255,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         cost_value: data.items.reduce((acc, item) => acc + (item.costPrice * item.quantity), 0),
         remark: data.remark || "",
         ref_hold: null,
-        company_id: "1",
+        company_id: String(company_id),
         items: data.items.map(item => ({
             user_id: 1, // Default user_id as per example
             product_id: parseInt(item.productId),
@@ -269,7 +269,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
             hold_status: 0,
             printed_status: 1,
             product_variant_id: parseInt(item.productVariantId),
-            company_id: "1",
+            company_id: String(company_id),
         }))
     };
 
@@ -711,3 +711,4 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     </Form>
   );
 }
+
