@@ -1,5 +1,5 @@
 
-'use client';
+      'use client';
 
 import React from 'react';
 import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
@@ -660,3 +660,5 @@ export function OrderPanel({
     </div>
   );
 }
+
+    
