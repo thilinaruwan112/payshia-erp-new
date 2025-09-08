@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import type { PosProduct, StockInfo } from '@/app/(pos)/pos-system/page';
+import type { PosProduct, StockInfo, ProductImage } from '@/app/(pos)/pos-system/page';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +27,7 @@ import { ScrollArea } from '../ui/scroll-area';
 interface AddToCartDialogProps {
   product: PosProduct | null;
   onClose: () => void;
-  onAddToCart: (product: PosProduct, quantity: number, discount: number, batch: StockInfo) => void;
+  onAddToCart: (product: PosProduct, quantity: number, discount: number, batch: StockInfo, imageUrl?: string) => void;
 }
 
 const FormField = ({ label, value }: { label: string, value: React.ReactNode }) => (
@@ -47,6 +47,7 @@ export function AddToCartDialog({
   const [stockInfo, setStockInfo] = useState<{ totalStock: number, batches: StockInfo[] } | null>(null);
   const [selectedBatch, setSelectedBatch] = useState<string>("");
   const [isLoadingStock, setIsLoadingStock] = useState(false);
+  const [productImage, setProductImage] = useState<string | null>(null);
   const { currentLocation, company_id } = useLocation();
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
@@ -57,44 +58,60 @@ export function AddToCartDialog({
 
 
   useEffect(() => {
-    async function fetchStock() {
-      if (product && currentLocation && company_id && !isAlaCarte) {
+    async function fetchStockAndImage() {
+      if (product && currentLocation && company_id) {
         setIsLoadingStock(true);
         setStockInfo(null);
         setSelectedBatch("");
-        try {
-          const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}&location_id=${currentLocation.location_id}`);
-          if (!response.ok) {
-            throw new Error('Failed to fetch stock data.');
-          }
-          const data = await response.json();
-          const totalStock = data.total_stock[0]?.stock_balance ? parseFloat(data.total_stock[0].stock_balance) : 0;
-          const availableBatches = data.grouped_by_expire_date.filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
-          
-          setStockInfo({ totalStock, batches: availableBatches });
-          
-          // Set default batch to the one expiring soonest
-          if (availableBatches.length > 0) {
-            setSelectedBatch(JSON.stringify(availableBatches[0]));
-          }
+        setProductImage(null);
 
+        // Fetch Image
+        try {
+           const imageResponse = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}`);
+           if (imageResponse.ok) {
+               const images: ProductImage[] = await imageResponse.json();
+               const frontImage = images.find(img => img.image_type === 'front img');
+               if (frontImage) {
+                   setProductImage(`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}`);
+               }
+           }
         } catch (error) {
-            toast({
-              variant: "destructive",
-              title: "Error fetching stock",
-              description: "Could not retrieve live stock information for this product."
-            })
-        } finally {
-          setIsLoadingStock(false);
+           console.error("Failed to fetch product image.", error);
         }
+
+        if (!isAlaCarte) {
+            // Fetch Stock
+            try {
+            const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}&location_id=${currentLocation.location_id}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch stock data.');
+            }
+            const data = await response.json();
+            const totalStock = data.total_stock[0]?.stock_balance ? parseFloat(data.total_stock[0].stock_balance) : 0;
+            const availableBatches = data.grouped_by_expire_date.filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
+            
+            setStockInfo({ totalStock, batches: availableBatches });
+            
+            if (availableBatches.length > 0) {
+                setSelectedBatch(JSON.stringify(availableBatches[0]));
+            }
+
+            } catch (error) {
+                toast({
+                variant: "destructive",
+                title: "Error fetching stock",
+                description: "Could not retrieve live stock information for this product."
+                })
+            }
+        }
+        setIsLoadingStock(false);
       }
     }
 
     if (product) {
       setQuantity('1');
       setDiscount('0');
-      fetchStock();
-      // Focus quantity input when dialog opens
+      fetchStockAndImage();
       setTimeout(() => {
         quantityInputRef.current?.focus();
         quantityInputRef.current?.select();
@@ -122,10 +139,10 @@ export function AddToCartDialog({
       }
 
       if (numQuantity > 0) {
-        onAddToCart(product, numQuantity, numDiscount, batchData);
+        onAddToCart(product, numQuantity, numDiscount, batchData, productImage || undefined);
       }
     }
-  }, [product, quantity, discount, isAlaCarte, selectedBatch, onAddToCart, toast]);
+  }, [product, quantity, discount, isAlaCarte, selectedBatch, onAddToCart, toast, productImage]);
 
   const handleNumpadClick = (value: string) => {
     if (value === 'C') {
@@ -171,6 +188,8 @@ export function AddToCartDialog({
   
   const discountedPrice = product ? (product.price as number) - parseFloat(discount) : 0;
   const currentBatchStock = selectedBatch ? JSON.parse(selectedBatch).stock_balance : 0;
+  const imageUrl = productImage || product?.imageUrl || 'https://placehold.co/200x150.png';
+
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -190,7 +209,7 @@ export function AddToCartDialog({
                 <div className="flex flex-col">
                     <div className="bg-muted/50 rounded-lg p-4 flex justify-center items-center mb-4">
                         <Image
-                        src={`https://placehold.co/200x150.png`}
+                        src={imageUrl}
                         alt={product.name}
                         width={200}
                         height={150}

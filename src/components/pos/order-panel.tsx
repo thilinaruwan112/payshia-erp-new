@@ -1,9 +1,9 @@
 
-'use client';
+      'use client';
 
 import React from 'react';
 import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
-import type { User, Table as TableType, Location } from '@/lib/types';
+import type { User, Table as TableType, Location, Invoice } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -66,6 +66,23 @@ interface OrderPanelProps {
   customers: User[];
   onUpdateCustomer: (orderId: string, customer: User) => void;
 }
+
+type Receipt = {
+    id: string;
+    rec_number: string;
+    type: string;
+    is_active: string;
+    date: string;
+    amount: string;
+    created_by: string;
+    ref_id: string;
+    location_id: string;
+    customer_id: string;
+    today_invoice: string;
+    company_id: string;
+    now_time: string;
+};
+
 
 const PaymentDialog = ({
   orderTotals,
@@ -319,20 +336,25 @@ export function OrderPanel({
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
 
-  const createInvoicePayload = (status: '1' | '2', paymentMethod = 'N/A', tenderedAmount = 0) => {
+  const handleSuccessfulPayment = async (paymentMethod: string, tenderedAmount: number) => {
+    toast({
+      title: 'Payment Processing...',
+      description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
+    });
+
     if (!currentLocation || !company_id) {
         toast({
             variant: "destructive",
             title: "Location or Company not selected",
             description: "Please select a location and ensure company is set."
         });
-        return null;
+        return;
     }
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
-    const costValue = cart.reduce((acc, item) => acc + ((item.product.costPrice as number) * item.quantity), 0);
+    const costValue = cart.reduce((acc, item) => acc + ((item.product.cost_price as number || 0) * item.quantity), 0);
     const refHoldValue = order.originalInvoiceNumber ? order.originalInvoiceNumber : "direct";
 
-    return {
+    const payload = {
         invoice_date: format(new Date(), 'yyyy-MM-dd'),
         inv_amount: orderTotals.subtotal,
         grand_total: orderTotals.total,
@@ -342,8 +364,8 @@ export function OrderPanel({
         service_charge: orderTotals.serviceCharge,
         tendered_amount: tenderedAmount,
         close_type: paymentMethod,
-        invoice_status: status,
-        payment_status: status === '1' ? "Paid" : "Pending",
+        invoice_status: '1', // Paid
+        payment_status: "Paid",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
         table_id: 0,
@@ -353,35 +375,24 @@ export function OrderPanel({
         steward_id: steward?.id || "N/A",
         cost_value: costValue,
         remark: `${orderType} order`,
-        ref_hold: status === '1' ? refHoldValue : null,
+        ref_hold: refHoldValue,
         company_id: company_id,
-        chanel: "POS",
         items: cart.map(item => ({
-            user_id: 1, // Default user_id as per example
+            user_id: parseInt(steward?.id || '1', 10), // Default user_id as per example
             product_id: parseInt(item.product.id, 10),
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0,
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
             table_id: 0,
-            cost_price: item.product.costPrice || 0,
+            cost_price: item.product.cost_price || 0,
             is_active: 1,
             hold_status: 0,
-            printed_status: 0,
+            printed_status: 1,
             product_variant_id: parseInt(item.product.variant.id, 10),
             company_id: company_id,
-        })),
+        }))
     };
-  };
-
-  const handleSuccessfulPayment = async (paymentMethod: string, tenderedAmount: number) => {
-    toast({
-      title: 'Payment Processing...',
-      description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
-    });
-
-    const payload = createInvoicePayload('1', paymentMethod, tenderedAmount);
-    if (!payload) return;
 
     try {
         const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
@@ -401,7 +412,9 @@ export function OrderPanel({
             description: `Invoice #${result.invoice_number} created.`
         });
         
-        window.open(`/sales-print/invoices/${result.invoice_id}/print?company_id=${company_id}`, '_blank');
+        if (result.receipt_id) {
+          window.open(`/pos/receipt/print/${result.receipt_id}?company_id=${company_id}`, '_blank');
+        }
         
         setPaymentOpen(false);
         onClearCart(orderId);
@@ -421,7 +434,7 @@ export function OrderPanel({
   }
 
   const handleGuestReceipt = () => {
-    if (!order || order.cart.length === 0) {
+    if (!order || cart.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Cart is empty',
@@ -434,7 +447,7 @@ export function OrderPanel({
         orderName: order.name,
         cashierName: cashierName,
         customerName: order.customer.name,
-        items: order.cart.map(item => ({ 
+        items: cart.map(item => ({ 
             name: item.product.variantName, 
             quantity: item.quantity,
             price: item.product.price,
@@ -529,7 +542,7 @@ export function OrderPanel({
               {cart.map((item) => (
                 <div key={item.uniqueId} className="p-4 flex gap-4">
                   <Image
-                    src={item.product.frontImageUrl || `https://placehold.co/64x64.png`}
+                    src={item.product.imageUrl || `https://placehold.co/64x64.png`}
                     alt={item.product.name}
                     width={64}
                     height={64}

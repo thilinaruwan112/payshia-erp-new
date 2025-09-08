@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -26,6 +27,7 @@ import { useCurrency } from '@/components/currency-provider';
 export type PosProduct = Product & {
   variant: ProductVariant;
   variantName: string;
+  imageUrl?: string;
 };
 
 export type OrderInfo = {
@@ -196,7 +198,7 @@ export default function POSPage() {
                 if (!p.variants || p.variants.length === 0) {
                     return [{
                         ...p.product,
-                        product_image_url: mainProductFrontImage,
+                        imageUrl: mainProductFrontImage ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${mainProductFrontImage}` : undefined,
                         price: parseFloat(p.product.price as any) || 0,
                         min_price: parseFloat(p.product.min_price as any) || 0,
                         wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
@@ -208,13 +210,14 @@ export default function POSPage() {
 
                 return p.variants.map(v => {
                     const variantFrontImage = v.images.find(img => img.image_type === 'front img')?.img_url;
-                    
+                    const finalImageUrl = variantFrontImage || mainProductFrontImage;
+
                     const variantAttributes = [v.variant.color, v.variant.size].filter(Boolean).join(' - ');
                     const variantName = variantAttributes ? `${p.product.name} - ${variantAttributes}` : `${p.product.name} (${v.variant.sku})`;
 
                     return {
                         ...p.product,
-                        product_image_url: variantFrontImage || mainProductFrontImage,
+                        imageUrl: finalImageUrl ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${finalImageUrl}` : undefined,
                         price: parseFloat(v.variant.price as any) || 0,
                         min_price: parseFloat(v.variant.min_price as any) || 0,
                         wholesale_price: parseFloat(v.variant.wholesale_price as any) || 0,
@@ -389,8 +392,66 @@ export default function POSPage() {
     }
 
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
-    const costValue = currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0);
+  
+    // UPDATE LOGIC (PUT)
+    if (currentOrder.originalInvoiceNumber) {
+        const itemsToUpdatePayload = currentOrder.cart
+            .map(item => {
+                const newItemQty = item.quantity;
+                const originalQty = item.originalQuantity || 0;
+                const qtyToAdd = newItemQty - originalQty;
+                
+                if (qtyToAdd > 0) {
+                    return {
+                        user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
+                        product_id: parseInt(item.product.id, 10),
+                        item_price: item.product.price,
+                        item_discount: item.itemDiscount || 0,
+                        quantity: qtyToAdd,
+                        customer_id: parseInt(currentOrder.customer.customer_id, 10),
+                        table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
+                        cost_price: item.product.costPrice || 0,
+                        product_variant_id: parseInt(item.product.variant.id, 10),
+                    };
+                }
+                return null;
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
 
+        const updatePayload = {
+            grand_total: orderTotals.total,
+            discount_amount: totalDiscount,
+            service_charge: orderTotals.serviceCharge,
+            remark: `${currentOrder.orderType} order (updated)`,
+            table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
+            order_ready_status: 1,
+            items: itemsToUpdatePayload,
+        };
+      
+        const url = `https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${currentOrder.originalInvoiceNumber}`;
+  
+        try {
+            const response = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatePayload),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Failed to update held invoice.');
+    
+            toast({ title: 'Order Updated!', description: `Held order ${currentOrder.originalInvoiceNumber} has been updated.` });
+            if(itemsToUpdatePayload.length > 0) {
+                window.open(`/pos/kot/${currentOrder.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
+            }
+            onClearCart(currentOrderId!);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast({ variant: 'destructive', title: 'Error Updating Order', description: errorMessage });
+        }
+        return;
+    }
+  
+    // CREATE LOGIC (POST)
     const payload = {
         invoice_date: format(new Date(), 'yyyy-MM-dd'),
         inv_amount: orderTotals.subtotal, 
@@ -409,13 +470,13 @@ export default function POSPage() {
         created_by: currentCashier.name, 
         is_active: 1, 
         steward_id: currentOrder.steward?.id || "N/A",
-        cost_value: costValue, 
+        cost_value: currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0),
         remark: `${currentOrder.orderType} order`, 
         ref_hold: "direct",
         company_id: String(company_id),
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
-            user_id: parseInt(currentCashier.id, 10),
+            user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
             product_id: parseInt(item.product.id, 10), 
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0, 
@@ -439,7 +500,7 @@ export default function POSPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || 'Failed to send to kitchen.');
       
-      toast({ title: 'KOT Sent!', description: `Order sent to the kitchen.`, icon: <ChefHat className="h-6 w-6 text-green-500" /> });
+      toast({ title: 'KOT Sent!', description: 'Order sent to the kitchen.', icon: <ChefHat className="h-6 w-6 text-green-500" /> });
       
       window.open(`/pos/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
       
@@ -450,7 +511,7 @@ export default function POSPage() {
     }
   };
 
-  const addToCart = async (product: PosProduct, quantity: number, discount: number, batch: StockInfo) => {
+  const addToCart = async (product: PosProduct, quantity: number, discount: number, batch: StockInfo, imageUrl?: string) => {
     if (!currentOrderId) {
       toast({
         title: 'No Active Order',
@@ -460,20 +521,29 @@ export default function POSPage() {
       setSelectedProduct(null);
       return;
     }
-    const newCartItem: CartItem = { uniqueId: `${product.variant.id}-${batch.patch_code}-${Date.now()}`, product, quantity, itemDiscount: discount, batch };
+    
     setActiveOrders((prevOrders) =>
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
+        
         const existingItemIndex = order.cart.findIndex(item => item.product.variant.id === product.variant.id && item.batch.patch_code === batch.patch_code);
         let newCart;
+        
         if (existingItemIndex > -1) {
             newCart = [...order.cart];
             newCart[existingItemIndex] = {
                 ...newCart[existingItemIndex],
                 quantity: newCart[existingItemIndex].quantity + quantity,
-                itemDiscount: (newCart[existingItemIndex].itemDiscount || 0) + discount
+                itemDiscount: (newCart[existingItemIndex].itemDiscount || 0) + discount,
             };
         } else {
+            const newCartItem: CartItem = { 
+                uniqueId: `${product.variant.id}-${batch.patch_code}-${Date.now()}`, 
+                product: {...product, imageUrl }, 
+                quantity, 
+                itemDiscount: discount, 
+                batch 
+            };
             newCart = [...order.cart, newCartItem];
         }
         return { ...order, cart: newCart };
@@ -495,25 +565,27 @@ export default function POSPage() {
         const product = findPosProduct(item.product_variant_id);
         if (!product) return null;
 
-        // Fetch stock for this specific item to get batch info.
-        // This is a simplification; a real scenario might need more robust batch tracking.
         if (!currentLocation || !company_id) return null;
-        const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}&location_id=${currentLocation.location_id}`);
-        if (!response.ok) return null;
-        const stockData = await response.json();
-        const firstAvailableBatch = stockData.grouped_by_expire_date.find((b: StockInfo) => parseFloat(b.stock_balance) > 0);
+        // The batch for a previously held item is not directly available, so we create a placeholder.
+        // The key is to know this item came from a held order to track quantity changes.
+        const placeholderBatch: StockInfo = {
+            product_id: item.product_id.toString(),
+            product_variant_id: item.product_variant_id || item.product_id.toString(),
+            patch_code: 'HELD', // Use a placeholder batch code
+            expire_date: 'N/A',
+            total_in: '0',
+            total_out: '0',
+            stock_balance: '9999', // Assume enough stock to load, validation is on adding more
+        };
         
-        if (!firstAvailableBatch) {
-             toast({ variant: 'destructive', title: 'Stock Error', description: `No available stock/batch for ${product.variantName}. Cannot load item.` });
-            return null;
-        }
-
         return {
-            uniqueId: `${product.variant.id}-${firstAvailableBatch.patch_code}-${Date.now()}`,
+            uniqueId: `${product.variant.id}-HELD-${item.id}`,
             product: product,
             quantity: parseFloat(String(item.quantity)),
             itemDiscount: parseFloat(String(item.item_discount)),
-            batch: firstAvailableBatch,
+            batch: placeholderBatch,
+            originalItemId: item.id,
+            originalQuantity: parseFloat(String(item.quantity)),
         };
     });
 
@@ -685,9 +757,14 @@ export default function POSPage() {
                         <NotebookPen className="h-16 w-16 text-muted-foreground mx-auto" />
                         <h3 className="mt-4 text-2xl font-semibold">No Active Order</h3>
                         <p className="text-muted-foreground mt-2 max-w-sm">Select a held order from the list, or create a new order to begin adding items to the cart.</p>
-                        <Button onClick={() => setNewOrderDialogOpen(true)} className="mt-6">
-                            <Plus className="mr-2 h-4 w-4" /> Create New Order
-                        </Button>
+                        <div className="flex gap-4 mt-6">
+                            <Button onClick={() => setHeldOrderDetailsDialogOpen(true)} variant="outline" className="flex-1">
+                                <NotebookPen className="mr-2 h-4 w-4" /> View Held Orders
+                            </Button>
+                            <Button onClick={() => setNewOrderDialogOpen(true)} className="flex-1">
+                                <Plus className="mr-2 h-4 w-4" /> Create New Order
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}

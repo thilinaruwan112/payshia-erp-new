@@ -3,16 +3,22 @@
 
 import { InvoicePrintView } from '@/components/invoice-print-view';
 import { Suspense } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 
-function PrintInvoicePageContent({ id, companyId }: { id: string, companyId: string | null }) {
+function PrintInvoicePageContent() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const id = typeof params.id === 'string' ? params.id : '';
+  const companyId = searchParams.get('company_id');
+
   // We now pass the invoice number instead of the ID
   return <InvoicePrintView id={id} companyId={companyId} />;
 }
 
-export default function PrintInvoicePage({ params, searchParams }: { params: { id: string }, searchParams: { company_id?: string } }) {
+export default function PrintInvoicePage() {
     return (
         <Suspense fallback={<div>Loading...</div>}>
-            <PrintInvoicePageContent id={params.id} companyId={searchParams.company_id || null} />
+            <PrintInvoicePageContent />
         </Suspense>
     )
 }

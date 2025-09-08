@@ -1,4 +1,5 @@
 
+
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -72,7 +73,6 @@ export type Product = {
   price2?: number;
   foreignPrice?: number;
   product_image_url?: string;
-  frontImageUrl?: string | null;
   print_name?: string;
   sinhala_name?: string;
   tamil_name?: string | null;
@@ -477,10 +477,12 @@ export type ActiveOrder = {
 
 export type CartItem = {
   uniqueId?: string;
-  product: Product & { variant: ProductVariant; variantName: string };
+  product: Product & { variant: ProductVariant; variantName: string; imageUrl?: string };
   quantity: number;
   itemDiscount?: number;
   batch: StockInfo;
+  originalItemId?: string;
+  originalQuantity?: number;
 };
 
 export type StockInfo = {

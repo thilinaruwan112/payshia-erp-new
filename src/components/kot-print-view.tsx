@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 interface KotPrintViewProps {
   invoiceId: string;
@@ -31,7 +31,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const kotRef = useRef<HTMLDivElement>(null);
   const [isJspmConnected, setIsJspmConnected] = useState(false);
   const searchParams = useSearchParams();
-  const fullKot = searchParams.get('fulKot') === '1';
+  const fullKotParam = searchParams.get('fullKot');
 
 
   useEffect(() => {
@@ -57,71 +57,47 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }, [companyId, toast]);
 
   useEffect(() => {
-    if (!invoiceId || !companyId) {
-      setIsLoading(false);
-      return;
-    }
-
     async function fetchInvoiceData() {
-      setIsLoading(true);
-      try {
-        const response = await fetch(
-          `https://server-erp.payshia.com/pos-invoices/${invoiceId}/?company_id=${companyId}`
-        );
-        if (!response.ok) {
-          throw new Error('Failed to fetch invoice data for KOT.');
+        if (!invoiceId || !companyId) {
+            setIsLoading(false);
+            return;
         }
-        const invoiceData: Invoice = await response.json();
-        setInvoice(invoiceData);
 
-        if (fullKot) {
-            setItemsToPrint(invoiceData.items || []);
-        } else {
-            const unprintedItems =
-            invoiceData.items?.filter((item) => item.printed_status !== '1') || [];
-            
-            if (unprintedItems.length > 0) {
-                setItemsToPrint(unprintedItems);
-                try {
-                    const updateResponse = await fetch(
-                    `https://server-erp.payshia.com/transaction-invoice-items/printed?company_id=${companyId}&invoice_number=${invoiceData.invoice_number}`,
-                    {
-                        method: 'PUT',
-                    }
-                    );
-                    if (!updateResponse.ok) {
-                    throw new Error('Failed to update printed status.');
-                    }
-                    console.log('Successfully updated printed status for new items.');
-                } catch (updateError) {
-                    console.error('Status Update Error:', updateError);
-                    toast({
-                    variant: 'destructive',
-                    title: 'Status Update Failed',
-                    description:
-                        'Could not mark items as printed. The kitchen might receive a duplicate order.',
-                    });
-                }
-            } else {
-                 setItemsToPrint([]);
+        setIsLoading(true);
+        try {
+            const url = `https://server-erp.payshia.com/pos-invoices?invoicenumber=${invoiceId}&company_id=${companyId}`;
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch invoice data for KOT.');
             }
+            const invoiceData: Invoice = await response.json();
+            setInvoice(invoiceData);
+
+            let items;
+            if (fullKotParam) {
+                items = invoiceData.items || [];
+            } else {
+                 items = invoiceData.items?.filter((item) => item.printed_status !== '1') || [];
+            }
+            setItemsToPrint(items);
+
+        } catch (error) {
+            toast({
+            variant: 'destructive',
+            title: 'Error Fetching KOT Data',
+            description:
+                error instanceof Error
+                ? error.message
+                : 'An unknown error occurred.',
+            });
+        } finally {
+            setIsLoading(false);
         }
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Error Fetching KOT Data',
-          description:
-            error instanceof Error
-              ? error.message
-              : 'An unknown error occurred.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
     }
 
     fetchInvoiceData();
-  }, [invoiceId, companyId, toast, fullKot]);
+  }, [invoiceId, companyId, toast, fullKotParam]);
 
    useEffect(() => {
     if (typeof window !== "undefined") {
