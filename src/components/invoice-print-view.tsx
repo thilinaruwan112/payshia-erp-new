@@ -1,7 +1,7 @@
 
 'use client'
 
-import { type Invoice, type User, type Location } from '@/lib/types';
+import { type Invoice, type User, type Location, type Product, type InvoiceItem } from '@/lib/types';
 import { notFound, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -22,12 +22,17 @@ interface InvoicePrintViewProps {
     companyId: string | null;
 }
 
+type InvoiceItemWithProduct = InvoiceItem & {
+    product?: Product;
+};
+
 export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [invoiceItemsWithDetails, setInvoiceItemsWithDetails] = useState<InvoiceItemWithProduct[]>([]);
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const showBankDetails = searchParams.get('showBankDetails') === 'true';
@@ -49,6 +54,24 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         setInvoice(data);
         if (data.customer) {
             setCustomer(data.customer);
+        }
+
+        if (data.items) {
+          const itemsWithDetails = await Promise.all(
+            data.items.map(async (item) => {
+              try {
+                const productRes = await fetch(`https://server-erp.payshia.com/products/details/${item.product_id}`);
+                if (productRes.ok) {
+                  const productData = await productRes.json();
+                  return { ...item, product: productData.product };
+                }
+              } catch (e) {
+                console.error(`Failed to fetch details for product ${item.product_id}`, e);
+              }
+              return item;
+            })
+          );
+          setInvoiceItemsWithDetails(itemsWithDetails);
         }
 
         if (data.company_id && data.location_id) {
@@ -95,7 +118,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
     return <div>Invoice not found or failed to load.</div>;
   }
 
-  const invoiceItems = invoice.items?.map(item => ({
+  const invoiceItems = (invoiceItemsWithDetails.length > 0 ? invoiceItemsWithDetails : invoice.items)?.map(item => ({
     ...item,
     total_cost: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)) - parseFloat(String(item.item_discount)),
   }));
@@ -147,7 +170,10 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
           <tbody>
             {invoiceItems?.map((item, index) => (
               <tr key={index} className="border-b border-gray-100">
-                <td className="p-3">{item.productName}</td>
+                <td className="p-3">
+                  <p className="font-semibold">{item.productName}</p>
+                  {item.product?.description && <p className="text-xs text-gray-500">{item.product.description}</p>}
+                </td>
                 <td className="p-3 text-right">{parseFloat(String(item.quantity)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                 <td className="p-3 text-right">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td className="p-3 text-right">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
