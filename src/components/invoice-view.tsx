@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useLocation } from './location-provider';
+import { Separator } from './ui/separator';
 
 interface InvoiceViewProps {
     id: string;
@@ -163,7 +164,7 @@ export function InvoiceView({ id }: InvoiceViewProps) {
         </div>
 
         <Card className="print-card-styles">
-            <CardHeader className="flex flex-row items-start justify-between">
+            <CardHeader className="flex flex-col md:flex-row items-start justify-between">
                 <div>
                      <CardTitle>Invoice {invoice.invoice_number}</CardTitle>
                      <CardDescription>
@@ -172,52 +173,73 @@ export function InvoiceView({ id }: InvoiceViewProps) {
                         </Badge>
                      </CardDescription>
                 </div>
-                <div className="text-right">
+                <div className="text-left md:text-right mt-4 md:mt-0">
                     <p className="font-semibold text-lg">Payshia ERP</p>
                     <p className="text-sm text-muted-foreground">#455, 533A3, Pelmadulla</p>
                 </div>
             </CardHeader>
              <CardContent>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6 mb-8">
                      <div className="space-y-1">
                         <p className="text-sm font-medium text-muted-foreground">Billed To</p>
                         <p className="font-semibold">{customer?.customer_first_name} {customer?.customer_last_name}</p>
                         <p className="text-sm text-muted-foreground">{customer?.address_line1}, {customer?.city_id}</p>
                      </div>
-                     <div className="space-y-1 text-right">
+                     <div className="space-y-1 text-left md:text-right">
                         <p className="text-sm font-medium text-muted-foreground">Invoice Date</p>
                         <p className="font-semibold">{new Date(invoice.invoice_date).toLocaleDateString()}</p>
                          <p className="text-sm font-medium text-muted-foreground mt-2">Due Date</p>
                         <p className="font-semibold">{new Date(invoice.invoice_date).toLocaleDateString()}</p>
                      </div>
                 </div>
-
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Product</TableHead>
-                            <TableHead className="text-right">Quantity</TableHead>
-                            <TableHead className="text-right">Unit Price</TableHead>
-                            <TableHead className="text-right">Discount</TableHead>
-                            <TableHead className="text-right">Total</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {invoiceItems?.map((item, index) => (
-                           <TableRow key={index}>
-                                <TableCell>{item.productName}</TableCell>
-                                <TableCell className="text-right">{parseFloat(String(item.quantity))}</TableCell>
-                                <TableCell className="text-right font-mono">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                <TableCell className="text-right font-mono text-destructive">-${parseFloat(String(item.item_discount)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                                <TableCell className="text-right font-mono">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                           </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-
+                
+                {/* Desktop Table */}
+                <div className="hidden md:block">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Product</TableHead>
+                                <TableHead className="text-right">Quantity</TableHead>
+                                <TableHead className="text-right">Unit Price</TableHead>
+                                <TableHead className="text-right">Discount</TableHead>
+                                <TableHead className="text-right">Total</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {invoiceItems?.map((item, index) => (
+                            <TableRow key={index}>
+                                    <TableCell>{item.productName}</TableCell>
+                                    <TableCell className="text-right">{parseFloat(String(item.quantity))}</TableCell>
+                                    <TableCell className="text-right font-mono">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                    <TableCell className="text-right font-mono text-destructive">-${parseFloat(String(item.item_discount)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                    <TableCell className="text-right font-mono">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+                
+                {/* Mobile Card List */}
+                <div className="md:hidden space-y-4">
+                    {invoiceItems?.map((item, index) => (
+                        <Card key={index} className="p-4">
+                            <div className="flex justify-between items-start">
+                                <span className="font-semibold pr-4">{item.productName}</span>
+                                <span className="font-mono font-semibold">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                                <span>{parseFloat(String(item.quantity))} x ${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                {parseFloat(String(item.item_discount)) > 0 && (
+                                    <span className="text-destructive text-xs"> (-${parseFloat(String(item.item_discount)).toFixed(2)})</span>
+                                )}
+                            </div>
+                        </Card>
+                    ))}
+                </div>
              </CardContent>
-             <CardFooter className="flex justify-end">
-                <div className="w-full max-w-sm space-y-2">
+             <CardFooter>
+                <div className="w-full md:ml-auto md:max-w-sm space-y-2">
+                    <Separator className="md:hidden my-4" />
                     <div className="flex justify-between">
                         <span>Subtotal</span>
                         <span className="font-mono">${parseFloat(invoice.inv_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -230,7 +252,8 @@ export function InvoiceView({ id }: InvoiceViewProps) {
                         <span>Service Charge</span>
                         <span className="font-mono">${parseFloat(invoice.service_charge).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
-                    <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
+                    <Separator className="my-2" />
+                    <div className="flex justify-between font-bold text-lg">
                         <span>Grand Total</span>
                         <span className="font-mono">${parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
