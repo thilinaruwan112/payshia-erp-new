@@ -5,6 +5,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -33,6 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { useLocation } from '@/components/location-provider';
+import { Separator } from '@/components/ui/separator';
 
 type Receipt = {
     id: string;
@@ -131,57 +133,105 @@ export default function ReceiptsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Receipt #</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className="hidden sm:table-cell">Invoice #</TableHead>
-                <TableHead className="hidden md:table-cell">Date</TableHead>
-                <TableHead className="hidden md:table-cell">Method</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+           {/* Desktop Table View */}
+          <div className="hidden sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Receipt #</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead className="hidden sm:table-cell">Invoice #</TableHead>
+                  <TableHead className="hidden md:table-cell">Date</TableHead>
+                  <TableHead className="hidden md:table-cell">Method</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                          <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                          <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                          <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                          <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                          <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                      </TableRow>
+                  ))
+                ) : (
+                  receipts.map((receipt) => (
+                    <TableRow key={receipt.id}>
+                      <TableCell className="font-medium">{receipt.rec_number}</TableCell>
+                      <TableCell>{getCustomerName(receipt.customer_id)}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{receipt.ref_id}</TableCell>
+                      <TableCell className="hidden md:table-cell">{format(new Date(receipt.date), 'dd MMM, yyyy')}</TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge variant="secondary">{getPaymentMethodText(receipt.type)}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">${parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/sales/receipts/${receipt.id}`}>View Details</Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/sales-print/receipts/${receipt.id}`} target="_blank">Print A4 Receipt</Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/pos-print/receipts/${receipt.id}`} target="_blank">Print POS Receipt</Link>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
-                ))
-              ) : (
-                receipts.map((receipt) => (
-                  <TableRow key={receipt.id}>
-                    <TableCell className="font-medium">{receipt.rec_number}</TableCell>
-                    <TableCell>{getCustomerName(receipt.customer_id)}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{receipt.ref_id}</TableCell>
-                    <TableCell className="hidden md:table-cell">{format(new Date(receipt.date), 'dd MMM, yyyy')}</TableCell>
-                    <TableCell className="hidden md:table-cell">
-                       <Badge variant="secondary">{getPaymentMethodText(receipt.type)}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono">${parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
+                  ))
+                )}
+                {!isLoading && receipts.length === 0 && (
+                  <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                          No receipts found.
+                      </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+           {/* Mobile Card View */}
+          <div className="sm:hidden space-y-4">
+             {isLoading ? (
+                 Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)
+            ) : receipts.map((receipt) => (
+              <Card key={receipt.id}>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle className="text-base">{receipt.rec_number}</CardTitle>
+                      <CardDescription>{getCustomerName(receipt.customer_id)}</CardDescription>
+                    </div>
+                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button size="icon" variant="ghost">
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
                             <MoreHorizontal className="h-4 w-4" />
                             <span className="sr-only">Toggle menu</span>
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/sales/receipts/${receipt.id}`}>View Details</Link>
-                          </DropdownMenuItem>
+                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/sales/receipts/${receipt.id}`}>View Details</Link>
+                            </DropdownMenuItem>
                            <DropdownMenuItem asChild>
                             <Link href={`/sales-print/receipts/${receipt.id}`} target="_blank">Print A4 Receipt</Link>
                           </DropdownMenuItem>
@@ -190,19 +240,29 @@ export default function ReceiptsPage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-               {!isLoading && receipts.length === 0 && (
-                <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                        No receipts found.
-                    </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                   <Badge variant="secondary">{getPaymentMethodText(receipt.type)}</Badge>
+                    <Separator />
+                     <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Invoice #</span>
+                      <span>{receipt.ref_id}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Date</span>
+                      <span>{new Date(receipt.date).toLocaleDateString()}</span>
+                    </div>
+                </CardContent>
+                <CardFooter className="bg-muted/50 p-4">
+                  <div className="flex justify-between w-full font-semibold">
+                      <span>Amount Paid</span>
+                      <span className="font-mono">${parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>
