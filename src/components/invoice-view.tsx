@@ -122,7 +122,7 @@ export function InvoiceView({ id }: InvoiceViewProps) {
                 Created on {new Date(invoice.invoice_date).toLocaleDateString()}
             </p>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
               <Button variant="outline" onClick={() => router.back()}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
