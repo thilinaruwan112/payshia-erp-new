@@ -420,7 +420,7 @@ export function OrderPanel({
                 if (receipts && receipts.length > 0) {
                     // Assuming the first receipt is the correct one for immediate printing
                     const receiptId = receipts[0].id;
-                    window.open(`/pos/receipt/print/${receiptId}`, '_blank');
+                    window.open(`/pos/receipt/print/${receiptId}?company_id=${company_id}`, '_blank');
                 }
             } else {
                  console.error("Could not fetch receipt for printing.");

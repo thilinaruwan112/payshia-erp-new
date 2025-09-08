@@ -1,8 +1,8 @@
 
 'use client';
 
-import { notFound } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import { notFound, useSearchParams } from 'next/navigation';
+import React, { useEffect, useState, Suspense } from 'react';
 import type { Invoice, User, Location } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -24,17 +24,30 @@ type Receipt = {
     now_time: string;
 };
 
-export default function PrintPosReceiptPage({ params }: { params: { id: string } }) {
+interface Company {
+    id: string;
+    company_name: string;
+    company_address: string;
+    company_city: string;
+    company_email: string;
+    company_telephone: string;
+}
+
+function PrintPosReceiptPageContent() {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { id } = params;
+  const searchParams = useSearchParams();
+  const { id } = useParams() as { id: string };
+  const companyId = searchParams.get('company_id');
 
   useEffect(() => {
     async function fetchData() {
-        if (!id) return;
+        if (!id || !companyId) return;
         setIsLoading(true);
         try {
             const receiptResponse = await fetch(`https://server-erp.payshia.com/receipts/${id}`);
@@ -45,17 +58,18 @@ export default function PrintPosReceiptPage({ params }: { params: { id: string }
             const receiptData: Receipt = await receiptResponse.json();
             setReceipt(receiptData);
 
-            const [customerResponse, invoiceResponse] = await Promise.all([
+            const [customerResponse, invoiceResponse, companyRes, locationRes] = await Promise.all([
                  fetch(`https://server-erp.payshia.com/customers/${receiptData.customer_id}`),
-                 fetch(`https://server-erp.payshia.com/invoices/full/${receiptData.ref_id}`)
+                 fetch(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${receiptData.ref_id}&company_id=${companyId}`),
+                 fetch(`https://server-erp.payshia.com/companies/${receiptData.company_id}`),
+                 fetch(`https://server-erp.payshia.com/locations/${receiptData.location_id}`),
             ]);
             
-             if (customerResponse.ok) {
-                setCustomer(await customerResponse.json());
-             }
-             if (invoiceResponse.ok) {
-                setInvoice(await invoiceResponse.json());
-             }
+             if (customerResponse.ok) setCustomer(await customerResponse.json());
+             if (invoiceResponse.ok) setInvoice(await invoiceResponse.json());
+             if (companyRes.ok) setCompany(await companyRes.json());
+             if (locationRes.ok) setLocation(await locationRes.json());
+
         } catch (error) {
             toast({
                 variant: 'destructive',
@@ -67,7 +81,7 @@ export default function PrintPosReceiptPage({ params }: { params: { id: string }
         }
     }
     fetchData();
-  }, [id, toast]);
+  }, [id, companyId, toast]);
 
   useEffect(() => {
     if (!isLoading && receipt) {
@@ -116,10 +130,9 @@ export default function PrintPosReceiptPage({ params }: { params: { id: string }
   return (
     <div className="w-[58mm] bg-white text-black p-1 font-mono text-[9px] leading-snug">
       <div className="text-center">
-        <h1 className="font-bold text-sm">Payshia Store</h1>
-        <p>#455, Pelmadulla, Rathnapura</p>
-        <p>045-222-2222</p>
-        <p>www.payshia.com</p>
+        <h1 className="font-bold text-sm">{company?.company_name || 'Payshia Store'}</h1>
+        <p>{location?.address_line1}</p>
+        <p>{company?.company_telephone}</p>
       </div>
 
       <div className="my-2 border-t border-dashed border-black"></div>
@@ -171,4 +184,14 @@ export default function PrintPosReceiptPage({ params }: { params: { id: string }
       </div>
     </div>
   );
+}
+
+import { useParams } from 'next/navigation'
+
+export default function PrintPosReceiptPage() {
+    return (
+        <Suspense>
+            <PrintPosReceiptPageContent />
+        </Suspense>
+    )
 }
