@@ -34,7 +34,10 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
 
   useEffect(() => {
     async function fetchData() {
-      if (!id || !companyId) return;
+      if (!id || !companyId) {
+          setIsLoading(false);
+          return;
+      };
       setIsLoading(true);
       try {
         const response = await fetch(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${id}&company_id=${companyId}`);
