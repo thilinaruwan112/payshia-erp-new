@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
-import { useParams, useSearchParams, notFound } from 'next/navigation';
 
 interface KotPrintViewProps {
   invoiceId: string;
@@ -30,8 +29,6 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const { toast } = useToast();
   const kotRef = useRef<HTMLDivElement>(null);
   const [isJspmConnected, setIsJspmConnected] = useState(false);
-  const searchParams = useSearchParams();
-  const encodedItems = searchParams.get('items');
 
 
   useEffect(() => {
@@ -73,13 +70,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             }
             const invoiceData: Invoice = await response.json();
             setInvoice(invoiceData);
-
-            if (encodedItems) {
-                const decodedItems = JSON.parse(decodeURIComponent(encodedItems));
-                setItemsToPrint(decodedItems || []);
-            } else {
-                setItemsToPrint(invoiceData.items || []);
-            }
+            setItemsToPrint(invoiceData.items || []);
 
         } catch (error) {
             toast({
@@ -96,7 +87,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     }
 
     fetchInvoiceData();
-  }, [invoiceId, companyId, toast, encodedItems]);
+  }, [invoiceId, companyId, toast]);
 
    useEffect(() => {
     if (typeof window !== "undefined") {
