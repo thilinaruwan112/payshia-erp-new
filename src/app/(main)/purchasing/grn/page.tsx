@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -38,7 +37,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLocation } from '@/components/location-provider';
-
+import { Separator } from '@/components/ui/separator';
 
 const getStatusText = (status: string) => {
   switch (status) {
@@ -151,74 +150,97 @@ export default function GrnReceivablePage() {
                 </CardDescription>
                 </CardHeader>
                 <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>PO Number</TableHead>
-                            <TableHead>Supplier</TableHead>
-                            <TableHead className="hidden sm:table-cell">Status</TableHead>
-                            <TableHead className="hidden md:table-cell">Date</TableHead>
-                            <TableHead className="text-right">Total</TableHead>
-                            <TableHead>
-                            <span className="sr-only">Actions</span>
-                            </TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                 {/* Desktop Table View */}
+                <div className="hidden sm:block">
+                  <Table>
+                      <TableHeader>
+                          <TableRow>
+                              <TableHead>PO Number</TableHead>
+                              <TableHead>Supplier</TableHead>
+                              <TableHead className="hidden sm:table-cell">Status</TableHead>
+                              <TableHead className="hidden md:table-cell">Date</TableHead>
+                              <TableHead className="text-right">Total</TableHead>
+                              <TableHead>
+                              <span className="sr-only">Actions</span>
+                              </TableHead>
+                          </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                      {isLoading ? (
+                          Array.from({ length: 5 }).map((_, i) => (
+                              <TableRow key={i}>
+                                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                  <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                                  <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
+                                  <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
+                                  <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                              </TableRow>
+                          ))
+                      ) : (
+                          receivablePOs.map((po) => (
+                          <TableRow key={po.id}>
+                              <TableCell className="font-medium">{po.po_number}</TableCell>
+                              <TableCell>{getSupplierName(po.supplier_id)}</TableCell>
+                              <TableCell className="hidden sm:table-cell">
+                              <Badge variant="secondary" className={cn(getStatusColor(po.po_status))}>
+                                  {getStatusText(po.po_status)}
+                              </Badge>
+                              </TableCell>
+                              <TableCell className="hidden md:table-cell">{new Date(po.created_at).toLocaleDateString()}</TableCell>
+                              <TableCell className="text-right">${parseFloat(po.sub_total).toFixed(2)}</TableCell>
+                              <TableCell className="text-right">
+                              <Button asChild variant="outline" size="sm">
+                                  <Link href={`/purchasing/grn/new?poId=${po.id}`}>Create GRN</Link>
+                              </Button>
+                              </TableCell>
+                          </TableRow>
+                          ))
+                      )}
+                      {!isLoading && receivablePOs.length === 0 && (
+                          <TableRow>
+                              <TableCell colSpan={6} className="h-24 text-center">
+                                  No receivable purchase orders found.
+                              </TableCell>
+                          </TableRow>
+                      )}
+                      </TableBody>
+                  </Table>
+                </div>
+                {/* Mobile Card View */}
+                 <div className="sm:hidden space-y-4">
                     {isLoading ? (
-                        Array.from({ length: 5 }).map((_, i) => (
-                            <TableRow key={i}>
-                                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                                <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                                <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
-                                <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
-                                <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
-                            </TableRow>
-                        ))
-                    ) : (
-                        receivablePOs.map((po) => (
-                        <TableRow key={po.id}>
-                            <TableCell className="font-medium">{po.po_number}</TableCell>
-                            <TableCell>{getSupplierName(po.supplier_id)}</TableCell>
-                            <TableCell className="hidden sm:table-cell">
-                            <Badge variant="secondary" className={cn(getStatusColor(po.po_status))}>
-                                {getStatusText(po.po_status)}
-                            </Badge>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">{new Date(po.created_at).toLocaleDateString()}</TableCell>
-                            <TableCell className="text-right">${parseFloat(po.sub_total).toFixed(2)}</TableCell>
-                            <TableCell className="text-right">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem asChild>
+                        Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-40 w-full" />)
+                    ) : receivablePOs.map((po) => (
+                        <Card key={po.id}>
+                           <CardHeader>
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <CardTitle className="text-base">{po.po_number}</CardTitle>
+                                  <CardDescription>{getSupplierName(po.supplier_id)}</CardDescription>
+                                </div>
+                                <Button asChild variant="outline" size="sm">
                                     <Link href={`/purchasing/grn/new?poId=${po.id}`}>Create GRN</Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                    <Link href={`/purchasing/purchase-orders/${po.id}`}>View Details</Link>
-                                </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                        ))
-                    )}
-                    {!isLoading && receivablePOs.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={6} className="h-24 text-center">
-                                No receivable purchase orders found.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                    </TableBody>
-                </Table>
+                                </Button>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                                <Badge variant="secondary" className={cn(getStatusColor(po.po_status))}>
+                                    {getStatusText(po.po_status)}
+                                </Badge>
+                                <Separator className="my-2" />
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Date</span>
+                                  <span>{new Date(po.created_at).toLocaleDateString()}</span>
+                                </div>
+                                 <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Total</span>
+                                  <span className="font-mono">${parseFloat(po.sub_total).toFixed(2)}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
+                 </div>
                 </CardContent>
             </Card>
         </TabsContent>
@@ -231,6 +253,7 @@ export default function GrnReceivablePage() {
                 </CardDescription>
                 </CardHeader>
                 <CardContent>
+                  <div className="hidden sm:block">
                   <ScrollArea className="h-[calc(100vh-450px)]">
                     <Table>
                         <TableHeader>
@@ -298,6 +321,54 @@ export default function GrnReceivablePage() {
                         </TableBody>
                     </Table>
                   </ScrollArea>
+                  </div>
+                   {/* Mobile Card View */}
+                  <div className="sm:hidden space-y-4">
+                     {isLoading ? (
+                        Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-40 w-full" />)
+                    ) : currentGrns.map((grn) => (
+                        <Card key={grn.id}>
+                             <CardHeader>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                    <CardTitle className="text-base">{grn.grn_number}</CardTitle>
+                                    <CardDescription>{getSupplierName(grn.supplier_id)}</CardDescription>
+                                    </div>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Toggle menu</span>
+                                        </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/purchasing/grn/${grn.id}`}>View Details</Link>
+                                        </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                               <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                  {grn.grn_status}
+                                </Badge>
+                                <Separator className="my-2" />
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Date</span>
+                                  <span>{format(new Date(grn.created_at), 'dd MMM, yyyy')}</span>
+                                </div>
+                            </CardContent>
+                            <CardFooter className="bg-muted/50 p-4">
+                               <div className="flex justify-between w-full font-semibold">
+                                  <span>Total</span>
+                                  <span className="font-mono">${parseFloat(grn.grand_total).toFixed(2)}</span>
+                              </div>
+                            </CardFooter>
+                        </Card>
+                    ))}
+                  </div>
                 </CardContent>
                  <CardFooter className="flex justify-end items-center gap-4">
                     <span className="text-sm text-muted-foreground">
@@ -330,5 +401,3 @@ export default function GrnReceivablePage() {
     </div>
   );
 }
-
-    
