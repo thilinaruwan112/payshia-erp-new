@@ -502,7 +502,7 @@ export default function POSPage() {
       
       toast({ title: 'KOT Sent!', description: 'Order sent to the kitchen.', icon: <ChefHat className="h-6 w-6 text-green-500" /> });
       
-      window.open(`/pos/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
+      window.open(`/pos/kot/${result.invoice_number}?company_id=${company_id}`, '_blank');
       
       onClearCart(currentOrderId!);
     } catch (error) {
