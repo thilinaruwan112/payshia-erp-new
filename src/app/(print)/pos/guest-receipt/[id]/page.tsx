@@ -25,49 +25,30 @@ declare global {
 }
 
 function GuestReceiptContent() {
-  const params = useParams();
   const searchParams = useSearchParams();
-  const invoiceNumber = typeof params.id === 'string' ? params.id : '';
-  const companyId = searchParams.get('company_id');
-  
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [company, setCompany] = useState<Company | null>(null);
+  const [receiptData, setReceiptData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const receiptRef = useRef<HTMLDivElement>(null);
   const [isJspmConnected, setIsJspmConnected] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchInvoiceData() {
-        if (!invoiceNumber || !companyId) {
-            setIsLoading(false);
-            return;
+    try {
+        const data = searchParams.get('data');
+        if (data) {
+            setReceiptData(JSON.parse(decodeURIComponent(data)));
         }
-        setIsLoading(true);
-        try {
-            const url = `https://server-erp.payshia.com/pos-invoices?invoicenumber=${invoiceNumber}&company_id=${companyId}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Failed to fetch invoice data.');
-            const data: Invoice = await response.json();
-            setInvoice(data);
-
-            if (data.company_id) {
-                 const companyRes = await fetch(`https://server-erp.payshia.com/companies/${data.company_id}`);
-                 if (companyRes.ok) setCompany(await companyRes.json());
-            }
-
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: 'Error Fetching Invoice',
-                description: 'Could not load data for the guest receipt.',
-            });
-        } finally {
-            setIsLoading(false);
-        }
+    } catch (e) {
+        console.error("Failed to parse receipt data from URL", e);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not read receipt data.",
+        });
+    } finally {
+        setIsLoading(false);
     }
-    fetchInvoiceData();
-  }, [invoiceNumber, companyId, toast]);
+  }, [searchParams, toast]);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !window.JSPM) {
@@ -94,42 +75,17 @@ function GuestReceiptContent() {
 
   const handlePrint = async () => {
     if (!receiptRef.current) return;
-
-    if (!isJspmConnected) {
-        console.warn("JSPM not ready. Falling back to browser print.");
-        setTimeout(() => window.print(), 500);
-        return;
-    }
-
-    try {
-        const element = receiptRef.current;
-        const canvas = await html2canvas(element, { scale: 2 });
-        const imgBase64Content = canvas.toDataURL("image/png").substring("data:image/png;base64,".length);
-        
-        const cpj = new window.JSPM.ClientPrintJob();
-        const myPrinter = new window.JSPM.InstalledPrinter("Microsoft Print to PDF");
-        
-        cpj.clientPrinter = myPrinter;
-        const myImageFile = new window.JSPM.PrintFile(imgBase64Content, window.JSPM.FileSourceType.Base64, `GUEST-RCPT-${invoice?.invoice_number}.png`, 1);
-        cpj.files.push(myImageFile);
-
-        cpj.sendToClient();
-        setTimeout(() => window.close(), 3000);
-    } catch (error) {
-        console.error("Printing error:", error);
-        toast({ title: "Printing Error", description: "Could not send to printer."});
-        window.print();
-    }
+    setTimeout(() => window.print(), 500);
   };
 
   useEffect(() => {
-    if (!isLoading && invoice) {
-        document.title = `Guest Receipt - ${invoice.invoice_number}`;
+    if (!isLoading && receiptData) {
+        document.title = `Guest Receipt - ${receiptData.orderName}`;
         handlePrint();
     }
-  }, [isLoading, invoice, isJspmConnected]);
+  }, [isLoading, receiptData, isJspmConnected]);
 
-  if (isLoading || !invoice) {
+  if (isLoading || !receiptData) {
     return (
       <div className="w-[80mm] bg-white text-black p-2 font-mono">
         <Skeleton className="h-6 w-3/4 mx-auto" />
@@ -147,7 +103,8 @@ function GuestReceiptContent() {
     );
   }
   
-  const totalDiscount = invoice.items ? invoice.items.reduce((acc, item) => acc + parseFloat(String(item.item_discount)), 0) + parseFloat(invoice.discount_amount) : parseFloat(invoice.discount_amount);
+  const { items, totals, orderName, cashierName, date } = receiptData;
+  const totalDiscount = totals.itemDiscounts + totals.discount;
   
   return (
     <div ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
@@ -157,12 +114,11 @@ function GuestReceiptContent() {
       </div>
       
       <div className="flex justify-between text-xs">
-        <p>Order: {invoice.table_id === "0" ? invoice.remark?.split(' ')[0] : `Table ${invoice.table_id}`}</p>
-        <p>{format(new Date(invoice.current_time), "dd/MM/yy HH:mm")}</p>
+        <p>Order: {orderName}</p>
+        <p>{format(new Date(date), "dd/MM/yy HH:mm")}</p>
       </div>
        <div className="flex justify-between text-xs">
-        <p>Cashier: {invoice.created_by}</p>
-        <p>Inv #: {invoice.invoice_number}</p>
+        <p>Cashier: {cashierName}</p>
       </div>
 
       <div className="my-2 border-t-2 border-dashed border-black"></div>
@@ -177,12 +133,12 @@ function GuestReceiptContent() {
             </tr>
         </thead>
         <tbody>
-          {invoice.items?.map((item) => (
-            <tr key={item.id}>
-              <td className="py-1 align-top w-[50%]">{item.productName || `Product ID ${item.product_id}`}</td>
-              <td className="py-1 align-top text-center">{parseFloat(String(item.quantity))}</td>
-              <td className="py-1 align-top text-right">${parseFloat(String(item.item_price)).toFixed(2)}</td>
-              <td className="py-1 align-top text-right">${(parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))).toFixed(2)}</td>
+          {items?.map((item: any, index: number) => (
+            <tr key={index}>
+              <td className="py-1 align-top w-[50%]">{item.name}</td>
+              <td className="py-1 align-top text-center">{item.quantity}</td>
+              <td className="py-1 align-top text-right">${item.price.toFixed(2)}</td>
+              <td className="py-1 align-top text-right">${item.total.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
@@ -192,7 +148,7 @@ function GuestReceiptContent() {
        <div className="space-y-1 text-xs">
         <div className="flex justify-between">
           <span>Subtotal:</span>
-          <span>${parseFloat(invoice.inv_amount).toFixed(2)}</span>
+          <span>${totals.subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
           <span>Discount:</span>
@@ -200,11 +156,11 @@ function GuestReceiptContent() {
         </div>
          <div className="flex justify-between">
           <span>Service Charge:</span>
-          <span>${parseFloat(invoice.service_charge).toFixed(2)}</span>
+          <span>${totals.serviceCharge.toFixed(2)}</span>
         </div>
         <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
           <span>TOTAL:</span>
-          <span>${parseFloat(invoice.grand_total).toFixed(2)}</span>
+          <span>${totals.total.toFixed(2)}</span>
         </div>
       </div>
 
