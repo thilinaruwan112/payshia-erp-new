@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Loader2, UploadCloud, X } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { Switch } from "./ui/switch";
 import { useLocation } from "./location-provider";
 import Image from "next/image";
