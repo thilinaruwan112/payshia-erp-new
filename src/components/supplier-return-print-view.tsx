@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import Image from 'next/image';
 
 const suppliers: Supplier[] = [
     { supplier_id: 'sup-123', supplier_name: 'Global Textiles Inc.', contact_person: 'John Doe', email: 'contact@globaltextiles.com', telephone: '111-222-3333', street_name: '123 Textile Ave', city: 'Fiberburg', zip_code: '12345', fax: '111-222-3334', opening_balance: '1000' },
@@ -107,15 +108,20 @@ export function SupplierReturnPrintView({ id }: PrintViewProps) {
   if (!sReturn) {
     return <div>Return Note not found or failed to load.</div>;
   }
+  
+  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
 
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
-          <p>{location?.address_line1}, {location?.city}</p>
-          <p>{company?.company_email}</p>
+        <div className="flex items-center gap-4">
+            {logoUrl && <Image src={logoUrl} alt="Company Logo" width={80} height={80} className="rounded-md" />}
+            <div>
+                <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
+                <p>{location?.address_line1}, {location?.city}</p>
+                <p>{company?.company_email}</p>
+            </div>
         </div>
         <div className="text-right">
           <h2 className="text-4xl font-bold uppercase text-gray-700">Supplier Return Note</h2>

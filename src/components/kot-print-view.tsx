@@ -3,11 +3,12 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import type { Invoice, InvoiceItem, Product } from '@/lib/types';
+import type { Invoice, InvoiceItem, Product, Location } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
+import Image from 'next/image';
 
 interface KotPrintViewProps {
   invoiceId: string;
@@ -25,6 +26,7 @@ declare global {
 export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [location, setLocation] = useState<Location | null>(null);
   const [itemsToPrint, setItemsToPrint] = useState<InvoiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -72,6 +74,13 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             const invoiceData: Invoice = await response.json();
             setInvoice(invoiceData);
             setItemsToPrint(invoiceData.items || []);
+            
+            if (invoiceData.location_id) {
+                const locResponse = await fetch(`https://server-erp.payshia.com/locations/${invoiceData.location_id}`);
+                if (locResponse.ok) {
+                    setLocation(await locResponse.json());
+                }
+            }
 
         } catch (error) {
             toast({
@@ -193,7 +202,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
       `Product ID: ${productId}`
     );
   };
-
+  
   if (isLoading) {
     return (
       <div className="w-[80mm] bg-white text-black p-2 font-mono">
@@ -239,10 +248,13 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         </div>
       )
   }
+  
+  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
 
   return (
     <div ref={kotRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
       <div className="text-center mb-2">
+        {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
         <h1 className="font-bold text-xl">K.O.T</h1>
       </div>
 

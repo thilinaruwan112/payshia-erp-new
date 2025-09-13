@@ -8,6 +8,7 @@ import type { Invoice, User, Location } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import Image from 'next/image';
 
 type Receipt = {
     id: string;
@@ -111,13 +112,19 @@ export function A4ReceiptPrintView({ id }: PrintViewProps) {
   // but for this receipt's context it should be fine.
   const balanceDue = invoiceTotal - amountPaid;
 
+  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
+
+
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
        <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
-          <p>{location?.address_line1}, {location?.city}</p>
-          <p>{company?.company_email}</p>
+        <div className="flex items-center gap-4">
+             {logoUrl && <Image src={logoUrl} alt="Company Logo" width={80} height={80} className="rounded-md" />}
+            <div>
+                <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
+                <p>{location?.address_line1}, {location?.city}</p>
+                <p>{company?.company_email}</p>
+            </div>
         </div>
         <div className="text-right">
           <h2 className="text-4xl font-bold uppercase text-gray-700">Payment Receipt</h2>
@@ -172,7 +179,7 @@ export function A4ReceiptPrintView({ id }: PrintViewProps) {
             </div>
             <div className="flex justify-between">
                 <span>Amount Paid</span>
-                <span className='font-mono'>-${amountPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className='font-mono text-green-600'>-${amountPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
                 <span>Balance Due</span>
