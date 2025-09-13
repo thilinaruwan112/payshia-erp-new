@@ -33,6 +33,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLocation } from '@/components/location-provider';
+import Image from 'next/image';
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -128,6 +129,7 @@ export default function LocationsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[80px]">Logo</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead className="hidden sm:table-cell">Type</TableHead>
                   <TableHead>Address</TableHead>
@@ -140,6 +142,7 @@ export default function LocationsPage() {
                 {isLoading ? (
                   Array.from({ length: 3 }).map((_, i) => (
                     <TableRow key={i}>
+                       <TableCell><Skeleton className="h-10 w-10 rounded-md" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                       <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-48" /></TableCell>
@@ -147,45 +150,58 @@ export default function LocationsPage() {
                     </TableRow>
                   ))
                 ) : (
-                  locations.map((location) => (
-                    <TableRow key={location.location_id}>
-                      <TableCell className="font-medium">
-                        {location.location_name}
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge variant="outline">{location.location_type}</Badge>
-                      </TableCell>
-                      <TableCell>
-                       {location.address_line1}, {location.city}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/locations/${location.location_id}`}>Edit</Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onSelect={() => {
-                                setSelectedLocation(location);
-                                setIsConfirmOpen(true);
-                              }}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  locations.map((location) => {
+                    const logoUrl = location.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : "https://placehold.co/64x64.png";
+                    return (
+                        <TableRow key={location.location_id}>
+                          <TableCell>
+                            <Image 
+                                src={logoUrl} 
+                                alt={location.location_name} 
+                                width={40} 
+                                height={40} 
+                                className="rounded-md object-cover aspect-square"
+                                data-ai-hint="logo"
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {location.location_name}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <Badge variant="outline">{location.location_type}</Badge>
+                          </TableCell>
+                          <TableCell>
+                          {location.address_line1}, {location.city}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="icon" variant="ghost">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span className="sr-only">Toggle menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/locations/${location.location_id}`}>Edit</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-destructive"
+                                  onSelect={() => {
+                                    setSelectedLocation(location);
+                                    setIsConfirmOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                    )
+                  })
                 )}
               </TableBody>
             </Table>
