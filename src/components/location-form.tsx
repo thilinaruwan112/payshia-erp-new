@@ -31,10 +31,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, UploadCloud, X } from "lucide-react";
 import { useState } from "react";
 import { Switch } from "./ui/switch";
 import { useLocation } from "./location-provider";
+import Image from "next/image";
 
 
 const locationFormSchema = z.object({
@@ -46,6 +47,7 @@ const locationFormSchema = z.object({
   phone_1: z.string().min(10, "A valid phone number is required."),
   phone_2: z.string().optional(),
   pos_status: z.boolean().default(false),
+  logo: z.any().optional(),
 });
 
 type LocationFormValues = z.infer<typeof locationFormSchema>;
@@ -59,6 +61,9 @@ export function LocationForm({ location }: LocationFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const { company_id } = useLocation();
+  const [imagePreview, setImagePreview] = React.useState<string | null>(
+    location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null
+  );
   
   const defaultValues: Partial<LocationFormValues> = {
     location_name: location?.location_name || "",
@@ -76,6 +81,24 @@ export function LocationForm({ location }: LocationFormProps) {
     defaultValues,
     mode: "onChange",
   });
+  
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      form.setValue('logo', file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    form.setValue('logo', null);
+    setImagePreview(null);
+  };
+
 
   async function onSubmit(data: LocationFormValues) {
     if (!company_id) {
@@ -83,27 +106,33 @@ export function LocationForm({ location }: LocationFormProps) {
         return;
     }
     setIsLoading(true);
-
-    const payload = {
-      ...data,
-      is_active: 1,
-      pos_status: data.pos_status ? 1 : 0,
-      created_by: 'admin',
-      logo_path: '/logos/default.png',
-      pos_token: 101,
-      company_id: company_id,
-    };
+    
+    const formData = new FormData();
+    formData.append('location_name', data.location_name);
+    formData.append('location_type', data.location_type);
+    formData.append('address_line1', data.address_line1);
+    formData.append('address_line2', data.address_line2 || '');
+    formData.append('city', data.city);
+    formData.append('phone_1', data.phone_1);
+    formData.append('phone_2', data.phone_2 || '');
+    formData.append('pos_status', data.pos_status ? '1' : '0');
+    formData.append('company_id', String(company_id));
+    formData.append('is_active', '1');
+    formData.append('created_by', 'admin');
+    
+    if (data.logo instanceof File) {
+        formData.append('logo_path', data.logo);
+    }
     
     const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
-    const method = location ? 'PUT' : 'POST';
+    // For FormData, the method should be POST, and the backend should handle PUT logic if an ID is present.
+    // However, if your backend strictly requires PUT for updates, you might need a workaround. Let's assume POST works for both.
+    const method = 'POST';
 
     try {
       const response = await fetch(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+        body: formData, // No Content-Type header needed, browser sets it for FormData
       });
 
       if (!response.ok) {
@@ -149,138 +178,182 @@ export function LocationForm({ location }: LocationFormProps) {
             </div>
         </div>
 
-        <Card>
-            <CardHeader>
-                <CardTitle>Location Details</CardTitle>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                    control={form.control}
-                    name="location_name"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Location Name</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g. Downtown Store" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="location_type"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Location Type</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger>
-                                <SelectValue placeholder="Select a type" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="Retail">Retail Store</SelectItem>
-                                <SelectItem value="Warehouse">Warehouse</SelectItem>
-                            </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <div className="md:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Location Details</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                         control={form.control}
-                        name="address_line1"
+                        name="location_name"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Address Line 1</FormLabel>
+                            <FormLabel>Location Name</FormLabel>
                             <FormControl>
-                                <Input placeholder="e.g. 123 Main St" {...field} />
+                                <Input placeholder="e.g. Downtown Store" {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
                     />
-                 </div>
-                 <div className="md:col-span-2">
                     <FormField
                         control={form.control}
-                        name="address_line2"
+                        name="location_type"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Address Line 2 (Optional)</FormLabel>
+                                <FormLabel>Location Type</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Select a type" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Retail">Retail Store</SelectItem>
+                                    <SelectItem value="Warehouse">Warehouse</SelectItem>
+                                </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <div className="md:col-span-2">
+                        <FormField
+                            control={form.control}
+                            name="address_line1"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Address Line 1</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="e.g. 123 Main St" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                    <div className="md:col-span-2">
+                        <FormField
+                            control={form.control}
+                            name="address_line2"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Address Line 2 (Optional)</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="e.g. Apt #4B" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+                    <FormField
+                        control={form.control}
+                        name="city"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>City</FormLabel>
                             <FormControl>
-                                <Input placeholder="e.g. Apt #4B" {...field} />
+                                <Input placeholder="e.g. Colombo" {...field} />
                             </FormControl>
                             <FormMessage />
                             </FormItem>
                         )}
                     />
-                 </div>
-                <FormField
-                    control={form.control}
-                    name="city"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>City</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g. Colombo" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="phone_1"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Primary Phone</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g. 0112345678" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="phone_2"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Secondary Phone (Optional)</FormLabel>
-                        <FormControl>
-                            <Input placeholder="e.g. 0771234567" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="pos_status"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
-                            <FormLabel className="text-base">
-                                POS Active
-                            </FormLabel>
-                             <CardDescription>
-                                Enable or disable the Point of Sale terminal for this location.
-                            </CardDescription>
-                        </div>
-                        <FormControl>
-                            <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            />
-                        </FormControl>
-                        </FormItem>
-                    )}
-                 />
-            </CardContent>
-        </Card>
+                    <FormField
+                        control={form.control}
+                        name="phone_1"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Primary Phone</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g. 0112345678" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="phone_2"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Secondary Phone (Optional)</FormLabel>
+                            <FormControl>
+                                <Input placeholder="e.g. 0771234567" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="pos_status"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-base">
+                                    POS Active
+                                </FormLabel>
+                                <CardDescription>
+                                    Enable or disable the Point of Sale terminal for this location.
+                                </CardDescription>
+                            </div>
+                            <FormControl>
+                                <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                />
+                            </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                </CardContent>
+            </Card>
+          </div>
+          <div>
+            <Card>
+                <CardHeader>
+                  <CardTitle>Location Logo</CardTitle>
+                  <CardDescription>
+                    Upload a logo for this location.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center gap-4">
+                  {imagePreview ? (
+                    <div className="relative">
+                       <Image
+                        src={imagePreview}
+                        alt="Logo preview"
+                        width={200}
+                        height={200}
+                        className="rounded-lg object-cover aspect-square"
+                      />
+                       <Button 
+                          type="button"
+                          variant="destructive" 
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6"
+                          onClick={removeImage}
+                      >
+                          <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                     <label htmlFor="logo-upload" className="w-full border-2 border-dashed border-muted rounded-lg p-8 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                        <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground" />
+                        <p className="mt-4 text-sm text-muted-foreground">
+                            Click to upload logo
+                        </p>
+                    </label>
+                  )}
+                  <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                </CardContent>
+            </Card>
+          </div>
+        </div>
       </form>
     </Form>
   );
