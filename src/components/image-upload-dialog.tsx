@@ -29,6 +29,7 @@ import type { ProductVariant, ProductImage } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
 import { ScrollArea } from './ui/scroll-area';
+import { Badge } from './ui/badge';
 
 interface ImageUploadDialogProps {
   isOpen: boolean;
@@ -282,44 +283,49 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
                       <div>
                       <h3 className="text-sm font-medium mb-2">Uploaded Images</h3>
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                          {uploadedImages.map((image) => (
-                          <div key={image.id} className="relative group">
-                              <div className="aspect-square w-full rounded-md overflow-hidden border">
-                              <img
-                                  src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${image.img_url}`}
-                                  alt={`Uploaded image ${image.id}`}
-                                  className="w-full h-full object-cover"
-                              />
-                              </div>
-                              <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                  <Button
-                                      variant="destructive"
-                                      size="icon"
-                                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => setSelectedImageForDeletion(image)}
-                                  >
-                                      <X className="h-4 w-4" />
-                                  </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                      This action cannot be undone. This will permanently delete the image.
-                                      </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                      <AlertDialogCancel onClick={() => setSelectedImageForDeletion(null)}>Cancel</AlertDialogCancel>
-                                      <AlertDialogAction onClick={handleDeleteImage}>Continue</AlertDialogAction>
-                                  </AlertDialogFooter>
-                                  </AlertDialogContent>
-                              </AlertDialog>
-                              <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs text-center p-1 rounded-b-md">
-                                  {image.image_type}
-                              </div>
-                          </div>
-                          ))}
+                          {uploadedImages.map((image) => {
+                            const variant = productVariants.find(v => v.id === image.product_variant_id);
+                            const variantName = variant ? [variant.sku, variant.color, variant.size].filter(Boolean).join(' - ') : 'General';
+                            return (
+                                <div key={image.id} className="relative group">
+                                    <div className="aspect-square w-full rounded-md overflow-hidden border">
+                                    <img
+                                        src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${image.img_url}`}
+                                        alt={`Uploaded for ${variantName}`}
+                                        className="w-full h-full object-cover"
+                                    />
+                                    </div>
+                                    <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => setSelectedImageForDeletion(image)}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete the image.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel onClick={() => setSelectedImageForDeletion(null)}>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDeleteImage}>Continue</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs text-center p-1 rounded-b-md backdrop-blur-sm">
+                                        <p className="font-semibold truncate">{variantName}</p>
+                                        <p className="opacity-80">{image.image_type}</p>
+                                    </div>
+                                </div>
+                            )
+                          })}
                       </div>
                       </div>
                   )}
