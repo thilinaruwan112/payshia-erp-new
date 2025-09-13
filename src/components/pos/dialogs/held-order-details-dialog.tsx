@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -72,8 +73,8 @@ export function HeldOrderDetailsDialog({
             Select a held order to continue.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex-1 relative -mx-6 px-6">
-          <ScrollArea className="absolute inset-0 h-full w-full">
+        <div className="flex-1 min-h-0">
+          <ScrollArea className="h-full">
             <div className="px-1 py-4">
               {isLoading ? (
                 <div className="flex items-center justify-center h-full">
