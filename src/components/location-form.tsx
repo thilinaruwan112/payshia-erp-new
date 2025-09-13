@@ -119,6 +119,7 @@ export function LocationForm({ location }: LocationFormProps) {
     formData.append('company_id', String(company_id));
     formData.append('is_active', '1');
     formData.append('created_by', 'admin');
+    formData.append('pos_token', '101'); // Added default pos_token
     
     if (data.logo instanceof File) {
         formData.append('logo_path', data.logo);
