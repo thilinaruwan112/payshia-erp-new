@@ -1,66 +1,102 @@
 
 'use client';
 
-import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useState, useRef } from 'react';
+import { notFound, useParams, useSearchParams } from 'next/navigation';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
+import type { Invoice } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 
-type GuestReceiptItem = {
-    name: string;
-    quantity: number;
-    price: number;
-    total: number;
+interface Company {
+    id: string;
+    company_name: string;
+    company_address: string;
+    company_city: string;
+    company_email: string;
+    company_telephone: string;
 }
 
-type GuestReceiptData = {
-    orderId: string;
-    orderName: string;
-    cashierName: string;
-    customerName: string;
-    items: GuestReceiptItem[];
-    totals: {
-        subtotal: number;
-        discount: number;
-        serviceCharge: number;
-        total: number;
-    }
-}
-
-// Extend the Window interface
 declare global {
   interface Window {
       JSPM: any;
   }
 }
 
-export default function GuestReceiptPage({ params }: { params: { id: string } }) {
+function GuestReceiptContent() {
+  const params = useParams();
   const searchParams = useSearchParams();
-  const [receiptData, setReceiptData] = useState<GuestReceiptData | null>(null);
+  const invoiceNumber = typeof params.id === 'string' ? params.id : '';
+  const companyId = searchParams.get('company_id');
+  
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [connected, setConnected] = useState(false);
-
+  const [isJspmConnected, setIsJspmConnected] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    try {
-        const data = searchParams.get('data');
-        if (data) {
-            const decodedData = atob(data);
-            const parsedData: GuestReceiptData = JSON.parse(decodedData);
-            setReceiptData(parsedData);
+    async function fetchInvoiceData() {
+        if (!invoiceNumber || !companyId) {
+            setIsLoading(false);
+            return;
         }
-    } catch (error) {
-        console.error("Failed to parse guest receipt data", error);
-    } finally {
-        setIsLoading(false);
+        setIsLoading(true);
+        try {
+            const url = `https://server-erp.payshia.com/pos-invoices?invoicenumber=${invoiceNumber}&company_id=${companyId}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Failed to fetch invoice data.');
+            const data: Invoice = await response.json();
+            setInvoice(data);
+
+            if (data.company_id) {
+                 const companyRes = await fetch(`https://server-erp.payshia.com/companies/${data.company_id}`);
+                 if (companyRes.ok) setCompany(await companyRes.json());
+            }
+
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error Fetching Invoice',
+                description: 'Could not load data for the guest receipt.',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     }
-  }, [searchParams]);
+    fetchInvoiceData();
+  }, [invoiceNumber, companyId, toast]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !window.JSPM) {
+      const script = document.createElement('script');
+      script.src = "https://unpkg.com/jsprintmanager/JSPrintManager.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+
+    const initJspm = () => {
+        if(window.JSPM) {
+            try {
+                window.JSPM.JSPrintManager.auto_reconnect = true;
+                window.JSPM.JSPrintManager.start();
+                window.JSPM.JSPrintManager.WS.onOpen = () => setIsJspmConnected(true);
+                window.JSPM.JSPrintManager.WS.onClose = () => setIsJspmConnected(false);
+            } catch (error) {
+                console.error("Failed to start JSPM:", error);
+            }
+        }
+    }
+    setTimeout(initJspm, 500);
+  }, []);
 
   const handlePrint = async () => {
-    if (!window.JSPM || !connected || !receiptRef.current) {
-        console.warn("JSPM not ready or KOT element not found. Falling back to browser print.");
+    if (!receiptRef.current) return;
+
+    if (!isJspmConnected) {
+        console.warn("JSPM not ready. Falling back to browser print.");
         setTimeout(() => window.print(), 500);
         return;
     }
@@ -68,77 +104,32 @@ export default function GuestReceiptPage({ params }: { params: { id: string } })
     try {
         const element = receiptRef.current;
         const canvas = await html2canvas(element, { scale: 2 });
-
-        const b64Prefix = "data:image/png;base64,";
-        const imgBase64DataUri = canvas.toDataURL("image/png");
-        const imgBase64Content = imgBase64DataUri.substring(b64Prefix.length);
-
-        const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
-
-        const cpj = new ClientPrintJob();
-        const myPrinter = new InstalledPrinter("Microsoft Print to PDF");
+        const imgBase64Content = canvas.toDataURL("image/png").substring("data:image/png;base64,".length);
+        
+        const cpj = new window.JSPM.ClientPrintJob();
+        const myPrinter = new window.JSPM.InstalledPrinter("Microsoft Print to PDF");
         
         cpj.clientPrinter = myPrinter;
-
-        const myImageFile = new PrintFile(
-            imgBase64Content,
-            FileSourceType.Base64,
-            `GUEST-RCPT-${receiptData?.orderId}.png`,
-            1
-        );
+        const myImageFile = new window.JSPM.PrintFile(imgBase64Content, window.JSPM.FileSourceType.Base64, `GUEST-RCPT-${invoice?.invoice_number}.png`, 1);
         cpj.files.push(myImageFile);
 
         cpj.sendToClient();
-
-        setTimeout(() => {
-            window.close();
-        }, 3000);
-
+        setTimeout(() => window.close(), 3000);
     } catch (error) {
         console.error("Printing error:", error);
-        alert("An error occurred while printing. Please try again.");
+        toast({ title: "Printing Error", description: "Could not send to printer."});
+        window.print();
     }
   };
 
-
-   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const initJSPM = () => {
-        if (!window.JSPM) {
-          console.error("JSPM script not loaded! Make sure the client app is running.");
-          return;
-        }
-
-        const { JSPrintManager } = window.JSPM;
-        JSPrintManager.auto_reconnect = true;
-        JSPrintManager.start();
-
-        JSPrintManager.WS.onOpen = () => {
-          console.log("✅ JSPM Connected!");
-          setConnected(true);
-        };
-
-        JSPrintManager.WS.onClose = () => {
-          console.log("❌ JSPM Disconnected!");
-          setConnected(false);
-        };
-      };
-      
-      setTimeout(initJSPM, 500);
-    }
-  }, []);
-
-   useEffect(() => {
-    if (connected && !isLoading && receiptData) {
-        document.title = `Guest Receipt - ${receiptData.orderName}`;
+  useEffect(() => {
+    if (!isLoading && invoice) {
+        document.title = `Guest Receipt - ${invoice.invoice_number}`;
         handlePrint();
-    } else if (!isLoading && receiptData && typeof window !== "undefined" && !window.JSPM) {
-        console.warn("JSPM not found. Falling back to browser print.");
-        setTimeout(() => window.print(), 500);
     }
-  }, [connected, isLoading, receiptData]);
+  }, [isLoading, invoice, isJspmConnected]);
 
-  if (isLoading || !receiptData) {
+  if (isLoading || !invoice) {
     return (
       <div className="w-[80mm] bg-white text-black p-2 font-mono">
         <Skeleton className="h-6 w-3/4 mx-auto" />
@@ -156,6 +147,8 @@ export default function GuestReceiptPage({ params }: { params: { id: string } })
     );
   }
   
+  const totalDiscount = invoice.items ? invoice.items.reduce((acc, item) => acc + parseFloat(String(item.item_discount)), 0) + parseFloat(invoice.discount_amount) : parseFloat(invoice.discount_amount);
+  
   return (
     <div ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
       <div className="text-center mb-2">
@@ -164,12 +157,12 @@ export default function GuestReceiptPage({ params }: { params: { id: string } })
       </div>
       
       <div className="flex justify-between text-xs">
-        <p>Order: {receiptData.orderName}</p>
-        <p>{format(new Date(), "dd/MM/yy HH:mm")}</p>
+        <p>Order: {invoice.table_id === "0" ? invoice.remark?.split(' ')[0] : `Table ${invoice.table_id}`}</p>
+        <p>{format(new Date(invoice.current_time), "dd/MM/yy HH:mm")}</p>
       </div>
        <div className="flex justify-between text-xs">
-        <p>Cashier: {receiptData.cashierName}</p>
-        <p>Customer: {receiptData.customerName}</p>
+        <p>Cashier: {invoice.created_by}</p>
+        <p>Inv #: {invoice.invoice_number}</p>
       </div>
 
       <div className="my-2 border-t-2 border-dashed border-black"></div>
@@ -184,12 +177,12 @@ export default function GuestReceiptPage({ params }: { params: { id: string } })
             </tr>
         </thead>
         <tbody>
-          {receiptData.items?.map((item, index) => (
-            <tr key={index}>
-              <td className="py-1 align-top w-[50%]">{item.name}</td>
-              <td className="py-1 align-top text-center">{item.quantity}</td>
-              <td className="py-1 align-top text-right">${(item.price as number).toFixed(2)}</td>
-              <td className="py-1 align-top text-right">${item.total.toFixed(2)}</td>
+          {invoice.items?.map((item) => (
+            <tr key={item.id}>
+              <td className="py-1 align-top w-[50%]">{item.productName || `Product ID ${item.product_id}`}</td>
+              <td className="py-1 align-top text-center">{parseFloat(String(item.quantity))}</td>
+              <td className="py-1 align-top text-right">${parseFloat(String(item.item_price)).toFixed(2)}</td>
+              <td className="py-1 align-top text-right">${(parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))).toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
@@ -199,19 +192,19 @@ export default function GuestReceiptPage({ params }: { params: { id: string } })
        <div className="space-y-1 text-xs">
         <div className="flex justify-between">
           <span>Subtotal:</span>
-          <span>${receiptData.totals.subtotal.toFixed(2)}</span>
+          <span>${parseFloat(invoice.inv_amount).toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
           <span>Discount:</span>
-          <span>-${receiptData.totals.discount.toFixed(2)}</span>
+          <span>-${totalDiscount.toFixed(2)}</span>
         </div>
          <div className="flex justify-between">
           <span>Service Charge:</span>
-          <span>${receiptData.totals.serviceCharge.toFixed(2)}</span>
+          <span>${parseFloat(invoice.service_charge).toFixed(2)}</span>
         </div>
         <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
           <span>TOTAL:</span>
-          <span>${receiptData.totals.total.toFixed(2)}</span>
+          <span>${parseFloat(invoice.grand_total).toFixed(2)}</span>
         </div>
       </div>
 
@@ -220,4 +213,12 @@ export default function GuestReceiptPage({ params }: { params: { id: string } })
        </div>
     </div>
   );
+}
+
+export default function GuestReceiptPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <GuestReceiptContent />
+        </Suspense>
+    )
 }

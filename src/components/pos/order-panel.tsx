@@ -433,7 +433,7 @@ export function OrderPanel({
     onUpdateCustomer(orderId, newCustomer);
   }
 
-  const handleGuestReceipt = () => {
+  const handleGuestReceipt = async () => {
     if (!order || cart.length === 0) {
       toast({
         variant: 'destructive',
@@ -442,33 +442,83 @@ export function OrderPanel({
       });
       return;
     }
-    const orderData = {
-        orderId: order.id,
-        orderName: order.name,
-        cashierName: cashierName,
-        customerName: order.customer.name,
-        items: cart.map(item => ({ 
-            name: item.product.variantName, 
+     if (!currentLocation || !company_id) {
+        toast({
+            variant: "destructive",
+            title: "Location or Company not selected",
+        });
+        return;
+    }
+
+    const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
+    const costValue = cart.reduce((acc, item) => acc + ((item.product.cost_price as number || 0) * item.quantity), 0);
+    const refHoldValue = order.originalInvoiceNumber ? order.originalInvoiceNumber : "direct";
+
+    const payload = {
+        invoice_date: format(new Date(), 'yyyy-MM-dd'),
+        inv_amount: orderTotals.subtotal,
+        grand_total: orderTotals.total,
+        discount_amount: totalDiscount,
+        discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
+        customer_code: customer.customer_id,
+        service_charge: orderTotals.serviceCharge,
+        tendered_amount: 0,
+        close_type: "N/A",
+        invoice_status: "2",
+        payment_status: "internal",
+        current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+        location_id: parseInt(currentLocation.location_id, 10),
+        table_id: availableTables.find(t => t.table_name === order.tableName)?.id ? parseInt(availableTables.find(t => t.table_name === order.tableName)!.id, 10) : 0,
+        order_ready_status: 1,
+        created_by: cashierName,
+        is_active: 1,
+        steward_id: steward?.id || "N/A",
+        cost_value: costValue,
+        remark: `${orderType} order`,
+        ref_hold: refHoldValue,
+        company_id: company_id,
+        chanel: "POS",
+        items: cart.map(item => ({
+            user_id: parseInt(steward?.id || '1', 10),
+            product_id: parseInt(item.product.id, 10),
+            item_price: item.product.price,
+            item_discount: item.itemDiscount || 0,
             quantity: item.quantity,
-            price: item.product.price,
-            total: (item.product.price as number) * item.quantity,
-        })),
-        totals: {
-            subtotal: orderTotals.subtotal,
-            discount: orderTotals.discount + orderTotals.itemDiscounts,
-            serviceCharge: orderTotals.serviceCharge,
-            total: orderTotals.total,
-        },
+            customer_id: parseInt(customer.customer_id, 10),
+            table_id: availableTables.find(t => t.table_name === order.tableName)?.id ? parseInt(availableTables.find(t => t.table_name === order.tableName)!.id, 10) : 0,
+            cost_price: item.product.cost_price || 0,
+            is_active: 1,
+            hold_status: 0,
+            printed_status: 1,
+            product_variant_id: parseInt(item.product.variant.id, 10),
+        }))
     };
     
-    const encodedData = btoa(JSON.stringify(orderData));
-    window.open(`/pos/guest-receipt/${order.id}?data=${encodedData}`, '_blank');
-    
-    toast({
-      title: 'Guest Receipt Printed!',
-      description: `Receipt for ${order.name} sent to the printer.`,
-      icon: <Receipt className="h-6 w-6 text-green-500" />,
-    });
+    try {
+      const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to create guest receipt invoice.');
+      }
+      
+      window.open(`/pos/guest-receipt/${result.invoice_number}?company_id=${company_id}`, '_blank');
+      
+      toast({
+        title: 'Guest Receipt Printed!',
+        description: `Receipt for ${order.name} sent to the printer.`,
+        icon: <Receipt className="h-6 w-6 text-green-500" />,
+      });
+      
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      toast({ variant: 'destructive', title: 'Error Printing Receipt', description: errorMessage });
+    }
   };
 
   return (
