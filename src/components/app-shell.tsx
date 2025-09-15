@@ -237,6 +237,7 @@ const navItems = [
       { href: '/locations', label: 'Locations', icon: Warehouse },
       { href: '/settings/tables', label: 'Dine-in Tables', icon: Utensils },
       { href: '/settings/payhere', label: 'PayHere Gateway', icon: CreditCard },
+      { href: '/settings/analytics', label: 'Analytics', icon: AreaChart },
       { href: '/billing', label: 'Billing & Plans', icon: CreditCard },
       { href: '/settings/currency', label: 'Currency', icon: DollarSign },
     ],
