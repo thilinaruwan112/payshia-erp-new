@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +12,6 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,11 +29,11 @@ import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useLocation } from "./location-provider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import type { AnalyticsSetting } from "@/app/(main)/settings/analytics/page";
+import type { KeySetting } from "@/lib/types";
 
 const analyticsFormSchema = z.object({
-  locationId: z.string().min(1, "Please select a location."),
-  keyName: z.string().min(1, "Key name is required."),
+  location_id: z.string().min(1, "Please select a location."),
+  key: z.string().min(1, "Key name is required."),
   value: z.string().min(1, "A value is required for the key."),
 });
 
@@ -41,7 +41,7 @@ type AnalyticsFormValues = z.infer<typeof analyticsFormSchema>;
 
 interface AnalyticsFormDialogProps {
     children: React.ReactNode;
-    setting?: AnalyticsSetting;
+    setting?: KeySetting;
     onSave: () => void;
 }
 
@@ -49,49 +49,77 @@ export function AnalyticsFormDialog({ children, setting, onSave }: AnalyticsForm
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const { availableLocations } = useLocation();
+  const { availableLocations, company_id } = useLocation();
   
   const form = useForm<AnalyticsFormValues>({
     resolver: zodResolver(analyticsFormSchema),
     defaultValues: {
-        locationId: setting?.locationId || "",
+        location_id: setting?.location_id || "",
+        key: '',
+        value: '',
     },
     mode: "onChange",
   });
 
   useEffect(() => {
     if (setting) {
-        // Since we don't know which key is being edited beforehand,
-        // we can't pre-fill keyName and value. The user will have to select it.
         form.reset({
-            locationId: setting.locationId,
-            keyName: '',
-            value: '',
+            location_id: setting.location_id,
+            key: setting.key,
+            value: setting.value,
         });
     } else {
         form.reset({
-            locationId: "",
-            keyName: '',
+            location_id: "",
+            key: '',
             value: '',
         });
     }
   }, [setting, form, isOpen]);
 
-  function onSubmit(data: AnalyticsFormValues) {
+  async function onSubmit(data: AnalyticsFormValues) {
+    if (!company_id) {
+        toast({ variant: 'destructive', title: 'Company not found' });
+        return;
+    }
     setIsLoading(true);
-    // In a real app, you would save these credentials to your backend.
-    console.log("Saving Analytics credentials for location:", data.locationId, { [data.keyName]: data.value });
+
+    const payload = {
+        ...data,
+        company_id,
+        location_id: parseInt(data.location_id),
+        created_by: 'admin_user',
+        updated_by: 'admin_user',
+    };
     
-    // Simulate API call
-    setTimeout(() => {
-        toast({
-            title: setting ? "Settings Updated" : "Settings Saved",
-            description: "Your analytics IDs have been saved successfully for the selected location.",
+    try {
+        const response = await fetch('https://server-erp.payshia.com/key-settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
-        setIsLoading(false);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to save settings.');
+        }
+
+        toast({
+            title: "Settings Saved",
+            description: "Your analytics IDs have been saved successfully.",
+        });
         setIsOpen(false);
-        onSave(); // Callback to refresh the list
-    }, 1000);
+        onSave();
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: errorMessage,
+        });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -108,7 +136,7 @@ export function AnalyticsFormDialog({ children, setting, onSave }: AnalyticsForm
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                      <FormField
                         control={form.control}
-                        name="locationId"
+                        name="location_id"
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel>Location</FormLabel>
@@ -130,11 +158,11 @@ export function AnalyticsFormDialog({ children, setting, onSave }: AnalyticsForm
                         />
                          <FormField
                           control={form.control}
-                          name="keyName"
+                          name="key"
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Key Name</FormLabel>
-                               <FormControl>
+                                <FormControl>
                                 <Input placeholder="e.g. Facebook Pixel ID" {...field} />
                               </FormControl>
                               <FormMessage />

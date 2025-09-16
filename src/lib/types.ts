@@ -585,3 +585,13 @@ export type Warranty = {
     status: 'Active' | 'Expired' | 'Void';
     coverageDetails?: string;
 }
+
+export type KeySetting = {
+  id: string;
+  company_id: string;
+  location_id: string;
+  key: string;
+  value: string;
+  locationName?: string; // For client-side display
+  originalSetting?: KeySetting; // For forms
+};
