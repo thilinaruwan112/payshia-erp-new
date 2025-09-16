@@ -33,7 +33,7 @@ import type { AnalyticsSetting } from "@/app/(main)/settings/analytics/page";
 
 const analyticsFormSchema = z.object({
   locationId: z.string().min(1, "Please select a location."),
-  keyName: z.enum(["facebookPixelId", "googleAnalyticsId"], { required_error: "Please select a key type."}),
+  keyName: z.string().min(1, "Key name is required."),
   value: z.string().min(1, "A value is required for the key."),
 });
 
@@ -65,13 +65,13 @@ export function AnalyticsFormDialog({ children, setting, onSave }: AnalyticsForm
         // we can't pre-fill keyName and value. The user will have to select it.
         form.reset({
             locationId: setting.locationId,
-            keyName: undefined,
+            keyName: '',
             value: '',
         });
     } else {
         form.reset({
             locationId: "",
-            keyName: undefined,
+            keyName: '',
             value: '',
         });
     }
@@ -134,17 +134,9 @@ export function AnalyticsFormDialog({ children, setting, onSave }: AnalyticsForm
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Key Name</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select a key type" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="facebookPixelId">Facebook Pixel ID</SelectItem>
-                                  <SelectItem value="googleAnalyticsId">Google Analytics ID</SelectItem>
-                                </SelectContent>
-                              </Select>
+                               <FormControl>
+                                <Input placeholder="e.g. Facebook Pixel ID" {...field} />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
