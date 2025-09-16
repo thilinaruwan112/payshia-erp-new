@@ -76,7 +76,7 @@ export function PayhereFormDialog({ children, setting, onSave }: PayhereFormDial
   }, [setting, form, isOpen]);
 
   const selectedKeyName = form.watch('keyName');
-  const isSecret = selectedKeyName.toLowerCase().includes('secret');
+  const isSecret = selectedKeyName?.toLowerCase().includes('secret');
 
   function onSubmit(data: PayhereFormValues) {
     setIsLoading(true);
