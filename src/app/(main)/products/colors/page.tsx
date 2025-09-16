@@ -127,6 +127,7 @@ export default function ColorsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[100px]">Color</TableHead>
                 <TableHead>Color Name</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -137,6 +138,7 @@ export default function ColorsPage() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
+                    <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-32" />
                     </TableCell>
@@ -148,6 +150,12 @@ export default function ColorsPage() {
               ) : (
                 colors.map((color) => (
                   <TableRow key={color.id}>
+                    <TableCell>
+                      <div
+                        className="h-6 w-6 rounded-full border"
+                        style={{ backgroundColor: color.color_code || '#ffffff' }}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{color.name}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>

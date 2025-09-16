@@ -455,6 +455,7 @@ export type Model = {
 export type Color = {
     id: string;
     name: string;
+    color_code?: string;
 }
 
 export type Size = {
