@@ -33,8 +33,8 @@ import type { AnalyticsSetting } from "@/app/(main)/settings/analytics/page";
 
 const analyticsFormSchema = z.object({
   locationId: z.string().min(1, "Please select a location."),
-  facebookPixelId: z.string().optional(),
-  googleAnalyticsId: z.string().optional(),
+  keyName: z.enum(["facebookPixelId", "googleAnalyticsId"], { required_error: "Please select a key type."}),
+  value: z.string().min(1, "A value is required for the key."),
 });
 
 type AnalyticsFormValues = z.infer<typeof analyticsFormSchema>;
@@ -55,32 +55,32 @@ export function AnalyticsFormDialog({ children, setting, onSave }: AnalyticsForm
     resolver: zodResolver(analyticsFormSchema),
     defaultValues: {
         locationId: setting?.locationId || "",
-        facebookPixelId: setting?.facebookPixelId || "",
-        googleAnalyticsId: setting?.googleAnalyticsId || "",
     },
     mode: "onChange",
   });
 
   useEffect(() => {
     if (setting) {
+        // Since we don't know which key is being edited beforehand,
+        // we can't pre-fill keyName and value. The user will have to select it.
         form.reset({
             locationId: setting.locationId,
-            facebookPixelId: setting.facebookPixelId,
-            googleAnalyticsId: setting.googleAnalyticsId,
+            keyName: undefined,
+            value: '',
         });
     } else {
         form.reset({
             locationId: "",
-            facebookPixelId: "",
-            googleAnalyticsId: "",
+            keyName: undefined,
+            value: '',
         });
     }
-  }, [setting, form]);
+  }, [setting, form, isOpen]);
 
   function onSubmit(data: AnalyticsFormValues) {
     setIsLoading(true);
     // In a real app, you would save these credentials to your backend.
-    console.log("Saving Analytics credentials for location:", data.locationId, data);
+    console.log("Saving Analytics credentials for location:", data.locationId, { [data.keyName]: data.value });
     
     // Simulate API call
     setTimeout(() => {
@@ -128,38 +128,40 @@ export function AnalyticsFormDialog({ children, setting, onSave }: AnalyticsForm
                             </FormItem>
                         )}
                         />
-                        <FormField
-                        control={form.control}
-                        name="facebookPixelId"
-                        render={({ field }) => (
+                         <FormField
+                          control={form.control}
+                          name="keyName"
+                          render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Facebook Pixel ID</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Enter your Facebook Pixel ID" {...field} />
-                            </FormControl>
-                             <FormDescription>
-                                Your Pixel ID from the Facebook Events Manager.
-                            </FormDescription>
-                            <FormMessage />
+                              <FormLabel>Key Name</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a key type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="facebookPixelId">Facebook Pixel ID</SelectItem>
+                                  <SelectItem value="googleAnalyticsId">Google Analytics ID</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
                             </FormItem>
-                        )}
+                          )}
                         />
-                        <FormField
-                        control={form.control}
-                        name="googleAnalyticsId"
-                        render={({ field }) => (
+                         <FormField
+                          control={form.control}
+                          name="value"
+                          render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Google Analytics ID</FormLabel>
-                            <FormControl>
-                                <Input placeholder="Enter your Measurement ID (e.g., G-XXXXXXXXXX)" {...field} />
-                            </FormControl>
-                            <FormDescription>
-                                Your "G-" Measurement ID from Google Analytics.
-                            </FormDescription>
-                            <FormMessage />
+                              <FormLabel>Value</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter the tracking ID or value" {...field} />
+                              </FormControl>
+                              <FormMessage />
                             </FormItem>
-                        )}
-                    />
+                          )}
+                        />
                     <DialogFooter>
                         <Button variant="outline" type="button" onClick={() => setIsOpen(false)}>Cancel</Button>
                         <Button type="submit" disabled={isLoading}>
