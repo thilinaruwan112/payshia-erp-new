@@ -160,9 +160,9 @@ export function ColorForm({ color }: ColorFormProps) {
                      </FormControl>
                      <Input 
                         type="color" 
-                        className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-8 p-0 border-0 cursor-pointer"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-8 p-0 border-0 cursor-pointer bg-transparent"
                         value={field.value}
-                        onChange={field.onChange}
+                        onInput={field.onChange}
                      />
                    </div>
                   <FormMessage />
