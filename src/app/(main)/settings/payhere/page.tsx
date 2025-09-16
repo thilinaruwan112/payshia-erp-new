@@ -47,7 +47,7 @@ export default function PayhereSettingsPage() {
         };
         setIsLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/key-settings/company/${company_id}`);
+            const response = await fetch(`https://server-erp.payshia.com/key-settings/company?company_id=${company_id}`);
             if (!response.ok) throw new Error('Failed to fetch settings.');
             const data: KeySetting[] = await response.json();
             
