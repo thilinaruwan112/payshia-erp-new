@@ -50,8 +50,9 @@ export default function AnalyticsSettingsPage() {
             if (!response.ok) throw new Error('Failed to fetch settings.');
             const data: KeySetting[] = await response.json();
 
-            const analyticsKeys = ['Facebook Pixel ID', 'Google Analytics ID'];
-            const filteredSettings = data.filter(setting => analyticsKeys.includes(setting.key));
+            // Exclude PayHere keys, as they have their own page
+            const payhereKeys = ['Merchant ID', 'Merchant Secret'];
+            const filteredSettings = data.filter(setting => !payhereKeys.includes(setting.key));
 
             const settingsWithNames = filteredSettings.map(setting => ({
                 ...setting,
