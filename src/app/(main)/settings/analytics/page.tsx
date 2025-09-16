@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { AnalyticsFormDialog } from '@/components/analytics-form';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -83,8 +83,36 @@ export default function AnalyticsSettingsPage() {
     }
 
     useEffect(() => {
-        refreshSettings();
+        if(availableLocations.length > 0) {
+            refreshSettings();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [company_id, availableLocations]);
+
+    const displayData = useMemo(() => {
+        return settings.flatMap(setting => {
+            const rows = [];
+            if (setting.facebookPixelId) {
+                rows.push({
+                    id: `${setting.id}-fb`,
+                    locationName: setting.locationName,
+                    keyName: 'Facebook Pixel ID',
+                    value: setting.facebookPixelId,
+                    originalSetting: setting,
+                });
+            }
+            if (setting.googleAnalyticsId) {
+                rows.push({
+                    id: `${setting.id}-ga`,
+                    locationName: setting.locationName,
+                    keyName: 'Google Analytics ID',
+                    value: setting.googleAnalyticsId,
+                    originalSetting: setting,
+                });
+            }
+            return rows;
+        });
+    }, [settings]);
 
     return (
         <div className="flex flex-col gap-6">
@@ -104,22 +132,22 @@ export default function AnalyticsSettingsPage() {
             </div>
              <Card>
                 <CardHeader>
-                    <CardTitle>Configured Locations</CardTitle>
-                    <CardDescription>A list of all locations with analytics tracking IDs.</CardDescription>
+                    <CardTitle>Configured Keys</CardTitle>
+                    <CardDescription>A list of all analytics tracking IDs for your locations.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Location</TableHead>
-                                <TableHead>Facebook Pixel ID</TableHead>
-                                <TableHead>Google Analytics ID</TableHead>
+                                <TableHead>Key Name</TableHead>
+                                <TableHead>Value</TableHead>
                                 <TableHead><span className="sr-only">Actions</span></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
-                                Array.from({length: 2}).map((_, i) => (
+                                Array.from({length: 4}).map((_, i) => (
                                     <TableRow key={i}>
                                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                                         <TableCell><Skeleton className="h-4 w-48" /></TableCell>
@@ -128,11 +156,11 @@ export default function AnalyticsSettingsPage() {
                                     </TableRow>
                                 ))
                             ) : (
-                                settings.map(setting => (
-                                    <TableRow key={setting.id}>
-                                        <TableCell className="font-medium">{setting.locationName}</TableCell>
-                                        <TableCell>{setting.facebookPixelId || '-'}</TableCell>
-                                        <TableCell>{setting.googleAnalyticsId || '-'}</TableCell>
+                                displayData.map(row => (
+                                    <TableRow key={row.id}>
+                                        <TableCell className="font-medium">{row.locationName}</TableCell>
+                                        <TableCell>{row.keyName}</TableCell>
+                                        <TableCell className="font-mono">{row.value}</TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
@@ -142,7 +170,7 @@ export default function AnalyticsSettingsPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent>
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <AnalyticsFormDialog setting={setting} onSave={refreshSettings}>
+                                                    <AnalyticsFormDialog setting={row.originalSetting} onSave={refreshSettings}>
                                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                                                             Edit
                                                         </DropdownMenuItem>
