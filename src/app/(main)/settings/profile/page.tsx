@@ -22,6 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Loader2 } from 'lucide-react';
+import { fetcher } from '@/lib/api';
 
 const profileFormSchema = z.object({
   first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
@@ -65,7 +66,7 @@ export default function ProfilePage() {
       };
       
       try {
-        const response = await fetch(`https://server-erp.payshia.com/users/${userId}`);
+        const response = await fetcher(`https://server-erp.payshia.com/users/${userId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch user data.');
         }
@@ -95,9 +96,8 @@ export default function ProfilePage() {
     };
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/users/${userId}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/users/${userId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
