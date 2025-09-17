@@ -32,6 +32,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLocation } from '@/components/location-provider';
+import { fetcher } from '@/lib/api';
 
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -49,7 +50,7 @@ export default function SuppliersPage() {
       }
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch suppliers');
         }
@@ -73,7 +74,7 @@ export default function SuppliersPage() {
     if (!selectedSupplier) return;
 
     try {
-      const response = await fetch(`https://server-erp.payshia.com/suppliers/${selectedSupplier.supplier_id}`, {
+      const response = await fetcher(`https://server-erp.payshia.com/suppliers/${selectedSupplier.supplier_id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
