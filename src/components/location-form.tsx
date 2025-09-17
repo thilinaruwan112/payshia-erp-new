@@ -124,12 +124,16 @@ export function LocationForm({ location }: LocationFormProps) {
     if (data.logo instanceof File) {
         formData.append('logo_path', data.logo);
     }
-    
-    const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
-    // For FormData, the method should be POST, and the backend should handle PUT logic if an ID is present.
-    // However, if your backend strictly requires PUT for updates, you might need a workaround. Let's assume POST works for both.
-    const method = 'POST';
 
+    const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
+    let method = 'POST';
+
+    // If updating, use POST with a _method field to signify a PUT request.
+    // This is a common workaround for sending FormData with PUT/PATCH.
+    if (location) {
+      formData.append('_method', 'PUT');
+    }
+    
     try {
       const response = await fetch(url, {
         method: method,
