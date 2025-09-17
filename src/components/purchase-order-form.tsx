@@ -76,11 +76,6 @@ interface PurchaseOrderFormProps {
     suppliers: Supplier[];
 }
 
-interface ProductWithVariants {
-    product: Product;
-    variants: ProductVariant[];
-}
-
 export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -129,7 +124,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to fetch products for this supplier');
         }
-        const data = await response.json();
+        const data: { products: ProductWithApiResponse[] } = await response.json();
         setAvailableProducts(data.products || []);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -219,7 +214,6 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
             description: `PO #${result.po_number} has been created successfully.`,
         });
         
-        // Open print view in new tab
         window.open(`/purchasing-print/purchase-orders/${result.id}`, '_blank');
 
         router.push('/purchasing/purchase-orders');
