@@ -35,6 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLocation } from '@/components/location-provider';
+import { fetcher } from '@/lib/api';
 
 
 const getStatusColor = (status: StockTransfer['status']) => {
@@ -68,8 +69,8 @@ export default function StockTransfersPage() {
             setIsLoading(true);
             try {
                 const [transfersResponse, locationsResponse] = await Promise.all([
-                    fetch(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${company_id}`),
-                    fetch(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`)
+                    fetcher(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${company_id}`),
+                    fetcher(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`)
                 ]);
 
                 if (!transfersResponse.ok) throw new Error('Failed to fetch stock transfers');

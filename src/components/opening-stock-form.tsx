@@ -40,6 +40,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
+import { fetcher } from "@/lib/api";
 
 interface ProductWithApiResponse {
   product: Product;
@@ -90,9 +91,9 @@ export function OpeningStockForm() {
       if (!company_id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
         if (!response.ok) throw new Error("Failed to fetch products");
-        const data: { products: ProductWithApiResponse[] } = await response.json();
+        const data = await response.json();
         setProducts(data.products || []);
       } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products.' });
@@ -154,9 +155,8 @@ export function OpeningStockForm() {
     }));
 
     try {
-        const response = await fetch('https://server-erp.payshia.com/stock-entries/bulk', {
+        const response = await fetcher('https://server-erp.payshia.com/stock-entries/bulk', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ entries: stockEntries }),
         });
 

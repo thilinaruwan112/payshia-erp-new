@@ -50,6 +50,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useCurrency } from "./currency-provider";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 const transferItemSchema = z.object({
   sku: z.string().min(1, "Product is required."),
@@ -105,7 +106,7 @@ export function TransferForm({ locations }: TransferFormProps) {
   React.useEffect(() => {
     async function fetchProducts() {
         try {
-            const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+            const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
@@ -169,7 +170,7 @@ export function TransferForm({ locations }: TransferFormProps) {
     if (!skuDetails) return;
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${skuDetails.variantId}&location_id=${fromLocationId}`);
+        const response = await fetcher(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${skuDetails.variantId}&location_id=${fromLocationId}`);
         if (!response.ok) {
             throw new Error('Failed to fetch stock for this product.');
         }
@@ -218,9 +219,8 @@ export function TransferForm({ locations }: TransferFormProps) {
     };
 
     try {
-        const response = await fetch('https://server-erp.payshia.com/stock-transfers', {
+        const response = await fetcher('https://server-erp.payshia.com/stock-transfers', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
 
