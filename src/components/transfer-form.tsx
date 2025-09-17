@@ -55,7 +55,7 @@ const transferItemSchema = z.object({
   sku: z.string().min(1, "Product is required."),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
   // This will store the JSON string of the selected batch
-  selectedBatch: z.string().min(1, "A batch must be selected"),
+  selectedBatch: z.string().min(1, "A batch must be selected."),
 });
 
 const transferFormSchema = z.object({
@@ -73,9 +73,9 @@ const transferFormSchema = z.object({
 
 type TransferFormValues = z.infer<typeof transferFormSchema>;
 
-interface ProductWithVariants {
+interface ProductWithApiResponse {
   product: Product;
-  variants: ProductVariant[];
+  variants: { variant: ProductVariant }[];
 }
 
 interface StockInfo {
@@ -99,13 +99,13 @@ export function TransferForm({ locations }: TransferFormProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   const { currencySymbol } = useCurrency();
-  const [productsWithVariants, setProductsWithVariants] = React.useState<ProductWithVariants[]>([]);
+  const [productsWithVariants, setProductsWithVariants] = React.useState<ProductWithApiResponse[]>([]);
   const [availableBatches, setAvailableBatches] = React.useState<Record<number, StockInfo[]>>({});
 
   React.useEffect(() => {
     async function fetchProducts() {
         try {
-            const response = await fetch('https://server-erp.payshia.com/products/with-variants');
+            const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
@@ -115,16 +115,18 @@ export function TransferForm({ locations }: TransferFormProps) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch product data.' });
         }
     }
-    fetchProducts();
-  }, [toast]);
+    if (company_id) {
+        fetchProducts();
+    }
+  }, [company_id, toast]);
 
   const allSkus = React.useMemo(() => {
     return productsWithVariants.flatMap(p => 
         p.variants.map(v => ({
-            label: `${p.product.name} (${v.sku})`,
-            value: v.sku,
+            label: `${p.product.name} (${v.variant.sku})`,
+            value: v.variant.sku,
             productId: p.product.id,
-            variantId: v.id,
+            variantId: v.variant.id,
             costPrice: p.product.cost_price,
             sellingPrice: p.product.price,
         }))

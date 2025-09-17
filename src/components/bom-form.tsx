@@ -30,16 +30,16 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, ProductVariant } from "@/lib/types";
+import type { Product, ProductVariant, Recipe } from "@/lib/types";
 import { Loader2, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useLocation } from "./location-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
-interface ProductWithVariants {
+interface ProductWithApiResponse {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
 }
 
 const recipeItemSchema = z.object({
@@ -61,7 +61,7 @@ export function BomForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [products, setProducts] = useState<ProductWithVariants[]>([]);
+  const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id } = useLocation();
 
   const form = useForm<BomFormValues>({
@@ -82,7 +82,7 @@ export function BomForm() {
     async function fetchProducts() {
       if (!company_id) return;
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`);
+        const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
         if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
         setProducts(data.products || []);
@@ -95,9 +95,9 @@ export function BomForm() {
 
   const allSkus = React.useMemo(() => {
     return products.flatMap(p => 
-        p.variants.map(v => ({
-            label: `${p.product.name} (${v.sku})`,
-            value: v.id,
+        (p.variants || []).map(v => ({
+            label: `${p.product.name} (${v.variant.sku})`,
+            value: v.variant.id,
         }))
     );
   }, [products]);
