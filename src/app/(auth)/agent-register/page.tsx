@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { fetcher } from '@/lib/api';
 
 const agentRegisterFormSchema = z.object({
   first_name: z.string().min(2, { message: "First name must be at least 2 characters." }),
@@ -78,9 +79,8 @@ export default function AgentRegisterPage() {
     };
 
     try {
-        const response = await fetch('https://server-erp.payshia.com/users', {
+        const response = await fetcher('https://server-erp.payshia.com/users', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 

@@ -11,6 +11,7 @@ import { Button } from './ui/button';
 import { Printer, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { fetcher } from '@/lib/api';
 
 type Receipt = {
     id: string;
@@ -46,7 +47,7 @@ export function ReceiptView({ id }: ReceiptViewProps) {
         if (!id) return;
         setIsLoading(true);
         try {
-            const receiptResponse = await fetch(`https://server-erp.payshia.com/receipts/${id}`);
+            const receiptResponse = await fetcher(`https://server-erp.payshia.com/receipts/${id}`);
             if (!receiptResponse.ok) {
                 if (receiptResponse.status === 404) notFound();
                 throw new Error('Failed to fetch receipt data');
@@ -55,8 +56,8 @@ export function ReceiptView({ id }: ReceiptViewProps) {
             setReceipt(receiptData);
 
             const [customerResponse, invoiceResponse] = await Promise.all([
-                 fetch(`https://server-erp.payshia.com/customers/${receiptData.customer_id}`),
-                 fetch(`https://server-erp.payshia.com/invoices/full/${receiptData.ref_id}`)
+                 fetcher(`https://server-erp.payshia.com/customers/${receiptData.customer_id}`),
+                 fetcher(`https://server-erp.payshia.com/invoices/full/${receiptData.ref_id}`)
             ]);
             
              if (customerResponse.ok) {
@@ -128,7 +129,7 @@ export function ReceiptView({ id }: ReceiptViewProps) {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
               </Button>
-              <Button onClick={() => window.open(`/sales/receipts/${receipt.id}/print`, '_blank')}>
+              <Button onClick={() => window.open(`/sales-print/receipts/${receipt.id}`, '_blank')}>
                   <Printer className="mr-2 h-4 w-4" />
                   Print A4
               </Button>
@@ -209,4 +210,3 @@ function ReceiptViewSkeleton() {
     </div>
   );
 }
-

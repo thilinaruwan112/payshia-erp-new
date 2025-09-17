@@ -1,11 +1,12 @@
 
 import { ReceiptForm } from '@/components/receipt-form';
-import { type User } from '@/lib/types';
+import type { User } from '@/lib/types';
+import { fetcher } from '@/lib/api';
 
 async function getData(): Promise<{ customers: User[] }> {
     try {
         const [customerResponse] = await Promise.all([
-             fetch('https://server-erp.payshia.com/customers'),
+             fetcher('https://server-erp.payshia.com/customers'),
         ]);
         
         if (!customerResponse.ok) {

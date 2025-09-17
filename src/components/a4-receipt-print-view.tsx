@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { notFound } from 'next/navigation';
@@ -9,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import Image from 'next/image';
+import { fetcher } from '@/lib/api';
 
 type Receipt = {
     id: string;
@@ -53,7 +53,7 @@ export function A4ReceiptPrintView({ id }: PrintViewProps) {
         if (!id) return;
         setIsLoading(true);
         try {
-            const receiptResponse = await fetch(`https://server-erp.payshia.com/receipts/${id}`);
+            const receiptResponse = await fetcher(`https://server-erp.payshia.com/receipts/${id}`);
             if (!receiptResponse.ok) {
                 if (receiptResponse.status === 404) notFound();
                 throw new Error('Failed to fetch receipt data');
@@ -62,10 +62,10 @@ export function A4ReceiptPrintView({ id }: PrintViewProps) {
             setReceipt(receiptData);
 
             const [customerResponse, invoiceResponse, companyRes, locationRes] = await Promise.all([
-                 fetch(`https://server-erp.payshia.com/customers/${receiptData.customer_id}`),
-                 fetch(`https://server-erp.payshia.com/invoices/full/${receiptData.ref_id}`),
-                 fetch(`https://server-erp.payshia.com/companies/${receiptData.company_id}`),
-                 fetch(`https://server-erp.payshia.com/locations/${receiptData.location_id}`),
+                 fetcher(`https://server-erp.payshia.com/customers/${receiptData.customer_id}`),
+                 fetcher(`https://server-erp.payshia.com/invoices/full/${receiptData.ref_id}`),
+                 fetcher(`https://server-erp.payshia.com/companies/${receiptData.company_id}`),
+                 fetcher(`https://server-erp.payshia.com/locations/${receiptData.location_id}`),
             ]);
             
              if (customerResponse.ok) setCustomer(await customerResponse.json());

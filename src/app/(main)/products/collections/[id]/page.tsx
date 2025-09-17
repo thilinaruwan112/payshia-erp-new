@@ -2,6 +2,7 @@
 import { CollectionForm } from '@/components/collection-form';
 import { type Collection, type Product } from '@/lib/types';
 import { notFound } from 'next/navigation';
+import { fetcher } from '@/lib/api';
 
 interface CollectionData extends Collection {
   products: Product[];
@@ -17,8 +18,8 @@ interface CollectionProductLink {
 async function getCollection(id: string): Promise<CollectionData | null> {
     try {
         const [collectionResponse, collectionProductsResponse] = await Promise.all([
-             fetch(`https://server-erp.payshia.com/collections/${id}`),
-             fetch(`https://server-erp.payshia.com/collection-products/collection/${id}`)
+             fetcher(`https://server-erp.payshia.com/collections/${id}`),
+             fetcher(`https://server-erp.payshia.com/collection-products/collection/${id}`)
         ]);
 
         if (!collectionResponse.ok) {
@@ -42,7 +43,7 @@ async function getCollection(id: string): Promise<CollectionData | null> {
         }
 
         // Fetch all products and filter locally
-        const allProductsResponse = await fetch(`https://server-erp.payshia.com/products`);
+        const allProductsResponse = await fetcher(`https://server-erp.payshia.com/products`);
         if (!allProductsResponse.ok) {
             throw new Error('Failed to fetch all products');
         }
