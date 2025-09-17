@@ -35,6 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { useLocation } from '@/components/location-provider';
 import { Separator } from '@/components/ui/separator';
+import { fetcher } from '@/lib/api';
 
 type Receipt = {
     id: string;
@@ -68,8 +69,8 @@ export default function ReceiptsPage() {
             setIsLoading(true);
             try {
                 const [receiptResponse, customerResponse] = await Promise.all([
-                    fetch(`https://server-erp.payshia.com/receipts/company/${company_id}`),
-                    fetch('https://server-erp.payshia.com/customers'),
+                    fetcher(`https://server-erp.payshia.com/receipts/company/${company_id}`),
+                    fetcher('https://server-erp.payshia.com/customers'),
                 ]);
 
                 if (!receiptResponse.ok) throw new Error('Failed to fetch receipts');

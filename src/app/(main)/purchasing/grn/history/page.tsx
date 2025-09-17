@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -34,6 +33,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { useCurrency } from '@/components/currency-provider';
+import { fetcher } from '@/lib/api';
 
 export default function GrnHistoryPage() {
   const [grns, setGrns] = useState<GoodsReceivedNote[]>([]);
@@ -47,8 +47,8 @@ export default function GrnHistoryPage() {
       setIsLoading(true);
       try {
         const [grnResponse, suppliersResponse] = await Promise.all([
-          fetch('https://server-erp.payshia.com/grn'),
-          fetch('https://server-erp.payshia.com/suppliers')
+          fetcher('https://server-erp.payshia.com/grn'),
+          fetcher('https://server-erp.payshia.com/suppliers')
         ]);
 
         if (!grnResponse.ok) throw new Error('Failed to fetch GRNs');

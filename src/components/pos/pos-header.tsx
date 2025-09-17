@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -31,6 +32,7 @@ import { useLocation } from '../location-provider';
 import { Skeleton } from '../ui/skeleton';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { fetcher } from '@/lib/api';
 
 interface PosHeaderProps {
   searchTerm: string;

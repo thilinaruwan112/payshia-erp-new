@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -45,6 +46,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { fetcher } from '@/lib/api';
 
 
 const getLoyaltyTier = (points: number) => {
@@ -88,7 +90,7 @@ export default function CustomersPage() {
         setIsLoading(true);
         try {
             const [customersRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
             ]);
             if (!customersRes.ok) throw new Error('Failed to fetch customers');
             
@@ -107,7 +109,7 @@ export default function CustomersPage() {
   const handleDelete = async () => {
     if (!selectedCustomer) return;
     try {
-        const response = await fetch(`https://server-erp.payshia.com/customers/${selectedCustomer.customer_id}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/customers/${selectedCustomer.customer_id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
@@ -269,4 +271,3 @@ export default function CustomersPage() {
     </>
   );
 }
-

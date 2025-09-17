@@ -1,7 +1,7 @@
 
 'use client'
 
-import { type GoodsReceivedNote, type Supplier, type Product, type ProductVariant } from '@/lib/types';
+import { type GoodsReceivedNote, type Supplier, type Product, type ProductVariant, type Location } from '@/lib/types';
 import { notFound, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +13,7 @@ import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { format } from 'date-fns';
+import { fetcher } from '@/lib/api';
 
 interface GrnViewProps {
     id: string;
@@ -63,10 +64,10 @@ export function GrnView({ id }: GrnViewProps) {
       setIsLoading(true);
       try {
         const [grnResponse, suppliersResponse, productsResponse, variantsResponse] = await Promise.all([
-           fetch(`https://server-erp.payshia.com/grn/${id}`),
-           fetch('https://server-erp.payshia.com/suppliers'),
-           fetch('https://server-erp.payshia.com/products'),
-           fetch('https://server-erp.payshia.com/product-variants'),
+           fetcher(`https://server-erp.payshia.com/grn/${id}`),
+           fetcher('https://server-erp.payshia.com/suppliers'),
+           fetcher('https://server-erp.payshia.com/products'),
+           fetcher('https://server-erp.payshia.com/product-variants'),
         ]);
         
         if (!grnResponse.ok) {
@@ -105,7 +106,7 @@ export function GrnView({ id }: GrnViewProps) {
   
   const handlePrint = () => {
     if (grn) {
-      window.open(`/purchasing/grn/${grn.id}/print`, '_blank');
+      window.open(`/purchasing-print/grn/${grn.id}/print`, '_blank');
     }
   };
 

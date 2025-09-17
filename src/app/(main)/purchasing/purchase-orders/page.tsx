@@ -37,6 +37,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLocation } from '@/components/location-provider';
 import { useCurrency } from '@/components/currency-provider';
 import { Separator } from '@/components/ui/separator';
+import { fetcher } from '@/lib/api';
 
 const getStatusText = (status: string) => {
   switch (status) {
@@ -87,8 +88,8 @@ export default function PurchaseOrdersPage() {
       setIsLoading(true);
       try {
         const [poResponse, suppliersResponse] = await Promise.all([
-          fetch(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`),
-          fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`)
+          fetcher(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`),
+          fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`)
         ]);
 
         if (!poResponse.ok) {

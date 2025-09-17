@@ -40,16 +40,20 @@ export function LocationSelectionDialog({
               {locations.map((loc) => (
                 <Card
                   key={loc.location_id}
-                  className="hover:border-primary hover:shadow-lg transition-all cursor-pointer"
+                  className="hover:border-primary hover:shadow-lg transition-all cursor-pointer flex flex-col"
                   onClick={() => onSelectLocation(loc)}
                 >
-                  <CardHeader>
-                    <Building className="h-8 w-8 text-primary mb-2" />
-                    <CardTitle>{loc.location_name}</CardTitle>
+                  <CardHeader className="flex-grow">
+                    <div className="flex justify-center mb-4">
+                      <div className="p-4 bg-primary/10 rounded-full">
+                         <Building className="h-8 w-8 text-primary" />
+                      </div>
+                    </div>
+                    <CardTitle className="text-center">{loc.location_name}</CardTitle>
                   </CardHeader>
-                  <CardContent className="text-sm text-muted-foreground">
+                  <CardContent className="text-sm text-muted-foreground text-center">
                     <p>{loc.address_line1}</p>
-                    <p>{loc.city}</p>
+                    <p className="font-medium">{loc.city}</p>
                   </CardContent>
                 </Card>
               ))}

@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { type GoodsReceivedNote, type Supplier } from '@/lib/types';
@@ -14,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useCurrency } from '../currency-provider';
 import { useLocation } from '../location-provider';
 import { useToast } from '@/hooks/use-toast';
+import { fetcher } from '@/lib/api';
 
 const getStatusText = (status: string) => {
   switch (status) {
@@ -47,7 +49,7 @@ export const GrnReportView = ({ grns }: { grns: GoodsReceivedNote[] }) => {
         async function fetchSuppliers() {
             if (!company_id) return;
             try {
-                const response = await fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`);
+                const response = await fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`);
                 if (response.ok) {
                     setSuppliers(await response.json());
                 }

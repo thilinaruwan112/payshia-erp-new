@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -17,6 +18,7 @@ import { format, isToday } from 'date-fns';
 import { useCurrency } from '@/components/currency-provider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { fetcher } from '@/lib/api';
 
 interface TodaySalesDialogProps {
   isOpen: boolean;
@@ -46,7 +48,7 @@ export function TodaySalesDialog({
     if (!company_id || !currentLocation) return;
     setIsLoading(true);
     try {
-      const response = await fetch(
+      const response = await fetcher(
         `https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=1`
       );
       if (!response.ok) throw new Error('Failed to fetch invoices');
@@ -59,7 +61,7 @@ export function TodaySalesDialog({
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Could not fetch today\'s invoices.',
+        description: "Could not fetch today's invoices.",
       });
     } finally {
       setIsLoading(false);
@@ -113,7 +115,7 @@ export function TodaySalesDialog({
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <div className="font-bold text-lg text-right w-24">{currencySymbol}{parseFloat(inv.grand_total).toFixed(2)}</div>
-                                  <Button size="icon" variant="ghost" onClick={() => handleReprint(inv.id, inv.company_id)}><Printer className="h-4 w-4" /></Button>
+                                  <Button size="icon" variant="ghost" onClick={() => handleReprint(inv.invoice_number, inv.company_id)}><Printer className="h-4 w-4" /></Button>
                                 </div>
                             </div>
                         ))}

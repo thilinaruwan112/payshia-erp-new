@@ -35,6 +35,7 @@ import React from 'react';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fetcher } from '@/lib/api';
 
 const getAccountTypeColor = (type: Account['type']) => {
   switch (type) {
@@ -68,7 +69,7 @@ export default function ChartOfAccountsPage() {
     async function fetchAccounts() {
         setIsLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`);
+            const response = await fetcher(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch chart of accounts');
             }

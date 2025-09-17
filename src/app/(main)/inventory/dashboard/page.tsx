@@ -33,6 +33,7 @@ import Link from 'next/link';
 import type { InventoryItem, Product, StockTransfer } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fetcher } from '@/lib/api';
 
 export default function InventoryDashboard() {
   const { currentLocation, isLoading: isLocationLoading, company_id } = useLocation();
@@ -51,9 +52,9 @@ export default function InventoryDashboard() {
         setIsLoading(true);
         try {
             const [inventoryRes, productsRes, transfersRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/inventory/location/${currentLocation.location_id}`),
-                fetch('https://server-erp.payshia.com/products'),
-                fetch(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${company_id}`)
+                fetcher(`https://server-erp.payshia.com/inventory/location/${currentLocation.location_id}`),
+                fetcher('https://server-erp.payshia.com/products'),
+                fetcher(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${company_id}`)
             ]);
             if (!inventoryRes.ok) throw new Error('Failed to fetch inventory');
             if (!productsRes.ok) throw new Error('Failed to fetch products');

@@ -18,10 +18,10 @@ export default function AppLayout({
   const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem('token');
     const companyId = localStorage.getItem('companyId');
 
-    if (!userId) {
+    if (!token) {
       router.replace('/login');
     } else if (!companyId) {
       // If user is logged in but has no company, redirect to create one

@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useState, useEffect } from 'react';
@@ -8,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocation } from './location-provider';
 import type { Order } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
+import { fetcher } from '@/lib/api';
 
 export function SalesChart() {
   const [data, setData] = useState<any[]>([]);
@@ -23,7 +25,7 @@ export function SalesChart() {
     async function fetchSalesData() {
         setIsLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`);
+            const response = await fetcher(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`);
             if (!response.ok) throw new Error('Failed to fetch sales data');
             const orders: Order[] = await response.json();
             

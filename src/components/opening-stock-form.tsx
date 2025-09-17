@@ -40,10 +40,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
+import { fetcher } from "@/lib/api";
 
-interface ProductWithVariantsResponse {
-    product: Product;
-    variants: { variant: ProductVariant }[];
+interface ProductWithApiResponse {
+  product: Product;
+  variants: { variant: ProductVariant }[];
 }
 
 const openingStockItemSchema = z.object({
@@ -67,7 +68,7 @@ export function OpeningStockForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [products, setProducts] = useState<ProductWithVariantsResponse[]>([]);
+  const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id, currentLocation } = useLocation();
 
   const form = useForm<OpeningStockFormValues>({
@@ -90,7 +91,7 @@ export function OpeningStockForm() {
       if (!company_id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
         if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
         setProducts(data.products || []);
@@ -106,7 +107,7 @@ export function OpeningStockForm() {
   useEffect(() => {
       const selectedProduct = products.find(p => p.product.id === productId);
       if (selectedProduct) {
-          const variants = selectedProduct.variants.map(v => ({
+          const variants = (selectedProduct.variants || []).map(v => ({
               productVariantId: v.variant.id,
               productName: selectedProduct.product.name,
               sku: v.variant.sku,
@@ -154,9 +155,8 @@ export function OpeningStockForm() {
     }));
 
     try {
-        const response = await fetch('https://server-erp.payshia.com/stock-entries/bulk', {
+        const response = await fetcher('https://server-erp.payshia.com/stock-entries/bulk', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ entries: stockEntries }),
         });
 

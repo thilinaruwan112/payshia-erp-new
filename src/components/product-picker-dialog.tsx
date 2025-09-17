@@ -112,9 +112,10 @@ export function ProductPickerDialog({ children, onProductsSelected }: ProductPic
 
     const handleConfirm = () => {
         const result = selectedVariants.map(sv => {
-            const variantData = sv.productData.variants?.find(v => v.id === sv.id) || { id: sv.id, sku: sv.sku };
+            const fullProductData = selectableVariants.find(v => v.id === sv.id)?.productData;
+            const variantData = fullProductData?.variants?.find(v => v.id === sv.id) || { id: sv.id, sku: sv.sku };
             return {
-                ...sv.productData,
+                ...fullProductData!,
                 variant: variantData,
                 variantName: sv.name,
             };

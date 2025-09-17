@@ -26,6 +26,7 @@ import { useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 type Category = {
   id: string;
@@ -73,11 +74,8 @@ export function CategoryForm({ category }: CategoryFormProps) {
     const payload = { ...data, company_id: company_id };
 
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
       

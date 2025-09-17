@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -44,6 +45,7 @@ import {
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { fetcher } from '@/lib/api';
 
 interface CompanyUser {
   id: string;
@@ -124,8 +126,8 @@ export function UserManagement() {
       setIsLoading(true);
       try {
         const [companyUsersRes, allUsersRes] = await Promise.all([
-          fetch('https://server-erp.payshia.com/company-users'),
-          fetch('https://server-erp.payshia.com/users'),
+          fetcher('https://server-erp.payshia.com/company-users'),
+          fetcher('https://server-erp.payshia.com/users'),
         ]);
 
         if (!companyUsersRes.ok) throw new Error('Failed to fetch company user links');

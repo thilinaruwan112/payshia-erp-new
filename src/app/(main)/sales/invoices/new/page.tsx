@@ -7,6 +7,7 @@ import { useLocation } from '@/components/location-provider';
 import React, { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { fetcher } from '@/lib/api';
 
 export default function NewInvoicePage() {
     const { company_id } = useLocation();
@@ -30,7 +31,7 @@ export default function NewInvoicePage() {
             setIsLoading(true);
             try {
                 const [customersRes] = await Promise.all([
-                    fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`, { cache: 'no-store' }),
+                    fetcher(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`, { cache: 'no-store' }),
                 ]);
 
                 if (!customersRes.ok) {

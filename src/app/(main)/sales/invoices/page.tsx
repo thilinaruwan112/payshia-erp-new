@@ -36,6 +36,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useLocation } from '@/components/location-provider';
 import { Separator } from '@/components/ui/separator';
 import { useCurrency } from '@/components/currency-provider';
+import { fetcher } from '@/lib/api';
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -76,8 +77,8 @@ export default function InvoicesPage() {
         setIsLoading(true);
         try {
             const [invoiceResponse, customerResponse] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=1`),
-                fetch('https://server-erp.payshia.com/customers'),
+                fetcher(`https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=1`),
+                fetcher('https://server-erp.payshia.com/customers'),
             ]);
 
             if (!invoiceResponse.ok) throw new Error('Failed to fetch invoices');

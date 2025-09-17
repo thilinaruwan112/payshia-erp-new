@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useSearchParams } from 'next/navigation';
@@ -9,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/components/currency-provider';
 import { cn } from '@/lib/utils';
+import { fetcher } from '@/lib/api';
 
 interface Company {
     id: string;
@@ -49,8 +51,8 @@ function PrintViewContent() {
 
         try {
              const [poRes, companyRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${companyId}`),
-                fetch(`https://server-erp.payshia.com/companies/${companyId}`),
+                fetcher(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${companyId}`),
+                fetcher(`https://server-erp.payshia.com/companies/${companyId}`),
             ]);
 
             if (!poRes.ok) throw new Error('Failed to fetch purchase orders');

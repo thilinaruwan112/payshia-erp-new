@@ -46,6 +46,7 @@ import { format } from 'date-fns';
 import { useLocation } from '../location-provider';
 import { Badge } from '../ui/badge';
 import { useCurrency } from '../currency-provider';
+import { fetcher } from '@/lib/api';
 
 interface OrderPanelProps {
   order: ActiveOrder;
@@ -395,9 +396,8 @@ export function OrderPanel({
     };
 
     try {
-        const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+        const response = await fetcher('https://server-erp.payshia.com/pos-invoices', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
 
@@ -442,33 +442,21 @@ export function OrderPanel({
       });
       return;
     }
-    const orderData = {
-        orderId: order.id,
-        orderName: order.name,
-        cashierName: cashierName,
-        customerName: order.customer.name,
-        items: cart.map(item => ({ 
-            name: item.product.variantName, 
-            quantity: item.quantity,
-            price: item.product.price,
-            total: (item.product.price as number) * item.quantity,
-        })),
-        totals: {
-            subtotal: orderTotals.subtotal,
-            discount: orderTotals.discount + orderTotals.itemDiscounts,
-            serviceCharge: orderTotals.serviceCharge,
-            total: orderTotals.total,
-        },
+    const receiptData = {
+      orderName,
+      cashierName,
+      date: new Date().toISOString(),
+      items: cart.map(item => ({
+        name: item.product.variantName,
+        quantity: item.quantity,
+        price: item.product.price,
+        total: (item.product.price as number) * item.quantity,
+      })),
+      totals: orderTotals,
     };
     
-    const encodedData = btoa(JSON.stringify(orderData));
-    window.open(`/pos/guest-receipt/${order.id}?data=${encodedData}`, '_blank');
-    
-    toast({
-      title: 'Guest Receipt Printed!',
-      description: `Receipt for ${order.name} sent to the printer.`,
-      icon: <Receipt className="h-6 w-6 text-green-500" />,
-    });
+    const dataString = encodeURIComponent(JSON.stringify(receiptData));
+    window.open(`/pos/guest-receipt/print?data=${dataString}`, '_blank');
   };
 
   return (

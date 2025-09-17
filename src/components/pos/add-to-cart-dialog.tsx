@@ -23,6 +23,7 @@ import { format } from 'date-fns';
 import { useCurrency } from '../currency-provider';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
+import { fetcher } from '@/lib/api';
 
 interface AddToCartDialogProps {
   product: PosProduct | null;
@@ -67,7 +68,7 @@ export function AddToCartDialog({
 
         // Fetch Image
         try {
-           const imageResponse = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}`);
+           const imageResponse = await fetcher(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}`);
            if (imageResponse.ok) {
                const images: ProductImage[] = await imageResponse.json();
                const frontImage = images.find(img => img.image_type === 'front img');
@@ -82,7 +83,7 @@ export function AddToCartDialog({
         if (!isAlaCarte) {
             // Fetch Stock
             try {
-            const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}&location_id=${currentLocation.location_id}`);
+            const response = await fetcher(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}&location_id=${currentLocation.location_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch stock data.');
             }

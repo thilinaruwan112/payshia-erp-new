@@ -27,6 +27,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "./ui/textarea";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 const customFieldFormSchema = z.object({
   field_name: z.string().min(2, "Field name is required."),
@@ -62,11 +63,8 @@ export function CustomFieldForm() {
     const payload = { ...data, company_id: company_id, created_by: 'admin', updated_by: 'admin' };
 
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
       

@@ -1,4 +1,3 @@
-
 'use client'
 
 import { CategoryForm } from '@/components/category-form';
@@ -7,6 +6,7 @@ import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { fetcher } from '@/lib/api';
 
 type Category = {
   id: string;
@@ -25,7 +25,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
       if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/master-categories/${id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/master-categories/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();

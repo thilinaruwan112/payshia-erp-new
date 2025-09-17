@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -23,6 +22,7 @@ import { ReturnDialog, type ReturnItem } from '@/components/pos/dialogs/return-d
 import { RefundDialog } from '@/components/pos/dialogs/refund-dialog';
 import { TodaySalesDialog } from '@/components/pos/dialogs/today-sales-dialog';
 import { useCurrency } from '@/components/currency-provider';
+import { fetcher } from '@/lib/api';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -155,12 +155,12 @@ export default function POSPage() {
         setIsLoading(true);
         try {
             const [productsResponse, collectionsResponse, brandsResponse, customersResponse, tablesResponse, stewardsResponse] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/collections/company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/filter/users?user_status=3&company_id=${company_id}`)
+                fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/collections/company?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/filter/users?user_status=3&company_id=${company_id}`)
             ]);
 
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !customersResponse.ok) {
@@ -248,7 +248,7 @@ export default function POSPage() {
         }
         setIsLoadingPastInvoices(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/paid/by-customer?company_id=${company_id}&customer_code=${selectedReturnCustomer}`);
+            const response = await fetcher(`https://server-erp.payshia.com/invoices/filter/paid/by-customer?company_id=${company_id}&customer_code=${selectedReturnCustomer}`);
             if (!response.ok) throw new Error('Failed to fetch invoices');
             const data: Invoice[] = await response.json();
             setPastInvoices(data.filter(inv => inv.payment_status === 'Paid') || []);
@@ -267,7 +267,7 @@ export default function POSPage() {
   const handleInvoiceSelect = async (invoice: Invoice) => {
     if (!invoice) return;
     try {
-      const response = await fetch(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
+      const response = await fetcher(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
       if (!response.ok) throw new Error('Failed to fetch full invoice details.');
       const fullInvoice: Invoice = await response.json();
       const items = (fullInvoice.items || []).map(item => ({
@@ -313,9 +313,8 @@ export default function POSPage() {
     };
     
     try {
-        const response = await fetch('https://server-erp.payshia.com/transaction-returns', {
+        const response = await fetcher('https://server-erp.payshia.com/transaction-returns', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
         if (!response.ok) {
@@ -343,7 +342,7 @@ export default function POSPage() {
     setActiveFilter({ type, value });
     if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
         try {
-            const response = await fetch(`https://server-erp.payshia.com/collection-products/collection/${value}`);
+            const response = await fetcher(`https://server-erp.payshia.com/collection-products/collection/${value}`);
             if (!response.ok) throw new Error('Failed to fetch collection products');
             const data: CollectionProductLink[] = await response.json();
             setCollectionProducts(prev => ({ ...prev, [value]: data.map(p => p.product_id) }));
@@ -431,9 +430,8 @@ export default function POSPage() {
         const url = `https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${currentOrder.originalInvoiceNumber}`;
   
         try {
-            const response = await fetch(url, {
+            const response = await fetcher(url, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updatePayload),
             });
             const result = await response.json();
@@ -492,9 +490,8 @@ export default function POSPage() {
     };
 
     try {
-      const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+      const response = await fetcher('https://server-erp.payshia.com/pos-invoices', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const result = await response.json();

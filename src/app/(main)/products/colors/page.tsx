@@ -32,6 +32,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLocation } from '@/components/location-provider';
+import { fetcher } from '@/lib/api';
 
 export default function ColorsPage() {
   const [colors, setColors] = useState<Color[]>([]);
@@ -49,7 +50,7 @@ export default function ColorsPage() {
       };
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/product-colors/company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/product-colors/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch colors');
         }
@@ -73,7 +74,7 @@ export default function ColorsPage() {
     if (!selectedColor) return;
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/colors/${selectedColor.id}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/colors/${selectedColor.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
@@ -127,6 +128,7 @@ export default function ColorsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[100px]">Color</TableHead>
                 <TableHead>Color Name</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -137,6 +139,7 @@ export default function ColorsPage() {
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <TableRow key={i}>
+                    <TableCell><Skeleton className="h-6 w-6 rounded-full" /></TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-32" />
                     </TableCell>
@@ -148,6 +151,12 @@ export default function ColorsPage() {
               ) : (
                 colors.map((color) => (
                   <TableRow key={color.id}>
+                    <TableCell>
+                      <div
+                        className="h-6 w-6 rounded-full border"
+                        style={{ backgroundColor: color.color_code || '#ffffff' }}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium">{color.name}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>

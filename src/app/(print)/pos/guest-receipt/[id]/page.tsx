@@ -1,142 +1,89 @@
 
 'use client';
 
-import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useState, useRef } from 'react';
+import { notFound, useParams, useSearchParams } from 'next/navigation';
+import React, { useEffect, useState, useRef, Suspense } from 'react';
+import type { Invoice } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 
-type GuestReceiptItem = {
-    name: string;
-    quantity: number;
-    price: number;
-    total: number;
+interface Company {
+    id: string;
+    company_name: string;
+    company_address: string;
+    company_city: string;
+    company_email: string;
+    company_telephone: string;
 }
 
-type GuestReceiptData = {
-    orderId: string;
-    orderName: string;
-    cashierName: string;
-    customerName: string;
-    items: GuestReceiptItem[];
-    totals: {
-        subtotal: number;
-        discount: number;
-        serviceCharge: number;
-        total: number;
-    }
-}
-
-// Extend the Window interface
 declare global {
   interface Window {
       JSPM: any;
   }
 }
 
-export default function GuestReceiptPage({ params }: { params: { id: string } }) {
+function GuestReceiptContent() {
   const searchParams = useSearchParams();
-  const [receiptData, setReceiptData] = useState<GuestReceiptData | null>(null);
+  const [receiptData, setReceiptData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [connected, setConnected] = useState(false);
-
+  const [isJspmConnected, setIsJspmConnected] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     try {
         const data = searchParams.get('data');
         if (data) {
-            const decodedData = atob(data);
-            const parsedData: GuestReceiptData = JSON.parse(decodedData);
-            setReceiptData(parsedData);
+            setReceiptData(JSON.parse(decodeURIComponent(data)));
         }
-    } catch (error) {
-        console.error("Failed to parse guest receipt data", error);
+    } catch (e) {
+        console.error("Failed to parse receipt data from URL", e);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not read receipt data.",
+        });
     } finally {
         setIsLoading(false);
     }
-  }, [searchParams]);
+  }, [searchParams, toast]);
 
-  const handlePrint = async () => {
-    if (!window.JSPM || !connected || !receiptRef.current) {
-        console.warn("JSPM not ready or KOT element not found. Falling back to browser print.");
-        setTimeout(() => window.print(), 500);
-        return;
+  useEffect(() => {
+    if (typeof window !== "undefined" && !window.JSPM) {
+      const script = document.createElement('script');
+      script.src = "https://unpkg.com/jsprintmanager/JSPrintManager.js";
+      script.async = true;
+      document.body.appendChild(script);
     }
 
-    try {
-        const element = receiptRef.current;
-        const canvas = await html2canvas(element, { scale: 2 });
-
-        const b64Prefix = "data:image/png;base64,";
-        const imgBase64DataUri = canvas.toDataURL("image/png");
-        const imgBase64Content = imgBase64DataUri.substring(b64Prefix.length);
-
-        const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
-
-        const cpj = new ClientPrintJob();
-        const myPrinter = new InstalledPrinter("Microsoft Print to PDF");
-        
-        cpj.clientPrinter = myPrinter;
-
-        const myImageFile = new PrintFile(
-            imgBase64Content,
-            FileSourceType.Base64,
-            `GUEST-RCPT-${receiptData?.orderId}.png`,
-            1
-        );
-        cpj.files.push(myImageFile);
-
-        cpj.sendToClient();
-
-        setTimeout(() => {
-            window.close();
-        }, 3000);
-
-    } catch (error) {
-        console.error("Printing error:", error);
-        alert("An error occurred while printing. Please try again.");
-    }
-  };
-
-
-   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const initJSPM = () => {
-        if (!window.JSPM) {
-          console.error("JSPM script not loaded! Make sure the client app is running.");
-          return;
+    const initJspm = () => {
+        if(window.JSPM) {
+            try {
+                window.JSPM.JSPrintManager.auto_reconnect = true;
+                window.JSPM.JSPrintManager.start();
+                window.JSPM.JSPrintManager.WS.onOpen = () => setIsJspmConnected(true);
+                window.JSPM.JSPrintManager.WS.onClose = () => setIsJspmConnected(false);
+            } catch (error) {
+                console.error("Failed to start JSPM:", error);
+            }
         }
-
-        const { JSPrintManager } = window.JSPM;
-        JSPrintManager.auto_reconnect = true;
-        JSPrintManager.start();
-
-        JSPrintManager.WS.onOpen = () => {
-          console.log("✅ JSPM Connected!");
-          setConnected(true);
-        };
-
-        JSPrintManager.WS.onClose = () => {
-          console.log("❌ JSPM Disconnected!");
-          setConnected(false);
-        };
-      };
-      
-      setTimeout(initJSPM, 500);
     }
+    setTimeout(initJspm, 500);
   }, []);
 
-   useEffect(() => {
-    if (connected && !isLoading && receiptData) {
+  const handlePrint = async () => {
+    if (!receiptRef.current) return;
+    setTimeout(() => window.print(), 500);
+  };
+
+  useEffect(() => {
+    if (!isLoading && receiptData) {
         document.title = `Guest Receipt - ${receiptData.orderName}`;
         handlePrint();
-    } else if (!isLoading && receiptData && typeof window !== "undefined" && !window.JSPM) {
-        console.warn("JSPM not found. Falling back to browser print.");
-        setTimeout(() => window.print(), 500);
     }
-  }, [connected, isLoading, receiptData]);
+  }, [isLoading, receiptData, isJspmConnected]);
 
   if (isLoading || !receiptData) {
     return (
@@ -156,6 +103,9 @@ export default function GuestReceiptPage({ params }: { params: { id: string } })
     );
   }
   
+  const { items, totals, orderName, cashierName, date } = receiptData;
+  const totalDiscount = totals.itemDiscounts + totals.discount;
+  
   return (
     <div ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
       <div className="text-center mb-2">
@@ -164,12 +114,11 @@ export default function GuestReceiptPage({ params }: { params: { id: string } })
       </div>
       
       <div className="flex justify-between text-xs">
-        <p>Order: {receiptData.orderName}</p>
-        <p>{format(new Date(), "dd/MM/yy HH:mm")}</p>
+        <p>Order: {orderName}</p>
+        <p>{format(new Date(date), "dd/MM/yy HH:mm")}</p>
       </div>
        <div className="flex justify-between text-xs">
-        <p>Cashier: {receiptData.cashierName}</p>
-        <p>Customer: {receiptData.customerName}</p>
+        <p>Cashier: {cashierName}</p>
       </div>
 
       <div className="my-2 border-t-2 border-dashed border-black"></div>
@@ -184,11 +133,11 @@ export default function GuestReceiptPage({ params }: { params: { id: string } })
             </tr>
         </thead>
         <tbody>
-          {receiptData.items?.map((item, index) => (
+          {items?.map((item: any, index: number) => (
             <tr key={index}>
               <td className="py-1 align-top w-[50%]">{item.name}</td>
               <td className="py-1 align-top text-center">{item.quantity}</td>
-              <td className="py-1 align-top text-right">${(item.price as number).toFixed(2)}</td>
+              <td className="py-1 align-top text-right">${item.price.toFixed(2)}</td>
               <td className="py-1 align-top text-right">${item.total.toFixed(2)}</td>
             </tr>
           ))}
@@ -199,19 +148,19 @@ export default function GuestReceiptPage({ params }: { params: { id: string } })
        <div className="space-y-1 text-xs">
         <div className="flex justify-between">
           <span>Subtotal:</span>
-          <span>${receiptData.totals.subtotal.toFixed(2)}</span>
+          <span>${totals.subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
           <span>Discount:</span>
-          <span>-${receiptData.totals.discount.toFixed(2)}</span>
+          <span>-${totalDiscount.toFixed(2)}</span>
         </div>
          <div className="flex justify-between">
           <span>Service Charge:</span>
-          <span>${receiptData.totals.serviceCharge.toFixed(2)}</span>
+          <span>${totals.serviceCharge.toFixed(2)}</span>
         </div>
         <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
           <span>TOTAL:</span>
-          <span>${receiptData.totals.total.toFixed(2)}</span>
+          <span>${totals.total.toFixed(2)}</span>
         </div>
       </div>
 
@@ -220,4 +169,12 @@ export default function GuestReceiptPage({ params }: { params: { id: string } })
        </div>
     </div>
   );
+}
+
+export default function GuestReceiptPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <GuestReceiptContent />
+        </Suspense>
+    )
 }

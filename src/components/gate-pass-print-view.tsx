@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
+import Image from 'next/image';
 
 interface PrintViewProps {
     id: string;
@@ -106,14 +107,19 @@ export function GatePassPrintView({ id }: PrintViewProps) {
   }));
 
   const totalQuantity = invoiceItems?.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
+  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
+
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
-          <p>{location?.address_line1}, {location?.city}</p>
-          <p>{company?.company_email}</p>
+        <div className="flex items-center gap-4">
+            {logoUrl && <Image src={logoUrl} alt="Company Logo" width={80} height={80} className="rounded-md" />}
+            <div>
+                <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
+                <p>{location?.address_line1}, {location?.city}</p>
+                <p>{company?.company_email}</p>
+            </div>
         </div>
         <div className="text-right">
           <h2 className="text-4xl font-bold uppercase text-gray-700">Gate Pass</h2>

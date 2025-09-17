@@ -32,6 +32,7 @@ import { X, UploadCloud, Loader2 } from "lucide-react";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 const collectionFormSchema = z.object({
   title: z.string().min(3, {
@@ -101,22 +102,42 @@ export function CollectionForm({ collection }: CollectionFormProps) {
       return;
     }
     setIsLoading(true);
-    const url = collection ? `https://server-erp.payshia.com/collections/${collection.id}` : 'https://server-erp.payshia.com/collections';
-    const method = collection ? 'PUT' : 'POST';
 
-    const formData = new FormData();
-    formData.append('title', data.title);
-    formData.append('description', data.description || '');
-    formData.append('status', data.status);
-    formData.append('company_id', String(company_id));
+    const url = collection ? `https://server-erp.payshia.com/collections/${collection.id}` : 'https://server-erp.payshia.com/collections';
+    let method = collection ? 'PUT' : 'POST';
+    
+    let body;
+    const headers = new Headers();
+
     if (coverImageFile) {
+        const formData = new FormData();
+        formData.append('title', data.title);
+        formData.append('description', data.description || '');
+        formData.append('status', data.status);
+        formData.append('company_id', String(company_id));
         formData.append('image', coverImageFile);
+        
+        // Use POST with _method spoofing for file uploads on update
+        if (collection) {
+            formData.append('_method', 'PUT');
+            method = 'POST';
+        }
+        body = formData;
+    } else {
+        body = JSON.stringify({
+            title: data.title,
+            description: data.description || '',
+            status: data.status,
+            company_id: company_id,
+        });
+        headers.append('Content-Type', 'application/json');
     }
     
     try {
-        const response = await fetch(url, {
+        const response = await fetcher(url, {
             method: method,
-            body: formData,
+            body: body,
+            headers: headers,
         });
 
         const result = await response.json();
@@ -135,9 +156,8 @@ export function CollectionForm({ collection }: CollectionFormProps) {
         const productsToAdd = currentProducts.filter(p => !p.collectionProductId);
 
         for (const productToAdd of productsToAdd) {
-            await fetch('https://server-erp.payshia.com/collection-products', {
+            await fetcher('https://server-erp.payshia.com/collection-products', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     collection_id: collectionId, 
                     product_id: parseInt(productToAdd.id, 10),
@@ -188,7 +208,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
 
     // If it's a saved product, call the API to delete the association
     try {
-        const response = await fetch(`https://server-erp.payshia.com/collection-products/${productToRemove.collectionProductId}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/collection-products/${productToRemove.collectionProductId}`, {
             method: 'DELETE',
         });
 

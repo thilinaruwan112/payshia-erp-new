@@ -12,6 +12,7 @@ import { Printer, ArrowLeft } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { fetcher } from '@/lib/api';
 
 interface TransferViewProps {
     id: string;
@@ -46,10 +47,10 @@ export function TransferView({ id }: TransferViewProps) {
       setIsLoading(true);
       try {
         const [transferResponse, locationsResponse, productsResponse, variantsResponse] = await Promise.all([
-           fetch(`https://server-erp.payshia.com/stock-transfers/${id}`),
-           fetch('https://server-erp.payshia.com/locations'),
-           fetch('https://server-erp.payshia.com/products'),
-           fetch('https://server-erp.payshia.com/product-variants'),
+           fetcher(`https://server-erp.payshia.com/stock-transfers/${id}`),
+           fetcher('https://server-erp.payshia.com/locations'),
+           fetcher('https://server-erp.payshia.com/products'),
+           fetcher('https://server-erp.payshia.com/product-variants'),
         ]);
         
         if (!transferResponse.ok) {

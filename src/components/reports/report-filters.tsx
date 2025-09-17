@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import React, { useEffect, useState, Suspense } from 'react';
@@ -27,6 +28,7 @@ import { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { fetcher } from '@/lib/api';
 
 interface ProductWithVariants {
     product: Product;
@@ -75,7 +77,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             if (!company_id) return;
             const fetchData = async (url: string, setData: React.Dispatch<React.SetStateAction<any[]>>, type: string) => {
                  try {
-                    const response = await fetch(url);
+                    const response = await fetcher(url);
                     if (!response.ok) throw new Error(`Failed to fetch ${type}`);
                     const data = await response.json();
                     if (type === 'products') {
@@ -177,7 +179,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             }
             
             const finalUrl = `${url}?${params.toString()}`;
-            const response = await fetch(finalUrl);
+            const response = await fetcher(finalUrl);
             if (!response.ok) throw new Error(`Failed to fetch ${reportName} data`);
             const data = await response.json();
             onShowReport(reportName === 'Item Master Report' ? data.products || [] : data || []);

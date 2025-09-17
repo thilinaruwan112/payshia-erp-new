@@ -26,9 +26,11 @@ import type { Color } from "@/lib/types";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 const colorFormSchema = z.object({
   name: z.string().min(2, "Color name must be at least 2 characters."),
+  color_code: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Must be a valid hex color code."),
 });
 
 type ColorFormValues = z.infer<typeof colorFormSchema>;
@@ -45,6 +47,7 @@ export function ColorForm({ color }: ColorFormProps) {
 
   const defaultValues: Partial<ColorFormValues> = {
     name: color?.name || "",
+    color_code: color?.color_code || "#000000",
   };
 
   const form = useForm<ColorFormValues>({
@@ -65,11 +68,8 @@ export function ColorForm({ color }: ColorFormProps) {
     const payload = { ...data, company_id: company_id };
 
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
 
@@ -132,7 +132,7 @@ export function ColorForm({ color }: ColorFormProps) {
           <CardHeader>
             <CardTitle>Color Information</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <FormField
               control={form.control}
               name="name"
@@ -142,6 +142,27 @@ export function ColorForm({ color }: ColorFormProps) {
                   <FormControl>
                     <Input placeholder="e.g. Midnight Black" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="color_code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Color Code</FormLabel>
+                   <div className="relative flex items-center">
+                     <FormControl>
+                        <Input placeholder="#000000" {...field} className="pl-12" />
+                     </FormControl>
+                     <Input 
+                        type="color" 
+                        className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-8 p-0 border-0 cursor-pointer bg-transparent"
+                        value={field.value}
+                        onInput={field.onChange}
+                     />
+                   </div>
                   <FormMessage />
                 </FormItem>
               )}

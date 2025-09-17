@@ -13,6 +13,7 @@ import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { useCurrency } from './currency-provider';
+import { fetcher } from '@/lib/api';
 
 interface PurchaseOrderViewProps {
     id: string;
@@ -65,11 +66,11 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
       setIsLoading(true);
       try {
         const [poResponse, suppliersResponse, productsResponse, variantsResponse, locationsResponse] = await Promise.all([
-           fetch(`https://server-erp.payshia.com/purchase-orders/${id}`),
-           fetch('https://server-erp.payshia.com/suppliers'),
-           fetch('https://server-erp.payshia.com/products'),
-           fetch('https://server-erp.payshia.com/product-variants'),
-           fetch('https://server-erp.payshia.com/locations'),
+           fetcher(`https://server-erp.payshia.com/purchase-orders/${id}`),
+           fetcher('https://server-erp.payshia.com/suppliers'),
+           fetcher('https://server-erp.payshia.com/products'),
+           fetcher('https://server-erp.payshia.com/product-variants'),
+           fetcher('https://server-erp.payshia.com/locations'),
         ]);
         
         if (!poResponse.ok) {
@@ -255,14 +256,27 @@ function PurchaseOrderViewSkeleton() {
             </CardHeader>
             <CardContent>
                 <div className="space-y-2">
-                    {Array.from({length: 3}).map((_, i) => (
-                        <div key={i} className="flex justify-between items-center py-2">
-                            <div className="flex-1 space-y-2"><Skeleton className="h-4 w-1/2" /><Skeleton className="h-3 w-1/4" /></div>
-                            <Skeleton className="h-4 w-12" />
-                            <Skeleton className="h-4 w-16" />
-                            <Skeleton className="h-4 w-20" />
-                        </div>
-                    ))}
+                    <TableRow>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    </TableRow>
+                     <TableRow>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    </TableRow>
+                     <TableRow>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                    </TableRow>
                 </div>
             </CardContent>
         </Card>

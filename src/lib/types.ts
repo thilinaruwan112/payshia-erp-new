@@ -455,6 +455,7 @@ export type Model = {
 export type Color = {
     id: string;
     name: string;
+    color_code?: string;
 }
 
 export type Size = {
@@ -584,3 +585,13 @@ export type Warranty = {
     status: 'Active' | 'Expired' | 'Void';
     coverageDetails?: string;
 }
+
+export type KeySetting = {
+  id: string;
+  company_id: string;
+  location_id: string;
+  key: string;
+  value: string;
+  locationName?: string; // For client-side display
+  originalSetting?: KeySetting; // For forms
+};

@@ -33,6 +33,7 @@ import React from 'react';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fetcher } from '@/lib/api';
 
 export default function ExpensesPage() {
     const { currencySymbol } = useCurrency();
@@ -49,7 +50,7 @@ export default function ExpensesPage() {
         async function fetchExpenses() {
             setIsLoading(true);
             try {
-                const response = await fetch(`https://server-erp.payshia.com/expenses/company?company_id=${company_id}`);
+                const response = await fetcher(`https://server-erp.payshia.com/expenses/company?company_id=${company_id}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch expenses');
                 }

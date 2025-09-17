@@ -7,6 +7,7 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } fro
 import type { InventoryItem, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
+import { fetcher } from '@/lib/api';
 
 interface StockChartProps {
     locationId: string;
@@ -26,8 +27,8 @@ export function StockChart({ locationId }: StockChartProps) {
         setIsLoading(true);
         try {
             const [inventoryRes, productsRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/inventory/location/${locationId}`),
-                fetch('https://server-erp.payshia.com/products')
+                fetcher(`https://server-erp.payshia.com/inventory/location/${locationId}`),
+                fetcher('https://server-erp.payshia.com/products')
             ]);
             if (!inventoryRes.ok) throw new Error('Failed to fetch inventory');
             if (!productsRes.ok) throw new Error('Failed to fetch products');

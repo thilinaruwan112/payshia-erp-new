@@ -26,6 +26,7 @@ import type { Size } from "@/lib/types";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 const sizeFormSchema = z.object({
   value: z.string().min(1, "Size value is required."),
@@ -63,11 +64,8 @@ export function SizeForm({ size }: SizeFormProps) {
     const method = size ? 'PUT' : 'POST';
     const payload = { ...data, company_id: company_id };
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
 

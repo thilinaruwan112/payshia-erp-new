@@ -1,4 +1,3 @@
-
 'use client'
 
 import { SupplierForm } from '@/components/supplier-form';
@@ -8,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { fetcher } from '@/lib/api';
 
 export default function EditSupplierPage({ params }: { params: { id: string } }) {
   const [supplier, setSupplier] = useState<Supplier | null>(null);
@@ -20,7 +20,7 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
       if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/suppliers/${id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/suppliers/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();

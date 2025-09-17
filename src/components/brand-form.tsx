@@ -28,6 +28,7 @@ import { useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 const brandFormSchema = z.object({
   name: z.string().min(2, "Brand name must be at least 2 characters."),
@@ -69,11 +70,8 @@ export function BrandForm({ brand }: BrandFormProps) {
     const payload = { ...data, company_id: company_id };
 
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
       

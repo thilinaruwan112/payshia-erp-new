@@ -34,6 +34,7 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { fetcher } from '@/lib/api';
 
 export default function CollectionsPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -56,14 +57,14 @@ export default function CollectionsPage() {
       }
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/collections/company?company_id=${companyId}`);
+        const response = await fetcher(`https://server-erp.payshia.com/collections/company?company_id=${companyId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch collections');
         }
         const data: Collection[] = await response.json();
         
         const counts = await Promise.all(data.map(async (collection) => {
-            const countResponse = await fetch(`https://server-erp.payshia.com/collection-products/count/${collection.id}`);
+            const countResponse = await fetcher(`https://server-erp.payshia.com/collection-products/count/${collection.id}`);
             if (!countResponse.ok) {
                 console.error(`Failed to fetch count for collection ${collection.id}`);
                 return { ...collection, productCount: 0 };
@@ -92,7 +93,7 @@ export default function CollectionsPage() {
     if (!selectedCollection) return;
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/collections/${selectedCollection.id}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/collections/${selectedCollection.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {

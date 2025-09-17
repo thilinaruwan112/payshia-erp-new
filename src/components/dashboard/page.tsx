@@ -38,6 +38,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import type { InventoryItem, Product } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { fetcher } from '@/lib/api';
 
 export default function Dashboard() {
   const { currentLocation, isLoading: isLocationLoading, availableLocations } = useLocation();
@@ -55,8 +56,8 @@ export default function Dashboard() {
         setIsLoadingData(true);
         try {
             const [inventoryRes, productsRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/inventory/location/${currentLocation.location_id}`),
-                fetch('https://server-erp.payshia.com/products')
+                fetcher(`https://server-erp.payshia.com/inventory/location/${currentLocation.location_id}`),
+                fetcher('https://server-erp.payshia.com/products')
             ]);
             if (!inventoryRes.ok) throw new Error('Failed to fetch inventory');
             if (!productsRes.ok) throw new Error('Failed to fetch products');

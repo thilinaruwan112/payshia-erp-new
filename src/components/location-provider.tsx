@@ -6,6 +6,7 @@ import type { Location } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { usePathname } from 'next/navigation';
 import { LocationSelectionDialog } from './location-selection-dialog';
+import { fetcher } from '@/lib/api';
 
 interface LocationContextType {
   currentLocation: Location | null;
@@ -55,7 +56,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       
       setIsLoading(true);
       try {
-        const response = await fetch('https://server-erp.payshia.com/locations');
+        const response = await fetcher(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch locations');
         }
