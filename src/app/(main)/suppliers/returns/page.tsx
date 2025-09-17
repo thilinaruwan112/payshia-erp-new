@@ -27,6 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useLocation } from '@/components/location-provider';
+import { fetcher } from '@/lib/api';
 
 const supplierReturns: SupplierReturn[] = [
     {
@@ -69,8 +70,8 @@ export default function SupplierReturnsPage() {
         setIsLoading(true);
         try {
             const [grnResponse, suppliersResponse] = await Promise.all([
-            fetch(`https://server-erp.payshia.com/grn/company/${company_id}`),
-            fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`)
+            fetcher(`https://server-erp.payshia.com/grn/company/${company_id}`),
+            fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`)
             ]);
 
             if (!grnResponse.ok) throw new Error('Failed to fetch GRNs');
@@ -211,7 +212,7 @@ export default function SupplierReturnsPage() {
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                      <DropdownMenuItem asChild>
-                                                        <Link href={`/suppliers-print/returns/${sReturn.id}`}>View Details</Link>
+                                                        <Link href={`/suppliers/returns/${sReturn.id}`}>View Details</Link>
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
