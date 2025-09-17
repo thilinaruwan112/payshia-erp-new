@@ -124,10 +124,17 @@ export function LocationForm({ location }: LocationFormProps) {
     if (data.logo instanceof File) {
         formData.append('logo_path', data.logo);
     }
-
-    const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
-    const method = location ? 'PUT' : 'POST';
     
+    const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
+    // Use POST for both create and update when using FormData with file uploads.
+    // The backend should handle the update based on the _method field.
+    const method = 'POST';
+
+    // If updating, add the _method field to tell the backend to treat it as a PUT request.
+    if (location) {
+        formData.append('_method', 'PUT');
+    }
+
     try {
       const response = await fetch(url, {
         method: method,
@@ -358,4 +365,3 @@ export function LocationForm({ location }: LocationFormProps) {
   );
 }
 
-    
