@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,6 +41,7 @@ import { format } from "date-fns";
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 
 const grnBatchSchema = z.object({
@@ -131,11 +131,11 @@ export function GrnForm() {
 
         try {
             const [poResponse, suppliersResponse, productsResponse, variantsResponse, locationsResponse] = await Promise.all([
-                 fetch(`https://server-erp.payshia.com/purchase-orders/${poId}`),
-                 fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
-                 fetch('https://server-erp.payshia.com/products'),
-                 fetch('https://server-erp.payshia.com/product-variants'),
-                 fetch(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`)
+                 fetcher(`https://server-erp.payshia.com/purchase-orders/${poId}`),
+                 fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
+                 fetcher('https://server-erp.payshia.com/products'),
+                 fetcher('https://server-erp.payshia.com/product-variants'),
+                 fetcher(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`)
             ]);
             
             if (!poResponse.ok) throw new Error('Failed to fetch PO data');
@@ -162,7 +162,7 @@ export function GrnForm() {
                     const product = productsData.find(p => p.id === item.product_id);
                     const variant = variantsData.find(v => v.id === item.product_variant_id);
 
-                    const receivedQtyResponse = await fetch(`https://server-erp.payshia.com/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${poData.po_number}&company_id=${company_id}`);
+                    const receivedQtyResponse = await fetcher(`https://server-erp.payshia.com/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${poData.po_number}&company_id=${company_id}`);
                     let alreadyReceived = 0;
                     if(receivedQtyResponse.ok) {
                         const receivedQtyData = await receivedQtyResponse.json();

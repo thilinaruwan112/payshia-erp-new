@@ -24,6 +24,7 @@ import React, { useEffect, useState } from "react";
 import type { GrnFormValues } from "@/components/grn-form";
 import { useLocation } from "@/components/location-provider";
 import { useCurrency } from "@/components/currency-provider";
+import { fetcher } from "@/lib/api";
 
 const grnBatchSchema = z.object({
     batchNumber: z.string().min(1, "Batch number is required."),
@@ -154,11 +155,8 @@ export default function GrnConfirmationPage() {
         };
 
         try {
-            const response = await fetch('https://server-erp.payshia.com/grn', {
+            const response = await fetcher('https://server-erp.payshia.com/grn', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify(grnPayload),
             });
 

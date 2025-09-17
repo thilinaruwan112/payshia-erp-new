@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { type GoodsReceivedNote, type Supplier, type Product, type ProductVariant, type Location } from '@/lib/types';
@@ -9,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Image from 'next/image';
+import { fetcher } from '@/lib/api';
 
 interface PrintViewProps {
     id: string;
@@ -39,10 +39,10 @@ export function GrnPrintView({ id }: PrintViewProps) {
       setIsLoading(true);
       try {
         const [grnResponse, suppliersResponse, productsResponse, variantsResponse] = await Promise.all([
-           fetch(`https://server-erp.payshia.com/grn/${id}`),
-           fetch('https://server-erp.payshia.com/suppliers'),
-           fetch('https://server-erp.payshia.com/products'),
-           fetch('https://server-erp.payshia.com/product-variants'),
+           fetcher(`https://server-erp.payshia.com/grn/${id}`),
+           fetcher('https://server-erp.payshia.com/suppliers'),
+           fetcher('https://server-erp.payshia.com/products'),
+           fetcher('https://server-erp.payshia.com/product-variants'),
         ]);
         
         if (!grnResponse.ok) {
@@ -65,8 +65,8 @@ export function GrnPrintView({ id }: PrintViewProps) {
 
         if (grnData.company_id && grnData.location_id) {
              const [companyRes, locationRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/companies/${grnData.company_id}`),
-                fetch(`https://server-erp.payshia.com/locations/${grnData.location_id}`),
+                fetcher(`https://server-erp.payshia.com/companies/${grnData.company_id}`),
+                fetcher(`https://server-erp.payshia.com/locations/${grnData.location_id}`),
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());
