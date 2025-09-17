@@ -13,6 +13,7 @@ import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { useCurrency } from './currency-provider';
+import { fetcher } from '@/lib/api';
 
 interface PurchaseOrderViewProps {
     id: string;
@@ -65,11 +66,11 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
       setIsLoading(true);
       try {
         const [poResponse, suppliersResponse, productsResponse, variantsResponse, locationsResponse] = await Promise.all([
-           fetch(`https://server-erp.payshia.com/purchase-orders/${id}`),
-           fetch('https://server-erp.payshia.com/suppliers'),
-           fetch('https://server-erp.payshia.com/products'),
-           fetch('https://server-erp.payshia.com/product-variants'),
-           fetch('https://server-erp.payshia.com/locations'),
+           fetcher(`https://server-erp.payshia.com/purchase-orders/${id}`),
+           fetcher('https://server-erp.payshia.com/suppliers'),
+           fetcher('https://server-erp.payshia.com/products'),
+           fetcher('https://server-erp.payshia.com/product-variants'),
+           fetcher('https://server-erp.payshia.com/locations'),
         ]);
         
         if (!poResponse.ok) {
@@ -269,3 +270,5 @@ function PurchaseOrderViewSkeleton() {
     </div>
   );
 }
+
+    
