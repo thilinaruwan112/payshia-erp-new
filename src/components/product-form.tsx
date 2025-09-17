@@ -1053,5 +1053,3 @@ export function ProductForm({ product }: ProductFormProps) {
     </>
   );
 }
-
-    
