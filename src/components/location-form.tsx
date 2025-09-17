@@ -126,13 +126,7 @@ export function LocationForm({ location }: LocationFormProps) {
     }
 
     const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
-    let method = 'POST';
-
-    // If updating, use POST with a _method field to signify a PUT request.
-    // This is a common workaround for sending FormData with PUT/PATCH.
-    if (location) {
-      formData.append('_method', 'PUT');
-    }
+    const method = location ? 'PUT' : 'POST';
     
     try {
       const response = await fetch(url, {
@@ -363,3 +357,5 @@ export function LocationForm({ location }: LocationFormProps) {
     </Form>
   );
 }
+
+    
