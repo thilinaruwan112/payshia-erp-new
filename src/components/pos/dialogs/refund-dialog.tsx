@@ -94,7 +94,7 @@ export function RefundDialog({ isOpen, onOpenChange, customers }: RefundDialogPr
     } catch (error) {
        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch return details.' });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   }
 
