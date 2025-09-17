@@ -1,4 +1,3 @@
-
 'use client'
 
 import { CustomerForm } from '@/components/customer-form';
@@ -8,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { fetcher } from '@/lib/api';
 
 export default function EditCustomerPage({
   params,
@@ -17,16 +17,17 @@ export default function EditCustomerPage({
   const [customer, setCustomer] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { id } = params;
 
   useEffect(() => {
     async function fetchCustomer() {
-        if (!params.id) {
+        if (!id) {
             notFound();
             return;
         }
         setIsLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/customers/${params.id}`);
+            const response = await fetcher(`https://server-erp.payshia.com/customers/${id}`);
             if (!response.ok) {
                 if (response.status === 404) {
                     notFound();
@@ -46,7 +47,7 @@ export default function EditCustomerPage({
         }
     }
     fetchCustomer();
-  }, [params.id, toast]);
+  }, [id, toast]);
 
   if (isLoading) {
     return (

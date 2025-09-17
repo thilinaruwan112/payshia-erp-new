@@ -1,4 +1,3 @@
-
 'use client'
 
 import { SizeForm } from '@/components/size-form';
@@ -8,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { fetcher } from '@/lib/api';
 
 export default function EditSizePage({ params }: { params: { id: string } }) {
   const [size, setSize] = useState<Size | null>(null);
@@ -20,7 +20,7 @@ export default function EditSizePage({ params }: { params: { id: string } }) {
       if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/sizes/${id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/sizes/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();
