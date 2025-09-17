@@ -32,6 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLocation } from '@/components/location-provider';
 import { TableFormDialog } from '@/components/table-form-dialog';
+import { fetcher } from '@/lib/api';
 
 export default function TablesPage() {
   const [tables, setTables] = useState<TableType[]>([]);
@@ -48,7 +49,7 @@ export default function TablesPage() {
     }
     setIsLoading(true);
     try {
-        const response = await fetch(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`);
         if (!response.ok) {
             throw new Error('Failed to fetch tables');
         }
@@ -73,7 +74,7 @@ export default function TablesPage() {
     if (!selectedTable) return;
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/master-tables/${selectedTable.id}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/master-tables/${selectedTable.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
