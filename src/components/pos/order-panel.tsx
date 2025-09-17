@@ -46,6 +46,7 @@ import { format } from 'date-fns';
 import { useLocation } from '../location-provider';
 import { Badge } from '../ui/badge';
 import { useCurrency } from '../currency-provider';
+import { fetcher } from '@/lib/api';
 
 interface OrderPanelProps {
   order: ActiveOrder;
@@ -395,9 +396,8 @@ export function OrderPanel({
     };
 
     try {
-        const response = await fetch('https://server-erp.payshia.com/pos-invoices', {
+        const response = await fetcher('https://server-erp.payshia.com/pos-invoices', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
 
