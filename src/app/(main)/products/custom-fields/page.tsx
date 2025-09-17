@@ -31,6 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLocation } from '@/components/location-provider';
+import { fetcher } from '@/lib/api';
 
 interface CustomField {
     id: string;
@@ -54,7 +55,7 @@ export default function CustomFieldsPage() {
       };
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch custom fields');
         }
@@ -78,7 +79,7 @@ export default function CustomFieldsPage() {
     if (!selectedField) return;
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/custom-fields/${selectedField.id}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/custom-fields/${selectedField.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
