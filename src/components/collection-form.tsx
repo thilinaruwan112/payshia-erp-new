@@ -32,6 +32,7 @@ import { X, UploadCloud, Loader2 } from "lucide-react";
 import { Textarea } from "./ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 const collectionFormSchema = z.object({
   title: z.string().min(3, {
@@ -102,7 +103,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     }
     setIsLoading(true);
     const url = collection ? `https://server-erp.payshia.com/collections/${collection.id}` : 'https://server-erp.payshia.com/collections';
-    const method = collection ? 'PUT' : 'POST';
+    const method = 'POST'; // Always POST for FormData
 
     const formData = new FormData();
     formData.append('title', data.title);
@@ -112,9 +113,12 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     if (coverImageFile) {
         formData.append('image', coverImageFile);
     }
+     if (collection) {
+        formData.append('_method', 'PUT'); // Laravel method spoofing
+    }
     
     try {
-        const response = await fetch(url, {
+        const response = await fetcher(url, {
             method: method,
             body: formData,
         });
@@ -135,9 +139,8 @@ export function CollectionForm({ collection }: CollectionFormProps) {
         const productsToAdd = currentProducts.filter(p => !p.collectionProductId);
 
         for (const productToAdd of productsToAdd) {
-            await fetch('https://server-erp.payshia.com/collection-products', {
+            await fetcher('https://server-erp.payshia.com/collection-products', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     collection_id: collectionId, 
                     product_id: parseInt(productToAdd.id, 10),
@@ -188,7 +191,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
 
     // If it's a saved product, call the API to delete the association
     try {
-        const response = await fetch(`https://server-erp.payshia.com/collection-products/${productToRemove.collectionProductId}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/collection-products/${productToRemove.collectionProductId}`, {
             method: 'DELETE',
         });
 
