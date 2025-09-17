@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import React from "react";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 type Receipt = {
     id: string;
@@ -114,7 +115,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
         form.reset({ ...form.getValues(), invoiceId: '', amount: 0 });
 
         try {
-            const response = await fetch(`https://server-erp.payshia.com/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedCustomerId}`);
+            const response = await fetcher(`https://server-erp.payshia.com/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedCustomerId}`);
             if (!response.ok) {
                 throw new Error("Failed to fetch pending invoices for customer.");
             }
@@ -145,8 +146,8 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
 
     try {
         const [invoiceDetailsResponse, receiptsResponse] = await Promise.all([
-             fetch(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${invoice.invoice_number}&company_id=${company_id}`),
-             fetch(`https://server-erp.payshia.com/receipts/invoice/${invoice.invoice_number}`),
+             fetcher(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${invoice.invoice_number}&company_id=${company_id}`),
+             fetcher(`https://server-erp.payshia.com/receipts/invoice/${invoice.invoice_number}`),
         ]);
 
         if (!invoiceDetailsResponse.ok) {
@@ -211,11 +212,8 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
     };
 
     try {
-        const response = await fetch('https://server-erp.payshia.com/receipts', {
+        const response = await fetcher('https://server-erp.payshia.com/receipts', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify(payload),
         });
         
@@ -232,7 +230,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
         });
 
         // Open print views
-        window.open(`/sales/receipts/${result.id}/print`, '_blank');
+        window.open(`/sales-print/receipts/${result.id}`, '_blank');
         window.open(`/pos/receipt/${result.id}/print`, '_blank');
 
         router.push('/sales/receipts');
