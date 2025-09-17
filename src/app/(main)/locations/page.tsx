@@ -34,6 +34,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLocation } from '@/components/location-provider';
 import Image from 'next/image';
+import { fetcher } from '@/lib/api';
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -51,7 +52,7 @@ export default function LocationsPage() {
       }
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch locations');
         }
@@ -74,7 +75,7 @@ export default function LocationsPage() {
   const handleDelete = async () => {
     if (!selectedLocation) return;
     try {
-      const response = await fetch(`https://server-erp.payshia.com/locations/${selectedLocation.location_id}`, {
+      const response = await fetcher(`https://server-erp.payshia.com/locations/${selectedLocation.location_id}`, {
         method: 'DELETE',
       });
        if (!response.ok) {

@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { fetcher } from "@/lib/api";
 
 const companyFormSchema = z.object({
   company_name: z.string().min(3, "Company name is required."),
@@ -87,9 +88,8 @@ export default function CreateCompanyPage() {
         };
 
         try {
-            const companyResponse = await fetch('https://server-erp.payshia.com/companies/create-with-user', {
+            const companyResponse = await fetcher('https://server-erp.payshia.com/companies/create-with-user', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(companyPayload),
             });
 
@@ -107,7 +107,7 @@ export default function CreateCompanyPage() {
             }
             
             // Store company info in local storage
-            localStorage.setItem('companyId', companyId);
+            localStorage.setItem('companyId', String(companyId));
             localStorage.setItem('companyName', companyName);
 
             toast({

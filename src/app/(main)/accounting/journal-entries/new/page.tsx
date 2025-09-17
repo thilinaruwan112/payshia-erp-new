@@ -6,6 +6,7 @@ import type { Account } from '@/lib/types';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fetcher } from '@/lib/api';
 
 export default function NewJournalEntryPage() {
   const { company_id } = useLocation();
@@ -21,7 +22,7 @@ export default function NewJournalEntryPage() {
     async function fetchAccounts() {
         setIsLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`);
+            const response = await fetcher(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch chart of accounts');
             }

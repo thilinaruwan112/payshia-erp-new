@@ -7,6 +7,7 @@ import type { Account, Supplier } from '@/lib/types';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fetcher } from '@/lib/api';
 
 export default function NewExpensePage() {
   const { company_id } = useLocation();
@@ -24,8 +25,8 @@ export default function NewExpensePage() {
         setIsLoading(true);
         try {
             const [accountsResponse, suppliersResponse] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`)
+                fetcher(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`)
             ]);
             if (!accountsResponse.ok) throw new Error('Failed to fetch accounts');
             if (!suppliersResponse.ok) throw new Error('Failed to fetch suppliers');

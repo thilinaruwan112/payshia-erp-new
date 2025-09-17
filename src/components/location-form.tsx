@@ -36,6 +36,7 @@ import React, { useState } from "react";
 import { Switch } from "./ui/switch";
 import { useLocation } from "./location-provider";
 import Image from "next/image";
+import { fetcher } from "@/lib/api";
 
 
 const locationFormSchema = z.object({
@@ -126,19 +127,17 @@ export function LocationForm({ location }: LocationFormProps) {
     }
     
     const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
-    // Use POST for both create and update when using FormData with file uploads.
-    // The backend should handle the update based on the _method field.
-    const method = 'POST';
+    const method = 'POST'; // Use POST for FormData with file uploads
 
-    // If updating, add the _method field to tell the backend to treat it as a PUT request.
     if (location) {
-        formData.append('_method', 'PUT');
+        formData.append('_method', 'PUT'); // Tell the backend to treat it as a PUT request.
     }
 
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        body: formData, // No Content-Type header needed, browser sets it for FormData
+        body: formData,
+        headers: new Headers(), // Reset headers so fetch can set multipart/form-data
       });
 
       if (!response.ok) {
@@ -364,4 +363,3 @@ export function LocationForm({ location }: LocationFormProps) {
     </Form>
   );
 }
-

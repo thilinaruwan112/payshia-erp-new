@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { fetcher } from '@/lib/api';
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
@@ -56,9 +57,8 @@ export default function LoginPage() {
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     try {
-        const response = await fetch('https://server-erp.payshia.com/users/login', {
+        const response = await fetcher('https://server-erp.payshia.com/users/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
 
@@ -82,7 +82,7 @@ export default function LoginPage() {
         localStorage.setItem('userName', userName);
         
         // Check for company association
-        const companyCheckResponse = await fetch(`https://server-erp.payshia.com/company-users/filter/by-user?user_id=${userId}`);
+        const companyCheckResponse = await fetcher(`https://server-erp.payshia.com/company-users/filter/by-user?user_id=${userId}`);
         
         if (!companyCheckResponse.ok) {
             throw new Error('Failed to check for company association.');
@@ -99,7 +99,7 @@ export default function LoginPage() {
             const companyId = companyLink.company_id;
 
             // Fetch company details to get the name
-            const companyDetailsResponse = await fetch(`https://server-erp.payshia.com/companies/${companyId}`);
+            const companyDetailsResponse = await fetcher(`https://server-erp.payshia.com/companies/${companyId}`);
             if (!companyDetailsResponse.ok) {
                 throw new Error('Found company association, but failed to fetch company details.');
             }
@@ -107,7 +107,7 @@ export default function LoginPage() {
             const companyName = companyDetails.company_name;
 
             // Store company info
-            localStorage.setItem('companyId', companyId);
+            localStorage.setItem('companyId', String(companyId));
             localStorage.setItem('companyName', companyName);
 
             toast({
