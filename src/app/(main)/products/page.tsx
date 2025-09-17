@@ -40,6 +40,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useCurrency } from '@/components/currency-provider';
 import { useLocation } from '@/components/location-provider';
 import { ImageUploadDialog } from '@/components/image-upload-dialog';
+import { fetcher } from '@/lib/api';
 
 interface ProductWithVariants extends Product {
   variants: ProductVariant[];
@@ -67,7 +68,7 @@ export default function ProductsPage() {
     setIsLoading(true);
     try {
       const [productsResponse, limitResponse] = await Promise.all([
-         fetch(`https://server-erp.payshia.com/products/get/filter/by-company?company_id=${company_id}`),
+         fetcher(`https://server-erp.payshia.com/products/get/filter/by-company?company_id=${company_id}`),
          checkPlanLimit('products'),
       ]);
       
@@ -77,7 +78,7 @@ export default function ProductsPage() {
       
       const productsWithDetails = await Promise.all(
         productsData.map(async (p) => {
-          const detailsResponse = await fetch(`https://server-erp.payshia.com/products/details/${p.id}`);
+          const detailsResponse = await fetcher(`https://server-erp.payshia.com/products/details/${p.id}`);
           if (!detailsResponse.ok) {
             console.error(`Failed to fetch details for product ${p.id}`);
             return { ...p, variants: [], frontImageUrl: p.product_image_url };
@@ -88,7 +89,7 @@ export default function ProductsPage() {
           let frontImageUrl: string | null = null;
           if (detailsData.variants && detailsData.variants.length > 0) {
               const firstVariant = detailsData.variants[0];
-              const imageResponse = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${p.id}&product_variant_id=${firstVariant.id}`);
+              const imageResponse = await fetcher(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${p.id}&product_variant_id=${firstVariant.id}`);
               if (imageResponse.ok) {
                   const images: ProductImage[] = await imageResponse.json();
                   const frontImage = images.find(img => img.image_type === 'front img');
@@ -131,7 +132,7 @@ export default function ProductsPage() {
     if (!selectedProduct) return;
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/products/${selectedProduct.id}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/products/${selectedProduct.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
@@ -343,3 +344,4 @@ export default function ProductsPage() {
     </>
   );
 }
+
