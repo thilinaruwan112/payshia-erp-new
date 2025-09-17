@@ -26,6 +26,7 @@ import type { Color } from "@/lib/types";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 const colorFormSchema = z.object({
   name: z.string().min(2, "Color name must be at least 2 characters."),
@@ -67,11 +68,8 @@ export function ColorForm({ color }: ColorFormProps) {
     const payload = { ...data, company_id: company_id };
 
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
 

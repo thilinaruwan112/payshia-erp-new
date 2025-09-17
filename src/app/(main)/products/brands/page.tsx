@@ -32,6 +32,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLocation } from '@/components/location-provider';
+import { fetcher } from '@/lib/api';
 
 export default function BrandsPage() {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -49,7 +50,7 @@ export default function BrandsPage() {
       };
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch brands');
         }
@@ -73,7 +74,7 @@ export default function BrandsPage() {
     if (!selectedBrand) return;
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/brands/${selectedBrand.id}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/brands/${selectedBrand.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
