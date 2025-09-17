@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { useCurrency } from './currency-provider';
 import Image from 'next/image';
+import { fetcher } from '@/lib/api';
 
 interface PrintViewProps {
     id: string;
@@ -41,10 +42,10 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
       setIsLoading(true);
       try {
         const [poResponse, suppliersResponse, productsResponse, variantsResponse] = await Promise.all([
-           fetch(`https://server-erp.payshia.com/purchase-orders/${id}`),
-           fetch('https://server-erp.payshia.com/suppliers'),
-           fetch('https://server-erp.payshia.com/products'),
-           fetch('https://server-erp.payshia.com/product-variants'),
+           fetcher(`https://server-erp.payshia.com/purchase-orders/${id}`),
+           fetcher('https://server-erp.payshia.com/suppliers'),
+           fetcher('https://server-erp.payshia.com/products'),
+           fetcher('https://server-erp.payshia.com/product-variants'),
         ]);
         
         if (!poResponse.ok) {
@@ -67,8 +68,8 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
 
         if (poData.company_id && poData.location_id) {
              const [companyRes, locationRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/companies/${poData.company_id}`),
-                fetch(`https://server-erp.payshia.com/locations/${poData.location_id}`),
+                fetcher(`https://server-erp.payshia.com/companies/${poData.company_id}`),
+                fetcher(`https://server-erp.payshia.com/locations/${poData.location_id}`),
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());
