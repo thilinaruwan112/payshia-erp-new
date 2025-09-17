@@ -103,7 +103,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     }
     setIsLoading(true);
     const url = collection ? `https://server-erp.payshia.com/collections/${collection.id}` : 'https://server-erp.payshia.com/collections';
-    const method = 'POST'; // Always POST for FormData
+    const method = collection ? 'PUT' : 'POST';
 
     const formData = new FormData();
     formData.append('title', data.title);
@@ -113,13 +113,16 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     if (coverImageFile) {
         formData.append('image', coverImageFile);
     }
-     if (collection) {
-        formData.append('_method', 'PUT'); // Laravel method spoofing
+    
+    // For PUT requests with FormData, Laravel/some backends might need this.
+    if (collection) {
+        formData.append('_method', 'PUT');
     }
     
     try {
         const response = await fetcher(url, {
-            method: method,
+            // Since we are using method spoofing for PUT with FormData, the actual HTTP method is POST.
+            method: 'POST',
             body: formData,
         });
 
