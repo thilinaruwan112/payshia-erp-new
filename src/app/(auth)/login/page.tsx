@@ -37,8 +37,8 @@ export default function LoginPage() {
   const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    const userId = localStorage.getItem('userId');
-    if (userId) {
+    const token = localStorage.getItem('token');
+    if (token) {
       router.replace('/dashboard');
     } else {
       setIsVerifying(false);
@@ -68,14 +68,16 @@ export default function LoginPage() {
         }
 
         const userData = await response.json();
+        const token = userData?.token;
         const userId = userData?.data?.id;
         const userName = userData?.data?.user_name;
 
-        if (!userId || !userName) {
-             throw new Error('Login successful, but user ID or name was not returned.');
+        if (!token || !userId || !userName) {
+             throw new Error('Login successful, but required session data was not returned.');
         }
 
-        // Store user info in local storage
+        // Store user info and token in local storage
+        localStorage.setItem('token', token);
         localStorage.setItem('userId', userId);
         localStorage.setItem('userName', userName);
         
