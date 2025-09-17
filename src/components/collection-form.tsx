@@ -102,28 +102,42 @@ export function CollectionForm({ collection }: CollectionFormProps) {
       return;
     }
     setIsLoading(true);
-    const url = collection ? `https://server-erp.payshia.com/collections/${collection.id}` : 'https://server-erp.payshia.com/collections';
-    const method = collection ? 'PUT' : 'POST';
 
-    const formData = new FormData();
-    formData.append('title', data.title);
-    formData.append('description', data.description || '');
-    formData.append('status', data.status);
-    formData.append('company_id', String(company_id));
-    if (coverImageFile) {
-        formData.append('image', coverImageFile);
-    }
+    const url = collection ? `https://server-erp.payshia.com/collections/${collection.id}` : 'https://server-erp.payshia.com/collections';
+    let method = collection ? 'PUT' : 'POST';
     
-    // For PUT requests with FormData, Laravel/some backends might need this.
-    if (collection) {
-        formData.append('_method', 'PUT');
+    let body;
+    const headers = new Headers();
+
+    if (coverImageFile) {
+        const formData = new FormData();
+        formData.append('title', data.title);
+        formData.append('description', data.description || '');
+        formData.append('status', data.status);
+        formData.append('company_id', String(company_id));
+        formData.append('image', coverImageFile);
+        
+        // Use POST with _method spoofing for file uploads on update
+        if (collection) {
+            formData.append('_method', 'PUT');
+            method = 'POST';
+        }
+        body = formData;
+    } else {
+        body = JSON.stringify({
+            title: data.title,
+            description: data.description || '',
+            status: data.status,
+            company_id: company_id,
+        });
+        headers.append('Content-Type', 'application/json');
     }
     
     try {
         const response = await fetcher(url, {
-            // Since we are using method spoofing for PUT with FormData, the actual HTTP method is POST.
-            method: 'POST',
-            body: formData,
+            method: method,
+            body: body,
+            headers: headers,
         });
 
         const result = await response.json();
