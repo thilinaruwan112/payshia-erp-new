@@ -20,6 +20,7 @@ import type { User } from '@/lib/types';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fetcher } from '@/lib/api';
 
 export default function HrmDashboardPage() {
     const { company_id } = useLocation();
@@ -35,7 +36,7 @@ export default function HrmDashboardPage() {
         async function fetchUsers() {
             setIsLoading(true);
             try {
-                const response = await fetch(`https://server-erp.payshia.com/users/company/${company_id}`);
+                const response = await fetcher(`https://server-erp.payshia.com/users/company/${company_id}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch users');
                 }

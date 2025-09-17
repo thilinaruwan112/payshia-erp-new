@@ -1,4 +1,5 @@
 
+
 import { A4ReceiptPrintView } from '@/components/a4-receipt-print-view';
 import { Suspense } from 'react';
 

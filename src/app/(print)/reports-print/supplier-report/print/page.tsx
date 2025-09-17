@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useSearchParams } from 'next/navigation';
@@ -7,6 +8,7 @@ import type { Supplier } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { fetcher } from '@/lib/api';
 
 interface Company {
     id: string;
@@ -36,8 +38,8 @@ function PrintViewContent() {
 
         try {
              const [suppliersRes, companyRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${companyId}`),
-                fetch(`https://server-erp.payshia.com/companies/${companyId}`),
+                fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${companyId}`),
+                fetcher(`https://server-erp.payshia.com/companies/${companyId}`),
             ]);
 
             if (!suppliersRes.ok) throw new Error('Failed to fetch suppliers');

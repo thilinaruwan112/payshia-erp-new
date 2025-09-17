@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -22,6 +23,7 @@ import { format } from 'date-fns';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/components/currency-provider';
+import { fetcher } from '@/lib/api';
 
 interface RefundDialogProps {
   isOpen: boolean;
@@ -60,7 +62,7 @@ export function RefundDialog({ isOpen, onOpenChange, customers }: RefundDialogPr
       if (!company_id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/transaction-returns/filter/by-company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/transaction-returns/filter/by-company?company_id=${company_id}`);
         if (!response.ok) throw new Error('Failed to fetch returns');
         const data: TransactionReturn[] = await response.json();
         setTransactionReturns(data || []);
@@ -80,7 +82,7 @@ export function RefundDialog({ isOpen, onOpenChange, customers }: RefundDialogPr
     if (!company_id) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`https://server-erp.payshia.com/transaction-returns/full/${returnData.id}?company_id=${company_id}`);
+      const response = await fetcher(`https://server-erp.payshia.com/transaction-returns/full/${returnData.id}?company_id=${company_id}`);
       if (!response.ok) throw new Error('Failed to fetch return details');
       const data = await response.json();
       setSelectedReturn(data.data);
@@ -123,9 +125,8 @@ export function RefundDialog({ isOpen, onOpenChange, customers }: RefundDialogPr
         product_variant_id: parseInt(entry.product_variant_id, 10),
         refund_qty: refundQty,
       };
-      return fetch('https://server-erp.payshia.com/transaction-refunds', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      return fetcher('https://server-erp.payshia.com/transaction-refunds', {
+        method: 'POST', body: JSON.stringify(payload)
       });
     });
     try {

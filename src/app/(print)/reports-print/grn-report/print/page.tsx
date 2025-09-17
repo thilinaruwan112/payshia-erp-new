@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useSearchParams } from 'next/navigation';
@@ -9,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/components/currency-provider';
 import { cn } from '@/lib/utils';
+import { fetcher } from '@/lib/api';
 
 interface Company {
     id: string;
@@ -50,9 +52,9 @@ function PrintViewContent() {
 
         try {
              const [grnRes, companyRes, suppliersRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/grn/company/${companyId}`),
-                fetch(`https://server-erp.payshia.com/companies/${companyId}`),
-                fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${companyId}`),
+                fetcher(`https://server-erp.payshia.com/grn/company/${companyId}`),
+                fetcher(`https://server-erp.payshia.com/companies/${companyId}`),
+                fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${companyId}`),
             ]);
 
             if (!grnRes.ok) throw new Error('Failed to fetch GRNs');

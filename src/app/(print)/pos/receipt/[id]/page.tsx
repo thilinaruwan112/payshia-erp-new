@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound } from 'next/navigation';
@@ -8,22 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
-
-type Receipt = {
-    id: string;
-    rec_number: string;
-    type: string;
-    is_active: string;
-    date: string;
-    amount: string;
-    created_by: string;
-    ref_id: string; // Invoice number
-    location_id: string;
-    customer_id: string;
-    today_invoice: string;
-    company_id: string;
-    now_time: string;
-};
 
 interface Company {
     id: string;

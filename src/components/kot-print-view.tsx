@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import Image from 'next/image';
+import { fetcher } from '@/lib/api';
 
 interface KotPrintViewProps {
   invoiceId: string;
@@ -38,7 +39,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     async function fetchProducts() {
       if (!companyId) return;
       try {
-        const response = await fetch(
+        const response = await fetcher(
           `https://server-erp.payshia.com/products/get/filter/by-company?company_id=${companyId}`
         );
         if (!response.ok) {
@@ -66,7 +67,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         setIsLoading(true);
         try {
             const url = `https://server-erp.payshia.com/pos-invoices?invoicenumber=${invoiceId}&company_id=${companyId}`;
-            const response = await fetch(url);
+            const response = await fetcher(url);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch invoice data for KOT.');
@@ -76,7 +77,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             setItemsToPrint(invoiceData.items || []);
             
             if (invoiceData.location_id) {
-                const locResponse = await fetch(`https://server-erp.payshia.com/locations/${invoiceData.location_id}`);
+                const locResponse = await fetcher(`https://server-erp.payshia.com/locations/${invoiceData.location_id}`);
                 if (locResponse.ok) {
                     setLocation(await locResponse.json());
                 }

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -18,6 +19,7 @@ import { Loader2, ArrowLeft, Utensils } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
+import { fetcher } from '@/lib/api';
 
 const OrderTypeSelection = ({ onSelectOrderType, onSelectTable, tables, isLoadingTables, activeOrders, heldOrders }: { 
     onSelectOrderType: (type: ActiveOrder['orderType']) => void; 
@@ -120,9 +122,9 @@ export function NewOrderDialog({ isOpen, onOpenChange, activeOrders = [], create
         setIsLoadingStewards(true);
         try {
             const [tablesResponse, stewardsResponse, heldOrdersResponse] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/filter/users?user_status=3&company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`),
+                fetcher(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/filter/users?user_status=3&company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`),
             ]);
             if (!tablesResponse.ok) throw new Error('Failed to fetch tables');
             setTables((await tablesResponse.json()) || []);

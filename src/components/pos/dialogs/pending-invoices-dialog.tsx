@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -22,6 +23,7 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/components/location-provider';
 import { useCurrency } from '@/components/currency-provider';
+import { fetcher } from '@/lib/api';
 
 interface BalanceDetails {
     grand_total: string;
@@ -89,7 +91,7 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
       }
       setIsLoadingPastInvoices(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomer}&company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomer}&company_id=${company_id}`);
         if (!response.ok) throw new Error('Failed to fetch invoices');
         const data: Invoice[] = await response.json();
         setPastInvoices(data.filter(inv => inv.payment_status !== 'Paid') || []);
@@ -110,7 +112,7 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
     setSelectedInvoice(invoice);
     setIsLoadingBalance(true);
     try {
-      const receiptsResponse = await fetch(`https://server-erp.payshia.com/receipts/invoice/${invoice.invoice_number}`);
+      const receiptsResponse = await fetcher(`https://server-erp.payshia.com/receipts/invoice/${invoice.invoice_number}`);
       let totalPaid = 0;
       if (receiptsResponse.ok) {
         const receiptsData: Receipt[] = await receiptsResponse.json();
@@ -142,8 +144,8 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
         company_id: company_id,
     };
     try {
-        const response = await fetch('https://server-erp.payshia.com/receipts', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+        const response = await fetcher('https://server-erp.payshia.com/receipts', {
+            method: 'POST',
             body: JSON.stringify(payload)
         });
         if (!response.ok) {

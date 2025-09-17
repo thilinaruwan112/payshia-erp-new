@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { useSearchParams } from 'next/navigation';
@@ -10,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { useCurrency } from '@/components/currency-provider';
+import { fetcher } from '@/lib/api';
 
 interface Company {
     id: string;
@@ -60,9 +62,9 @@ function PrintViewContent() {
             
             const url = `https://server-erp.payshia.com/invoices/filter/hold/by-company-status?${params.toString()}`;
             const [companyRes, customerRes, invoiceRes] = await Promise.all([
-                 fetch(`https://server-erp.payshia.com/companies/${companyId}`),
-                 fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${companyId}`),
-                 fetch(url),
+                 fetcher(`https://server-erp.payshia.com/companies/${companyId}`),
+                 fetcher(`https://server-erp.payshia.com/customers/company/filter/?company_id=${companyId}`),
+                 fetcher(url),
             ]);
 
             if(companyRes.ok) setCompany(await companyRes.json());

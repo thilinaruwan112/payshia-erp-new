@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -26,6 +27,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useLocation } from '@/components/location-provider';
+import { fetcher } from '@/lib/api';
 
 interface HeldOrderDetailsDialogProps {
   isOpen: boolean;
@@ -49,7 +51,7 @@ export function HeldOrderDetailsDialog({
       if (!isOpen || !company_id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(
+        const response = await fetcher(
           `https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`
         );
         if (!response.ok) throw new Error('Failed to fetch held orders');

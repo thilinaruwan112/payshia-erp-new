@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -26,6 +27,7 @@ import { useCurrency } from '../currency-provider';
 import { useLocation } from '../location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '../ui/skeleton';
+import { fetcher } from '@/lib/api';
 
 export default function AccountingDashboardPage() {
     const { currencySymbol } = useCurrency();
@@ -44,8 +46,8 @@ export default function AccountingDashboardPage() {
         setIsLoading(true);
         try {
             const [ordersRes, accountsRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`)
+                fetcher(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`)
             ]);
 
             if (!ordersRes.ok) throw new Error('Failed to fetch orders');
