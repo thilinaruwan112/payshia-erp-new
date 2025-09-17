@@ -31,6 +31,7 @@ import type { Supplier, PurchaseOrder, GoodsReceivedNote, PaymentReceipt } from 
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { fetcher } from '@/lib/api';
 
 export default function SupplierDashboardPage() {
   const { currencySymbol } = useCurrency();
@@ -51,9 +52,9 @@ export default function SupplierDashboardPage() {
         setIsLoading(true);
         try {
             const [suppliersRes, poRes, grnRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/grn/company/${company_id}`),
+                fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/grn/company/${company_id}`),
             ]);
 
             if (!suppliersRes.ok || !poRes.ok || !grnRes.ok) {

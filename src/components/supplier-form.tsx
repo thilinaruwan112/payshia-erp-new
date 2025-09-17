@@ -26,6 +26,7 @@ import type { Supplier } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 const supplierFormSchema = z.object({
   supplier_name: z.string().min(3, "Supplier name is required."),
@@ -83,11 +84,8 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
     const payload = { ...data, is_active: 1, created_by: 'admin', company_id: company_id };
 
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
 
