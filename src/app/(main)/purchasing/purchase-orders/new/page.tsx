@@ -7,6 +7,7 @@ import { useLocation } from '@/components/location-provider';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { fetcher } from '@/lib/api';
 
 export default function NewPurchaseOrderPage() {
   const { company_id } = useLocation();
@@ -22,7 +23,7 @@ export default function NewPurchaseOrderPage() {
       }
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch suppliers');
         }
