@@ -40,6 +40,7 @@ import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
 import { ImageUploadDialog } from "./image-upload-dialog";
 import Image from "next/image";
+import { fetcher } from "@/lib/api";
 
 type Category = {
   id: string;
@@ -133,7 +134,7 @@ export function ProductForm({ product }: ProductFormProps) {
         let allImages: ProductImage[] = [];
         if (product.variants && product.variants.length > 0) {
             for (const variant of product.variants) {
-                const response = await fetch(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variant.id}`);
+                const response = await fetcher(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variant.id}`);
                 if (response.ok) {
                     const data: ProductImage[] = await response.json();
                     if(Array.isArray(data)) {
@@ -159,7 +160,7 @@ export function ProductForm({ product }: ProductFormProps) {
   useEffect(() => {
     async function fetchData(url: string, setData: Function, type: string) {
        try {
-        const response = await fetch(url);
+        const response = await fetcher(url);
         if (!response.ok) {
           throw new Error(`Failed to fetch ${type}`);
         }
@@ -260,7 +261,7 @@ export function ProductForm({ product }: ProductFormProps) {
     }
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/product-variants/${variantId}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/product-variants/${variantId}`, {
             method: 'DELETE',
         });
 
@@ -340,11 +341,8 @@ export function ProductForm({ product }: ProductFormProps) {
     const method = product ? 'PUT' : 'POST';
 
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(apiPayload),
       });
 
@@ -357,7 +355,7 @@ export function ProductForm({ product }: ProductFormProps) {
       const returnedProduct = result.product;
       const productId = returnedProduct.id;
       
-      const detailsResponse = await fetch(`https://server-erp.payshia.com/products/details/${productId}`);
+      const detailsResponse = await fetcher(`https://server-erp.payshia.com/products/details/${productId}`);
       const detailsData = await detailsResponse.json();
 
       setSavedProductId(productId);
@@ -374,9 +372,8 @@ export function ProductForm({ product }: ProductFormProps) {
               product_id: parseInt(productId, 10),
               value: cf.value
             };
-            await fetch('https://server-erp.payshia.com/custom-field-products', {
+            await fetcher('https://server-erp.payshia.com/custom-field-products', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(customFieldPayload),
             });
           }
@@ -402,7 +399,7 @@ export function ProductForm({ product }: ProductFormProps) {
 
   const handleDeleteImage = async (imageId: string) => {
     try {
-        const response = await fetch(`https://server-erp.payshia.com/product-images/${imageId}`, {
+        const response = await fetcher(`https://server-erp.payshia.com/product-images/${imageId}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
@@ -1056,3 +1053,5 @@ export function ProductForm({ product }: ProductFormProps) {
     </>
   );
 }
+
+    
