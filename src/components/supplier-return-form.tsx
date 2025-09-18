@@ -24,12 +24,13 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { GoodsReceivedNote, Supplier, Product, ProductVariant, GrnItem } from "@/lib/types";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, CalendarIcon } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
 import { useCurrency } from "./currency-provider";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 
 const returnItemSchema = z.object({
@@ -59,6 +60,12 @@ const returnFormSchema = z.object({
 
 type ReturnFormValues = z.infer<typeof returnFormSchema>;
 
+interface ProductWithApiResponse {
+    product: Product;
+    variants: { variant: ProductVariant }[];
+}
+
+
 export function SupplierReturnForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -69,7 +76,7 @@ export function SupplierReturnForm() {
 
   const [grn, setGrn] = useState<GoodsReceivedNote | null>(null);
   const [supplier, setSupplier] = useState<Supplier | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -98,27 +105,27 @@ export function SupplierReturnForm() {
 
         try {
             const [grnResponse, suppliersResponse, productsResponse] = await Promise.all([
-                 fetch(`https://server-erp.payshia.com/grn/${grnId}`),
-                 fetch('https://server-erp.payshia.com/suppliers'),
-                 fetch('https://server-erp.payshia.com/products/with-variants'),
+                 fetcher(`https://server-erp.payshia.com/grn/${grnId}`),
+                 fetcher('https://server-erp.payshia.com/suppliers'),
+                 fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`)
             ]);
             
             if (!grnResponse.ok) throw new Error('Failed to fetch GRN data');
             const grnData: GoodsReceivedNote = await grnResponse.json();
             const suppliersData: Supplier[] = await suppliersResponse.json();
-            const productsData: { products: { product: Product, variants: ProductVariant[] }[] } = await productsResponse.json();
+            const productsData: { products: ProductWithApiResponse[] } = await productsResponse.json();
 
             setGrn(grnData);
             setSupplier(suppliersData.find(s => s.supplier_id === grnData.supplier_id) || null);
-            setProducts(productsData.products.map(p => ({...p.product, variants: p.variants})));
+            setProducts(productsData.products || []);
             
             form.setValue('grnId', grnData.id);
             form.setValue('supplierId', grnData.supplier_id);
             
             const itemsForForm = grnData.items?.map(item => {
-                const product = productsData.products.find(p => p.product.id === String(item.product_id));
-                const variant = product?.variants.find(v => v.id === String(item.product_variant_id));
-                const productName = `${product?.product.name} ${variant?.sku ? `(${variant.sku})` : ''}`
+                const productWithVariant = productsData.products.find(p => p.product.id === String(item.product_id));
+                const variant = productWithVariant?.variants.find(v => v.variant.id === String(item.product_variant_id));
+                const productName = `${productWithVariant?.product.name} ${variant ? `(${variant.variant.sku})` : ''}`
                 return {
                     grnItemId: String(item.id),
                     productId: String(item.product_id),
@@ -140,7 +147,7 @@ export function SupplierReturnForm() {
         }
     }
     fetchGrnData();
-  }, [grnId, toast, form, replace]);
+  }, [grnId, toast, form, replace, company_id]);
 
   async function onSubmit(data: ReturnFormValues) {
     setIsSubmitting(true);
@@ -156,9 +163,8 @@ export function SupplierReturnForm() {
             reason: item.reason,
             company_id: company_id,
         };
-        return fetch('https://server-erp.payshia.com/grn-returns', {
+        return fetcher('https://server-erp.payshia.com/grn-returns', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
     });

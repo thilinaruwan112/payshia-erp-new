@@ -32,6 +32,7 @@ import { useLocation } from "./location-provider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Switch } from "./ui/switch";
 import { format } from "date-fns";
+import { fetcher } from "@/lib/api";
 
 const tableFormSchema = z.object({
   table_name: z.string().min(2, "Table name is required."),
@@ -78,11 +79,8 @@ export function TableFormDialog({ children, table, onTableCreated }: TableFormDi
      };
 
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
       

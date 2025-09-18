@@ -30,6 +30,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useLocation } from "./location-provider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import type { KeySetting } from "@/lib/types";
+import { fetcher } from "@/lib/api";
 
 const payhereFormSchema = z.object({
   location_id: z.string().min(1, "Please select a location."),
@@ -95,9 +96,8 @@ export function PayhereFormDialog({ children, setting, onSave }: PayhereFormDial
     }
 
     try {
-        const response = await fetch('https://server-erp.payshia.com/key-settings', {
+        const response = await fetcher('https://server-erp.payshia.com/key-settings', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 

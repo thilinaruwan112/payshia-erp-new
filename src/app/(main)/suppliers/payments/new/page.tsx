@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { PaymentForm } from '@/components/payment-form';
@@ -8,6 +7,7 @@ import { useLocation } from '@/components/location-provider';
 import React, { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { fetcher } from '@/lib/api';
 
 function NewPaymentPageContent() {
   const { company_id } = useLocation();
@@ -24,8 +24,8 @@ function NewPaymentPageContent() {
         }
         try {
             const [suppliersRes, accountsRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
-                fetch(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`)
+                fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`)
             ]);
             if (!suppliersRes.ok) throw new Error('Failed to fetch suppliers');
             if (!accountsRes.ok) throw new Error('Failed to fetch accounts');

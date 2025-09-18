@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -31,6 +32,7 @@ import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { KeySetting } from '@/lib/types';
+import { fetcher } from '@/lib/api';
 
 
 export default function AnalyticsSettingsPage() {
@@ -46,7 +48,7 @@ export default function AnalyticsSettingsPage() {
         };
         setIsLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/key-settings/company?company_id=${company_id}`);
+            const response = await fetcher(`https://server-erp.payshia.com/key-settings/company?company_id=${company_id}`);
             if (!response.ok) throw new Error('Failed to fetch settings.');
             const data: KeySetting[] = await response.json();
 
