@@ -342,3 +342,5 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     </Dialog>
   );
 }
+
+    
