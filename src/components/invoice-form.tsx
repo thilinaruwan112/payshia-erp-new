@@ -42,6 +42,7 @@ import React from "react";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
+import { fetcher } from "@/lib/api";
 
 type StockInfo = {
     product_id: string;
@@ -103,7 +104,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         if (!company_id) return;
         setIsLoading(true);
          try {
-            const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+            const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
@@ -194,7 +195,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const handleProductSelect = async (productId: string, variantId: string, index: number) => {
     if (!productId || !variantId || !company_id || !currentLocation) return;
     try {
-        const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${productId}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${productId}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
         if (!response.ok) {
             throw new Error("Failed to fetch stock");
         }
@@ -274,9 +275,8 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     };
 
     try {
-        const response = await fetch('https://server-erp.payshia.com/invoices', {
+        const response = await fetcher('https://server-erp.payshia.com/invoices', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
