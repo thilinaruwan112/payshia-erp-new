@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -21,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { ProductPickerDialog } from '@/components/product-picker-dialog';
 import { fetcher } from '@/lib/api';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export type ReturnItem = {
     id: string;
@@ -155,64 +155,65 @@ export function ReturnDialog({
                 value={returnReason}
                 onChange={(e) => setReturnReason(e.target.value)}
               />
-
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Return Qty</TableHead>
-                    <TableHead>Reason</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoadingPastInvoices ? (
+              <ScrollArea className="h-64 border rounded-md">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center">
-                        <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-                      </TableCell>
+                      <TableHead>Item</TableHead>
+                      <TableHead>Return Qty</TableHead>
+                      <TableHead>Reason</TableHead>
                     </TableRow>
-                  ) : returnItems.length > 0 ? (
-                    returnItems.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              setReturnItems((prev) =>
-                                prev.map((p, i) =>
-                                  i === index
-                                    ? { ...p, quantity: parseInt(e.target.value) || 0, amount: (parseInt(e.target.value) || 0) * p.rate }
-                                    : p
-                                )
-                              )
-                            }
-                            className="w-20"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            value={item.reason}
-                            onChange={(e) =>
-                              setReturnItems((prev) =>
-                                prev.map((p, i) => (i === index ? { ...p, reason: e.target.value } : p))
-                              )
-                            }
-                            placeholder="Item-specific reason"
-                          />
+                  </TableHeader>
+                  <TableBody>
+                    {isLoadingPastInvoices ? (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center">
+                          <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center text-muted-foreground">
-                        Select an invoice or add products manually.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                    ) : returnItems.length > 0 ? (
+                      returnItems.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.name}</TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={item.quantity}
+                              onChange={(e) =>
+                                setReturnItems((prev) =>
+                                  prev.map((p, i) =>
+                                    i === index
+                                      ? { ...p, quantity: parseInt(e.target.value) || 0, amount: (parseInt(e.target.value) || 0) * p.rate }
+                                      : p
+                                  )
+                                )
+                              }
+                              className="w-20"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              value={item.reason}
+                              onChange={(e) =>
+                                setReturnItems((prev) =>
+                                  prev.map((p, i) => (i === index ? { ...p, reason: e.target.value } : p))
+                                )
+                              }
+                              placeholder="Item-specific reason"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground">
+                          Select an invoice or add products manually.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
             </>
           )}
         </div>
