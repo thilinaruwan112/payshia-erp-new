@@ -90,10 +90,10 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
       }
       setIsLoadingPastInvoices(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomer}&company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedCustomer}`);
         if (!response.ok) throw new Error('Failed to fetch invoices');
         const data: Invoice[] = await response.json();
-        setPastInvoices(data.filter(inv => inv.payment_status !== 'Paid') || []);
+        setPastInvoices(data || []);
       } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch invoices for this customer.' });
         setPastInvoices([]);
