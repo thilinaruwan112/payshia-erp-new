@@ -61,6 +61,7 @@ import {
   Wrench,
   Search,
   ShieldCheck,
+  Ban,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -238,6 +239,7 @@ const navItems = [
       { href: '/settings/tables', label: 'Dine-in Tables', icon: Utensils },
       { href: '/settings/payhere', label: 'PayHere Gateway', icon: CreditCard },
       { href: '/settings/analytics', label: 'Analytics', icon: AreaChart },
+      { href: '/settings/cancellation', label: 'Cancellation', icon: Ban },
       { href: '/billing', label: 'Billing & Plans', icon: CreditCard },
       { href: '/settings/currency', label: 'Currency', icon: DollarSign },
     ],
