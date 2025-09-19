@@ -18,6 +18,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -37,7 +38,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -148,6 +149,12 @@ export function TransferForm({ locations }: TransferFormProps) {
     defaultValues,
     mode: "onChange",
   });
+  
+  useEffect(() => {
+    if (locations.length === 1) {
+        form.setValue('fromLocationId', locations[0].location_id);
+    }
+  }, [locations, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -329,7 +336,7 @@ export function TransferForm({ locations }: TransferFormProps) {
                                   remove();
                                   append({ sku: '', quantity: 1, selectedBatch: '' });
                                   setAvailableBatches({});
-                              }} defaultValue={field.value}>
+                              }} value={field.value}>
                                   <FormControl>
                                       <SelectTrigger>
                                           <SelectValue placeholder="Select source location" />
