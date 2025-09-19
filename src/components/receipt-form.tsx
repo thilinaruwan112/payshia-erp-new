@@ -138,39 +138,23 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
   }, [customerId, toast, form, company_id]);
   
   const handleInvoiceSelect = async (invoice: Invoice) => {
-    if (!company_id) return;
+    if (!company_id || !customerId) return;
     setSelectedInvoice(invoice);
     form.setValue('invoiceId', invoice.invoice_number);
     setIsFetchingBalance(true);
     setBalanceDetails(null);
 
     try {
-        const [invoiceDetailsResponse, receiptsResponse] = await Promise.all([
-             fetcher(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${invoice.invoice_number}&company_id=${company_id}`),
-             fetcher(`https://server-erp.payshia.com/receipts/invoice/${invoice.invoice_number}`),
-        ]);
+        const balanceResponse = await fetcher(`https://server-erp.payshia.com/invoices/balance?company_id=${company_id}&customer_id=${customerId}&ref_id=${invoice.invoice_number}`);
 
-        if (!invoiceDetailsResponse.ok) {
-            throw new Error("Failed to fetch invoice details.");
-        }
-        const invoiceData: Invoice = await invoiceDetailsResponse.json();
-        
-        let totalPaid = 0;
-        if (receiptsResponse.ok) {
-            const receiptsData: Receipt[] = await receiptsResponse.json();
-            totalPaid = receiptsData.reduce((sum, receipt) => sum + parseFloat(receipt.amount), 0);
+        if (!balanceResponse.ok) {
+            throw new Error("Failed to fetch invoice balance.");
         }
         
-        const grandTotal = parseFloat(invoiceData.grand_total);
-        const balance = grandTotal - totalPaid;
-        
-        const balanceDetailPayload = {
-            grand_total: invoiceData.grand_total,
-            total_paid_amount: totalPaid.toFixed(2),
-            balance,
-        }
-        setBalanceDetails(balanceDetailPayload);
-        form.setValue("amount", balance > 0 ? balance : 0);
+        const balanceData: BalanceDetails = await balanceResponse.json();
+
+        setBalanceDetails(balanceData);
+        form.setValue("amount", balanceData.balance > 0 ? balanceData.balance : 0);
 
     } catch (error) {
          const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
@@ -231,7 +215,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
 
         // Open print views
         window.open(`/sales-print/receipts/${result.id}`, '_blank');
-        window.open(`/pos/receipt/${result.id}/print`, '_blank');
+        window.open(`/pos-print/receipts/${result.id}/print`, '_blank');
 
         router.push('/sales/receipts');
         router.refresh();
