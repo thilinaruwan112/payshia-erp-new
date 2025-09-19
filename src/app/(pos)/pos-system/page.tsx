@@ -242,35 +242,37 @@ export default function POSPage() {
 
   useEffect(() => {
     async function fetchInvoicesForReturn() {
-        if (!selectedReturnCustomer || !company_id) {
-            setPastInvoices([]);
-            return;
-        }
-        setIsLoadingPastInvoices(true);
-        try {
-            const response = await fetcher(`https://server-erp.payshia.com/invoices/filter/paid/by-customer?company_id=${company_id}&customer_code=${selectedReturnCustomer}`);
-            if (!response.ok) throw new Error('Failed to fetch invoices');
-            const data: Invoice[] = await response.json();
-            setPastInvoices(data.filter(inv => inv.payment_status === 'Paid') || []);
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch invoices for this customer.' });
-            setPastInvoices([]);
-        } finally {
-            setIsLoadingPastInvoices(false);
-        }
+      if (!selectedReturnCustomer || !company_id) {
+        setPastInvoices([]);
+        return;
+      }
+      setIsLoadingPastInvoices(true);
+      try {
+        const response = await fetcher(
+          `https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedReturnCustomer}&company_id=${company_id}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch invoices");
+        const data: Invoice[] = await response.json();
+        setPastInvoices(data.filter((inv) => inv.payment_status === "paid") || []);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not fetch invoices for this customer.",
+        });
+        setPastInvoices([]);
+      } finally {
+        setIsLoadingPastInvoices(false);
+      }
     }
-    if (isReturnDialogOpen && returnType === 'invoice') {
-        fetchInvoicesForReturn();
+    if (isReturnDialogOpen && returnType === "invoice") {
+      fetchInvoicesForReturn();
     }
   }, [selectedReturnCustomer, toast, isReturnDialogOpen, returnType, company_id]);
   
   const handleInvoiceSelect = async (invoice: Invoice) => {
-    if (!invoice) return;
-    try {
-      const response = await fetcher(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
-      if (!response.ok) throw new Error('Failed to fetch full invoice details.');
-      const fullInvoice: Invoice = await response.json();
-      const items = (fullInvoice.items || []).map(item => ({
+    if (!invoice?.items) return;
+    const items = (invoice.items || []).map(item => ({
         id: item.product_variant_id || item.product_id.toString(),
         name: item.productName || 'Unknown Product',
         unit: 'Nos',
@@ -280,11 +282,8 @@ export default function POSPage() {
         reason: '',
         productId: item.product_id.toString(),
         productVariantId: item.product_variant_id || item.product_id.toString(),
-      }));
-      setReturnItems(items);
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not load items for the selected invoice.' });
-    }
+    }));
+    setReturnItems(items);
   };
   
   const handleProcessReturn = async () => {
@@ -832,3 +831,5 @@ export default function POSPage() {
     </>
   );
 }
+
+    
