@@ -115,7 +115,7 @@ export default function POSPage() {
         }
 
         // Ignore control keys, function keys, etc.
-        if (event.key.length === 1) {
+        if (event.key && event.key.length === 1) {
             setBarcode(prev => prev + event.key);
         }
         
