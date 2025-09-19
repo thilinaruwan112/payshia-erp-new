@@ -1,8 +1,9 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -272,17 +273,21 @@ export default function POSPage() {
   
   const handleInvoiceSelect = async (invoice: Invoice) => {
     if (!invoice?.items) return;
-    const items = (invoice.items || []).map(item => ({
-        id: item.product_variant_id || item.product_id.toString(),
-        name: item.productName || 'Unknown Product',
-        unit: 'Nos',
-        rate: parseFloat(item.item_price as string),
-        quantity: 0,
-        amount: 0,
-        reason: '',
-        productId: item.product_id.toString(),
-        productVariantId: item.product_variant_id || item.product_id.toString(),
-    }));
+    const items = (invoice.items || []).map(item => {
+        const matchingPosProduct = posProducts.find(p => p.variant.id === item.product_variant_id);
+        return {
+            id: item.product_variant_id || item.product_id.toString(),
+            name: matchingPosProduct?.variantName || 'Unknown Product',
+            unit: 'Nos',
+            rate: parseFloat(item.item_price as string),
+            quantity: 0,
+            originalQuantity: parseFloat(item.quantity as string),
+            amount: 0,
+            reason: '',
+            productId: item.product_id.toString(),
+            productVariantId: item.product_variant_id || item.product_id.toString(),
+        }
+    });
     setReturnItems(items);
   };
   

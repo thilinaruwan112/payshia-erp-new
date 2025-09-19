@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -28,6 +29,7 @@ export type ReturnItem = {
     unit: string;
     rate: number;
     quantity: number;
+    originalQuantity: number;
     amount: number;
     reason: string;
     productId: string;
@@ -138,6 +140,7 @@ export function ReturnDialog({
                       unit: p.stock_unit || 'Nos',
                       rate: p.price as number,
                       quantity: 1,
+                      originalQuantity: 999, // For manual returns, no original limit
                       amount: p.price as number,
                       reason: '',
                       productId: p.id,
@@ -179,17 +182,20 @@ export function ReturnDialog({
                             <Input
                               type="number"
                               value={item.quantity}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                const newQty = parseInt(e.target.value) || 0;
                                 setReturnItems((prev) =>
                                   prev.map((p, i) =>
                                     i === index
-                                      ? { ...p, quantity: parseInt(e.target.value) || 0, amount: (parseInt(e.target.value) || 0) * p.rate }
+                                      ? { ...p, quantity: Math.min(newQty, item.originalQuantity), amount: Math.min(newQty, item.originalQuantity) * p.rate }
                                       : p
                                   )
                                 )
-                              }
-                              className="w-20"
+                              }}
+                              className="w-24"
+                              max={item.originalQuantity}
                             />
+                            <p className="text-xs text-muted-foreground">Max: {item.originalQuantity}</p>
                           </TableCell>
                           <TableCell>
                             <Input
@@ -221,7 +227,7 @@ export function ReturnDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleProcessReturn} disabled={returnItems.length === 0 || isSubmittingReturn}>
+          <Button onClick={handleProcessReturn} disabled={returnItems.filter(item => item.quantity > 0).length === 0 || isSubmittingReturn}>
             {isSubmittingReturn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Process Return
           </Button>
