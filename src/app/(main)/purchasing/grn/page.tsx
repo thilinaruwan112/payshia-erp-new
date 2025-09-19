@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -99,7 +100,37 @@ export default function GrnReceivablePage() {
         const suppliersData: Supplier[] = await suppliersResponse.json();
         const grnData: GoodsReceivedNote[] = await grnResponse.json();
         
-        setReceivablePOs(poData);
+        const filteredPOs = [];
+        for (const po of poData) {
+            let isFullyReceived = true;
+            if (po.items && po.items.length > 0) {
+                 for (const item of po.items) {
+                    const qtyCheckUrl = `https://server-erp.payshia.com/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${po.po_number}&company_id=${company_id}`;
+                    const qtyResponse = await fetcher(qtyCheckUrl);
+                    if (qtyResponse.ok) {
+                        const qtyData = await qtyResponse.json();
+                        const receivedQty = parseFloat(qtyData.total_received_qty) || 0;
+                        if (receivedQty < item.quantity) {
+                            isFullyReceived = false;
+                            break; 
+                        }
+                    } else {
+                        // If we can't verify, assume it's not fully received to be safe
+                        isFullyReceived = false;
+                        break;
+                    }
+                }
+            } else {
+                // If a PO has no items, it's technically "finished"
+                isFullyReceived = true;
+            }
+
+            if (!isFullyReceived) {
+                filteredPOs.push(po);
+            }
+        }
+        
+        setReceivablePOs(filteredPOs);
         setSuppliers(suppliersData);
         setGrns(grnData || []);
 
