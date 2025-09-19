@@ -2,8 +2,8 @@
 'use client'
 
 import { type StockTransfer, type Location, type Product, type ProductVariant } from '@/lib/types';
-import { notFound, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { notFound, useRouter, useParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -192,10 +192,11 @@ export function TransferPrintView({ id }: PrintViewProps) {
 
 
 export default function PrintTransferPage() {
-    const { id } = useRouter();
+    const params = useParams();
+    const id = typeof params.id === 'string' ? params.id : '';
     return (
         <Suspense fallback={<div>Loading...</div>}>
-            <TransferPrintView id={id as string} />
+            <TransferPrintView id={id} />
         </Suspense>
     )
 }
