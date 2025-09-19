@@ -127,12 +127,16 @@ export function LocationForm({ location }: LocationFormProps) {
     }
     
     const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
-    const method = 'POST'; // Use POST for FormData with file uploads
+    let method = location ? 'PUT' : 'POST';
 
-    if (location) {
-        formData.append('_method', 'PUT'); // Tell the backend to treat it as a PUT request.
+    // FormData with PUT doesn't work as expected in some backends, so spoofing is often used.
+    // If the backend truly supports PUT with FormData, the below is fine.
+    // If not, we use POST and add a _method field.
+    if (location && data.logo instanceof File) {
+      method = 'POST';
+      formData.append('_method', 'PUT');
     }
-
+    
     try {
       const response = await fetcher(url, {
         method: method,
