@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -82,6 +81,7 @@ export default function POSPage() {
   const [returnType, setReturnType] = useState<'invoice' | 'manual'>('invoice');
   const [selectedReturnCustomer, setSelectedReturnCustomer] = useState<string | null>(null);
   const [pastInvoices, setPastInvoices] = useState<Invoice[]>([]);
+  const [selectedInvoiceForReturn, setSelectedInvoiceForReturn] = useState<Invoice | null>(null);
   const [isLoadingPastInvoices, setIsLoadingPastInvoices] = useState(false);
   const [returnReason, setReturnReason] = useState('');
   const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
@@ -271,8 +271,9 @@ export default function POSPage() {
     }
   }, [selectedReturnCustomer, toast, isReturnDialogOpen, returnType, company_id]);
   
-  const handleInvoiceSelect = async (invoice: Invoice) => {
+  const handleInvoiceSelect = (invoice: Invoice) => {
     if (!invoice?.items) return;
+    setSelectedInvoiceForReturn(invoice);
     const items = (invoice.items || []).map(item => {
         const matchingPosProduct = posProducts.find(p => p.variant.id === item.product_variant_id);
         return {
@@ -304,10 +305,14 @@ export default function POSPage() {
       return_amount: returnItems.reduce((acc, item) => acc + item.amount, 0).toString(),
       reason: returnReason,
       created_by: currentCashier?.name || 'Admin',
-      stock_entries: returnItems.map(item => ({
+      created_at: new Date().toISOString(),
+      updated_by: currentCashier?.name || 'Admin',
+      is_active: '1',
+      ref_invoice: selectedInvoiceForReturn?.invoice_number || null,
+      stock_entries: returnItems.filter(item => item.quantity > 0).map(item => ({
         product_id: parseInt(item.productId),
         product_variant_id: parseInt(item.productVariantId),
-        quantity: item.quantity,
+        quantity: item.quantity.toString(),
         patch_code: 'RETURN', // This might need to be dynamic
         expire_date: '0000-00-00',
         manufacture_date: format(new Date(), 'yyyy-MM-dd'),
@@ -332,6 +337,7 @@ export default function POSPage() {
         setSelectedReturnCustomer(null);
         setReturnItems([]);
         setReturnReason('');
+        setSelectedInvoiceForReturn(null);
 
     } catch(error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
