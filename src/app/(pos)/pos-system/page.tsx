@@ -81,8 +81,8 @@ export default function POSPage() {
   const [returnType, setReturnType] = useState<'invoice' | 'manual'>('invoice');
   const [selectedReturnCustomer, setSelectedReturnCustomer] = useState<string | null>(null);
   const [pastInvoices, setPastInvoices] = useState<Invoice[]>([]);
-  const [selectedInvoiceForReturn, setSelectedInvoiceForReturn] = useState<Invoice | null>(null);
   const [isLoadingPastInvoices, setIsLoadingPastInvoices] = useState(false);
+  const [selectedInvoiceForReturn, setSelectedInvoiceForReturn] = useState<Invoice | null>(null);
   const [returnReason, setReturnReason] = useState('');
   const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
@@ -293,7 +293,7 @@ export default function POSPage() {
   };
   
   const handleProcessReturn = async () => {
-    if (returnItems.length === 0 || !selectedReturnCustomer || !currentLocation || !company_id) {
+    if (returnItems.length === 0 || !selectedReturnCustomer || !currentLocation || !company_id || !currentCashier) {
       toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select items and a customer.' });
       return;
     }
@@ -310,6 +310,7 @@ export default function POSPage() {
       is_active: '1',
       ref_invoice: selectedInvoiceForReturn?.invoice_number || null,
       stock_entries: returnItems.filter(item => item.quantity > 0).map(item => ({
+        type: 'IN',
         product_id: parseInt(item.productId),
         product_variant_id: parseInt(item.productVariantId),
         quantity: item.quantity.toString(),
@@ -318,6 +319,8 @@ export default function POSPage() {
         manufacture_date: format(new Date(), 'yyyy-MM-dd'),
         reference: 'Customer Return',
         transaction_type: 'customer_return',
+        location_id: currentLocation.location_id,
+        ref_id: selectedInvoiceForReturn?.invoice_number || 'N/A',
       })),
     };
     
