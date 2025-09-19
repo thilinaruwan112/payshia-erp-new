@@ -7,6 +7,7 @@ import { useLocation } from '@/components/location-provider';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { fetcher } from '@/lib/api';
 
 export default function NewTransferPage() {
   const { company_id } = useLocation();
@@ -22,7 +23,7 @@ export default function NewTransferPage() {
       }
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch locations');
         }
