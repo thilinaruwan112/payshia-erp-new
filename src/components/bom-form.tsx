@@ -46,7 +46,7 @@ interface ProductWithApiResponse {
 }
 
 const recipeItemSchema = z.object({
-  ingredientName: z.string().min(1, "Ingredient name is required."),
+  recipe_product: z.string().min(1, "Ingredient is required."),
   quantity: z.coerce.number().min(0.001, "Quantity must be greater than 0."),
   unit: z.string().min(1, "Unit is required."),
 });
@@ -71,7 +71,7 @@ export function BomForm() {
     resolver: zodResolver(bomFormSchema),
     defaultValues: {
       recipeType: "Item Recipe",
-      items: [{ ingredientName: "", quantity: 1, unit: "Nos" }],
+      items: [{ recipe_product: "", quantity: 1, unit: "Nos" }],
     },
     mode: "onChange",
   });
@@ -121,17 +121,11 @@ export function BomForm() {
 
     try {
         for (const item of data.items) {
-            const ingredientProduct = allSkus.find(sku => sku.label.toLowerCase() === item.ingredientName.toLowerCase() || sku.name === item.ingredientName.toLowerCase());
-
-            if (!ingredientProduct) {
-                throw new Error(`Could not find details for ingredient with name "${item.ingredientName}".`);
-            }
-
             const payload = {
                 company_id: company_id,
                 main_product: parseInt(finishedGoodProduct.productId, 10),
                 product_variant_id: parseInt(finishedGoodVariantId, 10),
-                recipe_product: parseInt(ingredientProduct.productId, 10),
+                recipe_product: item.recipe_product,
                 qty: item.quantity,
                 recipe_type: data.recipeType === 'A La Carte' ? 'ala cart' : 'item_recipe',
                 created_by: "admin",
@@ -279,11 +273,11 @@ export function BomForm() {
                                 <TableCell>
                                     <FormField
                                         control={form.control}
-                                        name={`items.${index}.ingredientName`}
+                                        name={`items.${index}.recipe_product`}
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormControl>
-                                                    <Input placeholder="Enter raw material name" {...field} />
+                                                    <Input placeholder="Enter raw material name or ID" {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -338,7 +332,7 @@ export function BomForm() {
                         ))}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ ingredientName: '', quantity: 1, unit: 'Nos' })} className="mt-4">
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ recipe_product: '', quantity: 1, unit: 'Nos' })} className="mt-4">
                     Add Ingredient
                 </Button>
             </CardContent>
