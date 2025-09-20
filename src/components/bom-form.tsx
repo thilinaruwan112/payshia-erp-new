@@ -38,6 +38,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { fetcher } from "@/lib/api";
 import { format } from "date-fns";
+import { Combobox } from "./ui/combobox";
 
 interface ProductWithApiResponse {
     product: Product;
@@ -279,9 +280,13 @@ export function BomForm() {
                                         name={`items.${index}.ingredientId`}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormControl>
-                                                    <Input placeholder="Enter ingredient product ID" {...field} />
-                                                </FormControl>
+                                                <Combobox
+                                                    options={allSkus}
+                                                    value={field.value}
+                                                    onChange={field.onChange}
+                                                    placeholder="Select an ingredient..."
+                                                    notFoundText="No item found."
+                                                />
                                                 <FormMessage />
                                             </FormItem>
                                         )}
