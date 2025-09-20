@@ -272,7 +272,8 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                 hold_status: 0,
                 printed_status: 1,
                 product_variant_id: parseInt(item.productVariantId),
-                patch_code: batchInfo.patch_code, // Add patch_code here
+                patch_code: batchInfo.patch_code,
+                expire_date: batchInfo.expire_date,
                 company_id: company_id,
             }
         })
