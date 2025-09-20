@@ -46,7 +46,7 @@ interface ProductWithApiResponse {
 }
 
 const recipeItemSchema = z.object({
-  ingredientId: z.string().min(1, "Ingredient Product ID is required."),
+  ingredientName: z.string().min(1, "Ingredient name is required."),
   quantity: z.coerce.number().min(0.001, "Quantity must be greater than 0."),
   unit: z.string().min(1, "Unit is required."),
 });
@@ -71,7 +71,7 @@ export function BomForm() {
     resolver: zodResolver(bomFormSchema),
     defaultValues: {
       recipeType: "Item Recipe",
-      items: [{ ingredientId: "", quantity: 1, unit: "Nos" }],
+      items: [{ ingredientName: "", quantity: 1, unit: "Nos" }],
     },
     mode: "onChange",
   });
@@ -101,7 +101,8 @@ export function BomForm() {
         (p.variants || []).map(v => ({
             label: `${p.product.name} (${v.variant.sku})`,
             value: v.variant.id,
-            productId: p.product.id
+            productId: p.product.id,
+            name: p.product.name.toLowerCase()
         }))
     );
   }, [products]);
@@ -113,18 +114,24 @@ export function BomForm() {
     const finishedGoodProduct = allSkus.find(sku => sku.value === finishedGoodVariantId);
 
     if (!finishedGoodProduct || !company_id) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not find product details.' });
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not find finished good product details.' });
         setIsLoading(false);
         return;
     }
 
     try {
         for (const item of data.items) {
+            const ingredientProduct = allSkus.find(sku => sku.label.toLowerCase() === item.ingredientName.toLowerCase() || sku.name === item.ingredientName.toLowerCase());
+
+            if (!ingredientProduct) {
+                throw new Error(`Could not find details for ingredient with name "${item.ingredientName}".`);
+            }
+
             const payload = {
                 company_id: company_id,
                 main_product: parseInt(finishedGoodProduct.productId, 10),
                 product_variant_id: parseInt(finishedGoodVariantId, 10),
-                recipe_product: parseInt(item.ingredientId, 10),
+                recipe_product: parseInt(ingredientProduct.productId, 10),
                 qty: item.quantity,
                 recipe_type: data.recipeType === 'A La Carte' ? 'ala cart' : 'item_recipe',
                 created_by: "admin",
@@ -260,7 +267,7 @@ export function BomForm() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[40%]">Ingredient Product ID</TableHead>
+                            <TableHead className="w-[40%]">Ingredient Name</TableHead>
                             <TableHead>Quantity</TableHead>
                             <TableHead>Unit</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
@@ -272,11 +279,11 @@ export function BomForm() {
                                 <TableCell>
                                     <FormField
                                         control={form.control}
-                                        name={`items.${index}.ingredientId`}
+                                        name={`items.${index}.ingredientName`}
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormControl>
-                                                    <Input placeholder="Enter raw material Product ID" {...field} />
+                                                    <Input placeholder="Enter raw material name" {...field} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -331,7 +338,7 @@ export function BomForm() {
                         ))}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ ingredientId: '', quantity: 1, unit: 'Nos' })} className="mt-4">
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ ingredientName: '', quantity: 1, unit: 'Nos' })} className="mt-4">
                     Add Ingredient
                 </Button>
             </CardContent>
