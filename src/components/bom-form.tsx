@@ -46,7 +46,7 @@ interface ProductWithApiResponse {
 }
 
 const recipeItemSchema = z.object({
-  ingredientId: z.string().min(1, "Ingredient is required."),
+  ingredientId: z.string().min(1, "Ingredient Product ID is required."),
   quantity: z.coerce.number().min(0.001, "Quantity must be greater than 0."),
   unit: z.string().min(1, "Unit is required."),
 });
@@ -120,16 +120,11 @@ export function BomForm() {
 
     try {
         for (const item of data.items) {
-            const ingredientProduct = allSkus.find(sku => sku.value === item.ingredientId);
-            if (!ingredientProduct) {
-                throw new Error(`Could not find details for ingredient with ID ${item.ingredientId}`);
-            }
-
             const payload = {
                 company_id: company_id,
                 main_product: parseInt(finishedGoodProduct.productId, 10),
                 product_variant_id: parseInt(finishedGoodVariantId, 10),
-                recipe_product: parseInt(ingredientProduct.productId, 10),
+                recipe_product: parseInt(item.ingredientId, 10),
                 qty: item.quantity,
                 recipe_type: data.recipeType === 'A La Carte' ? 'ala cart' : 'item_recipe',
                 created_by: "admin",
@@ -265,7 +260,7 @@ export function BomForm() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[40%]">Ingredient</TableHead>
+                            <TableHead className="w-[40%]">Ingredient Product ID</TableHead>
                             <TableHead>Quantity</TableHead>
                             <TableHead>Unit</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
@@ -280,13 +275,9 @@ export function BomForm() {
                                         name={`items.${index}.ingredientId`}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <Combobox
-                                                    options={allSkus}
-                                                    value={field.value}
-                                                    onChange={field.onChange}
-                                                    placeholder="Select an ingredient..."
-                                                    notFoundText="No item found."
-                                                />
+                                                <FormControl>
+                                                    <Input placeholder="Enter raw material Product ID" {...field} />
+                                                </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
