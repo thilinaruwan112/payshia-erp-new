@@ -19,26 +19,46 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { fetcher } from '@/lib/api';
+import { useLocation } from '@/components/location-provider';
+import type { Invoice } from '@/lib/types';
+
 
 type DocumentType = 'Invoice' | 'Receipt' | 'Transfer Note' | 'Purchase Order' | 'Production Note';
 type DocumentDetails = {
     type: DocumentType;
-    id: string;
+    id: string; // This will be the internal DB ID
+    number: string; // This is the user-facing number like INV-001
     date: string;
     amount?: number;
     customerOrSupplier?: string;
 };
 
 // Mock fetch function - in a real app, this would be an API call
-const fetchDocumentDetails = async (type: DocumentType, id: string): Promise<DocumentDetails | null> => {
-    console.log(`Searching for ${type} with ID: ${id}`);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-    // This is mock data. A real implementation would hit different endpoints based on type.
-    if (id.toLowerCase().includes('inv')) {
-        return { type: 'Invoice', id, date: '2023-10-01', amount: 150.99, customerOrSupplier: 'John Doe' };
+const fetchDocumentDetails = async (type: DocumentType, number: string, companyId: number | null): Promise<DocumentDetails | null> => {
+    console.log(`Searching for ${type} with number: ${number}`);
+    if (!companyId) return null;
+
+    if (type === 'Invoice') {
+        const response = await fetcher(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${number}&company_id=${companyId}`);
+        if (response.ok) {
+            const invoice: Invoice = await response.json();
+            const customer = invoice.customer;
+            return {
+                type: 'Invoice',
+                id: invoice.id,
+                number: invoice.invoice_number,
+                date: invoice.invoice_date,
+                amount: parseFloat(invoice.grand_total),
+                customerOrSupplier: customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : 'Walk-in Customer'
+            }
+        }
     }
-    if (id.toLowerCase().includes('po')) {
-        return { type: 'Purchase Order', id, date: '2023-09-28', amount: 2500.00, customerOrSupplier: 'Global Supplies Inc.' };
+    
+    // Placeholder for other document types
+    await new Promise(resolve => setTimeout(resolve, 500)); 
+    if (number.toLowerCase().includes('po')) {
+        return { type: 'Purchase Order', id: 'po-123', number, date: '2023-09-28', amount: 2500.00, customerOrSupplier: 'Global Supplies Inc.' };
     }
     return null;
 };
@@ -46,39 +66,66 @@ const fetchDocumentDetails = async (type: DocumentType, id: string): Promise<Doc
 
 export default function CancellationPage() {
     const { toast } = useToast();
+    const { company_id } = useLocation();
     const [docType, setDocType] = useState<DocumentType | ''>('');
-    const [docId, setDocId] = useState('');
+    const [docNumber, setDocNumber] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [details, setDetails] = useState<DocumentDetails | null>(null);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
     const handleSearch = async () => {
-        if (!docType || !docId) {
-            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select a document type and enter an ID.' });
+        if (!docType || !docNumber) {
+            toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select a document type and enter a number.' });
             return;
         }
         setIsLoading(true);
         setDetails(null);
-        const result = await fetchDocumentDetails(docType, docId);
+        const result = await fetchDocumentDetails(docType, docNumber, company_id);
         if (result) {
             setDetails(result);
         } else {
-            toast({ variant: 'destructive', title: 'Not Found', description: `Could not find a ${docType} with ID: ${docId}` });
+            toast({ variant: 'destructive', title: 'Not Found', description: `Could not find a ${docType} with number: ${docNumber}` });
         }
         setIsLoading(false);
     };
     
-    const handleCancel = () => {
-        // In a real app, you'd make an API call to a specific cancellation endpoint
-        console.log(`Cancelling document:`, details);
-        toast({
-            title: `Cancellation Processed`,
-            description: `${details?.type} #${details?.id} has been cancelled (simulated).`,
-        });
-        // Reset state after cancellation
-        setDetails(null);
-        setDocId('');
-        setIsConfirmOpen(false);
+    const handleCancel = async () => {
+        if (!details) return;
+
+        setIsLoading(true);
+
+        try {
+            if (details.type === 'Invoice') {
+                const response = await fetcher(`https://server-erp.payshia.com/invoices/${details.id}/reverse`, {
+                    method: 'POST',
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to cancel the invoice.');
+                }
+            } else {
+                 // Mock cancellation for other types
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            toast({
+                title: `Cancellation Processed`,
+                description: `${details?.type} #${details?.number} has been cancelled.`,
+            });
+            // Reset state after cancellation
+            setDetails(null);
+            setDocNumber('');
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast({
+                variant: 'destructive',
+                title: 'Cancellation Failed',
+                description: errorMessage,
+            });
+        } finally {
+            setIsLoading(false);
+            setIsConfirmOpen(false);
+        }
     }
 
     return (
@@ -118,11 +165,11 @@ export default function CancellationPage() {
                                 <Input 
                                     id="doc-id" 
                                     placeholder="e.g., INV-00123" 
-                                    value={docId} 
-                                    onChange={(e) => setDocId(e.target.value)}
+                                    value={docNumber} 
+                                    onChange={(e) => setDocNumber(e.target.value)}
                                     disabled={!docType}
                                 />
-                                <Button onClick={handleSearch} disabled={!docType || !docId || isLoading}>
+                                <Button onClick={handleSearch} disabled={!docType || !docNumber || isLoading}>
                                     {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
                                 </Button>
                             </div>
@@ -140,7 +187,7 @@ export default function CancellationPage() {
                     <CardContent className="space-y-4">
                         <div className="p-4 border rounded-md bg-muted/50 space-y-2">
                             <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Document Type</span><span className="font-semibold">{details.type}</span></div>
-                             <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Document ID</span><span className="font-semibold font-mono">{details.id}</span></div>
+                             <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Document #</span><span className="font-semibold font-mono">{details.number}</span></div>
                              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Date</span><span className="font-semibold">{details.date}</span></div>
                              {details.customerOrSupplier && <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Customer/Supplier</span><span className="font-semibold">{details.customerOrSupplier}</span></div>}
                              {details.amount && <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Amount</span><span className="font-semibold font-mono">${details.amount.toFixed(2)}</span></div>}
@@ -160,12 +207,13 @@ export default function CancellationPage() {
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
                             This action cannot be undone. This will permanently cancel the document{' '}
-                            <span className="font-bold text-foreground">{details?.id}</span>.
+                            <span className="font-bold text-foreground">{details?.number}</span>.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Go Back</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCancel} className="bg-destructive hover:bg-destructive/90">
+                        <AlertDialogAction onClick={handleCancel} className="bg-destructive hover:bg-destructive/90" disabled={isLoading}>
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Confirm Cancellation
                         </AlertDialogAction>
                     </AlertDialogFooter>
