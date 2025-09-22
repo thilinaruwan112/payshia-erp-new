@@ -203,16 +203,20 @@ export default function CancellationPage() {
                     method: 'PUT',
                     body: JSON.stringify(payload),
                 });
-
+                
+                // Read the response body once
                 const responseData = await response.json();
 
+                // Check for a specific error in the response body
                 if (responseData.error) {
                      if (responseData.error === "Cannot deactivate PO that has GRN records") {
                         throw new Error("This PO cannot be cancelled because it has already been received in a GRN.");
                     }
+                    // Handle other potential errors from the body
                     throw new Error(responseData.error);
                 }
-
+                
+                // If there's no error field, check the overall response status
                 if (!response.ok) {
                     throw new Error(responseData.message || 'Failed to cancel the purchase order.');
                 }
@@ -260,7 +264,11 @@ export default function CancellationPage() {
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 space-y-2">
                              <Label htmlFor="doc-type">Document Type</Label>
-                             <Select value={docType} onValueChange={(v) => setDocType(v as DocumentType)}>
+                             <Select value={docType} onValueChange={(v) => {
+                                 setDocType(v as DocumentType);
+                                 setDetails(null);
+                                 setDocNumber('');
+                             }}>
                                 <SelectTrigger id="doc-type">
                                     <SelectValue placeholder="Select a type..." />
                                 </SelectTrigger>
