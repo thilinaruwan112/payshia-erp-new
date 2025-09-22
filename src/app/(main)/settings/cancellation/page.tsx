@@ -178,6 +178,14 @@ export default function CancellationPage() {
                     const errorData = await response.json();
                     throw new Error(errorData.message || 'Failed to cancel the transfer note.');
                 }
+            } else if (details.type === 'Receipt') {
+                const response = await fetcher(`https://server-erp.payshia.com/receipts/${details.id}/deactivate`, {
+                    method: 'PUT',
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to cancel the receipt.');
+                }
             }
              else {
                  // Mock cancellation for other types
