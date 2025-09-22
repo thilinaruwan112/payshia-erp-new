@@ -21,10 +21,27 @@ import {
 } from '@/components/ui/alert-dialog';
 import { fetcher } from '@/lib/api';
 import { useLocation } from '@/components/location-provider';
-import type { Invoice, StockTransfer } from '@/lib/types';
+import type { Invoice, StockTransfer, User } from '@/lib/types';
 
 
 type DocumentType = 'Invoice' | 'Receipt' | 'Transfer Note' | 'Purchase Order' | 'Production Note';
+
+type Receipt = {
+    id: string;
+    rec_number: string;
+    type: string;
+    is_active: string;
+    date: string;
+    amount: string;
+    created_by: string;
+    ref_id: string; // Invoice number
+    location_id: string;
+    customer_id: string;
+    today_invoice: string;
+    company_id: string;
+    now_time: string;
+};
+
 type DocumentDetails = {
     type: DocumentType;
     id: string; // This will be the internal DB ID
@@ -32,7 +49,9 @@ type DocumentDetails = {
     date: string;
     amount?: number;
     customerOrSupplier?: string;
+    customer_id?: string;
 };
+
 
 // Mock fetch function - in a real app, this would be an API call
 const fetchDocumentDetails = async (type: DocumentType, number: string, companyId: number | null): Promise<DocumentDetails | null> => {
@@ -65,6 +84,29 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
                     number: transfer.stock_transfer_number,
                     date: transfer.transfer_date,
                     customerOrSupplier: `From: ${transfer.from_location} To: ${transfer.to_location}` // Simplified
+                }
+            }
+        }
+    } else if (type === 'Receipt') {
+        const response = await fetcher(`https://server-erp.payshia.com/receipts/filter?company_id=${companyId}&rec_number=${number}`);
+        if (response.ok) {
+            const receipts: Receipt[] = await response.json();
+            const receipt = receipts[0];
+            if (receipt) {
+                 const customerResponse = await fetcher(`https://server-erp.payshia.com/customers/${receipt.customer_id}`);
+                 let customerName = 'N/A';
+                 if (customerResponse.ok) {
+                     const customer: User = await customerResponse.json();
+                     customerName = `${customer.customer_first_name} ${customer.customer_last_name}`
+                 }
+                return {
+                    type: 'Receipt',
+                    id: receipt.id,
+                    number: receipt.rec_number,
+                    date: receipt.date,
+                    amount: parseFloat(receipt.amount),
+                    customer_id: receipt.customer_id,
+                    customerOrSupplier: customerName,
                 }
             }
         }
@@ -224,7 +266,7 @@ export default function CancellationPage() {
                              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Document #</span><span className="font-semibold font-mono">{details.number}</span></div>
                              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Date</span><span className="font-semibold">{details.date}</span></div>
                              {details.customerOrSupplier && <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Customer/Supplier</span><span className="font-semibold">{details.customerOrSupplier}</span></div>}
-                             {details.amount && <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Amount</span><span className="font-semibold font-mono">${details.amount.toFixed(2)}</span></div>}
+                             {details.amount != null && <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Amount</span><span className="font-semibold font-mono">${details.amount.toFixed(2)}</span></div>}
                         </div>
                     </CardContent>
                     <CardFooter>
