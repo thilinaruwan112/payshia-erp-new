@@ -203,9 +203,18 @@ export default function CancellationPage() {
                     method: 'PUT',
                     body: JSON.stringify(payload),
                 });
+
+                const responseData = await response.json();
+
+                if (responseData.error) {
+                     if (responseData.error === "Cannot deactivate PO that has GRN records") {
+                        throw new Error("This PO cannot be cancelled because it has already been received in a GRN.");
+                    }
+                    throw new Error(responseData.error);
+                }
+
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Failed to cancel the purchase order.');
+                    throw new Error(responseData.message || 'Failed to cancel the purchase order.');
                 }
             }
              else {
