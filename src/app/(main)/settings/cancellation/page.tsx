@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { fetcher } from '@/lib/api';
 import { useLocation } from '@/components/location-provider';
-import type { Invoice, StockTransfer, User } from '@/lib/types';
+import type { Invoice, StockTransfer, User, PurchaseOrder } from '@/lib/types';
 
 
 type DocumentType = 'Invoice' | 'Receipt' | 'Transfer Note' | 'Purchase Order' | 'Production Note';
@@ -83,7 +83,7 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
                     id: transfer.id,
                     number: transfer.stock_transfer_number,
                     date: transfer.transfer_date,
-                    customerOrSupplier: `From: ${transfer.from_location} To: ${transfer.to_location}` // Simplified
+                    customerOrSupplier: `From & To locations in details`
                 }
             }
         }
@@ -110,13 +110,24 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
                 }
             }
         }
+    } else if (type === 'Purchase Order') {
+        const response = await fetcher(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${companyId}`);
+         if (response.ok) {
+            const purchaseOrders: PurchaseOrder[] = await response.json();
+            const po = purchaseOrders.find(p => p.po_number === number);
+             if (po) {
+                return {
+                    type: 'Purchase Order',
+                    id: po.id,
+                    number: po.po_number,
+                    date: po.created_at,
+                    amount: parseFloat(po.sub_total),
+                    customerOrSupplier: po.supplierName || `Supplier ID: ${po.supplier_id}`
+                }
+            }
+        }
     }
     
-    // Placeholder for other document types
-    await new Promise(resolve => setTimeout(resolve, 500)); 
-    if (number.toLowerCase().includes('po')) {
-        return { type: 'Purchase Order', id: 'po-123', number, date: '2023-09-28', amount: 2500.00, customerOrSupplier: 'Global Supplies Inc.' };
-    }
     return null;
 };
 
@@ -185,6 +196,16 @@ export default function CancellationPage() {
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.message || 'Failed to cancel the receipt.');
+                }
+            } else if (details.type === 'Purchase Order') {
+                const payload = { po_status: "3" };
+                const response = await fetcher(`https://server-erp.payshia.com/purchase-orders/${details.id}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify(payload),
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to cancel the purchase order.');
                 }
             }
              else {
@@ -306,3 +327,5 @@ export default function CancellationPage() {
         </div>
     );
 }
+
+    
