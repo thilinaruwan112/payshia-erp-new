@@ -198,7 +198,7 @@ export default function CancellationPage() {
                     throw new Error(errorData.message || 'Failed to cancel the receipt.');
                 }
             } else if (details.type === 'Purchase Order') {
-                const payload = { po_status: "3" };
+                const payload = { is_active: 0 };
                 const response = await fetcher(`https://server-erp.payshia.com/purchase-orders/${details.id}/status`, {
                     method: 'PUT',
                     body: JSON.stringify(payload),
