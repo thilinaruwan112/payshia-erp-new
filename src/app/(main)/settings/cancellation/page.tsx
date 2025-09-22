@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { fetcher } from '@/lib/api';
 import { useLocation } from '@/components/location-provider';
-import type { Invoice } from '@/lib/types';
+import type { Invoice, StockTransfer } from '@/lib/types';
 
 
 type DocumentType = 'Invoice' | 'Receipt' | 'Transfer Note' | 'Purchase Order' | 'Production Note';
@@ -53,6 +53,21 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
                 customerOrSupplier: customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : 'Walk-in Customer'
             }
         }
+    } else if (type === 'Transfer Note') {
+        const response = await fetcher(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${companyId}`);
+        if (response.ok) {
+            const transfers: StockTransfer[] = await response.json();
+            const transfer = transfers.find(t => t.stock_transfer_number === number);
+            if (transfer) {
+                return {
+                    type: 'Transfer Note',
+                    id: transfer.id,
+                    number: transfer.stock_transfer_number,
+                    date: transfer.transfer_date,
+                    customerOrSupplier: `From: ${transfer.from_location} To: ${transfer.to_location}` // Simplified
+                }
+            }
+        }
     }
     
     // Placeholder for other document types
@@ -72,6 +87,14 @@ export default function CancellationPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [details, setDetails] = useState<DocumentDetails | null>(null);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [userName, setUserName] = useState<string | null>(null);
+
+    React.useEffect(() => {
+        const name = localStorage.getItem('userName');
+        if (name) {
+            setUserName(name);
+        }
+    }, []);
 
     const handleSearch = async () => {
         if (!docType || !docNumber) {
@@ -103,7 +126,18 @@ export default function CancellationPage() {
                     const errorData = await response.json();
                     throw new Error(errorData.message || 'Failed to cancel the invoice.');
                 }
-            } else {
+            } else if (details.type === 'Transfer Note') {
+                const payload = { is_active: 0, updated_by: userName || 'admin' };
+                const response = await fetcher(`https://server-erp.payshia.com/stock-transfers/${details.id}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify(payload),
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to cancel the transfer note.');
+                }
+            }
+             else {
                  // Mock cancellation for other types
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
