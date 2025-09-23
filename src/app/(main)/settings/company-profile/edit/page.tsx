@@ -28,6 +28,7 @@ import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useLocation } from "@/components/location-provider";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fetcher } from "@/lib/api";
 
 const companyFormSchema = z.object({
   company_name: z.string().min(3, "Company name is required."),
@@ -70,7 +71,7 @@ export default function EditCompanyProfilePage() {
         async function fetchCompanyData() {
             setIsFetching(true);
             try {
-                const response = await fetch(`https://server-erp.payshia.com/companies/${company_id}`);
+                const response = await fetcher(`https://server-erp.payshia.com/companies/${company_id}`);
                 if (!response.ok) throw new Error('Failed to fetch company data');
                 const data = await response.json();
                 form.reset(data);
@@ -92,9 +93,8 @@ export default function EditCompanyProfilePage() {
         setIsLoading(true);
         
         try {
-            const response = await fetch(`https://server-erp.payshia.com/companies/${company_id}`, {
+            const response = await fetcher(`https://server-erp.payshia.com/companies/${company_id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
 

@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Building2, Mail, Globe, Phone, User, Briefcase, Pencil } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { fetcher } from '@/lib/api';
 
 interface InfoLineProps {
   icon: React.ElementType;
@@ -45,7 +46,7 @@ export default function CompanyProfilePage() {
     async function fetchCompanyData() {
         setIsLoading(true);
         try {
-            const response = await fetch(`https://server-erp.payshia.com/companies/${company_id}`);
+            const response = await fetcher(`https://server-erp.payshia.com/companies/${company_id}`);
             if (!response.ok) throw new Error('Failed to fetch company data');
             const data = await response.json();
             setCompany(data);
