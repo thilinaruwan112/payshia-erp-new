@@ -46,24 +46,24 @@ export default function EditCollectionPage({ params }: { params: { id: string } 
                 const collectionData: Collection = await collectionResponse.json();
 
                 if (!allProductsResponse.ok) throw new Error('Failed to fetch product list');
-                const allProducts: Product[] = await allProductsResponse.json();
+                const allProducts: Product[] = (await allProductsResponse.json()) || [];
 
-                const collectionProductsResponse = await fetcher(`https://server-erp.payshia.com/collection-products?collection_id=${id}&company_id=${company_id}`);
+                const collectionProductsResponse = await fetcher(`https://server-erp.payshia.com/collection-products?company_id=${company_id}`);
                 
                 let productsInCollection: Product[] = [];
                 if (collectionProductsResponse.ok) {
-                    const collectionProductLinks: CollectionProductLink[] = await collectionProductsResponse.json();
+                    const allCollectionProductLinks: CollectionProductLink[] = await collectionProductsResponse.json();
                     
+                    const linksForThisCollection = allCollectionProductLinks.filter(link => link.collection_id === id);
+
                     const productIdsInCollection = new Set(
-                        collectionProductLinks
-                            .filter(link => link.collection_id === id)
-                            .map(link => link.product_id)
+                        linksForThisCollection.map(link => link.product_id)
                     );
 
                     productsInCollection = allProducts
                         .filter(p => productIdsInCollection.has(p.id))
                         .map(p => {
-                            const link = collectionProductLinks.find(l => l.product_id === p.id && l.collection_id === id);
+                            const link = linksForThisCollection.find(l => l.product_id === p.id);
                             return {
                                 ...p,
                                 collectionProductId: link?.id, // Add the association ID
