@@ -47,15 +47,14 @@ export default function EditCollectionPage({ params }: { params: { id: string } 
 
                 if (!allProductsResponse.ok) throw new Error('Failed to fetch product list');
                 const allProducts: Product[] = (await allProductsResponse.json()) || [];
-
-                const collectionProductsResponse = await fetcher(`https://server-erp.payshia.com/collection-products?company_id=${company_id}`);
+                
+                // Use the correct, specific endpoint for fetching collection-product links
+                const collectionProductsResponse = await fetcher(`https://server-erp.payshia.com/collection-products/get/by?collection_id=${id}&company_id=${company_id}`);
                 
                 let productsInCollection: Product[] = [];
                 if (collectionProductsResponse.ok) {
-                    const allCollectionProductLinks: CollectionProductLink[] = await collectionProductsResponse.json();
+                    const linksForThisCollection: CollectionProductLink[] = await collectionProductsResponse.json();
                     
-                    const linksForThisCollection = allCollectionProductLinks.filter(link => link.collection_id === id);
-
                     const productIdsInCollection = new Set(
                         linksForThisCollection.map(link => link.product_id)
                     );
