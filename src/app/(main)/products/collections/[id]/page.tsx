@@ -53,7 +53,7 @@ export default function EditCollectionPage({ params }: { params: { id: string } 
                 
                 let productsInCollection: Product[] = [];
                 if (collectionProductsResponse.ok) {
-                    const linksForThisCollection: CollectionProductLink[] = await collectionProductsResponse.json();
+                    const linksForThisCollection: CollectionProductLink[] = (await collectionProductsResponse.json()) || [];
                     
                     const productIdsInCollection = new Set(
                         linksForThisCollection.map(link => link.product_id)
