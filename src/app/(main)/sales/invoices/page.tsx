@@ -77,7 +77,7 @@ export default function InvoicesPage() {
         setIsLoading(true);
         try {
             const [invoiceResponse, customerResponse] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=1`),
+                fetcher(`https://server-erp.payshia.com/invoices/company/latest?company_id=${company_id}`),
                 fetcher('https://server-erp.payshia.com/customers'),
             ]);
 
