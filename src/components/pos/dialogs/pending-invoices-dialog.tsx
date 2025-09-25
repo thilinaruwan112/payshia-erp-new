@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -91,10 +90,10 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
       }
       setIsLoadingPastInvoices(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedCustomer}&company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedCustomer}`);
         if (!response.ok) throw new Error('Failed to fetch invoices');
         const data: Invoice[] = await response.json();
-        setPastInvoices(data.filter(inv => inv.payment_status !== 'Paid') || []);
+        setPastInvoices(data || []);
       } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch invoices for this customer.' });
         setPastInvoices([]);
@@ -108,22 +107,22 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
   }, [selectedCustomer, toast, isOpen, company_id]);
 
   const handleInvoiceSelect = async (invoice: Invoice) => {
-    if (!company_id) return;
+    if (!company_id || !selectedCustomer) return;
     setSelectedInvoice(invoice);
     setIsLoadingBalance(true);
     try {
-      const receiptsResponse = await fetcher(`https://server-erp.payshia.com/receipts/invoice/${invoice.invoice_number}`);
-      let totalPaid = 0;
-      if (receiptsResponse.ok) {
-        const receiptsData: Receipt[] = await receiptsResponse.json();
-        totalPaid = (receiptsData || []).reduce((sum: number, receipt: any) => sum + parseFloat(receipt.amount), 0);
+      const balanceResponse = await fetcher(`https://server-erp.payshia.com/invoices/balance?company_id=${company_id}&customer_id=${selectedCustomer}&ref_id=${invoice.invoice_number}`);
+      if (!balanceResponse.ok) {
+        throw new Error('Failed to fetch invoice balance.');
       }
-      const grandTotal = parseFloat(invoice.grand_total);
-      const balance = grandTotal - totalPaid;
-      setBalanceDetails({ grand_total: invoice.grand_total, total_paid_amount: totalPaid.toFixed(2), balance });
-      setPaymentAmount(balance > 0 ? balance.toFixed(2) : '0.00');
+      const balanceData: BalanceDetails = await balanceResponse.json();
+
+      setBalanceDetails(balanceData);
+      setPaymentAmount(balanceData.balance > 0 ? balanceData.balance.toFixed(2) : '0.00');
+
     } catch (error) {
       toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch invoice balance details.' });
+      setBalanceDetails(null);
     } finally {
       setIsLoadingBalance(false);
     }

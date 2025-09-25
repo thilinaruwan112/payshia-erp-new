@@ -28,6 +28,8 @@ import type { User } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import React, { useState } from "react";
 import { Textarea } from "./ui/textarea";
+import { fetcher } from "@/lib/api";
+import { useLocation } from "./location-provider";
 
 const customerFormSchema = z.object({
   customer_first_name: z.string().min(2, "First name is required."),
@@ -51,6 +53,7 @@ export function CustomerFormDialog({ children, onCustomerCreated }: CustomerForm
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const { company_id, currentLocation } = useLocation();
 
   const defaultValues: Partial<CustomerFormValues> = {
     customer_first_name: "",
@@ -70,6 +73,10 @@ export function CustomerFormDialog({ children, onCustomerCreated }: CustomerForm
   });
 
   async function onSubmit(data: CustomerFormValues) {
+    if (!company_id || !currentLocation) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No company or location selected.' });
+        return;
+    }
     setIsLoading(true);
     const url = 'https://server-erp.payshia.com/customers';
     const method = 'POST';
@@ -79,8 +86,8 @@ export function CustomerFormDialog({ children, onCustomerCreated }: CustomerForm
         city_id: 3,
         created_by: "admin",
         created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        company_id: 3,
-        location_id: 2,
+        company_id: company_id,
+        location_id: parseInt(currentLocation.location_id, 10),
         is_active: 1,
         credit_days: 30,
         region_id: 5,
@@ -89,11 +96,8 @@ export function CustomerFormDialog({ children, onCustomerCreated }: CustomerForm
      };
 
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
       

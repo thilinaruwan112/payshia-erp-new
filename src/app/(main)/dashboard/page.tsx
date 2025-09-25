@@ -30,8 +30,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { SalesChart } from '@/components/sales-chart';
-import { StockChart } from '@/components/stock-chart';
 import { useLocation } from '@/components/location-provider';
 import { useMemo, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -198,27 +196,6 @@ export default function Dashboard() {
             </Card>
         </Link>
        </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-            <CardHeader>
-                <CardTitle>Sales Overview</CardTitle>
-                <CardDescription>A summary of your recent sales.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <SalesChart />
-            </CardContent>
-        </Card>
-        <Card>
-            <CardHeader>
-                <CardTitle>Top Products by Stock</CardTitle>
-                <CardDescription>Your most stocked products in {currentLocation.location_name}.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <StockChart locationId={currentLocation.location_id} />
-            </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

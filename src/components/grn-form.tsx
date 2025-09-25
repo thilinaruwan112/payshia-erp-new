@@ -46,8 +46,8 @@ import { fetcher } from "@/lib/api";
 
 const grnBatchSchema = z.object({
     batchNumber: z.string().min(1, "Batch number is required."),
-    mfgDate: z.date().optional(),
-    expDate: z.date().optional(),
+    mfgDate: z.date({ required_error: "A manufacturing date is required." }),
+    expDate: z.date({ required_error: "An expiry date is required." }),
     receivedQty: z.coerce.number().min(0.01, "Quantity must be greater than 0."),
 });
 
@@ -558,3 +558,5 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
         </Card>
     );
 }
+
+    

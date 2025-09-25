@@ -145,6 +145,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
       const response = await fetcher('https://server-erp.payshia.com/product-images/upload-multiple', {
         method: 'POST',
         body: formData,
+        headers: new Headers(), // Reset headers so fetch can set multipart/form-data
       });
 
       if (!response.ok) {
@@ -342,3 +343,4 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     </Dialog>
   );
 }
+    

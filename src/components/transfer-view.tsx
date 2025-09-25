@@ -6,7 +6,7 @@ import { notFound, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { Printer, ArrowLeft } from 'lucide-react';
 import { Badge } from './ui/badge';
@@ -88,6 +88,12 @@ export function TransferView({ id }: TransferViewProps) {
   const getProductName = (productId: string) => products.find(p => p.id === productId)?.name || 'Unknown Product';
   const getVariantSku = (variantId: string) => variants.find(v => v.id === variantId)?.sku || 'N/A';
   
+  const handlePrint = () => {
+    if (transfer) {
+      window.open(`/inventory-print/transfers/${transfer.id}/print`, '_blank');
+    }
+  };
+
   if (isLoading) {
     return <TransferViewSkeleton />;
   }
@@ -131,7 +137,7 @@ export function TransferView({ id }: TransferViewProps) {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
               </Button>
-              <Button onClick={() => window.print()}>
+              <Button onClick={handlePrint}>
                   <Printer className="mr-2 h-4 w-4" />
                   Print
               </Button>

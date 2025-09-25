@@ -1,3 +1,4 @@
+
 'use client'
 
 import { CollectionForm } from '@/components/collection-form';
@@ -7,6 +8,7 @@ import { fetcher } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLocation } from '@/components/location-provider';
 
 interface CollectionData extends Collection {
   products: Product[];
@@ -17,63 +19,59 @@ interface CollectionProductLink {
     id: string; // This is the collection_product_id
     collection_id: string;
     product_id: string;
+    company_id: string;
 }
 
 export default function EditCollectionPage({ params }: { params: { id: string } }) {
     const { toast } = useToast();
     const [collection, setCollection] = useState<CollectionData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const { company_id } = useLocation();
     const { id } = params;
     
     useEffect(() => {
         async function getCollection() {
-            if (!id) return;
+            if (!id || !company_id) return;
             setIsLoading(true);
             try {
-                const [collectionResponse, collectionProductsResponse] = await Promise.all([
+                const [collectionResponse, allProductsResponse] = await Promise.all([
                     fetcher(`https://server-erp.payshia.com/collections/${id}`),
-                    fetcher(`https://server-erp.payshia.com/collection-products/collection/${id}`)
+                    fetcher(`https://server-erp.payshia.com/products/get/filter/by-company?company_id=${company_id}`),
                 ]);
 
                 if (!collectionResponse.ok) {
                     if (collectionResponse.status === 404) notFound();
                     throw new Error('Failed to fetch collection data');
                 }
-                
                 const collectionData: Collection = await collectionResponse.json();
 
-                if (!collectionProductsResponse.ok) {
-                    console.error(`Failed to fetch products for collection ${id}`);
-                    setCollection({ ...collectionData, products: [] });
-                    return;
-                }
-
-                const collectionProductLinks: CollectionProductLink[] = await collectionProductsResponse.json();
-                const productIds = collectionProductLinks.map(p => p.product_id);
-
-                if (productIds.length === 0) {
-                    setCollection({ ...collectionData, products: [] });
-                    return;
-                }
-
-                // Fetch all products and filter locally
-                const allProductsResponse = await fetcher(`https://server-erp.payshia.com/products`);
-                if (!allProductsResponse.ok) {
-                    throw new Error('Failed to fetch all products');
-                }
-                const allProducts: Product[] = await allProductsResponse.json();
+                if (!allProductsResponse.ok) throw new Error('Failed to fetch product list');
+                const allProducts: Product[] = (await allProductsResponse.json()) || [];
                 
-                // Map products and add the collectionProductId
-                const productsInCollection = allProducts
-                    .filter(p => productIds.includes(p.id))
-                    .map(p => {
-                        const link = collectionProductLinks.find(l => l.product_id === p.id);
-                        return {
-                            ...p,
-                            collectionProductId: link?.id, // Add the association ID
-                        };
-                    });
+                // Use the correct, specific endpoint for fetching collection-product links
+                const collectionProductsResponse = await fetcher(`https://server-erp.payshia.com/collection-products/get/by?collection_id=${id}&company_id=${company_id}`);
+                
+                let productsInCollection: Product[] = [];
+                if (collectionProductsResponse.ok) {
+                    const linksForThisCollection: CollectionProductLink[] = (await collectionProductsResponse.json()) || [];
+                    
+                    const productIdsInCollection = new Set(
+                        linksForThisCollection.map(link => link.product_id)
+                    );
 
+                    productsInCollection = allProducts
+                        .filter(p => productIdsInCollection.has(p.id))
+                        .map(p => {
+                            const link = linksForThisCollection.find(l => l.product_id === p.id);
+                            return {
+                                ...p,
+                                collectionProductId: link?.id, // Add the association ID
+                            };
+                        });
+                } else {
+                     console.error(`Failed to fetch products for collection ${id}`);
+                }
+                
                 setCollection({ ...collectionData, products: productsInCollection });
 
             } catch (error) {
@@ -88,7 +86,7 @@ export default function EditCollectionPage({ params }: { params: { id: string } 
             }
         }
         getCollection();
-    }, [id, toast]);
+    }, [id, company_id, toast]);
 
   if (isLoading) {
     return <div className="space-y-6"><Skeleton className="h-96 w-full" /></div>

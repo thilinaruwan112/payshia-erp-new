@@ -29,6 +29,7 @@ import React from "react";
 import { Textarea } from "./ui/textarea";
 import { useLocation } from "./location-provider";
 import { format } from "date-fns";
+import { fetcher } from "@/lib/api";
 
 const customerFormSchema = z.object({
   customer_first_name: z.string().min(2, "First name is required."),
@@ -102,11 +103,8 @@ export function CustomerForm({ customer }: CustomerFormProps) {
     };
 
     try {
-        const response = await fetch(url, {
+        const response = await fetcher(url, {
             method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
             body: JSON.stringify(payload)
         });
         const result = await response.json();

@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -82,6 +82,7 @@ export default function POSPage() {
   const [selectedReturnCustomer, setSelectedReturnCustomer] = useState<string | null>(null);
   const [pastInvoices, setPastInvoices] = useState<Invoice[]>([]);
   const [isLoadingPastInvoices, setIsLoadingPastInvoices] = useState(false);
+  const [selectedInvoiceForReturn, setSelectedInvoiceForReturn] = useState<Invoice | null>(null);
   const [returnReason, setReturnReason] = useState('');
   const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
@@ -115,7 +116,7 @@ export default function POSPage() {
         }
 
         // Ignore control keys, function keys, etc.
-        if (event.key.length === 1) {
+        if (event.key && event.key.length === 1) {
             setBarcode(prev => prev + event.key);
         }
         
@@ -242,53 +243,57 @@ export default function POSPage() {
 
   useEffect(() => {
     async function fetchInvoicesForReturn() {
-        if (!selectedReturnCustomer || !company_id) {
-            setPastInvoices([]);
-            return;
-        }
-        setIsLoadingPastInvoices(true);
-        try {
-            const response = await fetcher(`https://server-erp.payshia.com/invoices/filter/paid/by-customer?company_id=${company_id}&customer_code=${selectedReturnCustomer}`);
-            if (!response.ok) throw new Error('Failed to fetch invoices');
-            const data: Invoice[] = await response.json();
-            setPastInvoices(data.filter(inv => inv.payment_status === 'Paid') || []);
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch invoices for this customer.' });
-            setPastInvoices([]);
-        } finally {
-            setIsLoadingPastInvoices(false);
-        }
+      if (!selectedReturnCustomer || !company_id) {
+        setPastInvoices([]);
+        return;
+      }
+      setIsLoadingPastInvoices(true);
+      try {
+        const response = await fetcher(
+          `https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedReturnCustomer}&company_id=${company_id}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch invoices");
+        const data: Invoice[] = await response.json();
+        setPastInvoices(data.filter((inv) => inv.payment_status === "paid") || []);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not fetch invoices for this customer.",
+        });
+        setPastInvoices([]);
+      } finally {
+        setIsLoadingPastInvoices(false);
+      }
     }
-    if (isReturnDialogOpen && returnType === 'invoice') {
-        fetchInvoicesForReturn();
+    if (isReturnDialogOpen && returnType === "invoice") {
+      fetchInvoicesForReturn();
     }
   }, [selectedReturnCustomer, toast, isReturnDialogOpen, returnType, company_id]);
   
-  const handleInvoiceSelect = async (invoice: Invoice) => {
-    if (!invoice) return;
-    try {
-      const response = await fetcher(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
-      if (!response.ok) throw new Error('Failed to fetch full invoice details.');
-      const fullInvoice: Invoice = await response.json();
-      const items = (fullInvoice.items || []).map(item => ({
-        id: item.product_variant_id || item.product_id.toString(),
-        name: item.productName || 'Unknown Product',
-        unit: 'Nos',
-        rate: parseFloat(item.item_price as string),
-        quantity: 0,
-        amount: 0,
-        reason: '',
-        productId: item.product_id.toString(),
-        productVariantId: item.product_variant_id || item.product_id.toString(),
-      }));
-      setReturnItems(items);
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not load items for the selected invoice.' });
-    }
+  const handleInvoiceSelect = (invoice: Invoice) => {
+    if (!invoice?.items) return;
+    setSelectedInvoiceForReturn(invoice);
+    const items = (invoice.items || []).map(item => {
+        const matchingPosProduct = posProducts.find(p => p.variant.id === item.product_variant_id);
+        return {
+            id: item.product_variant_id || item.product_id.toString(),
+            name: matchingPosProduct?.variantName || 'Unknown Product',
+            unit: 'Nos',
+            rate: parseFloat(item.item_price as string),
+            quantity: 0,
+            originalQuantity: parseFloat(item.quantity as string),
+            amount: 0,
+            reason: '',
+            productId: item.product_id.toString(),
+            productVariantId: item.product_variant_id || item.product_id.toString(),
+        }
+    });
+    setReturnItems(items);
   };
   
   const handleProcessReturn = async () => {
-    if (returnItems.length === 0 || !selectedReturnCustomer || !currentLocation || !company_id) {
+    if (returnItems.length === 0 || !selectedReturnCustomer || !currentLocation || !company_id || !currentCashier) {
       toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select items and a customer.' });
       return;
     }
@@ -300,15 +305,22 @@ export default function POSPage() {
       return_amount: returnItems.reduce((acc, item) => acc + item.amount, 0).toString(),
       reason: returnReason,
       created_by: currentCashier?.name || 'Admin',
-      stock_entries: returnItems.map(item => ({
+      created_at: new Date().toISOString(),
+      updated_by: currentCashier?.name || 'Admin',
+      is_active: '1',
+      ref_invoice: selectedInvoiceForReturn?.invoice_number || null,
+      stock_entries: returnItems.filter(item => item.quantity > 0).map(item => ({
+        type: 'IN',
         product_id: parseInt(item.productId),
         product_variant_id: parseInt(item.productVariantId),
-        quantity: item.quantity,
+        quantity: item.quantity.toString(),
         patch_code: 'RETURN', // This might need to be dynamic
         expire_date: '0000-00-00',
         manufacture_date: format(new Date(), 'yyyy-MM-dd'),
         reference: 'Customer Return',
         transaction_type: 'customer_return',
+        location_id: currentLocation.location_id,
+        ref_id: selectedInvoiceForReturn?.invoice_number || 'N/A',
       })),
     };
     
@@ -328,6 +340,7 @@ export default function POSPage() {
         setSelectedReturnCustomer(null);
         setReturnItems([]);
         setReturnReason('');
+        setSelectedInvoiceForReturn(null);
 
     } catch(error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -832,3 +845,5 @@ export default function POSPage() {
     </>
   );
 }
+
+    

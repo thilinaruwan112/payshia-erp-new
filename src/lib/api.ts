@@ -10,9 +10,11 @@ export async function fetcher(url: string, options?: RequestInit) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  // Ensure Content-Type is set for POST/PUT if a body is present
-  if (options?.body && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
+  // Only set Content-Type if it's not FormData
+  if (options?.body && !(options.body instanceof FormData)) {
+    if (!headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
   }
 
   const response = await fetch(url, {

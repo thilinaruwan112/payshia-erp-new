@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { type Invoice, type User, type Location, type Product, type InvoiceItem } from '@/lib/types';
@@ -9,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Image from 'next/image';
+import { fetcher } from '@/lib/api';
 
 interface Company {
     id: string;
@@ -47,7 +47,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
       };
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${id}&company_id=${companyId}`);
+        const response = await fetcher(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${id}&company_id=${companyId}`);
         if (!response.ok) {
            if (response.status === 404) notFound();
            throw new Error('Failed to fetch invoice data');
@@ -62,7 +62,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
           const itemsWithDetails = await Promise.all(
             data.items.map(async (item) => {
               try {
-                const productRes = await fetch(`https://server-erp.payshia.com/products/details/${item.product_id}`);
+                const productRes = await fetcher(`https://server-erp.payshia.com/products/details/${item.product_id}`);
                 if (productRes.ok) {
                   const productData = await productRes.json();
                   return { ...item, product: productData.product };
@@ -78,9 +78,9 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
 
         if (data.company_id && data.location_id) {
             const [companyRes, locationRes, customerRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/companies/${data.company_id}`),
-                fetch(`https://server-erp.payshia.com/locations/${data.location_id}`),
-                fetch(`https://server-erp.payshia.com/customers/${data.customer_code}`),
+                fetcher(`https://server-erp.payshia.com/companies/${data.company_id}`),
+                fetcher(`https://server-erp.payshia.com/locations/${data.location_id}`),
+                fetcher(`https://server-erp.payshia.com/customers/${data.customer_code}`),
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());

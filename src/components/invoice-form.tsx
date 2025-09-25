@@ -42,6 +42,7 @@ import React from "react";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
+import { fetcher } from "@/lib/api";
 
 type StockInfo = {
     product_id: string;
@@ -67,7 +68,7 @@ const invoiceItemSchema = z.object({
       unitPrice: z.coerce.number().min(0, "Unit price must be positive."),
       costPrice: z.coerce.number().min(0),
       discount: z.coerce.number().min(0, "Discount must be positive.").optional(),
-      batchId: z.string().min(1, "Batch is required."),
+      selectedBatch: z.string().min(1, "A batch must be selected."),
     });
 
 const invoiceFormSchema = z.object({
@@ -103,7 +104,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         if (!company_id) return;
         setIsLoading(true);
          try {
-            const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+            const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
@@ -183,7 +184,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                 unitPrice: Number(price) || 0,
                 costPrice: Number(product?.costPrice) || 0,
                 discount: 0,
-                batchId: '',
+                selectedBatch: '',
             }
         });
         form.setValue('orderId', order.id);
@@ -194,14 +195,14 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const handleProductSelect = async (productId: string, variantId: string, index: number) => {
     if (!productId || !variantId || !company_id || !currentLocation) return;
     try {
-        const response = await fetch(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${productId}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${productId}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
         if (!response.ok) {
             throw new Error("Failed to fetch stock");
         }
         const data = await response.json();
         const batches = data.grouped_by_expire_date.filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
         setAvailableBatches(prev => ({ ...prev, [index]: batches }));
-        form.setValue(`items.${index}.batchId`, ''); // Reset batch on product change
+        form.setValue(`items.${index}.selectedBatch`, ''); // Reset batch on product change
     } catch (error) {
         console.error(error);
         setAvailableBatches(prev => ({...prev, [index]: []}));
@@ -256,27 +257,31 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         remark: data.remark || "",
         ref_hold: null,
         company_id: company_id,
-        items: data.items.map(item => ({
-            user_id: 1, // Default user_id as per example
-            product_id: parseInt(item.productId),
-            item_price: item.unitPrice,
-            item_discount: item.discount || 0,
-            quantity: item.quantity,
-            customer_id: parseInt(data.customerId),
-            table_id: 0,
-            cost_price: item.costPrice,
-            is_active: 1,
-            hold_status: 0,
-            printed_status: 1,
-            product_variant_id: parseInt(item.productVariantId),
-            company_id: company_id,
-        }))
+        items: data.items.map(item => {
+            const batchInfo: StockInfo = JSON.parse(item.selectedBatch);
+            return {
+                user_id: 1, // Default user_id as per example
+                product_id: parseInt(item.productId),
+                item_price: item.unitPrice,
+                item_discount: item.discount || 0,
+                quantity: item.quantity,
+                customer_id: parseInt(data.customerId),
+                table_id: 0,
+                cost_price: item.costPrice,
+                is_active: 1,
+                hold_status: 0,
+                printed_status: 1,
+                product_variant_id: parseInt(item.productVariantId),
+                patch_code: batchInfo.patch_code,
+                expire_date: batchInfo.expire_date,
+                company_id: company_id,
+            }
+        })
     };
 
     try {
-        const response = await fetch('https://server-erp.payshia.com/invoices', {
+        const response = await fetcher('https://server-erp.payshia.com/invoices', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
 
@@ -556,7 +561,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                                             const price = invoiceType === 'Wholesale' ? selected?.wholesalePrice : selected?.sellingPrice;
                                                             form.setValue(`items.${index}.unitPrice`, Number(price) || 0);
                                                             form.setValue(`items.${index}.costPrice`, Number(selected?.costPrice) || 0);
-                                                            form.setValue(`items.${index}.batchId`, ''); // Reset batch on product change
+                                                            form.setValue(`items.${index}.selectedBatch`, ''); // Reset batch on product change
                                                         }}
                                                         defaultValue={field.value}
                                                     >
@@ -579,7 +584,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                     <TableCell>
                                          <FormField
                                             control={form.control}
-                                            name={`items.${index}.batchId`}
+                                            name={`items.${index}.selectedBatch`}
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <Select onValueChange={field.onChange} value={field.value} disabled={!availableBatches[index]}>
@@ -656,7 +661,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                          })}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', productId: '', productVariantId: '', quantity: 1, unitPrice: 0, costPrice: 0, discount: 0, batchId: '' })} className="mt-4">
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ sku: '', productId: '', productVariantId: '', quantity: 1, unitPrice: 0, costPrice: 0, discount: 0, selectedBatch: '' })} className="mt-4">
                     Add another item
                 </Button>
             </CardContent>

@@ -36,6 +36,9 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "./location-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { fetcher } from "@/lib/api";
+import { format } from "date-fns";
+import { Combobox } from "./ui/combobox";
 
 interface ProductWithApiResponse {
     product: Product;
@@ -43,7 +46,7 @@ interface ProductWithApiResponse {
 }
 
 const recipeItemSchema = z.object({
-  ingredientId: z.string().min(1, "Ingredient is required."),
+  recipe_product: z.string().min(1, "Ingredient is required."),
   quantity: z.coerce.number().min(0.001, "Quantity must be greater than 0."),
   unit: z.string().min(1, "Unit is required."),
 });
@@ -68,7 +71,7 @@ export function BomForm() {
     resolver: zodResolver(bomFormSchema),
     defaultValues: {
       recipeType: "Item Recipe",
-      items: [{ ingredientId: "", quantity: 1, unit: "Nos" }],
+      items: [{ recipe_product: "", quantity: 1, unit: "Nos" }],
     },
     mode: "onChange",
   });
@@ -82,7 +85,7 @@ export function BomForm() {
     async function fetchProducts() {
       if (!company_id) return;
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+        const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
         if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
         setProducts(data.products || []);
@@ -98,20 +101,62 @@ export function BomForm() {
         (p.variants || []).map(v => ({
             label: `${p.product.name} (${v.variant.sku})`,
             value: v.variant.id,
+            productId: p.product.id,
+            name: p.product.name.toLowerCase()
         }))
     );
   }, [products]);
 
   async function onSubmit(data: BomFormValues) {
     setIsLoading(true);
-    console.log(data);
-    toast({
-      title: "Work in Progress",
-      description: "Saving Bill of Materials is not yet implemented.",
-    });
-    // In a real app, you would send this to your backend
-    // For now, we just log it.
-    setIsLoading(false);
+
+    const finishedGoodVariantId = data.productId;
+    const finishedGoodProduct = allSkus.find(sku => sku.value === finishedGoodVariantId);
+
+    if (!finishedGoodProduct || !company_id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not find finished good product details.' });
+        setIsLoading(false);
+        return;
+    }
+
+    try {
+        for (const item of data.items) {
+            const payload = {
+                company_id: company_id,
+                main_product: parseInt(finishedGoodProduct.productId, 10),
+                product_variant_id: parseInt(finishedGoodVariantId, 10),
+                recipe_product: item.recipe_product,
+                qty: item.quantity,
+                recipe_type: data.recipeType === 'A La Carte' ? 'ala cart' : 'item_recipe',
+                created_by: "admin",
+                created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+            };
+
+            const response = await fetcher('https://server-erp.payshia.com/product-recipes', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'An error occurred while saving the recipe.');
+            }
+        }
+        
+        toast({
+          title: "Bill of Materials Saved!",
+          description: "The recipe has been successfully created.",
+        });
+        
+        router.push('/production/bom');
+        router.refresh();
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Submission Failed', description: errorMessage });
+    } finally {
+        setIsLoading(false);
+    }
   }
 
   return (
@@ -216,7 +261,7 @@ export function BomForm() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[40%]">Ingredient</TableHead>
+                            <TableHead className="w-[40%]">Ingredient Name</TableHead>
                             <TableHead>Quantity</TableHead>
                             <TableHead>Unit</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
@@ -228,21 +273,12 @@ export function BomForm() {
                                 <TableCell>
                                     <FormField
                                         control={form.control}
-                                        name={`items.${index}.ingredientId`}
+                                        name={`items.${index}.recipe_product`}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Select an ingredient" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        {allSkus.map(sku => (
-                                                            <SelectItem key={sku.value} value={sku.value}>{sku.label}</SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
+                                                <FormControl>
+                                                    <Input placeholder="Enter raw material name or ID" {...field} />
+                                                </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -296,7 +332,7 @@ export function BomForm() {
                         ))}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ ingredientId: '', quantity: 1, unit: 'Nos' })} className="mt-4">
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ recipe_product: '', quantity: 1, unit: 'Nos' })} className="mt-4">
                     Add Ingredient
                 </Button>
             </CardContent>
