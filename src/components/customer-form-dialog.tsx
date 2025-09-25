@@ -30,6 +30,7 @@ import React, { useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { fetcher } from "@/lib/api";
 import { useLocation } from "./location-provider";
+import { useRouter } from "next/navigation";
 
 const customerFormSchema = z.object({
   customer_first_name: z.string().min(2, "First name is required."),
@@ -51,6 +52,7 @@ interface CustomerFormDialogProps {
 
 export function CustomerFormDialog({ children, onCustomerCreated }: CustomerFormDialogProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { company_id, currentLocation } = useLocation();
@@ -114,6 +116,7 @@ export function CustomerFormDialog({ children, onCustomerCreated }: CustomerForm
       onCustomerCreated(result);
       setIsOpen(false);
       form.reset();
+      router.refresh();
     } catch (error) {
        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
        toast({
