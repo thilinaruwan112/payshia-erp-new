@@ -14,12 +14,13 @@ interface CollectionData extends Collection {
   products: Product[];
 }
 
-// This interface is to properly type the response from the association table
 interface CollectionProductLink {
     id: string; // This is the collection_product_id
     collection_id: string;
     product_id: string;
     company_id: string;
+    product_images?: { img_url: string }[];
+    product?: Product;
 }
 
 export default function EditCollectionPage({ params }: { params: { id: string } }) {
@@ -34,9 +35,10 @@ export default function EditCollectionPage({ params }: { params: { id: string } 
             if (!id || !company_id) return;
             setIsLoading(true);
             try {
-                const [collectionResponse, allProductsResponse] = await Promise.all([
+                const [collectionResponse, allProductsResponse, collectionProductsResponse] = await Promise.all([
                     fetcher(`https://server-erp.payshia.com/collections/${id}`),
                     fetcher(`https://server-erp.payshia.com/products/get/filter/by-company?company_id=${company_id}`),
+                    fetcher(`https://server-erp.payshia.com/collection-products/get/by?collection_id=${id}&company_id=${company_id}`),
                 ]);
 
                 if (!collectionResponse.ok) {
@@ -47,9 +49,6 @@ export default function EditCollectionPage({ params }: { params: { id: string } 
 
                 if (!allProductsResponse.ok) throw new Error('Failed to fetch product list');
                 const allProducts: Product[] = (await allProductsResponse.json()) || [];
-                
-                // Use the correct, specific endpoint for fetching collection-product links
-                const collectionProductsResponse = await fetcher(`https://server-erp.payshia.com/collection-products/get/by?collection_id=${id}&company_id=${company_id}`);
                 
                 let productsInCollection: Product[] = [];
                 if (collectionProductsResponse.ok) {
@@ -63,9 +62,12 @@ export default function EditCollectionPage({ params }: { params: { id: string } 
                         .filter(p => productIdsInCollection.has(p.id))
                         .map(p => {
                             const link = linksForThisCollection.find(l => l.product_id === p.id);
+                            const frontImage = link?.product_images?.find((img: any) => img.image_type === 'front img');
+                            
                             return {
                                 ...p,
                                 collectionProductId: link?.id, // Add the association ID
+                                product_image_url: frontImage?.img_url || p.product_image_url,
                             };
                         });
                 } else {
