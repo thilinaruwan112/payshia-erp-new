@@ -77,7 +77,7 @@ const invoiceFormSchema = z.object({
   orderId: z.string().optional(),
   invoiceDate: z.date({ required_error: "Invoice date is required." }),
   dueDate: z.date({ required_error: "Due date is required." }),
-  status: z.enum(["Draft", "Sent", "Paid"]),
+  status: z.enum(["1", "2", "3", "4"]), // 1=Active/Paid, 2=Pending/Hold, 3=Cancelled, 4=Draft
   items: z.array(invoiceItemSchema).min(1, "At least one item is required."),
   discount: z.coerce.number().min(0).optional(),
   serviceCharge: z.coerce.number().min(0).optional(),
@@ -140,7 +140,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     invoiceType: "Retail",
     invoiceDate: new Date(),
     dueDate: addDays(new Date(), 30),
-    status: 'Draft',
+    status: '1', // Default to Active/Paid
     items: [],
     discount: 0,
     serviceCharge: 0,
@@ -242,7 +242,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         discount_percentage: subtotal > 0 ? (totalDiscountAmount / subtotal) * 100 : 0,
         customer_code: data.customerId,
         service_charge: data.serviceCharge || 0,
-        tendered_amount: data.status === 'Paid' ? grandTotal : 0,
+        tendered_amount: data.status === '1' ? grandTotal : 0, // 1 is Paid
         close_type: "Cash",
         invoice_status: data.status,
         payment_status: "Pending",
@@ -505,9 +505,10 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="Draft">Draft</SelectItem>
-                                    <SelectItem value="Sent">Sent</SelectItem>
-                                    <SelectItem value="Paid">Paid</SelectItem>
+                                    <SelectItem value="1">Active</SelectItem>
+                                    <SelectItem value="2">Pending</SelectItem>
+                                    <SelectItem value="3">Cancelled</SelectItem>
+                                    <SelectItem value="4">Draft</SelectItem>
                                 </SelectContent>
                                 </Select>
                                 <FormMessage />
