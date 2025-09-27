@@ -42,7 +42,19 @@ import { Combobox } from "./ui/combobox";
 
 interface ProductWithApiResponse {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
+}
+
+interface RecipeItem {
+    id: string;
+    company_id: string;
+    product_variant_id: string; // This is the finished good variant
+    main_product: string; // This is the finished good product
+    recipe_product: string; // This is the ingredient variant
+    qty: string;
+    recipe_type: string;
+    created_by: string;
+    created_at: string;
 }
 
 const recipeItemSchema = z.object({
@@ -66,8 +78,8 @@ export function BomForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id } = useLocation();
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
+  const [recipes, setRecipes] = useState<RecipeItem[]>([]);
+  const [selectedRecipeItems, setSelectedRecipeItems] = useState<RecipeItem[]>([]);
 
   const form = useForm<BomFormValues>({
     resolver: zodResolver(bomFormSchema),
@@ -99,7 +111,7 @@ export function BomForm() {
             if(!recipesResponse.ok) throw new Error("Failed to fetch recipes");
             const recipesData = await recipesResponse.json();
             // Ensure recipes is always an array, accessing the `data` property if it exists.
-            setRecipes(Array.isArray(recipesData) ? recipesData : recipesData.data || []);
+            setRecipes(Array.isArray(recipesData.data) ? recipesData.data : []);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
         }
@@ -110,8 +122,8 @@ export function BomForm() {
   const allSkus = React.useMemo(() => {
     return products.flatMap(p => 
         (p.variants || []).map(v => ({
-            label: `${p.product.name} (${v.sku})`,
-            value: v.id,
+            label: `${p.product.name} (${v.variant.sku})`,
+            value: v.variant.id,
             productId: p.product.id,
             name: p.product.name.toLowerCase()
         }))
@@ -122,14 +134,14 @@ export function BomForm() {
   const quantityProduced = 1;
 
   useEffect(() => {
-    const recipe = recipes.find(r => r.finished_good_id === finishedGoodId) || null;
-    setSelectedRecipe(recipe);
+    const items = recipes.filter(r => r.product_variant_id === finishedGoodId) || [];
+    setSelectedRecipeItems(items);
   }, [finishedGoodId, recipes]);
 
   const finishedGoodsOptions = React.useMemo(() => {
     return products
       .flatMap(p => 
-          (p.variants || []).map(v => ({ product: p.product, variant: v }))
+          (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
       )
       .filter((pv): pv is { product: Product, variant: { id: string, sku: string } } => !!pv.variant?.id && !!pv.variant.sku)
       .map(pv => ({
@@ -139,17 +151,27 @@ export function BomForm() {
   }, [products]);
   
   const requiredIngredients = React.useMemo(() => {
-      if (!selectedRecipe) return [];
-      return selectedRecipe.items.map(item => {
-          const ingredientProduct = products.flatMap(p => (p.variants || []).map(v => ({...v, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
+      if (selectedRecipeItems.length === 0) return [];
+      
+      const allIngredients = products.flatMap(p => 
+        (p.variants || []).map(v => ({
+            id: v.variant.id,
+            name: p.product.name,
+            sku: v.variant.sku,
+            unit: p.product.stock_unit || 'Nos'
+        }))
+      );
+
+      return selectedRecipeItems.map(item => {
+          const ingredientProduct = allIngredients.find(ing => ing.id === item.recipe_product);
           return {
-              name: ingredientProduct?.productName || 'Unknown Ingredient',
+              name: ingredientProduct?.name || `Product ID: ${item.recipe_product}`,
               sku: ingredientProduct?.sku || 'N/A',
-              requiredQty: item.quantity * (quantityProduced || 1),
-              unit: item.unit,
+              requiredQty: parseFloat(item.qty) * (quantityProduced || 1),
+              unit: ingredientProduct?.unit || 'Nos',
           }
       });
-  }, [selectedRecipe, quantityProduced, products]);
+  }, [selectedRecipeItems, quantityProduced, products]);
 
   async function onSubmit(data: BomFormValues) {
     setIsLoading(true);
