@@ -40,7 +40,7 @@ import { fetcher } from "@/lib/api";
 
 interface ProductWithApiResponse {
     product: Product;
-    variants: { variant: ProductVariant }[];
+    variants: ProductVariant[];
 }
 
 
@@ -102,13 +102,16 @@ export function ProductionNoteForm() {
 
   const finishedGoodsOptions = React.useMemo(() => {
     return products
-        .flatMap(p => 
-            (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
-        )
-        .map(pv => ({
+      .flatMap(p => 
+          (p.variants || []).map(v => ({ product: p.product, variant: v }))
+      )
+      .map(pv => {
+        if (!pv.variant) return null; // Safety check
+        return {
             label: `${pv.product.name} (${pv.variant.sku})`,
             value: pv.variant.id,
-        }));
+        };
+      }).filter(Boolean);
   }, [products]);
   
   const requiredIngredients = React.useMemo(() => {
@@ -185,7 +188,7 @@ export function ProductionNoteForm() {
                                         </FormControl>
                                         <SelectContent>
                                             {finishedGoodsOptions.map(item => (
-                                                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                                                item && <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
