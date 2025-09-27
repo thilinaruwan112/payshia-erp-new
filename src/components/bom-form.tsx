@@ -66,6 +66,8 @@ export function BomForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id } = useLocation();
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
 
   const form = useForm<BomFormValues>({
     resolver: zodResolver(bomFormSchema),
@@ -82,18 +84,26 @@ export function BomForm() {
   });
 
   useEffect(() => {
-    async function fetchProducts() {
-      if (!company_id) return;
-      try {
-        const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
-        if (!response.ok) throw new Error("Failed to fetch products");
-        const data = await response.json();
-        setProducts(data.products || []);
-      } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products.' });
-      }
+    async function fetchData() {
+        if (!company_id) return;
+        try {
+            const [productsResponse, recipesResponse] = await Promise.all([
+                fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`),
+                Promise.resolve({ ok: true, json: () => Promise.resolve([]) }) // Mocking recipe fetch
+            ]);
+
+            if (!productsResponse.ok) throw new Error("Failed to fetch products");
+            const productsData = await productsResponse.json();
+            setProducts(productsData.products || []);
+
+            if(!recipesResponse.ok) throw new Error("Failed to fetch recipes");
+            const recipesData = await recipesResponse.json();
+            setRecipes(recipesData);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
+        }
     }
-    fetchProducts();
+    fetchData();
   }, [company_id, toast]);
 
   const allSkus = React.useMemo(() => {
@@ -106,6 +116,36 @@ export function BomForm() {
         }))
     );
   }, [products]);
+
+  const finishedGoodId = form.watch("finishedGoodId");
+  const quantityProduced = form.watch("quantity");
+
+  useEffect(() => {
+    const recipe = recipes.find(r => r.finished_good_id === finishedGoodId) || null;
+    setSelectedRecipe(recipe);
+  }, [finishedGoodId, recipes]);
+
+  const finishedGoodsOptions = React.useMemo(() => {
+    return products
+      .filter(p => p.product.item_type === 'finished_good')
+      .flatMap(p => (p.variants || []).map(v => ({
+        label: `${p.product.name} (${v.variant.sku})`,
+        value: v.variant.id,
+      })));
+  }, [products]);
+  
+  const requiredIngredients = React.useMemo(() => {
+      if (!selectedRecipe) return [];
+      return selectedRecipe.items.map(item => {
+          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
+          return {
+              name: ingredientProduct?.productName || 'Unknown Ingredient',
+              sku: ingredientProduct?.sku || 'N/A',
+              requiredQty: item.quantity * quantityProduced,
+              unit: item.unit,
+          }
+      });
+  }, [selectedRecipe, quantityProduced, products]);
 
   async function onSubmit(data: BomFormValues) {
     setIsLoading(true);
@@ -206,8 +246,8 @@ export function BomForm() {
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            {allSkus.map(sku => (
-                                <SelectItem key={sku.value} value={sku.value}>{sku.label}</SelectItem>
+                            {finishedGoodsOptions.map(item => (
+                                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
