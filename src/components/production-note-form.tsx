@@ -36,11 +36,13 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "./location-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Textarea } from "./ui/textarea";
+import { fetcher } from "@/lib/api";
 
-interface ProductWithVariants {
+interface ProductWithApiResponse {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
 }
+
 
 const productionNoteFormSchema = z.object({
   finishedGoodId: z.string().min(1, "Finished good is required."),
@@ -54,7 +56,7 @@ export function ProductionNoteForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [products, setProducts] = useState<ProductWithVariants[]>([]);
+  const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const { company_id } = useLocation();
@@ -74,10 +76,9 @@ export function ProductionNoteForm() {
     async function fetchData() {
         if (!company_id) return;
         try {
-            // In a real app, you'd fetch recipes and filter by company
             const [productsResponse, recipesResponse] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`),
-                Promise.resolve({ ok: true, json: () => Promise.resolve([]) }) // Mocking recipe fetch
+                fetcher(`https://server-erp.payshia.com/products/get/filter/recipe-type?recipe_type=item_recipe&company_id=${company_id}`),
+                fetcher('https://server-erp.payshia.com/product-recipes'),
             ]);
 
             if (!productsResponse.ok) throw new Error("Failed to fetch products");
@@ -100,15 +101,15 @@ export function ProductionNoteForm() {
   }, [finishedGoodId, recipes]);
 
   const finishedGoodsOptions = React.useMemo(() => {
-    const goodsWithItemRecipe = recipes.filter(r => r.recipe_type === "Item Recipe").map(r => r.finished_good_id);
     return products
-        .flatMap(p => p.variants.map(v => ({ product: p.product, variant: v })))
-        .filter(pv => goodsWithItemRecipe.includes(pv.variant.id))
+        .flatMap(p => 
+            (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
+        )
         .map(pv => ({
             label: `${pv.product.name} (${pv.variant.sku})`,
             value: pv.variant.id,
         }));
-  }, [products, recipes]);
+  }, [products]);
   
   const requiredIngredients = React.useMemo(() => {
       if (!selectedRecipe) return [];
