@@ -42,7 +42,7 @@ import { Combobox } from "./ui/combobox";
 
 interface ProductWithApiResponse {
     product: Product;
-    variants: { variant: ProductVariant }[];
+    variants: ProductVariant[];
 }
 
 const recipeItemSchema = z.object({
@@ -109,8 +109,8 @@ export function BomForm() {
   const allSkus = React.useMemo(() => {
     return products.flatMap(p => 
         (p.variants || []).map(v => ({
-            label: `${p.product.name} (${v.variant.sku})`,
-            value: v.variant.id,
+            label: `${p.product.name} (${v.sku})`,
+            value: v.id,
             productId: p.product.id,
             name: p.product.name.toLowerCase()
         }))
@@ -118,8 +118,6 @@ export function BomForm() {
   }, [products]);
 
   const finishedGoodId = form.watch("productId");
-  // The user prompt indicates `quantity` might be on the main form, but it's not in the schema.
-  // Assuming they mean the quantity of ingredients to calculate. Let's assume a production of 1 for now.
   const quantityProduced = 1;
 
   useEffect(() => {
@@ -130,7 +128,7 @@ export function BomForm() {
   const finishedGoodsOptions = React.useMemo(() => {
     return products
       .flatMap(p => 
-          (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
+          (p.variants || []).map(v => ({ product: p.product, variant: v }))
       )
       .map(pv => ({
           label: `${pv.product.name} (${pv.variant.sku})`,
@@ -141,7 +139,7 @@ export function BomForm() {
   const requiredIngredients = React.useMemo(() => {
       if (!selectedRecipe) return [];
       return selectedRecipe.items.map(item => {
-          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v.variant, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
+          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
           return {
               name: ingredientProduct?.productName || 'Unknown Ingredient',
               sku: ingredientProduct?.sku || 'N/A',
