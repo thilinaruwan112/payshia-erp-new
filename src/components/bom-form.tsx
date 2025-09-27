@@ -129,19 +129,22 @@ export function BomForm() {
 
   const finishedGoodsOptions = React.useMemo(() => {
     return products
-      .flatMap(p => (p.variants || []).map(v => ({
-        label: `${p.product.name} (${v.variant.sku})`,
-        value: v.variant.id,
-      })));
+      .flatMap(p => 
+          (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
+      )
+      .map(pv => ({
+          label: `${pv.product.name} (${pv.variant.sku})`,
+          value: pv.variant.id,
+      }));
   }, [products]);
   
   const requiredIngredients = React.useMemo(() => {
       if (!selectedRecipe) return [];
       return selectedRecipe.items.map(item => {
-          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v, productName: p.product.name}))).find(v => v.variant.id === item.ingredient_id);
+          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v.variant, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
           return {
               name: ingredientProduct?.productName || 'Unknown Ingredient',
-              sku: ingredientProduct?.variant.sku || 'N/A',
+              sku: ingredientProduct?.sku || 'N/A',
               requiredQty: item.quantity * (quantityProduced || 1),
               unit: item.unit,
           }
@@ -243,7 +246,7 @@ export function BomForm() {
                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select a finished product" />
+                                <SelectValue placeholder="Select an item with a recipe" />
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
