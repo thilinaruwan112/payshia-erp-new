@@ -38,10 +38,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Textarea } from "./ui/textarea";
 import { fetcher } from "@/lib/api";
 import { format } from "date-fns";
+import { Combobox } from "./ui/combobox";
 
 interface ProductWithApiResponse {
     product: Product;
-    variants: { variant: ProductVariant }[];
+    variants: ProductVariant[];
 }
 
 interface RecipeItem {
@@ -127,16 +128,15 @@ export function ProductionNoteForm() {
   }, [finishedGoodId, company_id, products, toast]);
 
   const finishedGoodsOptions = React.useMemo(() => {
-    if (!products) return [];
     return products
-      .flatMap(p => 
-          (p.variants || []).map(v => ({ product: p.product, variant: v }))
-      )
-      .filter((pv): pv is { product: Product, variant: { id: string, sku: string } } => !!pv.variant?.id && !!pv.variant.sku)
-      .map(pv => ({
-          label: `${pv.product.name} (${pv.variant.sku})`,
-          value: pv.variant.id,
-      }));
+        .flatMap(p => 
+            (p.variants || []).map(v => ({ product: p.product, variant: v }))
+        )
+        .filter((pv): pv is { product: Product, variant: { id: string, sku: string } } => !!pv.variant?.id && !!pv.variant.sku)
+        .map(pv => ({
+            label: `${pv.product.name} (${pv.variant.sku})`,
+            value: pv.variant.id,
+        }));
   }, [products]);
   
   const requiredIngredients = React.useMemo(() => {
@@ -144,9 +144,9 @@ export function ProductionNoteForm() {
       
       const allIngredients = products.flatMap(p => 
         (p.variants || []).map(v => ({
-            id: v.variant.id,
+            id: v.id,
             name: p.product.name,
-            sku: v.variant.sku,
+            sku: v.sku,
             unit: p.product.stock_unit || 'Nos'
         }))
       );
@@ -169,7 +169,7 @@ export function ProductionNoteForm() {
     }
     setIsSubmitting(true);
     
-    const selectedProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === data.finishedGoodId);
+    const selectedProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v, productId: p.product.id}))).find(v => v.id === data.finishedGoodId);
 
     if (!selectedProductInfo) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not find product details.' });
