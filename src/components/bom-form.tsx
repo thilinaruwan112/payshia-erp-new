@@ -98,7 +98,8 @@ export function BomForm() {
 
             if(!recipesResponse.ok) throw new Error("Failed to fetch recipes");
             const recipesData = await recipesResponse.json();
-            setRecipes(recipesData);
+            // Ensure recipes is always an array, accessing the `data` property if it exists.
+            setRecipes(Array.isArray(recipesData) ? recipesData : recipesData.data || []);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
         }
@@ -130,6 +131,7 @@ export function BomForm() {
       .flatMap(p => 
           (p.variants || []).map(v => ({ product: p.product, variant: v }))
       )
+      .filter((pv): pv is { product: Product, variant: { id: string, sku: string } } => !!pv.variant?.id && !!pv.variant.sku)
       .map(pv => ({
           label: `${pv.product.name} (${pv.variant.sku})`,
           value: pv.variant.id,
@@ -139,7 +141,7 @@ export function BomForm() {
   const requiredIngredients = React.useMemo(() => {
       if (!selectedRecipe) return [];
       return selectedRecipe.items.map(item => {
-          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
+          const ingredientProduct = products.flatMap(p => (p.variants || []).map(v => ({...v, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
           return {
               name: ingredientProduct?.productName || 'Unknown Ingredient',
               sku: ingredientProduct?.sku || 'N/A',
