@@ -89,7 +89,7 @@ export function BomForm() {
         try {
             const [productsResponse, recipesResponse] = await Promise.all([
                 fetcher(`https://server-erp.payshia.com/products/get/filter/recipe-type?recipe_type=item_recipe&company_id=${company_id}`),
-                Promise.resolve({ ok: true, json: () => Promise.resolve([]) }) // Mocking recipe fetch
+                fetcher('https://server-erp.payshia.com/product-recipes'),
             ]);
 
             if (!productsResponse.ok) throw new Error("Failed to fetch products");
@@ -138,10 +138,10 @@ export function BomForm() {
   const requiredIngredients = React.useMemo(() => {
       if (!selectedRecipe) return [];
       return selectedRecipe.items.map(item => {
-          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
+          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v, productName: p.product.name}))).find(v => v.variant.id === item.ingredient_id);
           return {
               name: ingredientProduct?.productName || 'Unknown Ingredient',
-              sku: ingredientProduct?.sku || 'N/A',
+              sku: ingredientProduct?.variant.sku || 'N/A',
               requiredQty: item.quantity * (quantityProduced || 1),
               unit: item.unit,
           }
