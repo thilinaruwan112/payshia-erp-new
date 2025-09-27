@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, ProductVariant, Recipe } from "@/lib/types";
+import type { Product, ProductVariant } from "@/lib/types";
 import { Loader2, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useLocation } from "./location-provider";
@@ -42,15 +42,15 @@ import { Combobox } from "./ui/combobox";
 
 interface ProductWithApiResponse {
     product: Product;
-    variants: { variant: ProductVariant }[];
+    variants: ProductVariant[];
 }
 
 interface RecipeItem {
     id: string;
     company_id: string;
-    product_variant_id: string; // This is the finished good variant
-    main_product: string; // This is the finished good product
-    recipe_product: string; // This is the ingredient variant
+    product_variant_id: string;
+    main_product: string;
+    recipe_product: string;
     qty: string;
     recipe_type: string;
     created_by: string;
@@ -110,7 +110,6 @@ export function BomForm() {
 
             if(!recipesResponse.ok) throw new Error("Failed to fetch recipes");
             const recipesData = await recipesResponse.json();
-            // Ensure recipes is always an array, accessing the `data` property if it exists.
             setRecipes(Array.isArray(recipesData.data) ? recipesData.data : []);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
@@ -122,8 +121,8 @@ export function BomForm() {
   const allSkus = React.useMemo(() => {
     return products.flatMap(p => 
         (p.variants || []).map(v => ({
-            label: `${p.product.name} (${v.variant.sku})`,
-            value: v.variant.id,
+            label: `${p.product.name} (${v.sku})`,
+            value: v.id,
             productId: p.product.id,
             name: p.product.name.toLowerCase()
         }))
@@ -141,7 +140,7 @@ export function BomForm() {
   const finishedGoodsOptions = React.useMemo(() => {
     return products
       .flatMap(p => 
-          (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
+          (p.variants || []).map(v => ({ product: p.product, variant: v }))
       )
       .filter((pv): pv is { product: Product, variant: { id: string, sku: string } } => !!pv.variant?.id && !!pv.variant.sku)
       .map(pv => ({
@@ -155,9 +154,9 @@ export function BomForm() {
       
       const allIngredients = products.flatMap(p => 
         (p.variants || []).map(v => ({
-            id: v.variant.id,
+            id: v.id,
             name: p.product.name,
-            sku: v.variant.sku,
+            sku: v.sku,
             unit: p.product.stock_unit || 'Nos'
         }))
       );
@@ -407,3 +406,4 @@ export function BomForm() {
     </Form>
   );
 }
+
