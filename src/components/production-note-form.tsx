@@ -37,10 +37,11 @@ import { useLocation } from "./location-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Textarea } from "./ui/textarea";
 import { fetcher } from "@/lib/api";
+import { format } from "date-fns";
 
 interface ProductWithApiResponse {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
 }
 
 interface RecipeItem {
@@ -67,9 +68,10 @@ export function ProductionNoteForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const [selectedRecipeItems, setSelectedRecipeItems] = useState<RecipeItem[]>([]);
-  const { company_id } = useLocation();
+  const { company_id, currentLocation } = useLocation();
 
   const form = useForm<ProductionNoteFormValues>({
     resolver: zodResolver(productionNoteFormSchema),
@@ -128,7 +130,7 @@ export function ProductionNoteForm() {
     if (!products) return [];
     return products
       .flatMap(p => 
-          (p.variants || []).map(v => ({ product: p.product, variant: v }))
+          (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
       )
       .filter((pv): pv is { product: Product, variant: ProductVariant } => !!pv.variant)
       .map(pv => ({
@@ -142,9 +144,9 @@ export function ProductionNoteForm() {
       
       const allIngredients = products.flatMap(p => 
         (p.variants || []).map(v => ({
-            id: v.id,
+            id: v.variant.id,
             name: p.product.name,
-            sku: v.sku,
+            sku: v.variant.sku,
             unit: p.product.stock_unit || 'Nos'
         }))
       );
@@ -161,13 +163,57 @@ export function ProductionNoteForm() {
   }, [selectedRecipeItems, quantityProduced, products]);
 
   async function onSubmit(data: ProductionNoteFormValues) {
-    setIsLoading(true);
-    console.log(data);
-    toast({
-      title: "Work in Progress",
-      description: "Saving Production Notes is not yet implemented.",
-    });
-    setIsLoading(false);
+    if (!company_id || !currentLocation) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No company or location selected.' });
+        return;
+    }
+    setIsSubmitting(true);
+    
+    const selectedProductInfo = products.flatMap(p => p.variants.map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === data.finishedGoodId);
+
+    if (!selectedProductInfo) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not find product details.' });
+        setIsSubmitting(false);
+        return;
+    }
+
+    const payload = {
+        product_id: parseInt(selectedProductInfo.productId),
+        product_variant_id: parseInt(data.finishedGoodId),
+        company_id: company_id,
+        location_id: parseInt(currentLocation.location_id, 10),
+        quantity: data.quantity,
+        notes: data.notes || '',
+        created_by: 1, // Placeholder for logged-in user ID
+        updated_by: 1,
+        is_active: 1,
+    };
+    
+    try {
+        const response = await fetcher('https://server-erp.payshia.com/production-notes', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to create production note.');
+        }
+
+        toast({
+            title: "Production Note Created",
+            description: "The production has been successfully recorded.",
+        });
+        
+        router.refresh();
+        router.push('/production/bom'); // Or a new history page
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Submission Failed', description: errorMessage });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   return (
@@ -188,12 +234,12 @@ export function ProductionNoteForm() {
               type="button"
               onClick={() => router.back()}
               className="w-full"
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Note
             </Button>
           </div>
