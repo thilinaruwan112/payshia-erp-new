@@ -109,7 +109,7 @@ export function ProductionNoteForm() {
             return;
         }
 
-        const selectedProductInfo = products.flatMap(p => p.variants.map(v => ({...v, productId: p.product.id}))).find(v => v.id === finishedGoodId);
+        const selectedProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v, productId: p.product.id}))).find(v => v.id === finishedGoodId);
         
         if (!selectedProductInfo) return;
 
@@ -130,9 +130,9 @@ export function ProductionNoteForm() {
     if (!products) return [];
     return products
       .flatMap(p => 
-          (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
+          (p.variants || []).map(v => ({ product: p.product, variant: v }))
       )
-      .filter((pv): pv is { product: Product, variant: ProductVariant } => !!pv.variant)
+      .filter((pv): pv is { product: Product, variant: { id: string, sku: string } } => !!pv.variant?.id && !!pv.variant.sku)
       .map(pv => ({
           label: `${pv.product.name} (${pv.variant.sku})`,
           value: pv.variant.id,
@@ -169,7 +169,7 @@ export function ProductionNoteForm() {
     }
     setIsSubmitting(true);
     
-    const selectedProductInfo = products.flatMap(p => p.variants.map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === data.finishedGoodId);
+    const selectedProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === data.finishedGoodId);
 
     if (!selectedProductInfo) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not find product details.' });
