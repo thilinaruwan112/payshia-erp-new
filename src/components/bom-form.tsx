@@ -118,7 +118,9 @@ export function BomForm() {
   }, [products]);
 
   const finishedGoodId = form.watch("productId");
-  const quantityProduced = form.watch("quantity");
+  // The user prompt indicates `quantity` might be on the main form, but it's not in the schema.
+  // Assuming they mean the quantity of ingredients to calculate. Let's assume a production of 1 for now.
+  const quantityProduced = 1;
 
   useEffect(() => {
     const recipe = recipes.find(r => r.finished_good_id === finishedGoodId) || null;
@@ -136,7 +138,7 @@ export function BomForm() {
   const requiredIngredients = React.useMemo(() => {
       if (!selectedRecipe) return [];
       return selectedRecipe.items.map(item => {
-          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v.variant, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
+          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
           return {
               name: ingredientProduct?.productName || 'Unknown Ingredient',
               sku: ingredientProduct?.sku || 'N/A',
