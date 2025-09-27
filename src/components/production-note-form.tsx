@@ -87,7 +87,8 @@ export function ProductionNoteForm() {
 
             if(!recipesResponse.ok) throw new Error("Failed to fetch recipes");
             const recipesData = await recipesResponse.json();
-            setRecipes(recipesData);
+            // Ensure recipesData is an array
+            setRecipes(Array.isArray(recipesData) ? recipesData : []);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
         }
@@ -96,26 +97,29 @@ export function ProductionNoteForm() {
   }, [company_id, toast]);
   
   useEffect(() => {
-    const recipe = recipes.find(r => r.finished_good_id === finishedGoodId) || null;
-    setSelectedRecipe(recipe);
+    if (Array.isArray(recipes)) {
+        const recipe = recipes.find(r => r.finished_good_id === finishedGoodId) || null;
+        setSelectedRecipe(recipe);
+    }
   }, [finishedGoodId, recipes]);
 
   const finishedGoodsOptions = React.useMemo(() => {
     return products
       .flatMap(p => 
-          (p.variants || []).map(v => ({ product: p.product, variant: v }))
+          (p.variants || []).map(v => {
+              if(!v) return null; // Safety check
+              return { product: p.product, variant: v };
+          })
       )
-      .map(pv => {
-        if (!pv.variant) return null; // Safety check
-        return {
-            label: `${pv.product.name} (${pv.variant.sku})`,
-            value: pv.variant.id,
-        };
-      }).filter(Boolean);
+      .filter((pv): pv is { product: Product, variant: ProductVariant } => pv !== null)
+      .map(pv => ({
+          label: `${pv.product.name} (${pv.variant.sku})`,
+          value: pv.variant.id,
+      }));
   }, [products]);
   
   const requiredIngredients = React.useMemo(() => {
-      if (!selectedRecipe) return [];
+      if (!selectedRecipe || !Array.isArray(selectedRecipe.items)) return [];
       return selectedRecipe.items.map(item => {
           const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
           return {
@@ -188,7 +192,7 @@ export function ProductionNoteForm() {
                                         </FormControl>
                                         <SelectContent>
                                             {finishedGoodsOptions.map(item => (
-                                                item && <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                                                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
