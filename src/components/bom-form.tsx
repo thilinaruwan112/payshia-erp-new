@@ -88,7 +88,7 @@ export function BomForm() {
         if (!company_id) return;
         try {
             const [productsResponse, recipesResponse] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`),
+                fetcher(`https://server-erp.payshia.com/products/get/filter/recipe-type?recipe_type=item_recipe&company_id=${company_id}`),
                 Promise.resolve({ ok: true, json: () => Promise.resolve([]) }) // Mocking recipe fetch
             ]);
 
@@ -117,7 +117,7 @@ export function BomForm() {
     );
   }, [products]);
 
-  const finishedGoodId = form.watch("finishedGoodId");
+  const finishedGoodId = form.watch("productId");
   const quantityProduced = form.watch("quantity");
 
   useEffect(() => {
@@ -127,7 +127,6 @@ export function BomForm() {
 
   const finishedGoodsOptions = React.useMemo(() => {
     return products
-      .filter(p => p.product.item_type === 'finished_good')
       .flatMap(p => (p.variants || []).map(v => ({
         label: `${p.product.name} (${v.variant.sku})`,
         value: v.variant.id,
@@ -137,11 +136,11 @@ export function BomForm() {
   const requiredIngredients = React.useMemo(() => {
       if (!selectedRecipe) return [];
       return selectedRecipe.items.map(item => {
-          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
+          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v.variant, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
           return {
               name: ingredientProduct?.productName || 'Unknown Ingredient',
               sku: ingredientProduct?.sku || 'N/A',
-              requiredQty: item.quantity * quantityProduced,
+              requiredQty: item.quantity * (quantityProduced || 1),
               unit: item.unit,
           }
       });
