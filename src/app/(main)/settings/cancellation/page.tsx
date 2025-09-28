@@ -243,7 +243,7 @@ export default function CancellationPage() {
                 }
             } else if (details.type === 'Production Note') {
                 const payload = { is_active: 0, updated_by: userName || 'admin' };
-                const response = await fetcher(`https://server-erp.payshia.com/production-notes/${details.id}/status`, {
+                const response = await fetcher(`https://server-erp.payshia.com/production-notes/${details.id}`, {
                     method: 'PUT',
                     body: JSON.stringify(payload),
                 });
