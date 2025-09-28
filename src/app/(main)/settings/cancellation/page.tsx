@@ -26,6 +26,13 @@ import type { Invoice, StockTransfer, User, PurchaseOrder } from '@/lib/types';
 
 type DocumentType = 'Invoice' | 'Receipt' | 'Transfer Note' | 'Purchase Order' | 'Production Note';
 
+type ProductionNote = {
+    id: string;
+    pn_number: string;
+    created_at: string;
+    notes: string;
+}
+
 type Receipt = {
     id: string;
     rec_number: string;
@@ -126,6 +133,20 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
                 }
             }
         }
+    } else if (type === 'Production Note') {
+        const response = await fetcher(`https://server-erp.payshia.com/production-notes?company_id=${companyId}&pn_number=${number}`);
+        if (response.ok) {
+            const productionNote: ProductionNote = await response.json();
+            if (productionNote) {
+                return {
+                    type: 'Production Note',
+                    id: productionNote.id,
+                    number: productionNote.pn_number,
+                    date: productionNote.created_at,
+                    customerOrSupplier: productionNote.notes || 'No notes',
+                }
+            }
+        }
     }
     
     return null;
@@ -220,6 +241,16 @@ export default function CancellationPage() {
                 if (!response.ok) {
                     throw new Error(responseData.message || 'Failed to cancel the purchase order.');
                 }
+            } else if (details.type === 'Production Note') {
+                const payload = { is_active: 0, updated_by: userName || 'admin' };
+                const response = await fetcher(`https://server-erp.payshia.com/production-notes/${details.id}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify(payload),
+                });
+                 if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to cancel the production note.');
+                }
             }
              else {
                  // Mock cancellation for other types
@@ -311,7 +342,7 @@ export default function CancellationPage() {
                             <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Document Type</span><span className="font-semibold">{details.type}</span></div>
                              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Document #</span><span className="font-semibold font-mono">{details.number}</span></div>
                              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Date</span><span className="font-semibold">{details.date}</span></div>
-                             {details.customerOrSupplier && <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Customer/Supplier</span><span className="font-semibold">{details.customerOrSupplier}</span></div>}
+                             {details.customerOrSupplier && <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Details</span><span className="font-semibold">{details.customerOrSupplier}</span></div>}
                              {details.amount != null && <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Amount</span><span className="font-semibold font-mono">${details.amount.toFixed(2)}</span></div>}
                         </div>
                     </CardContent>
