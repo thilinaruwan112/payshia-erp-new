@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -62,7 +61,7 @@ export function RefundDialog({ isOpen, onOpenChange, customers }: RefundDialogPr
       if (!company_id) return;
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/transaction-returns/filter/by-company?company_id=${company_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-returns/filter/by-company?company_id=${company_id}`);
         if (!response.ok) throw new Error('Failed to fetch returns');
         const data: TransactionReturn[] = await response.json();
         setTransactionReturns(data || []);
@@ -82,7 +81,7 @@ export function RefundDialog({ isOpen, onOpenChange, customers }: RefundDialogPr
     if (!company_id) return;
     setIsLoading(true);
     try {
-      const response = await fetcher(`https://server-erp.payshia.com/transaction-returns/full/${returnData.id}?company_id=${company_id}`);
+      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-returns/full/${returnData.id}?company_id=${company_id}`);
       if (!response.ok) throw new Error('Failed to fetch return details');
       const data = await response.json();
       setSelectedReturn(data.data);
@@ -125,7 +124,7 @@ export function RefundDialog({ isOpen, onOpenChange, customers }: RefundDialogPr
         product_variant_id: parseInt(entry.product_variant_id, 10),
         refund_qty: refundQty,
       };
-      return fetcher('https://server-erp.payshia.com/transaction-refunds', {
+      return fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-refunds`, {
         method: 'POST', body: JSON.stringify(payload)
       });
     });

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { notFound } from 'next/navigation';
@@ -33,7 +32,7 @@ export default function POSInvoicePage({ params }: { params: { id: string } }) {
         if (!id) return;
         setIsLoading(true);
         try {
-            const invoiceResponse = await fetcher(`https://server-erp.payshia.com/invoices/full/${id}`);
+            const invoiceResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/full/${id}`);
             if (!invoiceResponse.ok) {
                 if (invoiceResponse.status === 404) notFound();
                 throw new Error('Failed to fetch invoice data');
@@ -47,8 +46,8 @@ export default function POSInvoicePage({ params }: { params: { id: string } }) {
 
             if (invoiceData.company_id && invoiceData.location_id) {
                 const [companyRes, locationRes] = await Promise.all([
-                    fetcher(`https://server-erp.payshia.com/companies/${invoiceData.company_id}`),
-                    fetcher(`https://server-erp.payshia.com/locations/${invoiceData.location_id}`),
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${invoiceData.company_id}`),
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${invoiceData.location_id}`),
                 ]);
                 if(companyRes.ok) setCompany(await companyRes.json());
                 if(locationRes.ok) setLocation(await locationRes.json());

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -122,9 +121,9 @@ export function NewOrderDialog({ isOpen, onOpenChange, activeOrders = [], create
         setIsLoadingStewards(true);
         try {
             const [tablesResponse, stewardsResponse, heldOrdersResponse] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/filter/users?user_status=3&company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?user_status=3&company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`),
             ]);
             if (!tablesResponse.ok) throw new Error('Failed to fetch tables');
             setTables((await tablesResponse.json()) || []);

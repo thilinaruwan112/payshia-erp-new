@@ -66,7 +66,7 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
     if (!companyId) return null;
 
     if (type === 'Invoice') {
-        const response = await fetcher(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${number}&company_id=${companyId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/full/?invoicenumber=${number}&company_id=${companyId}`);
         if (response.ok) {
             const invoice: Invoice = await response.json();
             const customer = invoice.customer;
@@ -80,7 +80,7 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
             }
         }
     } else if (type === 'Transfer Note') {
-        const response = await fetcher(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${companyId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-transfers/filter/by-company?company_id=${companyId}`);
         if (response.ok) {
             const transfers: StockTransfer[] = await response.json();
             const transfer = transfers.find(t => t.stock_transfer_number === number);
@@ -95,12 +95,12 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
             }
         }
     } else if (type === 'Receipt') {
-        const response = await fetcher(`https://server-erp.payshia.com/receipts/filter?company_id=${companyId}&rec_number=${number}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/receipts/filter?company_id=${companyId}&rec_number=${number}`);
         if (response.ok) {
             const receipts: Receipt[] = await response.json();
             const receipt = receipts[0];
             if (receipt) {
-                 const customerResponse = await fetcher(`https://server-erp.payshia.com/customers/${receipt.customer_id}`);
+                 const customerResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${receipt.customer_id}`);
                  let customerName = 'N/A';
                  if (customerResponse.ok) {
                      const customer: User = await customerResponse.json();
@@ -118,7 +118,7 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
             }
         }
     } else if (type === 'Purchase Order') {
-        const response = await fetcher(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${companyId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/filter/?company_id=${companyId}`);
          if (response.ok) {
             const purchaseOrders: PurchaseOrder[] = await response.json();
             const po = purchaseOrders.find(p => p.po_number === number);
@@ -134,7 +134,7 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
             }
         }
     } else if (type === 'Production Note') {
-        const response = await fetcher(`https://server-erp.payshia.com/production-notes?company_id=${companyId}&pn_number=${number}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/production-notes?company_id=${companyId}&pn_number=${number}`);
         if (response.ok) {
             const productionNote: ProductionNote = await response.json();
             if (productionNote) {
@@ -193,7 +193,7 @@ export default function CancellationPage() {
 
         try {
             if (details.type === 'Invoice') {
-                const response = await fetcher(`https://server-erp.payshia.com/invoices/${details.id}/reverse`, {
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/${details.id}/reverse`, {
                     method: 'POST',
                 });
                 if (!response.ok) {
@@ -202,7 +202,7 @@ export default function CancellationPage() {
                 }
             } else if (details.type === 'Transfer Note') {
                 const payload = { is_active: 0, updated_by: userName || 'admin' };
-                const response = await fetcher(`https://server-erp.payshia.com/stock-transfers/${details.id}/status`, {
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-transfers/${details.id}/status`, {
                     method: 'PUT',
                     body: JSON.stringify(payload),
                 });
@@ -211,7 +211,7 @@ export default function CancellationPage() {
                     throw new Error(errorData.message || 'Failed to cancel the transfer note.');
                 }
             } else if (details.type === 'Receipt') {
-                const response = await fetcher(`https://server-erp.payshia.com/receipts/${details.id}/deactivate`, {
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/receipts/${details.id}/deactivate`, {
                     method: 'PUT',
                 });
                 if (!response.ok) {
@@ -220,7 +220,7 @@ export default function CancellationPage() {
                 }
             } else if (details.type === 'Purchase Order') {
                 const payload = { is_active: 0 };
-                const response = await fetcher(`https://server-erp.payshia.com/purchase-orders/${details.id}/status`, {
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/${details.id}/status`, {
                     method: 'PUT',
                     body: JSON.stringify(payload),
                 });
@@ -242,8 +242,8 @@ export default function CancellationPage() {
                     throw new Error(responseData.message || 'Failed to cancel the purchase order.');
                 }
             } else if (details.type === 'Production Note') {
-                const payload = { is_active: 0, updated_by: userName || 'admin' };
-                const response = await fetcher(`https://server-erp.payshia.com/production-notes/${details.id}`, {
+                const payload = { is_active: 0, updated_by: userName || 'yomal' };
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/production-notes/${details.id}`, {
                     method: 'PUT',
                     body: JSON.stringify(payload),
                 });
@@ -375,5 +375,3 @@ export default function CancellationPage() {
         </div>
     );
 }
-
-    

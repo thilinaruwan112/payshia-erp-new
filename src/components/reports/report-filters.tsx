@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import React, { useEffect, useState, Suspense } from 'react';
@@ -90,31 +89,31 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                 }
             }
             if (filters.includes('customer')) {
-                fetchData(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`, setCustomers, 'customers');
+                fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`, setCustomers, 'customers');
             }
             if (filters.includes('supplier')) {
-                fetchData(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`, setSuppliers, 'suppliers');
+                fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`, setSuppliers, 'suppliers');
             }
             if (filters.includes('item')) {
-                 fetchData(`https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`, setProducts, 'products');
+                 fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants?company_id=${company_id}`, setProducts, 'products');
             }
             if (filters.includes('category')) {
-                fetchData(`https://server-erp.payshia.com/master-categories/company?company_id=${company_id}`, setCategories, 'categories');
+                fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`, setCategories, 'categories');
             }
             if (filters.includes('brand')) {
-                fetchData(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`, setBrands, 'brands');
+                fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`, setBrands, 'brands');
             }
              if (filters.includes('collection')) {
-                fetchData(`https://server-erp.payshia.com/collections/company?company_id=${company_id}`, setCollections, 'collections');
+                fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/company?company_id=${company_id}`, setCollections, 'collections');
             }
             if (filters.includes('color')) {
-                fetchData(`https://server-erp.payshia.com/product-colors/company?company_id=${company_id}`, setColors, 'colors');
+                fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-colors/company?company_id=${company_id}`, setColors, 'colors');
             }
             if (filters.includes('size')) {
-                fetchData(`https://server-erp.payshia.com/sizes/filter/company?company_id=${company_id}`, setSizes, 'sizes');
+                fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/sizes/filter/company?company_id=${company_id}`, setSizes, 'sizes');
             }
             if (filters.includes('customField')) {
-                fetchData(`https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=${company_id}`, setCustomFields, 'custom fields');
+                fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-fields/filter/by-company?company_id=${company_id}`, setCustomFields, 'custom fields');
             }
         }
         fetchDropdownData();
@@ -154,18 +153,18 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             const params = new URLSearchParams({ company_id: String(company_id) });
 
             if (reportName === 'Customer Master Report') {
-                url = `https://server-erp.payshia.com/customers/company/filter/`;
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/`;
             } else if (reportName === 'Supplier Master Report') {
-                 url = `https://server-erp.payshia.com/suppliers/filter/by-company`;
+                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company`;
             } else if (reportName === 'Item Master Report') {
-                 url = `https://server-erp.payshia.com/products/with-variants`;
+                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants`;
             } else if (reportName === 'Purchase Order Report') {
-                url = `https://server-erp.payshia.com/purchase-orders/filter/`;
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/filter/`;
             } else if (reportName === 'Sales Summary Report' || reportName === 'Invoice Report') {
-                url = `https://server-erp.payshia.com/invoices/filter/hold/by-company-status`;
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/filter/hold/by-company-status`;
                 params.append('invoice_status', '1');
             } else if (reportName === 'GRN Report') {
-                 url = `https://server-erp.payshia.com/grn/company/${company_id}`;
+                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/grn/company/${company_id}`;
             }
              else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
