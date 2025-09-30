@@ -50,7 +50,7 @@ export default function SizesPage() {
       }
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/sizes/filter/company?company_id=${company_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/sizes/filter/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch sizes');
         }
@@ -74,7 +74,7 @@ export default function SizesPage() {
     if (!selectedSize) return;
 
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/sizes/${selectedSize.id}`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/sizes/${selectedSize.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
