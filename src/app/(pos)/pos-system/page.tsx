@@ -48,12 +48,22 @@ interface CollectionProductLink {
     product_id: string;
 }
 
+const walkInCustomer: User = {
+    id: 'walk-in',
+    customer_id: 'walk-in',
+    name: 'Walk-in Customer',
+    customer_first_name: 'Walk-in',
+    customer_last_name: 'Customer',
+    role: 'Customer',
+    loyaltyPoints: 0,
+};
+
 export default function POSPage() {
   const { toast } = useToast();
   const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [customers, setCustomers] = useState<User[]>([]);
+  const [customers, setCustomers] = useState<User[]>([walkInCustomer]);
   const [tables, setTables] = useState<TableType[]>([]);
   const [stewards, setStewards] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -176,15 +186,23 @@ export default function POSPage() {
             const stewardsData = stewardsResult.data || [];
             
             setTables(tablesData || []);
-            setStewards((stewardsData || []).map((s: any) => ({ id: s.id, name: `${s.first_name} ${s.last_name}`, role: s.acc_type, avatar: s.img_path, customer_id: s.id })));
+             setStewards((stewardsData || []).map((s: any) => ({ 
+                id: s.id, 
+                name: `${s.first_name} ${s.last_name}`, 
+                role: s.acc_type, 
+                avatar: s.img_path, 
+                customer_id: s.id,
+                customer_first_name: s.first_name,
+                customer_last_name: s.last_name,
+             })));
             
-            const formattedCustomers = customersData.map(c => ({
+            const formattedCustomers = (customersData || []).map(c => ({
                 ...c,
                 id: c.customer_id,
                 name: `${c.customer_first_name} ${c.customer_last_name}`,
                 role: 'Customer',
             }));
-            setCustomers(formattedCustomers);
+            setCustomers([walkInCustomer, ...formattedCustomers]);
 
             setCollections(collectionsData || []);
             setBrands(brandsData || []);
@@ -368,21 +386,13 @@ export default function POSPage() {
   const currentOrder = useMemo(() => activeOrders.find((order) => order.id === currentOrderId), [activeOrders, currentOrderId]);
   
   const createNewOrder = (orderType: ActiveOrder['orderType'], steward?: User, tableName?: string) => {
-    if (!customers[0]) {
-        toast({
-            variant: 'destructive',
-            title: 'No Customer Available',
-            description: 'Please add a customer before creating an order.',
-        });
-        return;
-    }
     const newOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
       name: tableName || orderType,
       cart: [],
       discount: 0,
       serviceCharge: 0,
-      customer: customers[0], // Default to the first available customer
+      customer: walkInCustomer, // Default to Walk-in Customer
       orderType,
       tableName,
       steward,
@@ -480,7 +490,7 @@ export default function POSPage() {
         order_ready_status: 1, 
         created_by: currentCashier.name, 
         is_active: 1, 
-        steward_id: currentOrder.steward?.id || "N/A",
+        steward_id: steward?.id || "N/A",
         cost_value: currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0),
         remark: `${currentOrder.orderType} order`, 
         ref_hold: "direct",
@@ -849,4 +859,5 @@ export default function POSPage() {
     
 
     
+
 
