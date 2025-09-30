@@ -391,6 +391,7 @@ export function OrderPanel({
             hold_status: 0,
             printed_status: 1,
             product_variant_id: parseInt(item.product.variant.id, 10),
+            expire_date: item.batch.expire_date,
             company_id: company_id,
         }))
     };
