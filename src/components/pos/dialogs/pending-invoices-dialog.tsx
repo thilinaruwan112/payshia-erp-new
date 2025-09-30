@@ -225,3 +225,5 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
     </Dialog>
   );
 }
+
+    
