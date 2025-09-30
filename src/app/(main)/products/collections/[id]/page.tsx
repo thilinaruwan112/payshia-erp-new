@@ -36,9 +36,9 @@ export default function EditCollectionPage({ params }: { params: { id: string } 
             setIsLoading(true);
             try {
                 const [collectionResponse, allProductsResponse, collectionProductsResponse] = await Promise.all([
-                    fetcher(`https://server-erp.payshia.com/collections/${id}`),
-                    fetcher(`https://server-erp.payshia.com/products/get/filter/by-company?company_id=${company_id}`),
-                    fetcher(`https://server-erp.payshia.com/collection-products/get/by?collection_id=${id}&company_id=${company_id}`),
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/${id}`),
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/filter/by-company?company_id=${company_id}`),
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collection-products/get/by?collection_id=${id}&company_id=${company_id}`),
                 ]);
 
                 if (!collectionResponse.ok) {

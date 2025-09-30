@@ -55,7 +55,7 @@ export default function CategoriesPage() {
       };
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/master-categories/company?company_id=${company_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch categories');
         }
@@ -79,7 +79,7 @@ export default function CategoriesPage() {
     if (!selectedCategory) return;
 
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/master-categories/${selectedCategory.id}`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/${selectedCategory.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
