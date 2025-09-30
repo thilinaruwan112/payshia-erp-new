@@ -152,7 +152,7 @@ export default function LocationsPage() {
                   ))
                 ) : (
                   locations.map((location) => {
-                    const logoUrl = location.logo_path ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${location.logo_path}` : "https://placehold.co/64x64.png";
+                    const logoUrl = location.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : "https://placehold.co/64x64.png";
                     return (
                         <TableRow key={location.location_id}>
                           <TableCell>
