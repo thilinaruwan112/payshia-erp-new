@@ -180,7 +180,8 @@ export default function POSPage() {
             const productsData: { products: ProductWithVariantsResponse[] } = await productsResponse.json();
             const collectionsData: Collection[] = await collectionsResponse.json();
             const brandsData: Brand[] = await brandsResponse.json();
-            const customersData: User[] = await customersResponse.json();
+            const customersResult = await customersResponse.json();
+            const customersData: User[] = customersResult.data || [];
             const tablesData: TableType[] = await tablesResponse.json();
             const stewardsResult = await stewardsResponse.json();
             const stewardsData = stewardsResult.data || [];
@@ -386,6 +387,14 @@ export default function POSPage() {
   const currentOrder = useMemo(() => activeOrders.find((order) => order.id === currentOrderId), [activeOrders, currentOrderId]);
   
   const createNewOrder = (orderType: ActiveOrder['orderType'], steward?: User, tableName?: string) => {
+    if (customers.length === 0) {
+        toast({
+            variant: 'destructive',
+            title: 'No Customer Available',
+            description: 'Please add a customer before creating an order. The "Walk-in" customer should be available by default.',
+        });
+        return;
+    }
     const newOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
       name: tableName || orderType,
@@ -490,7 +499,7 @@ export default function POSPage() {
         order_ready_status: 1, 
         created_by: currentCashier.name, 
         is_active: 1, 
-        steward_id: steward?.id || "N/A",
+        steward_id: "N/A",
         cost_value: currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0),
         remark: `${currentOrder.orderType} order`, 
         ref_hold: "direct",
@@ -855,9 +864,3 @@ export default function POSPage() {
     </>
   );
 }
-
-    
-
-    
-
-
