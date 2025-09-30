@@ -156,12 +156,12 @@ export default function POSPage() {
         setIsLoading(true);
         try {
             const [productsResponse, collectionsResponse, brandsResponse, customersResponse, tablesResponse, stewardsResponse] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/collections/company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/filter/users?user_status=3&company_id=${company_id}`)
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?user_status=3&company_id=${company_id}`)
             ]);
 
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !customersResponse.ok) {
@@ -250,7 +250,7 @@ export default function POSPage() {
       setIsLoadingPastInvoices(true);
       try {
         const response = await fetcher(
-          `https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedReturnCustomer}&company_id=${company_id}`
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/full/invoices/by-customer?customer_code=${selectedReturnCustomer}&company_id=${company_id}`
         );
         if (!response.ok) throw new Error("Failed to fetch invoices");
         const data: Invoice[] = await response.json();
@@ -325,7 +325,7 @@ export default function POSPage() {
     };
     
     try {
-        const response = await fetcher('https://server-erp.payshia.com/transaction-returns', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-returns`, {
             method: 'POST',
             body: JSON.stringify(payload)
         });
@@ -355,7 +355,7 @@ export default function POSPage() {
     setActiveFilter({ type, value });
     if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/collection-products/collection/${value}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collection-products?collection_id=${value}&company_id=${company_id}`);
             if (!response.ok) throw new Error('Failed to fetch collection products');
             const data: CollectionProductLink[] = await response.json();
             setCollectionProducts(prev => ({ ...prev, [value]: data.map(p => p.product_id) }));
@@ -440,7 +440,7 @@ export default function POSPage() {
             items: itemsToUpdatePayload,
         };
       
-        const url = `https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${currentOrder.originalInvoiceNumber}`;
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${currentOrder.originalInvoiceNumber}`;
   
         try {
             const response = await fetcher(url, {
@@ -503,7 +503,7 @@ export default function POSPage() {
     };
 
     try {
-      const response = await fetcher('https://server-erp.payshia.com/pos-invoices', {
+      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices`, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -847,3 +847,6 @@ export default function POSPage() {
 }
 
     
+
+    
+

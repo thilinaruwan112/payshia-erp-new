@@ -130,7 +130,15 @@ export function NewOrderDialog({ isOpen, onOpenChange, activeOrders = [], create
             if (!stewardsResponse.ok) throw new Error('Failed to fetch stewards');
             const stewardsResult = await stewardsResponse.json();
             const stewardsData = stewardsResult.data || [];
-            setStewards((stewardsData || []).map((s: any) => ({ id: s.id, name: `${s.first_name} ${s.last_name}`, role: s.acc_type, avatar: s.img_path, customer_id: s.id })));
+            setStewards((stewardsData || []).map((s: any) => ({ 
+                id: s.id, 
+                name: `${s.first_name} ${s.last_name}`, 
+                role: s.acc_type, 
+                avatar: s.img_path, 
+                customer_id: s.id,
+                customer_first_name: s.first_name,
+                customer_last_name: s.last_name,
+             })));
              if (!heldOrdersResponse.ok) throw new Error('Failed to fetch held orders');
             const heldOrdersData = await heldOrdersResponse.json();
             setHeldOrders(heldOrdersData || []);
