@@ -39,10 +39,10 @@ export function GrnPrintView({ id }: PrintViewProps) {
       setIsLoading(true);
       try {
         const [grnResponse, suppliersResponse, productsResponse, variantsResponse] = await Promise.all([
-           fetcher(`https://server-erp.payshia.com/grn/${id}`),
-           fetcher('https://server-erp.payshia.com/suppliers'),
-           fetcher('https://server-erp.payshia.com/products'),
-           fetcher('https://server-erp.payshia.com/product-variants'),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn/${id}`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
         ]);
         
         if (!grnResponse.ok) {
@@ -65,8 +65,8 @@ export function GrnPrintView({ id }: PrintViewProps) {
 
         if (grnData.company_id && grnData.location_id) {
              const [companyRes, locationRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/companies/${grnData.company_id}`),
-                fetcher(`https://server-erp.payshia.com/locations/${grnData.location_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${grnData.company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${grnData.location_id}`),
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());

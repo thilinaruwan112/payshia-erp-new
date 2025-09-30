@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,6 +41,7 @@ import React, { useEffect, useState } from "react";
 import { useCurrency } from "./currency-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Checkbox } from "./ui/checkbox";
+import { fetcher } from '@/lib/api';
 
 const paymentFormSchema = z.object({
   date: z.date({ required_error: "A date is required." }),
@@ -92,7 +92,7 @@ export function PaymentForm({ suppliers, paymentAccounts }: PaymentFormProps) {
         form.setValue('amount', 0);
         try {
             // In a real app, this endpoint would return only GRNs with a balance due
-            const response = await fetch(`https://server-erp.payshia.com/grn`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn`);
             if (!response.ok) throw new Error('Failed to fetch GRNs');
             const allGrns: GoodsReceivedNote[] = await response.json();
             const supplierGrns = allGrns

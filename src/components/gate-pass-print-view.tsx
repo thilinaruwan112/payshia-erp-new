@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { type Invoice, type User, type Product, type Location } from '@/lib/types';

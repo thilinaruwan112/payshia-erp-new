@@ -100,8 +100,8 @@ export function BomForm() {
         if (!company_id) return;
         try {
             const [productsResponse, recipesResponse] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/products/get/filter/recipe-type?recipe_type=item_recipe&company_id=${company_id}`),
-                fetcher('https://server-erp.payshia.com/product-recipes'),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/filter/recipe-type?recipe_type=item_recipe&company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes`),
             ]);
 
             if (!productsResponse.ok) throw new Error("Failed to fetch products");
@@ -197,7 +197,7 @@ export function BomForm() {
                 created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
             };
 
-            const response = await fetcher('https://server-erp.payshia.com/product-recipes', {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes`, {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
@@ -406,4 +406,3 @@ export function BomForm() {
     </Form>
   );
 }
-

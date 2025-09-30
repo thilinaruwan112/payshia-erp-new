@@ -109,7 +109,7 @@ export function LocationForm({ location }: LocationFormProps) {
     setIsLoading(true);
     
     // Create URL and Method
-    const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
+    const url = location ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${location.location_id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/locations`;
     const method = location ? 'PUT' : 'POST';
 
     // Handle logo upload separately if it's a new image
@@ -121,7 +121,7 @@ export function LocationForm({ location }: LocationFormProps) {
         // This is a separate call to an endpoint that should handle file upload and return a path
         // This is a hypothetical endpoint. Replace with your actual image upload endpoint.
         try {
-            const imageResponse = await fetcher('https://server-erp.payshia.com/locations/upload-logo', {
+            const imageResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/upload-logo`, {
                 method: 'POST',
                 body: imageFormData,
                 headers: new Headers(), // Let browser set Content-Type for FormData
