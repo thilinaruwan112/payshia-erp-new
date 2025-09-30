@@ -180,8 +180,7 @@ export default function POSPage() {
             const productsData: { products: ProductWithVariantsResponse[] } = await productsResponse.json();
             const collectionsData: Collection[] = await collectionsResponse.json();
             const brandsData: Brand[] = await brandsResponse.json();
-            const customersResult = await customersResponse.json();
-            const customersData: User[] = customersResult.data || [];
+            const customersData: User[] = await customersResponse.json();
             const tablesData: TableType[] = await tablesResponse.json();
             const stewardsResult = await stewardsResponse.json();
             const stewardsData = stewardsResult.data || [];
@@ -506,7 +505,7 @@ export default function POSPage() {
         company_id: String(company_id),
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
-            user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
+            user_id: parseInt(steward?.id || currentCashier.id, 10),
             product_id: parseInt(item.product.id, 10), 
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0, 
@@ -864,3 +863,5 @@ export default function POSPage() {
     </>
   );
 }
+
+    
