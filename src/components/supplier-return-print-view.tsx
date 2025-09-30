@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { type SupplierReturn, type Supplier, type Location } from '@/lib/types';
@@ -9,36 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Image from 'next/image';
-
-const suppliers: Supplier[] = [
-    { supplier_id: 'sup-123', supplier_name: 'Global Textiles Inc.', contact_person: 'John Doe', email: 'contact@globaltextiles.com', telephone: '111-222-3333', street_name: '123 Textile Ave', city: 'Fiberburg', zip_code: '12345', fax: '111-222-3334', opening_balance: '1000' },
-    { supplier_id: 'sup-456', supplier_name: 'Leather Goods Co.', contact_person: 'Jane Smith', email: 'sales@leatherco.com', telephone: '444-555-6666', street_name: '456 Hide St', city: 'Tannerville', zip_code: '67890', fax: '444-555-6667', opening_balance: '5000' },
-];
-
-const supplierReturns: SupplierReturn[] = [
-    {
-        id: 'RTN-001',
-        grnId: 'GRN-001',
-        supplierId: 'sup-123',
-        supplierName: 'Global Textiles Inc.',
-        date: '2023-10-10',
-        totalValue: 150.00,
-        items: [
-            { sku: 'TS-BLK-M', returnedQty: 10, unitPrice: 15.00, reason: 'Damaged' }
-        ]
-    },
-    {
-        id: 'RTN-002',
-        grnId: 'GRN-003',
-        supplierId: 'sup-456',
-        supplierName: 'Leather Goods Co.',
-        date: '2023-10-12',
-        totalValue: 80.00,
-        items: [
-            { sku: 'LW-BRN-OS', returnedQty: 2, unitPrice: 40.00, reason: 'Wrong item' }
-        ]
-    }
-];
+import { fetcher } from '@/lib/api';
 
 interface PrintViewProps {
     id: string;
@@ -62,31 +32,46 @@ export function SupplierReturnPrintView({ id }: PrintViewProps) {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Mocking API call
-    const returnData = supplierReturns.find(r => r.id === id);
-    if (returnData) {
-        setSReturn(returnData);
-        const supplierData = suppliers.find(s => s.supplier_id === returnData.supplierId);
-        setSupplier(supplierData || null);
-        
-        // Mock company and location data
-        setCompany({
-            id: '1',
-            company_name: 'Payshia ERP',
-            company_address: '#455, 533A3, Pelmadulla',
-            company_city: 'Rathnapura',
-            company_email: 'info@payshia.com',
-            company_telephone: '045-222-2222',
-        });
-        setLocation({
-             location_id: '1', location_name: 'Main Warehouse', address_line1: '#455, 533A3, Pelmadulla', city: 'Rathnapura', location_code: '', is_active: '', created_at: '', created_by: '', logo_path: '', address_line2: '', phone_1: '', phone_2: '', pos_status: '', pos_token: '', location_type: '', company_id: 1,
-        });
+    async function fetchData() {
+        if (!id) return;
+        setIsLoading(true);
+        try {
+            // This endpoint needs to be created on the backend. For now, we are simulating the fetch.
+            // const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/supplier-returns/${id}`);
+            // if (!response.ok) throw new Error('Failed to fetch return data');
+            // const returnData = await response.json();
+            
+            // MOCKING a response until the endpoint is ready
+            const mockReturns: SupplierReturn[] = [
+                { id: 'RTN-001', grnId: 'GRN-001', supplierId: 'sup-123', supplierName: 'Global Textiles Inc.', date: '2023-10-10', totalValue: 150.00, items: [{ sku: 'TS-BLK-M', returnedQty: 10, unitPrice: 15.00, reason: 'Damaged' }] },
+                { id: 'RTN-002', grnId: 'GRN-003', supplierId: 'sup-456', supplierName: 'Leather Goods Co.', date: '2023-10-12', totalValue: 80.00, items: [{ sku: 'LW-BRN-OS', returnedQty: 2, unitPrice: 40.00, reason: 'Wrong item' }] }
+            ];
+            const returnData = mockReturns.find(r => r.id === id);
 
-    } else {
-        notFound();
+            if (!returnData) {
+                notFound();
+                return;
+            }
+            setSReturn(returnData);
+
+            const [supplierRes, companyRes, locationRes] = await Promise.all([
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/${returnData.supplierId}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/1`), // Assuming company ID 1 for now
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/1`), // Assuming location ID 1 for now
+            ]);
+
+            if (supplierRes.ok) setSupplier(await supplierRes.json());
+            if (companyRes.ok) setCompany(await companyRes.json());
+            if (locationRes.ok) setLocation(await locationRes.json());
+
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load data for the return note.'});
+        } finally {
+            setIsLoading(false);
+        }
     }
-    setIsLoading(false);
-  }, [id]);
+    fetchData();
+  }, [id, toast]);
   
   useEffect(() => {
     if (sReturn) {
