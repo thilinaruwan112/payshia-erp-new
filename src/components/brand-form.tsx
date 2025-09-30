@@ -64,7 +64,7 @@ export function BrandForm({ brand }: BrandFormProps) {
       return;
     }
     setIsLoading(true);
-    const url = brand ? `https://server-erp.payshia.com/brands/${brand.id}` : 'https://server-erp.payshia.com/brands';
+    const url = brand ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/${brand.id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/brands`;
     const method = brand ? 'PUT' : 'POST';
 
     const payload = { ...data, company_id: company_id };

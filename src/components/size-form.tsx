@@ -60,7 +60,7 @@ export function SizeForm({ size }: SizeFormProps) {
         return;
     }
     setIsLoading(true);
-    const url = size ? `https://server-erp.payshia.com/sizes/${size.id}` : 'https://server-erp.payshia.com/sizes';
+    const url = size ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/sizes/${size.id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/sizes`;
     const method = size ? 'PUT' : 'POST';
     const payload = { ...data, company_id: company_id };
     try {

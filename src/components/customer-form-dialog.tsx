@@ -80,7 +80,7 @@ export function CustomerFormDialog({ children, onCustomerCreated }: CustomerForm
         return;
     }
     setIsLoading(true);
-    const url = 'https://server-erp.payshia.com/customers';
+    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/customers`;
     const method = 'POST';
 
     const payload = { 

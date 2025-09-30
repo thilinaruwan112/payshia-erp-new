@@ -57,7 +57,7 @@ export function CustomFieldForm() {
       return;
     }
     setIsLoading(true);
-    const url = 'https://server-erp.payshia.com/custom-fields';
+    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-fields`;
     const method = 'POST';
 
     const payload = { ...data, company_id: company_id, created_by: 'admin', updated_by: 'admin' };
