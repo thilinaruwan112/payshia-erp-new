@@ -57,8 +57,8 @@ export default function ProductionHistoryPage() {
             setIsLoading(true);
             try {
                 const [notesResponse, productsResponse] = await Promise.all([
-                    fetcher(`https://server-erp.payshia.com/production-notes?company_id=${company_id}`),
-                    fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`)
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/production-notes?company_id=${company_id}`),
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`)
                 ]);
 
                 if (!notesResponse.ok) throw new Error('Failed to fetch production notes');

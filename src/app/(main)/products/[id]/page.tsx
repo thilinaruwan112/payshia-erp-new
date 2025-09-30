@@ -25,7 +25,7 @@ export default function EditProductPage() {
     async function getProduct() {
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/products/details/${id}`, { cache: 'no-store' });
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/details/${id}`, { cache: 'no-store' });
         if (!response.ok) {
           if (response.status === 404) {
             notFound();
