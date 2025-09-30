@@ -119,6 +119,7 @@ export function LocationForm({ location }: LocationFormProps) {
     formData.append('pos_status', data.pos_status ? '1' : '0');
     formData.append('company_id', String(company_id));
     formData.append('is_active', '1');
+    formData.append('created_by', 'admin');
     formData.append('updated_by', "admin");
     formData.append('pos_token', "101");
 
