@@ -107,7 +107,7 @@ export function TransferForm({ locations }: TransferFormProps) {
   React.useEffect(() => {
     async function fetchProducts() {
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
@@ -177,7 +177,7 @@ export function TransferForm({ locations }: TransferFormProps) {
     if (!skuDetails) return;
 
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${skuDetails.variantId}&location_id=${fromLocationId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${skuDetails.variantId}&location_id=${fromLocationId}`);
         if (!response.ok) {
             throw new Error('Failed to fetch stock for this product.');
         }
@@ -226,7 +226,7 @@ export function TransferForm({ locations }: TransferFormProps) {
     };
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/stock-transfers', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-transfers`, {
             method: 'POST',
             body: JSON.stringify(payload),
         });

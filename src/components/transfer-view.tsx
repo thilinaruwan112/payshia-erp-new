@@ -47,10 +47,10 @@ export function TransferView({ id }: TransferViewProps) {
       setIsLoading(true);
       try {
         const [transferResponse, locationsResponse, productsResponse, variantsResponse] = await Promise.all([
-           fetcher(`https://server-erp.payshia.com/stock-transfers/${id}`),
-           fetcher('https://server-erp.payshia.com/locations'),
-           fetcher('https://server-erp.payshia.com/products'),
-           fetcher('https://server-erp.payshia.com/product-variants'),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-transfers/${id}`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
         ]);
         
         if (!transferResponse.ok) {

@@ -91,7 +91,7 @@ export function OpeningStockForm() {
       if (!company_id) return;
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
         if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
         setProducts(data.products || []);
@@ -155,7 +155,7 @@ export function OpeningStockForm() {
     }));
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/stock-entries/bulk', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/bulk`, {
             method: 'POST',
             body: JSON.stringify({ entries: stockEntries }),
         });
