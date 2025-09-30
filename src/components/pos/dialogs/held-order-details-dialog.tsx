@@ -52,7 +52,7 @@ export function HeldOrderDetailsDialog({
       setIsLoading(true);
       try {
         const response = await fetcher(
-          `https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`
         );
         if (!response.ok) throw new Error('Failed to fetch held orders');
         const data: Invoice[] = await response.json();

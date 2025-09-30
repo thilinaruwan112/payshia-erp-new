@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { ProductForm } from '@/components/product-form';
@@ -8,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { fetcher } from '@/lib/api';
 
 interface EditProductFormProps {
     id: string;
@@ -23,7 +25,7 @@ export function EditProductForm({ id }: EditProductFormProps) {
       if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/products/details/${id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/details/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();
