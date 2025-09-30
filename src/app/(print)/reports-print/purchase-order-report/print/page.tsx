@@ -51,8 +51,8 @@ function PrintViewContent() {
 
         try {
              const [poRes, companyRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${companyId}`),
-                fetcher(`https://server-erp.payshia.com/companies/${companyId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/filter/?company_id=${companyId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
             ]);
 
             if (!poRes.ok) throw new Error('Failed to fetch purchase orders');

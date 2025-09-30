@@ -47,7 +47,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
       };
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${id}&company_id=${companyId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/full/?invoicenumber=${id}&company_id=${companyId}`);
         if (!response.ok) {
            if (response.status === 404) notFound();
            throw new Error('Failed to fetch invoice data');
@@ -62,7 +62,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
           const itemsWithDetails = await Promise.all(
             data.items.map(async (item) => {
               try {
-                const productRes = await fetcher(`https://server-erp.payshia.com/products/details/${item.product_id}`);
+                const productRes = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/details/${item.product_id}`);
                 if (productRes.ok) {
                   const productData = await productRes.json();
                   return { ...item, product: productData.product };
@@ -78,9 +78,9 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
 
         if (data.company_id && data.location_id) {
             const [companyRes, locationRes, customerRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/companies/${data.company_id}`),
-                fetcher(`https://server-erp.payshia.com/locations/${data.location_id}`),
-                fetcher(`https://server-erp.payshia.com/customers/${data.customer_code}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${data.company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${data.location_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`),
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());

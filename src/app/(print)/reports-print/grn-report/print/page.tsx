@@ -52,9 +52,9 @@ function PrintViewContent() {
 
         try {
              const [grnRes, companyRes, suppliersRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/grn/company/${companyId}`),
-                fetcher(`https://server-erp.payshia.com/companies/${companyId}`),
-                fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${companyId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn/company/${companyId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${companyId}`),
             ]);
 
             if (!grnRes.ok) throw new Error('Failed to fetch GRNs');
