@@ -50,7 +50,7 @@ export default function ColorsPage() {
       };
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/product-colors/company?company_id=${company_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-colors/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch colors');
         }
@@ -74,7 +74,7 @@ export default function ColorsPage() {
     if (!selectedColor) return;
 
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/colors/${selectedColor.id}`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/colors/${selectedColor.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {

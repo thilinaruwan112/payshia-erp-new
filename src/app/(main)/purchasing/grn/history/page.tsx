@@ -47,8 +47,8 @@ export default function GrnHistoryPage() {
       setIsLoading(true);
       try {
         const [grnResponse, suppliersResponse] = await Promise.all([
-          fetcher('https://server-erp.payshia.com/grn'),
-          fetcher('https://server-erp.payshia.com/suppliers')
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn`),
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers`)
         ]);
 
         if (!grnResponse.ok) throw new Error('Failed to fetch GRNs');

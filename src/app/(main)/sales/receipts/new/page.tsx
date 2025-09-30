@@ -18,7 +18,7 @@ export default function NewReceiptPage() {
         async function getData() {
             setIsLoading(true);
             try {
-                const customerResponse = await fetcher('https://server-erp.payshia.com/customers');
+                const customerResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers`);
                 
                 if (!customerResponse.ok) {
                     throw new Error('Failed to fetch data for receipt form');
@@ -52,4 +52,3 @@ export default function NewReceiptPage() {
 
     return <ReceiptForm customers={customers} />;
 }
-

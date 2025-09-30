@@ -88,8 +88,8 @@ export default function PurchaseOrdersPage() {
       setIsLoading(true);
       try {
         const [poResponse, suppliersResponse] = await Promise.all([
-          fetcher(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`),
-          fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`)
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/filter/?company_id=${company_id}`),
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`)
         ]);
 
         if (!poResponse.ok) {
@@ -259,7 +259,7 @@ export default function PurchaseOrdersPage() {
                        <Badge variant="secondary" className={cn(getStatusColor(po.po_status))}>
                           {statusText}
                         </Badge>
-                        <Separator />
+                        <Separator className="my-2" />
                         <div className="flex justify-between text-sm">
                           <span className="text-muted-foreground">Date</span>
                           <span>{new Date(po.created_at).toLocaleDateString()}</span>

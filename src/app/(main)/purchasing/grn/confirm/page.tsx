@@ -155,7 +155,7 @@ export default function GrnConfirmationPage() {
         };
 
         try {
-            const response = await fetcher('https://server-erp.payshia.com/grn', {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn`, {
                 method: 'POST',
                 body: JSON.stringify(grnPayload),
             });
