@@ -77,8 +77,8 @@ export default function InvoicesPage() {
         setIsLoading(true);
         try {
             const [invoiceResponse, customerResponse] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/invoices/company/latest?company_id=${company_id}`),
-                fetcher('https://server-erp.payshia.com/customers'),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/company/latest?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers`),
             ]);
 
             if (!invoiceResponse.ok) throw new Error('Failed to fetch invoices');
