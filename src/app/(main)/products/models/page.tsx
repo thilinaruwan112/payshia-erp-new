@@ -49,7 +49,7 @@ export default function ModelsPage() {
       };
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/master-models/company?company_id=${company_id}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-models/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch models');
         }
@@ -73,7 +73,7 @@ export default function ModelsPage() {
     if (!selectedModel) return;
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/master-models/${selectedModel.id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-models/${selectedModel.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {

@@ -80,7 +80,7 @@ export default function RegisterPage() {
     };
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/users', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
             method: 'POST',
             body: JSON.stringify(payload)
         });

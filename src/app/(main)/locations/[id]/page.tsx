@@ -21,7 +21,7 @@ export default function EditLocationPage({ params }: { params: { id: string } })
       if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/locations/${id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();

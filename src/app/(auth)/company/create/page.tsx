@@ -88,7 +88,7 @@ export default function CreateCompanyPage() {
         };
 
         try {
-            const companyResponse = await fetcher('https://server-erp.payshia.com/companies/create-with-user', {
+            const companyResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/create-with-user`, {
                 method: 'POST',
                 body: JSON.stringify(companyPayload),
             });

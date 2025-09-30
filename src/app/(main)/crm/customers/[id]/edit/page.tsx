@@ -27,7 +27,7 @@ export default function EditCustomerPage({
         }
         setIsLoading(true);
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/customers/${id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${id}`);
             if (!response.ok) {
                 if (response.status === 404) {
                     notFound();

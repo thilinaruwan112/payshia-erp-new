@@ -47,7 +47,7 @@ export default function CrmDashboardPage() {
         setIsLoading(true);
         try {
             const [usersRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
+                fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`),
             ]);
 
             if (!usersRes.ok) throw new Error('Failed to fetch users');

@@ -52,7 +52,7 @@ export default function LocationsPage() {
       }
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch locations');
         }
@@ -75,7 +75,7 @@ export default function LocationsPage() {
   const handleDelete = async () => {
     if (!selectedLocation) return;
     try {
-      const response = await fetcher(`https://server-erp.payshia.com/locations/${selectedLocation.location_id}`, {
+      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${selectedLocation.location_id}`, {
         method: 'DELETE',
       });
        if (!response.ok) {
@@ -152,7 +152,7 @@ export default function LocationsPage() {
                   ))
                 ) : (
                   locations.map((location) => {
-                    const logoUrl = location.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : "https://placehold.co/64x64.png";
+                    const logoUrl = location.logo_path ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${location.logo_path}` : "https://placehold.co/64x64.png";
                     return (
                         <TableRow key={location.location_id}>
                           <TableCell>
