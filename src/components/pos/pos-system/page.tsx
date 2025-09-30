@@ -1,9 +1,8 @@
 
-
 'use client';
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn } from '@/lib/types';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -28,6 +27,7 @@ import { fetcher } from '@/lib/api';
 export type PosProduct = Product & {
   variant: ProductVariant;
   variantName: string;
+  imageUrl?: string;
 };
 
 export type OrderInfo = {
@@ -39,9 +39,9 @@ export type OrderInfo = {
 };
 
 interface ProductWithVariantsResponse {
-  product: Product;
-  variants: { variant: ProductVariant, images: any[] }[]; // Adjusted to new structure
-  product_images: any[];
+    product: Product;
+    variants: { variant: ProductVariant; images: any[] }[]; // Adjusted to new structure
+    product_images: any[];
 }
 
 interface CollectionProductLink {
@@ -72,7 +72,6 @@ export default function POSPage() {
   const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
   
-  const walkInCustomer = { id: 'user-4', name: 'Walk-in Customer', role: 'Customer', avatar: 'https://placehold.co/100x100.png?text=WC', loyaltyPoints: 0, email: 'walkin@payshia.com', phone: 'N/A', customer_id: '4' };
 
   const [currentCashier, setCurrentCashier] = useState<User | null>(null);
   const { currentLocation, isLoading: isLocationLoading, setCurrentLocation, availableLocations, company_id } = useLocation();
@@ -83,6 +82,7 @@ export default function POSPage() {
   const [selectedReturnCustomer, setSelectedReturnCustomer] = useState<string | null>(null);
   const [pastInvoices, setPastInvoices] = useState<Invoice[]>([]);
   const [isLoadingPastInvoices, setIsLoadingPastInvoices] = useState(false);
+  const [selectedInvoiceForReturn, setSelectedInvoiceForReturn] = useState<Invoice | null>(null);
   const [returnReason, setReturnReason] = useState('');
   const [returnItems, setReturnItems] = useState<ReturnItem[]>([]);
   const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
@@ -116,7 +116,7 @@ export default function POSPage() {
         }
 
         // Ignore control keys, function keys, etc.
-        if (event.key.length === 1) {
+        if (event.key && event.key.length === 1) {
             setBarcode(prev => prev + event.key);
         }
         
@@ -149,7 +149,7 @@ export default function POSPage() {
 
   useEffect(() => {
     async function fetchPosData() {
-        if (!company_id) {
+        if (!company_id || !currentLocation) {
             setIsLoading(false);
             return;
         }
@@ -184,33 +184,49 @@ export default function POSPage() {
                 name: `${c.customer_first_name} ${c.customer_last_name}`,
                 role: 'Customer',
             }));
-            setCustomers([walkInCustomer, ...formattedCustomers]);
+            setCustomers(formattedCustomers);
 
             setCollections(collectionsData || []);
             setBrands(brandsData || []);
             
-            const flattenedProducts = (productsData.products || []).flatMap(p => {
-              if (!p.variants || p.variants.length === 0) {
-                 return [{
-                  ...p.product,
-                  price: parseFloat(p.product.price as any) || 0,
-                  min_price: parseFloat(p.product.min_price as any) || 0,
-                  wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
-                  cost_price: parseFloat(p.product.cost_price as any) || 0,
-                  variant: { id: p.product.id, sku: `SKU-${p.product.id}` }, // Simplified variant
-                  variantName: p.product.name,
-                }];
-              }
+            const locationFilteredProducts = (productsData.products || []).filter(p => 
+                p.product.available_locations?.split(',').includes(currentLocation.location_id)
+            );
+            
+            const flattenedProducts = locationFilteredProducts.flatMap(p => {
+                const mainProductFrontImage = p.product_images.find(img => img.image_type === 'front img')?.img_url || p.product.product_image_url;
 
-              return p.variants.map(v => ({
-                  ...p.product,
-                  price: parseFloat(p.product.price as any) || 0,
-                  min_price: parseFloat(p.product.min_price as any) || 0,
-                  wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
-                  cost_price: parseFloat(p.product.cost_price as any) || 0,
-                  variant: v.variant,
-                  variantName: [p.product.name, v.variant.color, v.variant.size].filter(Boolean).join(' - '),
-                }));
+                if (!p.variants || p.variants.length === 0) {
+                    return [{
+                        ...p.product,
+                        imageUrl: mainProductFrontImage ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${mainProductFrontImage}` : undefined,
+                        price: parseFloat(p.product.price as any) || 0,
+                        min_price: parseFloat(p.product.min_price as any) || 0,
+                        wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
+                        cost_price: parseFloat(p.product.cost_price as any) || 0,
+                        variant: { id: p.product.id, sku: `SKU-${p.product.id}` }, // Simplified variant
+                        variantName: p.product.name,
+                    }];
+                }
+
+                return p.variants.map(v => {
+                    const variantFrontImage = v.images.find(img => img.image_type === 'front img')?.img_url;
+                    const finalImageUrl = variantFrontImage || mainProductFrontImage;
+
+                    const variantAttributes = [v.variant.color, v.variant.size].filter(Boolean).join(' - ');
+                    const variantName = variantAttributes ? `${p.product.name} - ${variantAttributes}` : `${p.product.name} (${v.variant.sku})`;
+
+                    return {
+                        ...p.product,
+                        imageUrl: finalImageUrl ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${finalImageUrl}` : undefined,
+                        price: parseFloat(v.variant.price as any) || 0,
+                        min_price: parseFloat(v.variant.min_price as any) || 0,
+                        wholesale_price: parseFloat(v.variant.wholesale_price as any) || 0,
+                        cost_price: parseFloat(v.variant.cost_price as any) || 0,
+                        variant: v.variant,
+                        variantName,
+                    };
+                });
             });
             setPosProducts(flattenedProducts);
         } catch (error) {
@@ -227,53 +243,57 @@ export default function POSPage() {
 
   useEffect(() => {
     async function fetchInvoicesForReturn() {
-        if (!selectedReturnCustomer || !company_id) {
-            setPastInvoices([]);
-            return;
-        }
-        setIsLoadingPastInvoices(true);
-        try {
-            const response = await fetcher(`https://server-erp.payshia.com/invoices/filter/paid/by-customer?company_id=${company_id}&customer_code=${selectedReturnCustomer}`);
-            if (!response.ok) throw new Error('Failed to fetch invoices');
-            const data: Invoice[] = await response.json();
-            setPastInvoices(data.filter(inv => inv.payment_status === 'Paid') || []);
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch invoices for this customer.' });
-            setPastInvoices([]);
-        } finally {
-            setIsLoadingPastInvoices(false);
-        }
+      if (!selectedReturnCustomer || !company_id) {
+        setPastInvoices([]);
+        return;
+      }
+      setIsLoadingPastInvoices(true);
+      try {
+        const response = await fetcher(
+          `https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedReturnCustomer}&company_id=${company_id}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch invoices");
+        const data: Invoice[] = await response.json();
+        setPastInvoices(data.filter((inv) => inv.payment_status === "paid") || []);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not fetch invoices for this customer.",
+        });
+        setPastInvoices([]);
+      } finally {
+        setIsLoadingPastInvoices(false);
+      }
     }
-    if (isReturnDialogOpen && returnType === 'invoice') {
-        fetchInvoicesForReturn();
+    if (isReturnDialogOpen && returnType === "invoice") {
+      fetchInvoicesForReturn();
     }
   }, [selectedReturnCustomer, toast, isReturnDialogOpen, returnType, company_id]);
   
-  const handleInvoiceSelect = async (invoice: Invoice) => {
-    if (!invoice) return;
-    try {
-      const response = await fetcher(`https://server-erp.payshia.com/invoices/full/${invoice.invoice_number}`);
-      if (!response.ok) throw new Error('Failed to fetch full invoice details.');
-      const fullInvoice: Invoice = await response.json();
-      const items = (fullInvoice.items || []).map(item => ({
-        id: item.product_variant_id || item.product_id.toString(),
-        name: item.productName || 'Unknown Product',
-        unit: 'Nos',
-        rate: parseFloat(item.item_price as string),
-        quantity: 0,
-        amount: 0,
-        reason: '',
-        productId: item.product_id.toString(),
-        productVariantId: item.product_variant_id || item.product_id.toString(),
-      }));
-      setReturnItems(items);
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Could not load items for the selected invoice.' });
-    }
+  const handleInvoiceSelect = (invoice: Invoice) => {
+    if (!invoice?.items) return;
+    setSelectedInvoiceForReturn(invoice);
+    const items = (invoice.items || []).map(item => {
+        const matchingPosProduct = posProducts.find(p => p.variant.id === item.product_variant_id);
+        return {
+            id: item.product_variant_id || item.product_id.toString(),
+            name: matchingPosProduct?.variantName || 'Unknown Product',
+            unit: 'Nos',
+            rate: parseFloat(item.item_price as string),
+            quantity: 0,
+            originalQuantity: parseFloat(item.quantity as string),
+            amount: 0,
+            reason: '',
+            productId: item.product_id.toString(),
+            productVariantId: item.product_variant_id || item.product_id.toString(),
+        }
+    });
+    setReturnItems(items);
   };
   
   const handleProcessReturn = async () => {
-    if (returnItems.length === 0 || !selectedReturnCustomer || !currentLocation || !company_id) {
+    if (returnItems.length === 0 || !selectedReturnCustomer || !currentLocation || !company_id || !currentCashier) {
       toast({ variant: 'destructive', title: 'Missing Information', description: 'Please select items and a customer.' });
       return;
     }
@@ -285,15 +305,22 @@ export default function POSPage() {
       return_amount: returnItems.reduce((acc, item) => acc + item.amount, 0).toString(),
       reason: returnReason,
       created_by: currentCashier?.name || 'Admin',
-      stock_entries: returnItems.map(item => ({
+      created_at: new Date().toISOString(),
+      updated_by: currentCashier?.name || 'Admin',
+      is_active: '1',
+      ref_invoice: selectedInvoiceForReturn?.invoice_number || null,
+      stock_entries: returnItems.filter(item => item.quantity > 0).map(item => ({
+        type: 'IN',
         product_id: parseInt(item.productId),
         product_variant_id: parseInt(item.productVariantId),
-        quantity: item.quantity,
+        quantity: item.quantity.toString(),
         patch_code: 'RETURN', // This might need to be dynamic
         expire_date: '0000-00-00',
         manufacture_date: format(new Date(), 'yyyy-MM-dd'),
         reference: 'Customer Return',
         transaction_type: 'customer_return',
+        location_id: currentLocation.location_id,
+        ref_id: selectedInvoiceForReturn?.invoice_number || 'N/A',
       })),
     };
     
@@ -313,6 +340,7 @@ export default function POSPage() {
         setSelectedReturnCustomer(null);
         setReturnItems([]);
         setReturnReason('');
+        setSelectedInvoiceForReturn(null);
 
     } catch(error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -327,7 +355,7 @@ export default function POSPage() {
     setActiveFilter({ type, value });
     if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/collection-products/collection/${value}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collection-products?collection_id=${value}&company_id=${company_id}`);
             if (!response.ok) throw new Error('Failed to fetch collection products');
             const data: CollectionProductLink[] = await response.json();
             setCollectionProducts(prev => ({ ...prev, [value]: data.map(p => p.product_id) }));
@@ -340,13 +368,21 @@ export default function POSPage() {
   const currentOrder = useMemo(() => activeOrders.find((order) => order.id === currentOrderId), [activeOrders, currentOrderId]);
   
   const createNewOrder = (orderType: ActiveOrder['orderType'], steward?: User, tableName?: string) => {
+    if (!customers[0]) {
+        toast({
+            variant: 'destructive',
+            title: 'No Customer Available',
+            description: 'Please add a customer before creating an order.',
+        });
+        return;
+    }
     const newOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
       name: tableName || orderType,
       cart: [],
       discount: 0,
       serviceCharge: 0,
-      customer: walkInCustomer,
+      customer: customers[0], // Default to the first available customer
       orderType,
       tableName,
       steward,
@@ -368,8 +404,65 @@ export default function POSPage() {
     }
 
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
-    const costValue = currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0);
+  
+    // UPDATE LOGIC (PUT)
+    if (currentOrder.originalInvoiceNumber) {
+        const itemsToUpdatePayload = currentOrder.cart
+            .map(item => {
+                const newItemQty = item.quantity;
+                const originalQty = item.originalQuantity || 0;
+                const qtyToAdd = newItemQty - originalQty;
+                
+                if (qtyToAdd > 0) {
+                    return {
+                        user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
+                        product_id: parseInt(item.product.id, 10),
+                        item_price: item.product.price,
+                        item_discount: item.itemDiscount || 0,
+                        quantity: qtyToAdd,
+                        customer_id: parseInt(currentOrder.customer.customer_id, 10),
+                        table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
+                        cost_price: item.product.costPrice || 0,
+                        product_variant_id: parseInt(item.product.variant.id, 10),
+                    };
+                }
+                return null;
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
 
+        const updatePayload = {
+            grand_total: orderTotals.total,
+            discount_amount: totalDiscount,
+            service_charge: orderTotals.serviceCharge,
+            remark: `${currentOrder.orderType} order (updated)`,
+            table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
+            order_ready_status: 1,
+            items: itemsToUpdatePayload,
+        };
+      
+        const url = `https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${currentOrder.originalInvoiceNumber}`;
+  
+        try {
+            const response = await fetcher(url, {
+            method: 'PUT',
+            body: JSON.stringify(updatePayload),
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Failed to update held invoice.');
+    
+            toast({ title: 'Order Updated!', description: `Held order ${currentOrder.originalInvoiceNumber} has been updated.` });
+            if(itemsToUpdatePayload.length > 0) {
+                window.open(`/pos/kot/${currentOrder.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
+            }
+            onClearCart(currentOrderId!);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast({ variant: 'destructive', title: 'Error Updating Order', description: errorMessage });
+        }
+        return;
+    }
+  
+    // CREATE LOGIC (POST)
     const payload = {
         invoice_date: format(new Date(), 'yyyy-MM-dd'),
         inv_amount: orderTotals.subtotal, 
@@ -388,13 +481,13 @@ export default function POSPage() {
         created_by: currentCashier.name, 
         is_active: 1, 
         steward_id: currentOrder.steward?.id || "N/A",
-        cost_value: costValue, 
+        cost_value: currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0),
         remark: `${currentOrder.orderType} order`, 
         ref_hold: "direct",
         company_id: String(company_id),
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
-            user_id: parseInt(currentCashier.id, 10),
+            user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
             product_id: parseInt(item.product.id, 10), 
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0, 
@@ -417,9 +510,9 @@ export default function POSPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || 'Failed to send to kitchen.');
       
-      toast({ title: 'KOT Sent!', description: `Order sent to the kitchen.`, icon: <ChefHat className="h-6 w-6 text-green-500" /> });
+      toast({ title: 'KOT Sent!', description: 'Order sent to the kitchen.', icon: <ChefHat className="h-6 w-6 text-green-500" /> });
       
-      window.open(`/pos/kot/${result.invoice_id}?company_id=${company_id}`, '_blank');
+      window.open(`/pos/kot/${result.invoice_number}?company_id=${company_id}`, '_blank');
       
       onClearCart(currentOrderId!);
     } catch (error) {
@@ -428,7 +521,7 @@ export default function POSPage() {
     }
   };
 
-  const addToCart = async (product: PosProduct, quantity: number, discount: number, batch: StockInfo) => {
+  const addToCart = async (product: PosProduct, quantity: number, discount: number, batch: StockInfo, imageUrl?: string) => {
     if (!currentOrderId) {
       toast({
         title: 'No Active Order',
@@ -438,20 +531,29 @@ export default function POSPage() {
       setSelectedProduct(null);
       return;
     }
-    const newCartItem: CartItem = { uniqueId: `${product.variant.id}-${batch.patch_code}-${Date.now()}`, product, quantity, itemDiscount: discount, batch };
+    
     setActiveOrders((prevOrders) =>
       prevOrders.map((order) => {
         if (order.id !== currentOrderId) return order;
+        
         const existingItemIndex = order.cart.findIndex(item => item.product.variant.id === product.variant.id && item.batch.patch_code === batch.patch_code);
         let newCart;
+        
         if (existingItemIndex > -1) {
             newCart = [...order.cart];
             newCart[existingItemIndex] = {
                 ...newCart[existingItemIndex],
                 quantity: newCart[existingItemIndex].quantity + quantity,
-                itemDiscount: (newCart[existingItemIndex].itemDiscount || 0) + discount
+                itemDiscount: (newCart[existingItemIndex].itemDiscount || 0) + discount,
             };
         } else {
+            const newCartItem: CartItem = { 
+                uniqueId: `${product.variant.id}-${batch.patch_code}-${Date.now()}`, 
+                product: {...product, imageUrl }, 
+                quantity, 
+                itemDiscount: discount, 
+                batch 
+            };
             newCart = [...order.cart, newCartItem];
         }
         return { ...order, cart: newCart };
@@ -473,31 +575,37 @@ export default function POSPage() {
         const product = findPosProduct(item.product_variant_id);
         if (!product) return null;
 
-        // Fetch stock for this specific item to get batch info.
-        // This is a simplification; a real scenario might need more robust batch tracking.
         if (!currentLocation || !company_id) return null;
-        const response = await fetcher(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}&location_id=${currentLocation.location_id}`);
-        if (!response.ok) return null;
-        const stockData = await response.json();
-        const firstAvailableBatch = stockData.grouped_by_expire_date.find((b: StockInfo) => parseFloat(b.stock_balance) > 0);
+        // The batch for a previously held item is not directly available, so we create a placeholder.
+        // The key is to know this item came from a held order to track quantity changes.
+        const placeholderBatch: StockInfo = {
+            product_id: item.product_id.toString(),
+            product_variant_id: item.product_variant_id || item.product_id.toString(),
+            patch_code: 'HELD', // Use a placeholder batch code
+            expire_date: 'N/A',
+            total_in: '0',
+            total_out: '0',
+            stock_balance: '9999', // Assume enough stock to load, validation is on adding more
+        };
         
-        if (!firstAvailableBatch) {
-             toast({ variant: 'destructive', title: 'Stock Error', description: `No available stock/batch for ${product.variantName}. Cannot load item.` });
-            return null;
-        }
-
         return {
-            uniqueId: `${product.variant.id}-${firstAvailableBatch.patch_code}-${Date.now()}`,
+            uniqueId: `${product.variant.id}-HELD-${item.id}`,
             product: product,
             quantity: parseFloat(String(item.quantity)),
             itemDiscount: parseFloat(String(item.item_discount)),
-            batch: firstAvailableBatch,
+            batch: placeholderBatch,
+            originalItemId: item.id,
+            originalQuantity: parseFloat(String(item.quantity)),
         };
     });
 
     const loadedCartItems = (await Promise.all(cartItemsPromises)).filter((item): item is CartItem => item !== null);
     
-    const customer = customers.find(c => c.customer_id === invoice.customer_code) || walkInCustomer;
+    const customer = customers.find(c => c.customer_id === invoice.customer_code);
+    if (!customer) {
+        toast({variant: 'destructive', title: 'Customer not found', description: 'The customer for this held order could not be found.'});
+        return;
+    }
 
     const newActiveOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
@@ -659,19 +767,24 @@ export default function POSPage() {
                         <NotebookPen className="h-16 w-16 text-muted-foreground mx-auto" />
                         <h3 className="mt-4 text-2xl font-semibold">No Active Order</h3>
                         <p className="text-muted-foreground mt-2 max-w-sm">Select a held order from the list, or create a new order to begin adding items to the cart.</p>
-                        <Button onClick={() => setNewOrderDialogOpen(true)} className="mt-6">
-                            <Plus className="mr-2 h-4 w-4" /> Create New Order
-                        </Button>
+                        <div className="flex gap-4 mt-6">
+                            <Button onClick={() => setHeldOrderDetailsDialogOpen(true)} variant="outline" className="flex-1">
+                                <NotebookPen className="mr-2 h-4 w-4" /> View Held Orders
+                            </Button>
+                            <Button onClick={() => setNewOrderDialogOpen(true)} className="flex-1">
+                                <Plus className="mr-2 h-4 w-4" /> Create New Order
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}
             <div className="flex-1 flex flex-col">
                 <div className="bg-card border-b border-border px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
-                         <Button variant="outline" size="sm" onClick={() => setTodaySalesDialogOpen(true)}><LineChart className="mr-2 h-4 w-4" />Sales</Button>
-                         <Button variant="outline" size="sm" onClick={() => setPendingInvoicesDialogOpen(true)}><Receipt className="mr-2 h-4 w-4" />Pending Invoices</Button>
-                        <Button variant="outline" size="sm" onClick={() => setReturnDialogOpen(true)}><Undo2 className="mr-2 h-4 w-4" />Return</Button>
-                        <Button variant="outline" size="sm" onClick={() => setRefundDialogOpen(true)}><Banknote className="mr-2 h-4 w-4" />Refund</Button>
+                         <Button variant="outline" size="sm" onClick={() => setTodaySalesDialogOpen(true)}><LineChart className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Sales</span></Button>
+                         <Button variant="outline" size="sm" onClick={() => setPendingInvoicesDialogOpen(true)}><Receipt className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Pending</span></Button>
+                        <Button variant="outline" size="sm" onClick={() => setReturnDialogOpen(true)}><Undo2 className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Return</span></Button>
+                        <Button variant="outline" size="sm" onClick={() => setRefundDialogOpen(true)}><Banknote className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Refund</span></Button>
                     </div>
                     <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={() => setHeldOrderDetailsDialogOpen(true)}><NotebookPen className="mr-2 h-4 w-4" />Held Orders</Button>
@@ -732,3 +845,7 @@ export default function POSPage() {
     </>
   );
 }
+
+    
+
+    
