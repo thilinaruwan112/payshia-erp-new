@@ -19,6 +19,7 @@ async function getPlans(): Promise<Plan[]> {
     try {
         // In a real app, this would be a fetch call to your server
         // const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/plans`);
+
         // const data = await response.json();
         // return data;
         

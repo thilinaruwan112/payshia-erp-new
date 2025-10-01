@@ -281,6 +281,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
 
     try {
         const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices`, {
+
             method: 'POST',
             body: JSON.stringify(payload)
         });

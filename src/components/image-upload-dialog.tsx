@@ -142,7 +142,9 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     formData.append('images[]', fileToUpload);
 
     try {
+
       const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/upload-multiple`, {
+
         method: 'POST',
         body: formData,
         headers: new Headers(), // Reset headers so fetch can set multipart/form-data

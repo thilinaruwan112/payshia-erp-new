@@ -85,6 +85,7 @@ export default function NewJobSheetPage() {
     }
     fetchData('/brands/company', setBrands, 'brands');
     fetchData('/master-models/company', setModels, 'models');
+
   }, [company_id]);
 
   const handleWarrantySearch = () => {

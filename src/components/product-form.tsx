@@ -338,6 +338,7 @@ export function ProductForm({ product }: ProductFormProps) {
     };
     
     const url = product ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/${product.id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/products`;
+
     const method = product ? 'PUT' : 'POST';
 
     try {
@@ -372,7 +373,9 @@ export function ProductForm({ product }: ProductFormProps) {
               product_id: parseInt(productId, 10),
               value: cf.value
             };
+
             await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-field-products`, {
+
               method: 'POST',
               body: JSON.stringify(customFieldPayload),
             });

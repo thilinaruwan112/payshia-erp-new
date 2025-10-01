@@ -190,7 +190,9 @@ export function ProductionNoteForm() {
     };
     
     try {
+
         const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/production-notes`, {
+
             method: 'POST',
             body: JSON.stringify(payload),
         });

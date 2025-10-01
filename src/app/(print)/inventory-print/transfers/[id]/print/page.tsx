@@ -47,9 +47,11 @@ export function TransferPrintView({ id }: PrintViewProps) {
       try {
         const [transferResponse, locationsResponse, productsResponse, variantsResponse] = await Promise.all([
            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-transfers/${id}`),
+
            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations`),
            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
+
         ]);
         
         if (!transferResponse.ok) {
