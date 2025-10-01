@@ -46,7 +46,7 @@ export default function CompanyProfilePage() {
     async function fetchCompanyData() {
         setIsLoading(true);
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/companies/${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${company_id}`);
             if (!response.ok) throw new Error('Failed to fetch company data');
             const data = await response.json();
             setCompany(data);

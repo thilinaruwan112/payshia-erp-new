@@ -46,10 +46,10 @@ export function TransferPrintView({ id }: PrintViewProps) {
       setIsLoading(true);
       try {
         const [transferResponse, locationsResponse, productsResponse, variantsResponse] = await Promise.all([
-           fetcher(`https://server-erp.payshia.com/stock-transfers/${id}`),
-           fetcher('https://server-erp.payshia.com/locations'),
-           fetcher('https://server-erp.payshia.com/products'),
-           fetcher('https://server-erp.payshia.com/product-variants'),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-transfers/${id}`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
         ]);
         
         if (!transferResponse.ok) {
@@ -60,7 +60,7 @@ export function TransferPrintView({ id }: PrintViewProps) {
         setTransfer(transferData);
 
         if (transferData.company_id) {
-             const companyRes = await fetcher(`https://server-erp.payshia.com/companies/${transferData.company_id}`);
+             const companyRes = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${transferData.company_id}`);
             if(companyRes.ok) setCompany(await companyRes.json());
         }
 

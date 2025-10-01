@@ -397,7 +397,7 @@ export function OrderPanel({
     };
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/pos-invoices', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices`, {
             method: 'POST',
             body: JSON.stringify(payload),
         });
@@ -457,7 +457,7 @@ export function OrderPanel({
     };
     
     const dataString = encodeURIComponent(JSON.stringify(receiptData));
-    window.open(`/pos/guest-receipt/print?data=${dataString}`, '_blank');
+    window.open(`/pos/guest-receipt/[id]?data=${dataString}`.replace('[id]', 'print'), '_blank');
   };
 
   return (
