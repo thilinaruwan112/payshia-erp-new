@@ -121,25 +121,30 @@ export type Order = {
   items: { sku: string; quantity: number }[];
 };
 
+export type Customer = {
+  customer_id: string;
+  customer_first_name: string;
+  customer_last_name: string;
+  phone_number: string;
+  address_line1?: string;
+  address_line2?: string;
+  city_id?: string;
+  email_address?: string;
+  loyaltyPoints?: number;
+};
+
+
 export type User = {
   id: string;
-  customer_id: string;
-  name: string;
-  customer_first_name?: string;
-  customer_last_name?: string;
   first_name?: string;
   last_name?: string;
   user_name?: string;
-  email_address?: string;
-  role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer' | 'Cashier' | string;
+  email?: string;
+  role: 'Admin' | 'Manager' | 'Sales Agent' | 'Cashier' | string;
   acc_type?: string;
   avatar?: string;
-  loyaltyPoints?: number;
-  email?: string;
   phone?: string;
   address?: string;
-  address_line1?: string;
-  city_id?: string;
 };
 
 export type Collection = {
@@ -407,7 +412,7 @@ export type Invoice = {
     ref_hold: string | null;
     company_id: string;
     items?: InvoiceItem[];
-    customer?: User; // Can be added if the new endpoint returns it
+    customer?: Customer; // Can be added if the new endpoint returns it
 };
 
 export type PaymentReceipt = {
@@ -469,7 +474,7 @@ export type ActiveOrder = {
   cart: CartItem[];
   discount: number;
   serviceCharge: number;
-  customer: User;
+  customer: Customer;
   orderType: 'Take Away' | 'Retail' | 'Delivery' | 'Dine-In';
   tableName?: string;
   steward?: User;

@@ -1,9 +1,10 @@
 
+
       'use client';
 
 import React from 'react';
 import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
-import type { User, Table as TableType, Location, Invoice } from '@/lib/types';
+import type { User, Table as TableType, Location, Invoice, Customer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -64,8 +65,8 @@ interface OrderPanelProps {
   onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
   availableTables: TableType[];
   availableStewards: User[];
-  customers: User[];
-  onUpdateCustomer: (orderId: string, customer: User) => void;
+  customers: Customer[];
+  onUpdateCustomer: (orderId: string, customer: Customer) => void;
 }
 
 type Receipt = {
@@ -430,7 +431,7 @@ export function OrderPanel({
     }
   };
   
-  const handleCustomerCreated = (newCustomer: User) => {
+  const handleCustomerCreated = (newCustomer: Customer) => {
     onUpdateCustomer(orderId, newCustomer);
   }
 
@@ -500,7 +501,7 @@ export function OrderPanel({
                     </SelectTrigger>
                     <SelectContent>
                         {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
+                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>

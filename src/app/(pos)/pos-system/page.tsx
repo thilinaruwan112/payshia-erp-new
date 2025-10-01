@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem, Customer } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -48,13 +48,11 @@ interface CollectionProductLink {
     product_id: string;
 }
 
-const walkInCustomer: User = {
-    id: 'walk-in',
+const walkInCustomer: Customer = {
     customer_id: 'walk-in',
-    name: 'Walk-in Customer',
     customer_first_name: 'Walk-in',
     customer_last_name: 'Customer',
-    role: 'Customer',
+    phone_number: '',
     loyaltyPoints: 0,
 };
 
@@ -63,7 +61,7 @@ export default function POSPage() {
   const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [customers, setCustomers] = useState<User[]>([walkInCustomer]);
+  const [customers, setCustomers] = useState<Customer[]>([walkInCustomer]);
   const [tables, setTables] = useState<TableType[]>([]);
   const [stewards, setStewards] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -149,7 +147,6 @@ export default function POSPage() {
     if (userId && userName) {
       setCurrentCashier({
         id: userId,
-        customer_id: userId,
         name: userName,
         role: 'Cashier',
         avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`,
@@ -180,7 +177,7 @@ export default function POSPage() {
             const productsData: { products: ProductWithVariantsResponse[] } = await productsResponse.json();
             const collectionsData: Collection[] = await collectionsResponse.json();
             const brandsData: Brand[] = await brandsResponse.json();
-            const customersData: User[] = await customersResponse.json();
+            const customersData: Customer[] = await customersResponse.json();
             const tablesData: TableType[] = await tablesResponse.json();
             const stewardsResult = await stewardsResponse.json();
             const stewardsData = stewardsResult.data || [];
@@ -188,21 +185,12 @@ export default function POSPage() {
             setTables(tablesData || []);
              setStewards((stewardsData || []).map((s: any) => ({ 
                 id: s.id,
-                customer_id: s.id,
                 name: `${s.first_name} ${s.last_name}`, 
                 role: s.acc_type, 
                 avatar: s.img_path, 
-                customer_first_name: s.first_name,
-                customer_last_name: s.last_name,
              })));
             
-             const formattedCustomers = (customersData || []).map(c => ({
-                ...c,
-                id: c.customer_id,
-                name: `${c.customer_first_name} ${c.customer_last_name}`,
-                role: 'Customer',
-            }));
-            setCustomers([walkInCustomer, ...formattedCustomers]);
+            setCustomers([walkInCustomer, ...customersData]);
 
             setCollections(collectionsData || []);
             setBrands(brandsData || []);
@@ -392,7 +380,7 @@ export default function POSPage() {
       cart: [],
       discount: 0,
       serviceCharge: 0,
-      customer: walkInCustomer, // Default to Walk-in Customer
+      customer: walkInCustomer, 
       orderType,
       tableName,
       steward,
@@ -689,7 +677,7 @@ export default function POSPage() {
       }));
   };
   
-  const updateCustomer = (orderId: string, customer: User) => {
+  const updateCustomer = (orderId: string, customer: Customer) => {
     setActiveOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, customer } : order));
   };
 
