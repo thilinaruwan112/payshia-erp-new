@@ -187,16 +187,16 @@ export default function POSPage() {
             
             setTables(tablesData || []);
              setStewards((stewardsData || []).map((s: any) => ({ 
-                id: s.id, 
+                id: s.id,
+                customer_id: s.id,
                 name: `${s.first_name} ${s.last_name}`, 
                 role: s.acc_type, 
                 avatar: s.img_path, 
-                customer_id: s.id,
                 customer_first_name: s.first_name,
                 customer_last_name: s.last_name,
              })));
             
-            const formattedCustomers = (customersData || []).map(c => ({
+             const formattedCustomers = (customersData || []).map(c => ({
                 ...c,
                 id: c.customer_id,
                 name: `${c.customer_first_name} ${c.customer_last_name}`,
@@ -863,7 +863,3 @@ export default function POSPage() {
     </>
   );
 }
-
-    
-
-    
