@@ -386,14 +386,6 @@ export default function POSPage() {
   const currentOrder = useMemo(() => activeOrders.find((order) => order.id === currentOrderId), [activeOrders, currentOrderId]);
   
   const createNewOrder = (orderType: ActiveOrder['orderType'], steward?: User, tableName?: string) => {
-    if (customers.length === 0) {
-        toast({
-            variant: 'destructive',
-            title: 'No Customer Available',
-            description: 'Please add a customer before creating an order. The "Walk-in" customer should be available by default.',
-        });
-        return;
-    }
     const newOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
       name: tableName || orderType,
@@ -863,3 +855,7 @@ export default function POSPage() {
     </>
   );
 }
+
+    
+
+    

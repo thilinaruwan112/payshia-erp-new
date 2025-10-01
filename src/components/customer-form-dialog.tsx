@@ -109,11 +109,18 @@ export function CustomerFormDialog({ children, onCustomerCreated }: CustomerForm
         throw new Error(result.message || 'Something went wrong');
       }
 
+      const newCustomer: User = {
+        ...result,
+        id: result.customer_id,
+        name: `${result.customer_first_name} ${result.customer_last_name}`,
+        role: 'Customer',
+      };
+
       toast({
         title: "Customer Created",
         description: `The customer "${data.customer_first_name} ${data.customer_last_name}" has been saved.`,
       });
-      onCustomerCreated(result);
+      onCustomerCreated(newCustomer);
       setIsOpen(false);
       form.reset();
       router.refresh();
