@@ -491,8 +491,8 @@ export function OrderPanel({
       <div className='p-4 border-b border-border'>
         <div className='flex items-center gap-3'>
             <div className="flex-1">
-                <Select value={customer.customer_id} onValueChange={(customerId) => {
-                    const newCustomer = customers.find(c => c.customer_id === customerId);
+                <Select value={customer.id} onValueChange={(customerId) => {
+                    const newCustomer = customers.find(c => c.id === customerId);
                     if (newCustomer) onUpdateCustomer(orderId, newCustomer);
                 }}>
                     <SelectTrigger>
@@ -500,7 +500,7 @@ export function OrderPanel({
                     </SelectTrigger>
                     <SelectContent>
                         {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
