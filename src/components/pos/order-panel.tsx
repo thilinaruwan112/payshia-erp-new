@@ -1,5 +1,4 @@
 
-
       'use client';
 
 import React from 'react';
@@ -344,11 +343,11 @@ export function OrderPanel({
       description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
     });
 
-    if (!currentLocation || !company_id) {
+    if (!currentLocation || !company_id || !customer) {
         toast({
             variant: "destructive",
-            title: "Location or Company not selected",
-            description: "Please select a location and ensure company is set."
+            title: "Location, Company, or Customer not selected",
+            description: "Please select all required fields."
         });
         return;
     }
@@ -492,10 +491,15 @@ export function OrderPanel({
       <div className='p-4 border-b border-border'>
         <div className='flex items-center gap-3'>
             <div className="flex-1">
-                <Select value={customer.customer_id} onValueChange={(customerId) => {
-                    const newCustomer = customers.find(c => c.customer_id === customerId);
+                <Select
+                  value={customer?.customer_id || ''}
+                  onValueChange={(customerId) => {
+                    const newCustomer = customers.find(
+                      (c) => c.customer_id === customerId
+                    );
                     if (newCustomer) onUpdateCustomer(orderId, newCustomer);
-                }}>
+                  }}
+                >
                     <SelectTrigger>
                         <SelectValue placeholder="Select a customer" />
                     </SelectTrigger>
@@ -516,7 +520,7 @@ export function OrderPanel({
             <p className="text-muted-foreground">Loyalty Points</p>
              <div className='flex items-center gap-1.5 text-yellow-500'>
                 <Star className='h-4 w-4' />
-                <span className='font-bold'>{customer.loyaltyPoints || 0}</span>
+                <span className='font-bold'>{customer?.loyaltyPoints || 0}</span>
             </div>
         </div>
       </div>
