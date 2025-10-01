@@ -52,9 +52,9 @@ export default function SupplierDashboardPage() {
         setIsLoading(true);
         try {
             const [suppliersRes, poRes, grnRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/grn/company/${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/filter/?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn/company/${company_id}`),
             ]);
 
             if (!suppliersRes.ok || !poRes.ok || !grnRes.ok) {

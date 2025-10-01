@@ -47,7 +47,7 @@ export function ReceiptView({ id }: ReceiptViewProps) {
         if (!id) return;
         setIsLoading(true);
         try {
-            const receiptResponse = await fetcher(`https://server-erp.payshia.com/receipts/${id}`);
+            const receiptResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/receipts/${id}`);
             if (!receiptResponse.ok) {
                 if (receiptResponse.status === 404) notFound();
                 throw new Error('Failed to fetch receipt data');
@@ -56,8 +56,8 @@ export function ReceiptView({ id }: ReceiptViewProps) {
             setReceipt(receiptData);
 
             const [customerResponse, invoiceResponse] = await Promise.all([
-                 fetcher(`https://server-erp.payshia.com/customers/${receiptData.customer_id}`),
-                 fetcher(`https://server-erp.payshia.com/invoices/full/${receiptData.ref_id}`)
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${receiptData.customer_id}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/full/${receiptData.ref_id}`)
             ]);
             
              if (customerResponse.ok) {

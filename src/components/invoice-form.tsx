@@ -104,7 +104,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         if (!company_id) return;
         setIsLoading(true);
          try {
-            const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
@@ -195,7 +195,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const handleProductSelect = async (productId: string, variantId: string, index: number) => {
     if (!productId || !variantId || !company_id || !currentLocation) return;
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${productId}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${productId}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
         if (!response.ok) {
             throw new Error("Failed to fetch stock");
         }
@@ -280,7 +280,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     };
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/invoices', {
+        const response = await fetcher('${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices', {
             method: 'POST',
             body: JSON.stringify(payload)
         });

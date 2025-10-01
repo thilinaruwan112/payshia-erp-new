@@ -90,7 +90,7 @@ export function ProductionNoteForm() {
         if (!company_id) return;
         setIsLoading(true);
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/products/get/filter/recipe-type?recipe_type=item_recipe&company_id=${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/filter/recipe-type?recipe_type=item_recipe&company_id=${company_id}`);
             if (!response.ok) throw new Error("Failed to fetch products");
             const data = await response.json();
             setProducts(data.products || []);
@@ -115,7 +115,7 @@ export function ProductionNoteForm() {
         if (!selectedProductInfo) return;
 
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/product-recipes/get/filter?company_id=${company_id}&main_product=${selectedProductInfo.productId}&product_variant_id=${finishedGoodId}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes/get/filter?company_id=${company_id}&main_product=${selectedProductInfo.productId}&product_variant_id=${finishedGoodId}`);
             if (!response.ok) throw new Error('Failed to fetch recipe for the selected product.');
             const data = await response.json();
             setSelectedRecipeItems(data.data || []);
@@ -190,7 +190,7 @@ export function ProductionNoteForm() {
     };
     
     try {
-        const response = await fetcher('https://server-erp.payshia.com/production-notes', {
+        const response = await fetcher('${process.env.NEXT_PUBLIC_API_BASE_URL}/production-notes', {
             method: 'POST',
             body: JSON.stringify(payload),
         });

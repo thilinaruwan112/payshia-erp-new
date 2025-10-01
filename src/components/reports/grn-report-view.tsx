@@ -49,7 +49,7 @@ export const GrnReportView = ({ grns }: { grns: GoodsReceivedNote[] }) => {
         async function fetchSuppliers() {
             if (!company_id) return;
             try {
-                const response = await fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`);
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`);
                 if (response.ok) {
                     setSuppliers(await response.json());
                 }

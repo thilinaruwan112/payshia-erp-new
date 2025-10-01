@@ -56,7 +56,7 @@ export default function SalesDashboardPage() {
         setIsLoading(true);
         try {
             const [invoicesRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/invoices?company_id=${company_id}`),
+                fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices?company_id=${company_id}`),
             ]);
             if (!invoicesRes.ok) throw new Error('Failed to fetch invoices');
 

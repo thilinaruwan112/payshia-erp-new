@@ -397,7 +397,7 @@ export function OrderPanel({
     };
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/pos-invoices', {
+        const response = await fetcher('${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices', {
             method: 'POST',
             body: JSON.stringify(payload),
         });

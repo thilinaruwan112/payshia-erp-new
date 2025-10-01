@@ -50,7 +50,7 @@ export default function SuppliersPage() {
       }
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch suppliers');
         }
@@ -74,7 +74,7 @@ export default function SuppliersPage() {
     if (!selectedSupplier) return;
 
     try {
-      const response = await fetcher(`https://server-erp.payshia.com/suppliers/${selectedSupplier.supplier_id}`, {
+      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/${selectedSupplier.supplier_id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
