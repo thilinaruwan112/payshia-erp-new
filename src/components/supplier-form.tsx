@@ -77,8 +77,8 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
         return;
     }
     setIsLoading(true);
+    const url = supplier ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/${supplier.supplier_id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers`;
 
-    const url = supplier ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/${supplier.supplier_id}` : '${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers';
     const method = supplier ? 'PUT' : 'POST';
     
     const payload = { ...data, is_active: 1, created_by: 'admin', company_id: company_id };

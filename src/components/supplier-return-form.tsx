@@ -18,6 +18,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -106,7 +107,9 @@ export function SupplierReturnForm() {
         try {
             const [grnResponse, suppliersResponse, productsResponse] = await Promise.all([
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn/${grnId}`),
-                 fetcher('${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers'),
+
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers`),
+
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`)
             ]);
             
@@ -163,7 +166,8 @@ export function SupplierReturnForm() {
             reason: item.reason,
             company_id: company_id,
         };
-        return fetcher('${process.env.NEXT_PUBLIC_API_BASE_URL}/grn-returns', {
+        return fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn-returns`, {
+
             method: 'POST',
             body: JSON.stringify(payload),
         });

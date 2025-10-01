@@ -35,12 +35,9 @@ export const SalesSummaryReportView = ({ invoices, customers }: { invoices: Invo
 
     const totals = useMemo(() => {
         return filteredInvoices.reduce((acc, inv) => {
-            acc.subTotal += parseFloat(inv.inv_amount || '0');
-            acc.discount += parseFloat(inv.discount_amount || '0');
-            acc.charge += parseFloat(inv.service_charge || '0');
             acc.grandTotal += parseFloat(inv.grand_total || '0');
             return acc;
-        }, { subTotal: 0, discount: 0, charge: 0, grandTotal: 0, return: 0 });
+        }, { grandTotal: 0 });
     }, [filteredInvoices]);
 
     return (

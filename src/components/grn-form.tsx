@@ -133,8 +133,10 @@ export function GrnForm() {
             const [poResponse, suppliersResponse, productsResponse, variantsResponse, locationsResponse] = await Promise.all([
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/${poId}`),
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`),
-                 fetcher('${process.env.NEXT_PUBLIC_API_BASE_URL}/products'),
-                 fetcher('${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants'),
+
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
+
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/company?company_id=${company_id}`)
             ]);
             

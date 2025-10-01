@@ -75,7 +75,7 @@ export default function NewJobSheetPage() {
     async function fetchData(url: string, setData: Function, type: string) {
       if (!company_id) return;
       try {
-        const response = await fetch(`${url}?company_id=${company_id}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}${url}?company_id=${company_id}`);
         if (response.ok) {
           setData(await response.json());
         }
@@ -83,8 +83,9 @@ export default function NewJobSheetPage() {
         console.error(`Failed to fetch ${type}:`, error);
       }
     }
-    fetchData('${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company', setBrands, 'brands');
-    fetchData('${process.env.NEXT_PUBLIC_API_BASE_URL}/master-models/company', setModels, 'models');
+    fetchData('/brands/company', setBrands, 'brands');
+    fetchData('/master-models/company', setModels, 'models');
+
   }, [company_id]);
 
   const handleWarrantySearch = () => {

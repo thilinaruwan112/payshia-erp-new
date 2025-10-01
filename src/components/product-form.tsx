@@ -337,7 +337,8 @@ export function ProductForm({ product }: ProductFormProps) {
       })),
     };
     
-    const url = product ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/${product.id}` : '${process.env.NEXT_PUBLIC_API_BASE_URL}/products';
+    const url = product ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/${product.id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/products`;
+
     const method = product ? 'PUT' : 'POST';
 
     try {
@@ -372,7 +373,9 @@ export function ProductForm({ product }: ProductFormProps) {
               product_id: parseInt(productId, 10),
               value: cf.value
             };
-            await fetcher('${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-field-products', {
+
+            await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-field-products`, {
+
               method: 'POST',
               body: JSON.stringify(customFieldPayload),
             });
@@ -603,7 +606,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                         <h3 className="text-sm font-medium mb-2 text-muted-foreground">Front Image</h3>
                                         <div className="relative w-full max-w-xs">
                                             <Image
-                                                src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}`}
+                                                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${frontImage.img_url}`}
                                                 alt={product?.name || 'Front image'}
                                                 width={400}
                                                 height={400}
@@ -629,7 +632,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                             {otherImages.map(image => (
                                                 <div key={image.id} className="relative group">
                                                     <Image
-                                                        src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${image.img_url}`}
+                                                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${image.img_url}`}
                                                         alt={product?.name || 'Product image'}
                                                         width={150}
                                                         height={150}
