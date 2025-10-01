@@ -131,11 +131,11 @@ export function GrnForm() {
 
         try {
             const [poResponse, suppliersResponse, productsResponse, variantsResponse, locationsResponse] = await Promise.all([
-                 fetcher(`https://server-erp.payshia.com/purchase-orders/${poId}`),
-                 fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
-                 fetcher('https://server-erp.payshia.com/products'),
-                 fetcher('https://server-erp.payshia.com/product-variants'),
-                 fetcher(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`)
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/${poId}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/company?company_id=${company_id}`)
             ]);
             
             if (!poResponse.ok) throw new Error('Failed to fetch PO data');
@@ -162,7 +162,7 @@ export function GrnForm() {
                     const product = productsData.find(p => p.id === item.product_id);
                     const variant = variantsData.find(v => v.id === item.product_variant_id);
 
-                    const receivedQtyResponse = await fetcher(`https://server-erp.payshia.com/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${poData.po_number}&company_id=${company_id}`);
+                    const receivedQtyResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${poData.po_number}&company_id=${company_id}`);
                     let alreadyReceived = 0;
                     if(receivedQtyResponse.ok) {
                         const receivedQtyData = await receivedQtyResponse.json();
