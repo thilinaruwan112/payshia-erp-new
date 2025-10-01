@@ -99,6 +99,7 @@ const productFormSchema = z.object({
   categoryId: z.string().min(1, { message: "Please select a category." }),
   brandId: z.string().optional(),
   recipeType: z.enum(["standard", "a_la_carte", "item_recipe"]).optional(),
+  item_type: z.enum(["raw", "menu", "both"]).optional(),
   variants: z.array(variantSchema).min(1, { message: "At least one variant is required." }),
   supplier: z.array(z.string()).optional(),
   customFields: z.array(customFieldSchema).optional(),
@@ -202,6 +203,7 @@ export function ProductForm({ product }: ProductFormProps) {
     categoryId: product?.category_id || "",
     brandId: product?.brand_id || "",
     recipeType: product?.recipe_type || "standard",
+    item_type: product?.item_type || "both",
     variants: product?.variants?.map(v => ({
         id: v.id,
         sku: v.sku,
@@ -301,7 +303,6 @@ export function ProductForm({ product }: ProductFormProps) {
       category: selectedCategory?.name || "",
       category_id: parseInt(data.categoryId, 10),
       brand_id: data.brandId ? parseInt(data.brandId, 10) : undefined,
-      // Main price is now optional
       price: data.variants[0]?.price || 0,
       cost_price: data.variants[0]?.cost_price || 0,
       min_price: data.variants[0]?.min_price || 0,
@@ -316,7 +317,7 @@ export function ProductForm({ product }: ProductFormProps) {
       company_id: company_id,
       lead_time_days: 0,
       reorder_level_qty: 0,
-      item_type: "finished_good",
+      item_type: data.item_type || "both",
       base_location: data.base_location,
       product_image_url: "",
       recipe_type: data.recipeType === 'a_la_carte' ? 'ala cart' : data.recipeType || 'standard',
@@ -920,6 +921,28 @@ export function ProductForm({ product }: ProductFormProps) {
                                     <FormMessage />
                                 </FormItem>
                             )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="item_type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Item Type</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select an item type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="raw">Raw</SelectItem>
+                                  <SelectItem value="menu">Menu</SelectItem>
+                                  <SelectItem value="both">Both</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
                         <div className="space-y-2">
                            <FormField
