@@ -64,10 +64,10 @@ export function GrnView({ id }: GrnViewProps) {
       setIsLoading(true);
       try {
         const [grnResponse, suppliersResponse, productsResponse, variantsResponse] = await Promise.all([
-           fetcher(`https://server-erp.payshia.com/grn/${id}`),
-           fetcher('https://server-erp.payshia.com/suppliers'),
-           fetcher('https://server-erp.payshia.com/products'),
-           fetcher('https://server-erp.payshia.com/product-variants'),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn/${id}`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
         ]);
         
         if (!grnResponse.ok) {

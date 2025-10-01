@@ -25,8 +25,8 @@ export default function NewExpensePage() {
         setIsLoading(true);
         try {
             const [accountsResponse, suppliersResponse] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`)
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/chart-of-accounts/company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`)
             ]);
             if (!accountsResponse.ok) throw new Error('Failed to fetch accounts');
             if (!suppliersResponse.ok) throw new Error('Failed to fetch suppliers');

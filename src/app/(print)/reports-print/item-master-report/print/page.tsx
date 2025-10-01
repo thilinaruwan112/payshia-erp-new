@@ -19,14 +19,14 @@ interface Company {
     company_telephone: string;
 }
 
-interface ProductWithVariants {
+interface ProductWithApiResponse {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
 }
 
 function PrintViewContent() {
   const searchParams = useSearchParams();
-  const [products, setProducts] = useState<ProductWithVariants[]>([]);
+  const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -43,12 +43,12 @@ function PrintViewContent() {
 
         try {
              const [productsRes, companyRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/products/with-variants?company_id=${companyId}`),
-                fetcher(`https://server-erp.payshia.com/companies/${companyId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${companyId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
             ]);
 
             if (!productsRes.ok) throw new Error('Failed to fetch products');
-            const productData = await productsRes.json();
+            const productData: { products: ProductWithApiResponse[] } = await productsRes.json();
             setProducts(productData.products || []);
             if (companyRes.ok) setCompany(await companyRes.json());
 
@@ -72,7 +72,7 @@ function PrintViewContent() {
     return <div className="p-8"><Skeleton className="h-[800px] w-full" /></div>;
   }
   
-  const allVariants = products.flatMap(p => p.variants.map(v => ({ ...v, productName: p.product.name, category: p.product.category, brand: 'N/A' })));
+  const allVariants = products.flatMap(p => (p.variants || []).map(v => ({ ...v.variant, productName: p.product.name, category: p.product.category, brand: 'N/A' })));
 
   return (
     <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">

@@ -38,8 +38,8 @@ function PrintViewContent() {
 
         try {
              const [customersRes, companyRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/customers/company/filter/?company_id=${companyId}`),
-                fetcher(`https://server-erp.payshia.com/companies/${companyId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${companyId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
             ]);
 
             if (!customersRes.ok) throw new Error('Failed to fetch customers');

@@ -126,8 +126,8 @@ export function UserManagement() {
       setIsLoading(true);
       try {
         const [companyUsersRes, allUsersRes] = await Promise.all([
-          fetcher('https://server-erp.payshia.com/company-users'),
-          fetcher('https://server-erp.payshia.com/users'),
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users`),
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`),
         ]);
 
         if (!companyUsersRes.ok) throw new Error('Failed to fetch company user links');

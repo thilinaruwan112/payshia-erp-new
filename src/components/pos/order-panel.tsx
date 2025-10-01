@@ -3,7 +3,7 @@
 
 import React from 'react';
 import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
-import type { User, Table as TableType, Location, Invoice } from '@/lib/types';
+import type { User, Table as TableType, Location, Invoice, Customer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -64,8 +64,8 @@ interface OrderPanelProps {
   onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
   availableTables: TableType[];
   availableStewards: User[];
-  customers: User[];
-  onUpdateCustomer: (orderId: string, customer: User) => void;
+  customers: Customer[];
+  onUpdateCustomer: (orderId: string, customer: Customer) => void;
 }
 
 type Receipt = {
@@ -343,11 +343,11 @@ export function OrderPanel({
       description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
     });
 
-    if (!currentLocation || !company_id) {
+    if (!currentLocation || !company_id || !customer) {
         toast({
             variant: "destructive",
-            title: "Location or Company not selected",
-            description: "Please select a location and ensure company is set."
+            title: "Location, Company, or Customer not selected",
+            description: "Please select all required fields."
         });
         return;
     }
@@ -391,12 +391,13 @@ export function OrderPanel({
             hold_status: 0,
             printed_status: 1,
             product_variant_id: parseInt(item.product.variant.id, 10),
+            expire_date: item.batch.expire_date,
             company_id: company_id,
         }))
     };
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/pos-invoices', {
+        const response = await fetcher('${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices', {
             method: 'POST',
             body: JSON.stringify(payload),
         });
@@ -429,7 +430,7 @@ export function OrderPanel({
     }
   };
   
-  const handleCustomerCreated = (newCustomer: User) => {
+  const handleCustomerCreated = (newCustomer: Customer) => {
     onUpdateCustomer(orderId, newCustomer);
   }
 
@@ -490,16 +491,21 @@ export function OrderPanel({
       <div className='p-4 border-b border-border'>
         <div className='flex items-center gap-3'>
             <div className="flex-1">
-                <Select value={customer.customer_id} onValueChange={(customerId) => {
-                    const newCustomer = customers.find(c => c.customer_id === customerId);
+                <Select
+                  value={customer?.customer_id || ''}
+                  onValueChange={(customerId) => {
+                    const newCustomer = customers.find(
+                      (c) => c.customer_id === customerId
+                    );
                     if (newCustomer) onUpdateCustomer(orderId, newCustomer);
-                }}>
+                  }}
+                >
                     <SelectTrigger>
                         <SelectValue placeholder="Select a customer" />
                     </SelectTrigger>
                     <SelectContent>
                         {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>
+                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
@@ -514,7 +520,7 @@ export function OrderPanel({
             <p className="text-muted-foreground">Loyalty Points</p>
              <div className='flex items-center gap-1.5 text-yellow-500'>
                 <Star className='h-4 w-4' />
-                <span className='font-bold'>{customer.loyaltyPoints || 0}</span>
+                <span className='font-bold'>{customer?.loyaltyPoints || 0}</span>
             </div>
         </div>
       </div>

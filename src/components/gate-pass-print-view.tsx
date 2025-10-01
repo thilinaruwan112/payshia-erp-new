@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { type Invoice, type User, type Product, type Location } from '@/lib/types';
@@ -9,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Image from 'next/image';
+import { fetcher } from '@/lib/api';
 
 interface PrintViewProps {
     id: string;
@@ -39,7 +39,7 @@ export function GatePassPrintView({ id }: PrintViewProps) {
       if (!id) return;
       setIsLoading(true);
       try {
-        const invoiceResponse = await fetch(`https://server-erp.payshia.com/invoices/${id}`);
+        const invoiceResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/${id}`);
         if (!invoiceResponse.ok) {
            if (invoiceResponse.status === 404) notFound();
            throw new Error('Failed to fetch invoice data');
@@ -48,10 +48,10 @@ export function GatePassPrintView({ id }: PrintViewProps) {
         setInvoice(invoiceData);
 
         const [customersResponse, productsResponse, companyRes, locationRes] = await Promise.all([
-           fetch(`https://server-erp.payshia.com/customers`),
-           fetch('https://server-erp.payshia.com/products'),
-           fetch(`https://server-erp.payshia.com/companies/${invoiceData.company_id}`),
-           fetch(`https://server-erp.payshia.com/locations/${invoiceData.location_id}`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${invoiceData.company_id}`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${invoiceData.location_id}`),
         ]);
 
         if (!customersResponse.ok) throw new Error('Failed to fetch customers');

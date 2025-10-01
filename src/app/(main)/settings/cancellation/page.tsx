@@ -26,6 +26,13 @@ import type { Invoice, StockTransfer, User, PurchaseOrder } from '@/lib/types';
 
 type DocumentType = 'Invoice' | 'Receipt' | 'Transfer Note' | 'Purchase Order' | 'Production Note';
 
+type ProductionNote = {
+    id: string;
+    pn_number: string;
+    created_at: string;
+    notes: string;
+}
+
 type Receipt = {
     id: string;
     rec_number: string;
@@ -59,7 +66,7 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
     if (!companyId) return null;
 
     if (type === 'Invoice') {
-        const response = await fetcher(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${number}&company_id=${companyId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/full/?invoicenumber=${number}&company_id=${companyId}`);
         if (response.ok) {
             const invoice: Invoice = await response.json();
             const customer = invoice.customer;
@@ -73,7 +80,7 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
             }
         }
     } else if (type === 'Transfer Note') {
-        const response = await fetcher(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${companyId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-transfers/filter/by-company?company_id=${companyId}`);
         if (response.ok) {
             const transfers: StockTransfer[] = await response.json();
             const transfer = transfers.find(t => t.stock_transfer_number === number);
@@ -88,12 +95,12 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
             }
         }
     } else if (type === 'Receipt') {
-        const response = await fetcher(`https://server-erp.payshia.com/receipts/filter?company_id=${companyId}&rec_number=${number}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/receipts/filter?company_id=${companyId}&rec_number=${number}`);
         if (response.ok) {
             const receipts: Receipt[] = await response.json();
             const receipt = receipts[0];
             if (receipt) {
-                 const customerResponse = await fetcher(`https://server-erp.payshia.com/customers/${receipt.customer_id}`);
+                 const customerResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${receipt.customer_id}`);
                  let customerName = 'N/A';
                  if (customerResponse.ok) {
                      const customer: User = await customerResponse.json();
@@ -111,7 +118,7 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
             }
         }
     } else if (type === 'Purchase Order') {
-        const response = await fetcher(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${companyId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/filter/?company_id=${companyId}`);
          if (response.ok) {
             const purchaseOrders: PurchaseOrder[] = await response.json();
             const po = purchaseOrders.find(p => p.po_number === number);
@@ -123,6 +130,20 @@ const fetchDocumentDetails = async (type: DocumentType, number: string, companyI
                     date: po.created_at,
                     amount: parseFloat(po.sub_total),
                     customerOrSupplier: po.supplierName || `Supplier ID: ${po.supplier_id}`
+                }
+            }
+        }
+    } else if (type === 'Production Note') {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/production-notes?company_id=${companyId}&pn_number=${number}`);
+        if (response.ok) {
+            const productionNote: ProductionNote = await response.json();
+            if (productionNote) {
+                return {
+                    type: 'Production Note',
+                    id: productionNote.id,
+                    number: productionNote.pn_number,
+                    date: productionNote.created_at,
+                    customerOrSupplier: productionNote.notes || 'No notes',
                 }
             }
         }
@@ -172,7 +193,7 @@ export default function CancellationPage() {
 
         try {
             if (details.type === 'Invoice') {
-                const response = await fetcher(`https://server-erp.payshia.com/invoices/${details.id}/reverse`, {
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/${details.id}/reverse`, {
                     method: 'POST',
                 });
                 if (!response.ok) {
@@ -181,7 +202,7 @@ export default function CancellationPage() {
                 }
             } else if (details.type === 'Transfer Note') {
                 const payload = { is_active: 0, updated_by: userName || 'admin' };
-                const response = await fetcher(`https://server-erp.payshia.com/stock-transfers/${details.id}/status`, {
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-transfers/${details.id}/status`, {
                     method: 'PUT',
                     body: JSON.stringify(payload),
                 });
@@ -190,7 +211,7 @@ export default function CancellationPage() {
                     throw new Error(errorData.message || 'Failed to cancel the transfer note.');
                 }
             } else if (details.type === 'Receipt') {
-                const response = await fetcher(`https://server-erp.payshia.com/receipts/${details.id}/deactivate`, {
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/receipts/${details.id}/deactivate`, {
                     method: 'PUT',
                 });
                 if (!response.ok) {
@@ -199,7 +220,7 @@ export default function CancellationPage() {
                 }
             } else if (details.type === 'Purchase Order') {
                 const payload = { is_active: 0 };
-                const response = await fetcher(`https://server-erp.payshia.com/purchase-orders/${details.id}/status`, {
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/${details.id}/status`, {
                     method: 'PUT',
                     body: JSON.stringify(payload),
                 });
@@ -219,6 +240,16 @@ export default function CancellationPage() {
                 // If there's no error field, check the overall response status
                 if (!response.ok) {
                     throw new Error(responseData.message || 'Failed to cancel the purchase order.');
+                }
+            } else if (details.type === 'Production Note') {
+                const payload = { is_active: 0, updated_by: userName || 'yomal' };
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/production-notes/${details.id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(payload),
+                });
+                 if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to cancel the production note.');
                 }
             }
              else {
@@ -311,7 +342,7 @@ export default function CancellationPage() {
                             <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Document Type</span><span className="font-semibold">{details.type}</span></div>
                              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Document #</span><span className="font-semibold font-mono">{details.number}</span></div>
                              <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Date</span><span className="font-semibold">{details.date}</span></div>
-                             {details.customerOrSupplier && <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Customer/Supplier</span><span className="font-semibold">{details.customerOrSupplier}</span></div>}
+                             {details.customerOrSupplier && <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Details</span><span className="font-semibold">{details.customerOrSupplier}</span></div>}
                              {details.amount != null && <div className="flex justify-between items-center"><span className="text-sm text-muted-foreground">Amount</span><span className="font-semibold font-mono">${details.amount.toFixed(2)}</span></div>}
                         </div>
                     </CardContent>
@@ -344,5 +375,3 @@ export default function CancellationPage() {
         </div>
     );
 }
-
-    

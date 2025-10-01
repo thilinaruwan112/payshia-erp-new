@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -32,6 +33,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLocation } from '@/components/location-provider';
+import { fetcher } from '@/lib/api';
 
 export default function ModelsPage() {
   const [models, setModels] = useState<Model[]>([]);
@@ -49,7 +51,7 @@ export default function ModelsPage() {
       };
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/master-models/company?company_id=${company_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-models/company?company_id=${company_id}`);
         if (!response.ok) {
           throw new Error('Failed to fetch models');
         }
@@ -73,7 +75,7 @@ export default function ModelsPage() {
     if (!selectedModel) return;
 
     try {
-        const response = await fetch(`https://server-erp.payshia.com/master-models/${selectedModel.id}`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-models/${selectedModel.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {

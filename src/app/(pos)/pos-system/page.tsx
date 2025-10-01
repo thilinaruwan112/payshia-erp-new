@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem } from '@/lib/types';
+import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem, Customer } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -48,12 +48,20 @@ interface CollectionProductLink {
     product_id: string;
 }
 
+const walkInCustomer: Customer = {
+    customer_id: 'walk-in',
+    customer_first_name: 'Walk-in',
+    customer_last_name: 'Customer',
+    phone_number: '',
+    loyaltyPoints: 0,
+};
+
 export default function POSPage() {
   const { toast } = useToast();
   const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [customers, setCustomers] = useState<User[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([walkInCustomer]);
   const [tables, setTables] = useState<TableType[]>([]);
   const [stewards, setStewards] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -139,7 +147,6 @@ export default function POSPage() {
     if (userId && userName) {
       setCurrentCashier({
         id: userId,
-        customer_id: userId,
         name: userName,
         role: 'Cashier',
         avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`,
@@ -156,12 +163,12 @@ export default function POSPage() {
         setIsLoading(true);
         try {
             const [productsResponse, collectionsResponse, brandsResponse, customersResponse, tablesResponse, stewardsResponse] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/collections/company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/master-tables/filter/by-company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/filter/users?user_status=3&company_id=${company_id}`)
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?user_status=3&company_id=${company_id}`)
             ]);
 
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !customersResponse.ok) {
@@ -170,21 +177,20 @@ export default function POSPage() {
             const productsData: { products: ProductWithVariantsResponse[] } = await productsResponse.json();
             const collectionsData: Collection[] = await collectionsResponse.json();
             const brandsData: Brand[] = await brandsResponse.json();
-            const customersData: User[] = await customersResponse.json();
+            const customersData: Customer[] = await customersResponse.json();
             const tablesData: TableType[] = await tablesResponse.json();
             const stewardsResult = await stewardsResponse.json();
             const stewardsData = stewardsResult.data || [];
             
             setTables(tablesData || []);
-            setStewards((stewardsData || []).map((s: any) => ({ id: s.id, name: `${s.first_name} ${s.last_name}`, role: s.acc_type, avatar: s.img_path, customer_id: s.id })));
+             setStewards((stewardsData || []).map((s: any) => ({ 
+                id: s.id,
+                name: `${s.first_name} ${s.last_name}`, 
+                role: s.acc_type, 
+                avatar: s.img_path, 
+             })));
             
-            const formattedCustomers = customersData.map(c => ({
-                ...c,
-                id: c.customer_id,
-                name: `${c.customer_first_name} ${c.customer_last_name}`,
-                role: 'Customer',
-            }));
-            setCustomers(formattedCustomers);
+            setCustomers([walkInCustomer, ...customersData]);
 
             setCollections(collectionsData || []);
             setBrands(brandsData || []);
@@ -250,7 +256,7 @@ export default function POSPage() {
       setIsLoadingPastInvoices(true);
       try {
         const response = await fetcher(
-          `https://server-erp.payshia.com/full/invoices/by-customer?customer_code=${selectedReturnCustomer}&company_id=${company_id}`
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/full/invoices/by-customer?customer_code=${selectedReturnCustomer}&company_id=${company_id}`
         );
         if (!response.ok) throw new Error("Failed to fetch invoices");
         const data: Invoice[] = await response.json();
@@ -325,7 +331,7 @@ export default function POSPage() {
     };
     
     try {
-        const response = await fetcher('https://server-erp.payshia.com/transaction-returns', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-returns`, {
             method: 'POST',
             body: JSON.stringify(payload)
         });
@@ -355,7 +361,7 @@ export default function POSPage() {
     setActiveFilter({ type, value });
     if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/collection-products/collection/${value}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collection-products?collection_id=${value}&company_id=${company_id}`);
             if (!response.ok) throw new Error('Failed to fetch collection products');
             const data: CollectionProductLink[] = await response.json();
             setCollectionProducts(prev => ({ ...prev, [value]: data.map(p => p.product_id) }));
@@ -368,21 +374,13 @@ export default function POSPage() {
   const currentOrder = useMemo(() => activeOrders.find((order) => order.id === currentOrderId), [activeOrders, currentOrderId]);
   
   const createNewOrder = (orderType: ActiveOrder['orderType'], steward?: User, tableName?: string) => {
-    if (!customers[0]) {
-        toast({
-            variant: 'destructive',
-            title: 'No Customer Available',
-            description: 'Please add a customer before creating an order.',
-        });
-        return;
-    }
     const newOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
       name: tableName || orderType,
       cart: [],
       discount: 0,
       serviceCharge: 0,
-      customer: customers[0], // Default to the first available customer
+      customer: walkInCustomer, 
       orderType,
       tableName,
       steward,
@@ -440,7 +438,7 @@ export default function POSPage() {
             items: itemsToUpdatePayload,
         };
       
-        const url = `https://server-erp.payshia.com/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${currentOrder.originalInvoiceNumber}`;
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices/update-with-items/?company_id=${company_id}&invoice_number=${currentOrder.originalInvoiceNumber}`;
   
         try {
             const response = await fetcher(url, {
@@ -480,14 +478,14 @@ export default function POSPage() {
         order_ready_status: 1, 
         created_by: currentCashier.name, 
         is_active: 1, 
-        steward_id: currentOrder.steward?.id || "N/A",
+        steward_id: "N/A",
         cost_value: currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0),
         remark: `${currentOrder.orderType} order`, 
         ref_hold: "direct",
         company_id: String(company_id),
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
-            user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
+            user_id: parseInt(steward?.id || currentCashier.id, 10),
             product_id: parseInt(item.product.id, 10), 
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0, 
@@ -503,7 +501,7 @@ export default function POSPage() {
     };
 
     try {
-      const response = await fetcher('https://server-erp.payshia.com/pos-invoices', {
+      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices`, {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -679,7 +677,7 @@ export default function POSPage() {
       }));
   };
   
-  const updateCustomer = (orderId: string, customer: User) => {
+  const updateCustomer = (orderId: string, customer: Customer) => {
     setActiveOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, customer } : order));
   };
 
@@ -845,5 +843,7 @@ export default function POSPage() {
     </>
   );
 }
+
+    
 
     

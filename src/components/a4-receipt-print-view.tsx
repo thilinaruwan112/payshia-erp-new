@@ -53,7 +53,7 @@ export function A4ReceiptPrintView({ id }: PrintViewProps) {
         if (!id) return;
         setIsLoading(true);
         try {
-            const receiptResponse = await fetcher(`https://server-erp.payshia.com/receipts/${id}`);
+            const receiptResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/receipts/${id}`);
             if (!receiptResponse.ok) {
                 if (receiptResponse.status === 404) notFound();
                 throw new Error('Failed to fetch receipt data');
@@ -62,10 +62,10 @@ export function A4ReceiptPrintView({ id }: PrintViewProps) {
             setReceipt(receiptData);
 
             const [customerResponse, invoiceResponse, companyRes, locationRes] = await Promise.all([
-                 fetcher(`https://server-erp.payshia.com/customers/${receiptData.customer_id}`),
-                 fetcher(`https://server-erp.payshia.com/invoices/full/${receiptData.ref_id}`),
-                 fetcher(`https://server-erp.payshia.com/companies/${receiptData.company_id}`),
-                 fetcher(`https://server-erp.payshia.com/locations/${receiptData.location_id}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${receiptData.customer_id}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/full/${receiptData.ref_id}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${receiptData.company_id}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${receiptData.location_id}`),
             ]);
             
              if (customerResponse.ok) setCustomer(await customerResponse.json());
@@ -181,7 +181,7 @@ export function A4ReceiptPrintView({ id }: PrintViewProps) {
                 <span>Amount Paid</span>
                 <span className='font-mono text-green-600'>-${amountPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
-            <div className="flex justify-between font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
+            <div className="flex justify-between font-bold text-lg pt-2 border-t-2 border-gray-200">
                 <span>Balance Due</span>
                 <span className='font-mono'>${balanceDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>

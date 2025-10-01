@@ -52,7 +52,7 @@ function PrintPosReceiptPageContent() {
         if (!id || !companyId) return;
         setIsLoading(true);
         try {
-            const receiptResponse = await fetcher(`https://server-erp.payshia.com/receipts/${id}`);
+            const receiptResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/receipts/${id}`);
             if (!receiptResponse.ok) {
                 if (receiptResponse.status === 404) notFound();
                 throw new Error('Failed to fetch receipt data');
@@ -61,10 +61,10 @@ function PrintPosReceiptPageContent() {
             setReceipt(receiptData);
 
             const [customerResponse, invoiceResponse, companyRes, locationRes] = await Promise.all([
-                 fetcher(`https://server-erp.payshia.com/customers/${receiptData.customer_id}`),
-                 fetcher(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${receiptData.ref_id}&company_id=${companyId}`),
-                 fetcher(`https://server-erp.payshia.com/companies/${receiptData.company_id}`),
-                 fetcher(`https://server-erp.payshia.com/locations/${receiptData.location_id}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${receiptData.customer_id}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/full/?invoicenumber=${receiptData.ref_id}&company_id=${companyId}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${receiptData.company_id}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${receiptData.location_id}`),
             ]);
             
              if (customerResponse.ok) setCustomer(await customerResponse.json());

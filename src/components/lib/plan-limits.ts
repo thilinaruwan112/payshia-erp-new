@@ -1,4 +1,5 @@
 
+
 import { plans } from './mock-data/plans';
 import type { Plan, Location } from './types';
 import { fetcher } from './api';

@@ -36,7 +36,7 @@ export default function HrmDashboardPage() {
         async function fetchUsers() {
             setIsLoading(true);
             try {
-                const response = await fetcher(`https://server-erp.payshia.com/users/company/${company_id}`);
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/company/${company_id}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch users');
                 }

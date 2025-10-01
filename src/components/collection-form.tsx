@@ -103,7 +103,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     }
     setIsLoading(true);
 
-    const url = collection ? `https://server-erp.payshia.com/collections/${collection.id}` : 'https://server-erp.payshia.com/collections';
+    const url = collection ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/${collection.id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/collections`;
     let method = collection ? 'PUT' : 'POST';
     
     let body;
@@ -156,7 +156,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
         const productsToAdd = currentProducts.filter(p => !p.collectionProductId);
 
         for (const productToAdd of productsToAdd) {
-            await fetcher('https://server-erp.payshia.com/collection-products', {
+            await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collection-products`, {
                 method: 'POST',
                 body: JSON.stringify({ 
                     collection_id: collectionId, 
@@ -208,7 +208,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
 
     // If it's a saved product, call the API to delete the association
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/collection-products/${productToRemove.collectionProductId}`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collection-products/${productToRemove.collectionProductId}`, {
             method: 'DELETE',
         });
 

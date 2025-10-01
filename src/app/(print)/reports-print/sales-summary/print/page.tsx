@@ -43,11 +43,11 @@ function PrintViewContent() {
                 ...(fromDate && { from_date: fromDate }),
                 ...(toDate && { to_date: toDate }),
             });
-            const url = `https://server-erp.payshia.com/invoices/filter/hold/by-company-status?${params.toString()}`;
+            const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/filter/hold/by-company-status?${params.toString()}`;
 
             const [companyRes, customerRes, invoiceRes] = await Promise.all([
-                 fetcher(`https://server-erp.payshia.com/companies/${companyId}`),
-                 fetcher(`https://server-erp.payshia.com/customers/company/filter/?company_id=${companyId}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${companyId}`),
                  fetcher(url)
             ]);
             

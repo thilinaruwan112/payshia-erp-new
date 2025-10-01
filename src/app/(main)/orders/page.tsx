@@ -71,8 +71,8 @@ export default function OrdersPage() {
             setIsLoading(true);
             try {
                 const [ordersResponse, customersResponse] = await Promise.all([
-                    fetch(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`),
-                    fetch('https://server-erp.payshia.com/customers')
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/company?company_id=${company_id}`),
+                    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers`)
                 ]);
 
                 if (!ordersResponse.ok) throw new Error('Failed to fetch orders');

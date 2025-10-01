@@ -41,8 +41,8 @@ function PrintViewContent() {
 
         try {
              const [productsRes, companyRes] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${companyId}`),
-                fetch(`https://server-erp.payshia.com/companies/${companyId}`),
+                fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${companyId}`),
+                fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
             ]);
 
             if (!productsRes.ok) throw new Error('Failed to fetch products');

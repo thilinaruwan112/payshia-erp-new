@@ -30,6 +30,7 @@ import React, { useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { fetcher } from "@/lib/api";
 import { useLocation } from "./location-provider";
+import { useRouter } from "next/navigation";
 
 const customerFormSchema = z.object({
   customer_first_name: z.string().min(2, "First name is required."),
@@ -51,6 +52,7 @@ interface CustomerFormDialogProps {
 
 export function CustomerFormDialog({ children, onCustomerCreated }: CustomerFormDialogProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const { company_id, currentLocation } = useLocation();
@@ -78,7 +80,7 @@ export function CustomerFormDialog({ children, onCustomerCreated }: CustomerForm
         return;
     }
     setIsLoading(true);
-    const url = 'https://server-erp.payshia.com/customers';
+    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/customers`;
     const method = 'POST';
 
     const payload = { 
@@ -107,13 +109,21 @@ export function CustomerFormDialog({ children, onCustomerCreated }: CustomerForm
         throw new Error(result.message || 'Something went wrong');
       }
 
+      const newCustomer: User = {
+        ...result,
+        id: result.customer_id,
+        name: `${result.customer_first_name} ${result.customer_last_name}`,
+        role: 'Customer',
+      };
+
       toast({
         title: "Customer Created",
         description: `The customer "${data.customer_first_name} ${data.customer_last_name}" has been saved.`,
       });
-      onCustomerCreated(result);
+      onCustomerCreated(newCustomer);
       setIsOpen(false);
       form.reset();
+      router.refresh();
     } catch (error) {
        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
        toast({

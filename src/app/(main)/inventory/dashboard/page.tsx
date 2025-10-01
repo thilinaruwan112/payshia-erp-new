@@ -52,9 +52,9 @@ export default function InventoryDashboard() {
         setIsLoading(true);
         try {
             const [inventoryRes, productsRes, transfersRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/inventory/location/${currentLocation.location_id}`),
-                fetcher('https://server-erp.payshia.com/products'),
-                fetcher(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${company_id}`)
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/inventory/location/${currentLocation.location_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-transfers/filter/by-company?company_id=${company_id}`)
             ]);
             if (!inventoryRes.ok) throw new Error('Failed to fetch inventory');
             if (!productsRes.ok) throw new Error('Failed to fetch products');

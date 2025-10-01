@@ -83,8 +83,8 @@ export default function NewJobSheetPage() {
         console.error(`Failed to fetch ${type}:`, error);
       }
     }
-    fetchData('https://server-erp.payshia.com/brands/company', setBrands, 'brands');
-    fetchData('https://server-erp.payshia.com/master-models/company', setModels, 'models');
+    fetchData('${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company', setBrands, 'brands');
+    fetchData('${process.env.NEXT_PUBLIC_API_BASE_URL}/master-models/company', setModels, 'models');
   }, [company_id]);
 
   const handleWarrantySearch = () => {

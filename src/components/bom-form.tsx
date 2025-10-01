@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, ProductVariant, Recipe } from "@/lib/types";
+import type { Product, ProductVariant } from "@/lib/types";
 import { Loader2, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useLocation } from "./location-provider";
@@ -42,7 +42,19 @@ import { Combobox } from "./ui/combobox";
 
 interface ProductWithApiResponse {
     product: Product;
-    variants: { variant: ProductVariant }[];
+    variants: ProductVariant[];
+}
+
+interface RecipeItem {
+    id: string;
+    company_id: string;
+    product_variant_id: string;
+    main_product: string;
+    recipe_product: string;
+    qty: string;
+    recipe_type: string;
+    created_by: string;
+    created_at: string;
 }
 
 const recipeItemSchema = z.object({
@@ -66,6 +78,8 @@ export function BomForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id } = useLocation();
+  const [recipes, setRecipes] = useState<RecipeItem[]>([]);
+  const [selectedRecipeItems, setSelectedRecipeItems] = useState<RecipeItem[]>([]);
 
   const form = useForm<BomFormValues>({
     resolver: zodResolver(bomFormSchema),
@@ -82,30 +96,81 @@ export function BomForm() {
   });
 
   useEffect(() => {
-    async function fetchProducts() {
-      if (!company_id) return;
-      try {
-        const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
-        if (!response.ok) throw new Error("Failed to fetch products");
-        const data = await response.json();
-        setProducts(data.products || []);
-      } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products.' });
-      }
+    async function fetchData() {
+        if (!company_id) return;
+        try {
+            const [productsResponse, recipesResponse] = await Promise.all([
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/filter/recipe-type?recipe_type=item_recipe&company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes`),
+            ]);
+
+            if (!productsResponse.ok) throw new Error("Failed to fetch products");
+            const productsData = await productsResponse.json();
+            setProducts(productsData.products || []);
+
+            if(!recipesResponse.ok) throw new Error("Failed to fetch recipes");
+            const recipesData = await recipesResponse.json();
+            setRecipes(Array.isArray(recipesData.data) ? recipesData.data : []);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
+        }
     }
-    fetchProducts();
+    fetchData();
   }, [company_id, toast]);
 
   const allSkus = React.useMemo(() => {
     return products.flatMap(p => 
         (p.variants || []).map(v => ({
-            label: `${p.product.name} (${v.variant.sku})`,
-            value: v.variant.id,
+            label: `${p.product.name} (${v.sku})`,
+            value: v.id,
             productId: p.product.id,
             name: p.product.name.toLowerCase()
         }))
     );
   }, [products]);
+
+  const finishedGoodId = form.watch("productId");
+  const quantityProduced = 1;
+
+  useEffect(() => {
+    const items = recipes.filter(r => r.product_variant_id === finishedGoodId) || [];
+    setSelectedRecipeItems(items);
+  }, [finishedGoodId, recipes]);
+
+  const finishedGoodsOptions = React.useMemo(() => {
+    return products
+      .flatMap(p => 
+          (p.variants || []).map(v => ({ product: p.product, variant: v }))
+      )
+      .filter((pv): pv is { product: Product, variant: { id: string, sku: string } } => !!pv.variant?.id && !!pv.variant.sku)
+      .map(pv => ({
+          label: `${pv.product.name} (${pv.variant.sku})`,
+          value: pv.variant.id,
+      }));
+  }, [products]);
+  
+  const requiredIngredients = React.useMemo(() => {
+      if (selectedRecipeItems.length === 0) return [];
+      
+      const allIngredients = products.flatMap(p => 
+        (p.variants || []).map(v => ({
+            id: v.id,
+            name: p.product.name,
+            sku: v.sku,
+            unit: p.product.stock_unit || 'Nos'
+        }))
+      );
+
+      return selectedRecipeItems.map(item => {
+          const ingredientProduct = allIngredients.find(ing => ing.id === item.recipe_product);
+          return {
+              name: ingredientProduct?.name || `Product ID: ${item.recipe_product}`,
+              sku: ingredientProduct?.sku || 'N/A',
+              requiredQty: parseFloat(item.qty) * (quantityProduced || 1),
+              unit: ingredientProduct?.unit || 'Nos',
+          }
+      });
+  }, [selectedRecipeItems, quantityProduced, products]);
 
   async function onSubmit(data: BomFormValues) {
     setIsLoading(true);
@@ -132,7 +197,7 @@ export function BomForm() {
                 created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
             };
 
-            const response = await fetcher('https://server-erp.payshia.com/product-recipes', {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes`, {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
@@ -202,12 +267,12 @@ export function BomForm() {
                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select a finished product" />
+                                <SelectValue placeholder="Select an item with a recipe" />
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                            {allSkus.map(sku => (
-                                <SelectItem key={sku.value} value={sku.value}>{sku.label}</SelectItem>
+                            {finishedGoodsOptions.map(item => (
+                                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>

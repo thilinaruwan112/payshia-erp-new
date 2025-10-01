@@ -46,8 +46,8 @@ export default function AccountingDashboardPage() {
         setIsLoading(true);
         try {
             const [ordersRes, accountsRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`),
-                fetcher(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`)
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/chart-of-accounts/company?company_id=${company_id}`)
             ]);
 
             if (!ordersRes.ok) throw new Error('Failed to fetch orders');

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -49,7 +48,7 @@ export function TodaySalesDialog({
     setIsLoading(true);
     try {
       const response = await fetcher(
-        `https://server-erp.payshia.com/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=1`
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=1`
       );
       if (!response.ok) throw new Error('Failed to fetch invoices');
       const allInvoices: Invoice[] = (await response.json()) || [];

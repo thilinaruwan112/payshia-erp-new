@@ -66,11 +66,11 @@ export function PurchaseOrderView({ id }: PurchaseOrderViewProps) {
       setIsLoading(true);
       try {
         const [poResponse, suppliersResponse, productsResponse, variantsResponse, locationsResponse] = await Promise.all([
-           fetcher(`https://server-erp.payshia.com/purchase-orders/${id}`),
-           fetcher('https://server-erp.payshia.com/suppliers'),
-           fetcher('https://server-erp.payshia.com/products'),
-           fetcher('https://server-erp.payshia.com/product-variants'),
-           fetcher('https://server-erp.payshia.com/locations'),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/${id}`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations`),
         ]);
         
         if (!poResponse.ok) {
