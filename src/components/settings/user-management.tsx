@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -228,6 +229,10 @@ export function UserManagement() {
       const assignPayload = {
         user_id: userId,
         company_id: company_id,
+        role: role,
+        status: status,
+        created_by: 'admin', // You might want to get this from the logged in user
+        updated_by: 'admin',
       };
       const assignResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users/assign`, {
         method: 'POST',
