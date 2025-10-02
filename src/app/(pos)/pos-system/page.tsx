@@ -150,6 +150,9 @@ export default function POSPage() {
         name: userName,
         role: 'Cashier',
         avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`,
+        customer_id: userId,
+        customer_first_name: userName,
+        customer_last_name: ''
       });
     }
   }, []);
@@ -188,6 +191,9 @@ export default function POSPage() {
                 name: `${s.first_name} ${s.last_name}`, 
                 role: s.acc_type, 
                 avatar: s.img_path, 
+                customer_id: s.id,
+                customer_first_name: s.first_name,
+                customer_last_name: s.last_name
              })));
             
             setCustomers([walkInCustomer, ...customersData]);
@@ -196,7 +202,7 @@ export default function POSPage() {
             setBrands(brandsData || []);
             
             const locationFilteredProducts = (productsData.products || []).filter(p => 
-                p.product.available_locations?.split(',').includes(currentLocation.location_id)
+                p.product.available_locations?.split(',').includes(currentLocation.location_id) && p.product.item_type !== 'raw'
             );
             
             const flattenedProducts = locationFilteredProducts.flatMap(p => {
@@ -847,3 +853,4 @@ export default function POSPage() {
     
 
     
+
