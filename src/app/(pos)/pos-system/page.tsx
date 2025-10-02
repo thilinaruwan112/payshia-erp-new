@@ -48,20 +48,12 @@ interface CollectionProductLink {
     product_id: string;
 }
 
-const walkInCustomer: Customer = {
-    customer_id: 'walk-in',
-    customer_first_name: 'Walk-in',
-    customer_last_name: 'Customer',
-    phone_number: '',
-    loyaltyPoints: 0,
-};
-
 export default function POSPage() {
   const { toast } = useToast();
   const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([walkInCustomer]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [tables, setTables] = useState<TableType[]>([]);
   const [stewards, setStewards] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -196,7 +188,7 @@ export default function POSPage() {
                 last_name: s.last_name
              })));
             
-            setCustomers([walkInCustomer, ...customersData]);
+            setCustomers(customersData);
 
             setCollections(collectionsData || []);
             setBrands(brandsData || []);
@@ -380,13 +372,21 @@ export default function POSPage() {
   const currentOrder = useMemo(() => activeOrders.find((order) => order.id === currentOrderId), [activeOrders, currentOrderId]);
   
   const createNewOrder = (orderType: ActiveOrder['orderType'], steward?: User, tableName?: string) => {
+    if (!customers[0]) {
+      toast({
+        variant: 'destructive',
+        title: 'No Customer Available',
+        description: 'Please add a customer before creating an order.',
+      });
+      return;
+    }
     const newOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
       name: tableName || orderType,
       cart: [],
       discount: 0,
       serviceCharge: 0,
-      customer: walkInCustomer, 
+      customer: customers[0], // Default to the first available customer
       orderType,
       tableName,
       steward,
@@ -710,7 +710,7 @@ export default function POSPage() {
   const orderPanelComponent = currentOrder && currentCashier ? (
      <OrderPanel
         key={currentOrder.id} order={currentOrder} orderTotals={orderTotals}
-        cashierName={currentCashier.user_name || 'Admin'} currentLocation={currentLocation}
+        cashierName={currentCashier.user_name} currentLocation={currentLocation}
         onUpdateQuantity={updateQuantity} onRemoveItem={removeFromCart} onClearCart={onClearCart}
         onHoldAndKitchen={handleHoldAndKitchen}
         isDrawer={isDrawerOpen} onClose={() => setDrawerOpen(false)}
