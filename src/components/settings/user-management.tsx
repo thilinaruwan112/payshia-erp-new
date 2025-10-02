@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -72,7 +71,7 @@ function AddNewUserDialog({ onAdd }: { onAdd: (email: string, role: string, stat
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add New User
+          Assign User to Company
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -343,5 +342,3 @@ export function UserManagement() {
     </Card>
   );
 }
-
-    
