@@ -53,6 +53,8 @@ interface CompanyUser {
   id: string;
   company_id: string;
   user_id: string;
+  role: string;
+  user_status: string;
 }
 
 // Dialog to assign a new user
@@ -195,6 +197,17 @@ function EditUserRoleDialog({ user, onUpdate, roles }: { user: User, onUpdate: (
   )
 }
 
+const getStatusText = (status: string): string => {
+  switch (status) {
+    case '1': return 'Admin';
+    case '2': return 'User';
+    case '3': return 'Steward';
+    case '4': return 'Supplier';
+    case '5': return 'Customer';
+    default: return 'Unknown';
+  }
+}
+
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -238,7 +251,7 @@ export function UserManagement() {
       const usersInCompany = allUsers
         .map(user => {
           const link = companyUserLinks.find(l => l.user_id === user.id && l.company_id === String(company_id));
-          return link ? { ...user, companyUserId: link.id } : null;
+          return link ? { ...user, companyUserId: link.id, acc_type: link.role, user_status: link.user_status } : null;
         })
         .filter((user): user is User & { companyUserId: string } => user !== null);
       
@@ -423,7 +436,7 @@ export function UserManagement() {
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                        <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                          Active
+                          {getStatusText(user.user_status as string)}
                        </Badge>
                     </TableCell>
                     <TableCell className="text-right">
