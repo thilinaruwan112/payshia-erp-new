@@ -484,14 +484,14 @@ export default function POSPage() {
         order_ready_status: 1, 
         created_by: currentCashier.user_name, 
         is_active: 1, 
-        steward_id: "N/A",
+        steward_id: currentOrder.steward?.id || "N/A",
         cost_value: currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0),
         remark: `${currentOrder.orderType} order`, 
         ref_hold: "direct",
         company_id: String(company_id),
         chanel: "POS",
         items: currentOrder.cart.map(item => ({
-            user_id: parseInt(steward?.id || currentCashier.id, 10),
+            user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
             product_id: parseInt(item.product.id, 10), 
             item_price: item.product.price,
             item_discount: item.itemDiscount || 0, 
@@ -849,8 +849,3 @@ export default function POSPage() {
     </>
   );
 }
-
-    
-
-    
-
