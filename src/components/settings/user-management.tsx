@@ -132,15 +132,16 @@ function AddNewUserDialog({ onAdd }: { onAdd: (email: string, role: string, stat
 }
 
 // Dialog to edit an existing user's role
-function EditUserRoleDialog({ user, onUpdate, roles }: { user: User, onUpdate: (userId: string, companyUserId: string, role: string) => Promise<void>, roles: Role[] }) {
+function EditUserRoleDialog({ user, onUpdate, roles }: { user: User, onUpdate: (userId: string, companyUserId: string, role: string, status: string) => Promise<void>, roles: Role[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState(user.acc_type || 'user');
+  const [selectedStatus, setSelectedStatus] = useState(user.user_status || '2');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleUpdate = async () => {
     if (!user.companyUserId) return;
     setIsSubmitting(true);
-    await onUpdate(user.id, user.companyUserId, selectedRole);
+    await onUpdate(user.id, user.companyUserId, selectedRole, selectedStatus);
     setIsSubmitting(false);
     setIsOpen(false);
   };
@@ -166,6 +167,21 @@ function EditUserRoleDialog({ user, onUpdate, roles }: { user: User, onUpdate: (
                       </SelectContent>
                   </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-status">User Status</Label>
+                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger id="edit-status">
+                        <SelectValue placeholder="Select a status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="1">Admin</SelectItem>
+                        <SelectItem value="2">User</SelectItem>
+                        <SelectItem value="3">Steward</SelectItem>
+                        <SelectItem value="4">Supplier</SelectItem>
+                        <SelectItem value="5">Customer</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
@@ -191,7 +207,7 @@ export function UserManagement() {
   const roles: Role[] = [
     { id: '1', name: 'Admin', description: '', userCount: 0, permissions: [] },
     { id: '2', name: 'User', description: '', userCount: 0, permissions: [] },
-    { id: '3', name: 'Sales Agent', description: '', userCount: 0, permissions: [] },
+    { id: '3', name: 'Agent', description: '', userCount: 0, permissions: [] },
   ];
 
   const fetchCompanyUsers = async () => {
@@ -249,9 +265,8 @@ export function UserManagement() {
       return;
     }
     
-    setIsLoading(true);
     const loggedInUsername = localStorage.getItem('userName') || 'admin';
-
+    
     try {
       const checkResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/check-email`, {
         method: 'POST',
@@ -304,12 +319,10 @@ export function UserManagement() {
         title: "Failed to Assign User",
         description: errorMessage,
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const handleUpdateRole = async (userId: string, companyUserId: string, role: string) => {
+  const handleUpdateRole = async (userId: string, companyUserId: string, role: string, status: string) => {
      if (!company_id) {
       toast({ variant: 'destructive', title: 'Error', description: 'Company ID is not available.' });
       return;
@@ -319,7 +332,7 @@ export function UserManagement() {
         user_id: userId,
         company_id: company_id,
         role: role,
-        status: '2', // Defaulting to 'User' status, this could be made dynamic if needed
+        status: status,
         created_by: loggedInUsername,
         updated_by: loggedInUsername,
     };
