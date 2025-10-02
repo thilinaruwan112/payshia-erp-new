@@ -133,60 +133,128 @@ export function UserManagement() {
   const { toast } = useToast();
   const { company_id } = useLocation();
 
-  useEffect(() => {
-    async function fetchCompanyUsers() {
-      if (!company_id) {
-        setIsLoading(false);
-        return;
-      }
-      setIsLoading(true);
-      try {
-        const [companyUsersRes, allUsersRes] = await Promise.all([
-          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users`),
-          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`),
-        ]);
-
-        if (!companyUsersRes.ok) throw new Error('Failed to fetch company user links');
-        if (!allUsersRes.ok) throw new Error('Failed to fetch all users');
-
-        const companyUsersData = await companyUsersRes.json();
-        const allUsersData = await allUsersRes.json();
-        
-        if (companyUsersData.status !== 'success' || allUsersData.status !== 'success') {
-          throw new Error('API returned an error status');
-        }
-
-        const companyUserLinks: CompanyUser[] = companyUsersData.data || [];
-        const allUsers: User[] = allUsersData.data || [];
-
-        const userIdsForCompany = companyUserLinks
-          .filter(link => link.company_id === String(company_id))
-          .map(link => link.user_id);
-          
-        const usersInCompany = allUsers.filter(user => userIdsForCompany.includes(user.id));
-        
-        setUsers(usersInCompany);
-
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Failed to load users',
-          description: error instanceof Error ? error.message : 'Could not fetch users from the server.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
+  const fetchCompanyUsers = async () => {
+    if (!company_id) {
+      setIsLoading(false);
+      return;
     }
+    setIsLoading(true);
+    try {
+      const [companyUsersRes, allUsersRes] = await Promise.all([
+        fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users`),
+        fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`),
+      ]);
+
+      if (!companyUsersRes.ok) throw new Error('Failed to fetch company user links');
+      if (!allUsersRes.ok) throw new Error('Failed to fetch all users');
+
+      const companyUsersData = await companyUsersRes.json();
+      const allUsersData = await allUsersRes.json();
+      
+      if (companyUsersData.status !== 'success' || allUsersData.status !== 'success') {
+        throw new Error('API returned an error status');
+      }
+
+      const companyUserLinks: CompanyUser[] = companyUsersData.data || [];
+      const allUsers: User[] = allUsersData.data || [];
+
+      const userIdsForCompany = companyUserLinks
+        .filter(link => link.company_id === String(company_id))
+        .map(link => link.user_id);
+        
+      const usersInCompany = allUsers.filter(user => userIdsForCompany.includes(user.id));
+      
+      setUsers(usersInCompany);
+
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to load users',
+        description: error instanceof Error ? error.message : 'Could not fetch users from the server.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchCompanyUsers();
   }, [toast, company_id]);
   
-  const handleAddUser = async (email: string, role: string, status: string) => {
-    // This is where you'll call your API endpoint later
-    console.log({ email, role, status });
-    toast({
-        title: 'User Added (Simulated)',
-        description: `User with email ${email} has been added.`,
-    });
+  const handleAddNewUser = async (email: string, role: string, status: string) => {
+    if (!company_id) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Company ID is not available.' });
+      return;
+    }
+    
+    let userId;
+
+    try {
+      // 1. Check if user exists by email
+      const checkResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/check-email`, {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+
+      const checkResult = await checkResponse.json();
+      
+      if (checkResponse.ok && checkResult.user) {
+        userId = checkResult.user.id;
+      } else {
+        // 2. If not, create a new user with minimal info
+        const createUserPayload = {
+          email: email,
+          user_name: email,
+          pass: `default-${Date.now()}`, // Temporary password
+          acc_type: role,
+          user_status: 'Active',
+          first_name: email.split('@')[0], // Default first name
+        };
+        const createUserResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
+          method: 'POST',
+          body: JSON.stringify(createUserPayload),
+        });
+        const createResult = await createUserResponse.json();
+        if (!createUserResponse.ok || createResult.status !== 'success') {
+          throw new Error(createResult.message || 'Failed to create a new user.');
+        }
+        userId = createResult.data.id;
+      }
+
+      if (!userId) {
+          throw new Error("Could not retrieve user ID.");
+      }
+
+      // 3. Assign the user to the company
+      const assignPayload = {
+        user_id: userId,
+        company_id: company_id,
+      };
+      const assignResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users/assign`, {
+        method: 'POST',
+        body: JSON.stringify(assignPayload),
+      });
+
+      if (!assignResponse.ok) {
+        const errorData = await assignResponse.json();
+        throw new Error(errorData.message || 'Failed to assign user to the company.');
+      }
+
+      toast({
+        title: 'User Added Successfully',
+        description: `${email} has been added to your company.`,
+      });
+      
+      fetchCompanyUsers(); // Refresh the user list
+
+    } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+       toast({
+        variant: "destructive",
+        title: "Failed to Add User",
+        description: errorMessage,
+      });
+    }
   };
 
   return (
@@ -197,7 +265,7 @@ export function UserManagement() {
                  <CardTitle>All Users</CardTitle>
                 <CardDescription>A list of all users in your company.</CardDescription>
             </div>
-             <AddNewUserDialog onAdd={handleAddUser} />
+             <AddNewUserDialog onAdd={handleAddNewUser} />
         </div>
       </CardHeader>
       <CardContent>
@@ -275,3 +343,5 @@ export function UserManagement() {
     </Card>
   );
 }
+
+    
