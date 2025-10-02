@@ -46,6 +46,8 @@ import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { fetcher } from '@/lib/api';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
+
 
 interface CompanyUser {
   id: string;
@@ -79,7 +81,7 @@ function AddNewUserDialog({ onAdd }: { onAdd: (email: string, role: string, stat
         <DialogHeader>
           <DialogTitle>Assign user to company</DialogTitle>
           <DialogDescription>
-            Enter the user's email and assign their initial role and status.
+            Enter the user's email and assign their initial role and status. The user must already have a Payshia ERP account.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -119,7 +121,8 @@ function AddNewUserDialog({ onAdd }: { onAdd: (email: string, role: string, stat
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
           <Button onClick={handleAdd} disabled={!email || isSubmitting}>
-             {isSubmitting ? 'Assigning...' : 'Assign User'}
+             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+             Assign User
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -158,11 +161,13 @@ export function UserManagement() {
       const companyUserLinks: CompanyUser[] = companyUsersData.data || [];
       const allUsers: User[] = allUsersData.data || [];
 
-      const userIdsForCompany = companyUserLinks
-        .filter(link => link.company_id === String(company_id))
-        .map(link => link.user_id);
+      const userIdsForCompany = new Set(
+        companyUserLinks
+          .filter(link => link.company_id === String(company_id))
+          .map(link => link.user_id)
+      );
         
-      const usersInCompany = allUsers.filter(user => userIdsForCompany.includes(user.id));
+      const usersInCompany = allUsers.filter(user => userIdsForCompany.has(user.id));
       
       setUsers(usersInCompany);
 
@@ -189,6 +194,7 @@ export function UserManagement() {
     
     setIsLoading(true);
     let userId;
+    const loggedInUsername = localStorage.getItem('userName') || 'admin';
 
     try {
       // 1. Check if user exists by email
@@ -199,9 +205,8 @@ export function UserManagement() {
 
       const checkResult = await checkResponse.json();
       
-      if (checkResponse.ok && checkResult.exists === true) {
-        // If the user exists, we still need to get their ID. The `check-email` endpoint might not return it.
-        // Let's assume another endpoint or modify the logic. For now, let's fetch all users again to find the ID.
+      if (checkResult.exists === true) {
+        // If the user exists, get their ID
         const allUsersRes = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`);
         if (!allUsersRes.ok) throw new Error('Could not verify user ID.');
         const allUsersData = await allUsersRes.json();
@@ -218,8 +223,8 @@ export function UserManagement() {
         company_id: company_id,
         role: role,
         status: status,
-        created_by: 'admin',
-        updated_by: 'admin',
+        created_by: loggedInUsername,
+        updated_by: loggedInUsername,
       };
       
       const assignResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users/assign`, {
