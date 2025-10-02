@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -76,7 +77,7 @@ function AddNewUserDialog({ onAdd }: { onAdd: (email: string, role: string, stat
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add a new user</DialogTitle>
+          <DialogTitle>Assign user to company</DialogTitle>
           <DialogDescription>
             Enter the user's email and assign their initial role and status.
           </DialogDescription>
@@ -118,7 +119,7 @@ function AddNewUserDialog({ onAdd }: { onAdd: (email: string, role: string, stat
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
           <Button onClick={handleAdd} disabled={!email || isSubmitting}>
-             {isSubmitting ? 'Adding...' : 'Add User'}
+             {isSubmitting ? 'Assigning...' : 'Assign User'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -186,6 +187,7 @@ export function UserManagement() {
       return;
     }
     
+    setIsLoading(true);
     let userId;
 
     try {
@@ -200,31 +202,10 @@ export function UserManagement() {
       if (checkResponse.ok && checkResult.user) {
         userId = checkResult.user.id;
       } else {
-        // 2. If not, create a new user with minimal info
-        const createUserPayload = {
-          email: email,
-          user_name: email,
-          pass: `default-${Date.now()}`, // Temporary password
-          acc_type: role,
-          user_status: 'Active',
-          first_name: email.split('@')[0], // Default first name
-        };
-        const createUserResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
-          method: 'POST',
-          body: JSON.stringify(createUserPayload),
-        });
-        const createResult = await createUserResponse.json();
-        if (!createUserResponse.ok || createResult.status !== 'success') {
-          throw new Error(createResult.message || 'Failed to create a new user.');
-        }
-        userId = createResult.data.id;
+        throw new Error("User with this email does not exist. Please ask the user to register first.");
       }
 
-      if (!userId) {
-          throw new Error("Could not retrieve user ID.");
-      }
-
-      // 3. Assign the user to the company
+      // 2. Assign the user to the company
       const assignPayload = {
         user_id: userId,
         company_id: company_id,
@@ -233,6 +214,7 @@ export function UserManagement() {
         created_by: 'admin',
         updated_by: 'admin',
       };
+      
       const assignResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users/assign`, {
         method: 'POST',
         body: JSON.stringify(assignPayload),
@@ -244,8 +226,8 @@ export function UserManagement() {
       }
 
       toast({
-        title: 'User Added Successfully',
-        description: `${email} has been added to your company.`,
+        title: 'User Assigned Successfully',
+        description: `${email} has been assigned to your company.`,
       });
       
       fetchCompanyUsers(); // Refresh the user list
@@ -254,9 +236,11 @@ export function UserManagement() {
        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
        toast({
         variant: "destructive",
-        title: "Failed to Add User",
+        title: "Failed to Assign User",
         description: errorMessage,
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
