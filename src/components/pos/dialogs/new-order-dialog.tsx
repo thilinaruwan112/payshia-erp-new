@@ -122,7 +122,7 @@ export function NewOrderDialog({ isOpen, onOpenChange, activeOrders = [], create
         try {
             const [tablesResponse, stewardsResponse, heldOrdersResponse] = await Promise.all([
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?user_status=3&company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`),
             ]);
             if (!tablesResponse.ok) throw new Error('Failed to fetch tables');

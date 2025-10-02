@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import type { Product, User, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem, Customer } from '@/lib/types';
+import type { Product, Customer, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem, User } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -147,12 +147,12 @@ export default function POSPage() {
     if (userId && userName) {
       setCurrentCashier({
         id: userId,
-        name: userName,
+        user_name: userName,
         role: 'Cashier',
         avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`,
         customer_id: userId,
-        customer_first_name: userName,
-        customer_last_name: ''
+        first_name: userName,
+        last_name: ''
       });
     }
   }, []);
@@ -171,7 +171,7 @@ export default function POSPage() {
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?user_status=3&company_id=${company_id}`)
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`)
             ]);
 
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !customersResponse.ok) {
@@ -192,8 +192,8 @@ export default function POSPage() {
                 role: s.acc_type, 
                 avatar: s.img_path, 
                 customer_id: s.id,
-                customer_first_name: s.first_name,
-                customer_last_name: s.last_name
+                first_name: s.first_name,
+                last_name: s.last_name
              })));
             
             setCustomers([walkInCustomer, ...customersData]);
@@ -316,9 +316,9 @@ export default function POSPage() {
       company_id: String(company_id),
       return_amount: returnItems.reduce((acc, item) => acc + item.amount, 0).toString(),
       reason: returnReason,
-      created_by: currentCashier?.name || 'Admin',
+      created_by: currentCashier?.user_name || 'Admin',
       created_at: new Date().toISOString(),
-      updated_by: currentCashier?.name || 'Admin',
+      updated_by: currentCashier?.user_name || 'Admin',
       is_active: '1',
       ref_invoice: selectedInvoiceForReturn?.invoice_number || null,
       stock_entries: returnItems.filter(item => item.quantity > 0).map(item => ({
@@ -482,7 +482,7 @@ export default function POSPage() {
         location_id: parseInt(currentLocation.location_id, 10), 
         table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0, 
         order_ready_status: 1, 
-        created_by: currentCashier.name, 
+        created_by: currentCashier.user_name, 
         is_active: 1, 
         steward_id: "N/A",
         cost_value: currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0),
@@ -710,7 +710,7 @@ export default function POSPage() {
   const orderPanelComponent = currentOrder && currentCashier ? (
      <OrderPanel
         key={currentOrder.id} order={currentOrder} orderTotals={orderTotals}
-        cashierName={currentCashier.name} currentLocation={currentLocation}
+        cashierName={currentCashier.user_name || 'Admin'} currentLocation={currentLocation}
         onUpdateQuantity={updateQuantity} onRemoveItem={removeFromCart} onClearCart={onClearCart}
         onHoldAndKitchen={handleHoldAndKitchen}
         isDrawer={isDrawerOpen} onClose={() => setDrawerOpen(false)}
