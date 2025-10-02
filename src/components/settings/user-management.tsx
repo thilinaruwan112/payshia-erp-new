@@ -53,15 +53,16 @@ interface CompanyUser {
   user_id: string;
 }
 
-function InviteUserDialog({ onInvite }: { onInvite: (email: string, role: string) => Promise<void> }) {
+function AddNewUserDialog({ onAdd }: { onAdd: (email: string, role: string, status: string) => Promise<void> }) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('user');
+  const [status, setStatus] = useState('2'); // Default to 'User'
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInvite = async () => {
+  const handleAdd = async () => {
     setIsSubmitting(true);
-    await onInvite(email, role);
+    await onAdd(email, role, status);
     setIsSubmitting(false);
     setIsOpen(false);
   };
@@ -71,14 +72,14 @@ function InviteUserDialog({ onInvite }: { onInvite: (email: string, role: string
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Invite User
+          Add New User
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Invite a new user</DialogTitle>
+          <DialogTitle>Add a new user</DialogTitle>
           <DialogDescription>
-            Enter the user's email and select a role. They will receive an email to join your company.
+            Enter the user's email and assign their initial role and status.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -99,11 +100,26 @@ function InviteUserDialog({ onInvite }: { onInvite: (email: string, role: string
                     </SelectContent>
                 </Select>
             </div>
+             <div className="space-y-2">
+                <Label htmlFor="status">User Status</Label>
+                 <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger id="status">
+                        <SelectValue placeholder="Select a status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="1">Admin</SelectItem>
+                        <SelectItem value="2">User</SelectItem>
+                        <SelectItem value="3">Steward</SelectItem>
+                        <SelectItem value="4">Supplier</SelectItem>
+                        <SelectItem value="5">Customer</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-          <Button onClick={handleInvite} disabled={!email || isSubmitting}>
-             {isSubmitting ? 'Sending...' : 'Send Invite'}
+          <Button onClick={handleAdd} disabled={!email || isSubmitting}>
+             {isSubmitting ? 'Adding...' : 'Add User'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -164,10 +180,12 @@ export function UserManagement() {
     fetchCompanyUsers();
   }, [toast, company_id]);
   
-  const handleInvite = async (email: string, role: string) => {
+  const handleAddUser = async (email: string, role: string, status: string) => {
+    // This is where you'll call your API endpoint later
+    console.log({ email, role, status });
     toast({
-        title: 'Invitation Sent (Simulated)',
-        description: `An invitation has been sent to ${email} for the ${role} role.`,
+        title: 'User Added (Simulated)',
+        description: `User with email ${email} has been added.`,
     });
   };
 
@@ -179,12 +197,7 @@ export function UserManagement() {
                  <CardTitle>All Users</CardTitle>
                 <CardDescription>A list of all users in your company.</CardDescription>
             </div>
-             <Button asChild>
-                <Link href="/register">
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add New Users
-                </Link>
-            </Button>
+             <AddNewUserDialog onAdd={handleAddUser} />
         </div>
       </CardHeader>
       <CardContent>
