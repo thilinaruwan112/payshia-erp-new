@@ -199,8 +199,15 @@ export function UserManagement() {
 
       const checkResult = await checkResponse.json();
       
-      if (checkResponse.ok && checkResult.user) {
-        userId = checkResult.user.id;
+      if (checkResponse.ok && checkResult.exists === true) {
+        // If the user exists, we still need to get their ID. The `check-email` endpoint might not return it.
+        // Let's assume another endpoint or modify the logic. For now, let's fetch all users again to find the ID.
+        const allUsersRes = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`);
+        if (!allUsersRes.ok) throw new Error('Could not verify user ID.');
+        const allUsersData = await allUsersRes.json();
+        const foundUser = allUsersData.data.find((u: User) => u.email === email);
+        if (!foundUser) throw new Error('User existence confirmed, but could not retrieve user details.');
+        userId = foundUser.id;
       } else {
         throw new Error("User with this email does not exist. Please ask the user to register first.");
       }
