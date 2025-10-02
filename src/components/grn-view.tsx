@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
+import { useCurrency } from './currency-provider';
 
 interface GrnViewProps {
     id: string;
@@ -57,6 +58,7 @@ export function GrnView({ id }: GrnViewProps) {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
 
   useEffect(() => {
     async function fetchData() {
@@ -217,7 +219,7 @@ export function GrnView({ id }: GrnViewProps) {
              <CardFooter className="flex justify-end font-bold text-lg">
                 <div className="flex items-center gap-4">
                     <span>Grand Total:</span>
-                    <span className="font-mono">${parseFloat(grn.grand_total).toFixed(2)}</span>
+                    <span className="font-mono">{currencySymbol}{parseFloat(grn.grand_total).toFixed(2)}</span>
                 </div>
             </CardFooter>
          </Card>
@@ -280,3 +282,5 @@ function GrnViewSkeleton() {
     </div>
   );
 }
+
+    

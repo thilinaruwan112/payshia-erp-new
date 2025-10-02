@@ -42,6 +42,7 @@ import React, { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
 import { useLocation } from "./location-provider";
 import { fetcher } from "@/lib/api";
+import { useCurrency } from "./currency-provider";
 
 
 const grnBatchSchema = z.object({
@@ -93,6 +94,7 @@ export function GrnForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { company_id } = useLocation();
+  const { currencySymbol } = useCurrency();
   const poId = searchParams.get('poId');
 
   const [purchaseOrder, setPurchaseOrder] = useState<PurchaseOrder | null>(null);
@@ -409,15 +411,15 @@ export function GrnForm() {
                 <CardContent className="space-y-2">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal</span>
-                        <span className="font-mono font-medium">${subTotal.toFixed(2)}</span>
+                        <span className="font-mono font-medium">{currencySymbol}{subTotal.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between">
                         <span className="text-muted-foreground">Tax (Calculated)</span>
-                        <span className="font-mono font-medium">$0.00</span>
+                        <span className="font-mono font-medium">{currencySymbol}0.00</span>
                     </div>
                      <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
                         <span>Grand Total</span>
-                        <span className="font-mono">${subTotal.toFixed(2)}</span>
+                        <span className="font-mono">{currencySymbol}{subTotal.toFixed(2)}</span>
                     </div>
                 </CardContent>
             </Card>
@@ -445,7 +447,7 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
                     <div>
                         <CardTitle className="text-lg">{item.productName} ({item.sku})</CardTitle>
                         <CardDescription>
-                            Order Qty: {item.orderQty} | Received: {item.alreadyReceived} | Balance: {item.receivable} | Rate: ${item.unitRate.toFixed(2)}
+                            Order Qty: {item.orderQty} | Received: {item.alreadyReceived} | Balance: {item.receivable} | Rate: Rs {item.unitRate.toFixed(2)}
                         </CardDescription>
                     </div>
                      {hasError && (
@@ -560,5 +562,7 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
         </Card>
     );
 }
+
+    
 
     
