@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -46,6 +45,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { fetcher } from '@/lib/api';
+import Link from 'next/link';
 
 interface CompanyUser {
   id: string;
@@ -179,7 +179,12 @@ export function UserManagement() {
                  <CardTitle>All Users</CardTitle>
                 <CardDescription>A list of all users in your company.</CardDescription>
             </div>
-            <InviteUserDialog onInvite={handleInvite} />
+             <Button asChild>
+                <Link href="/register">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add New Users
+                </Link>
+            </Button>
         </div>
       </CardHeader>
       <CardContent>
