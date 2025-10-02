@@ -553,7 +553,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (userName) {
       setUser({
         name: userName,
-        email: userEmail || `${userName.toLowerCase().replace(' ', '.')}@payshia.com`,
+        email: userEmail || userName, // Use userName as fallback for email
         role: 'User',
         avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`
       });
