@@ -250,12 +250,7 @@ export function UserManagement() {
     }
     
     setIsLoading(true);
-    const loggedInUsername = localStorage.getItem('userName');
-    if (!loggedInUsername) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not identify current user. Please log in again.' });
-        setIsLoading(false);
-        return;
-    }
+    const loggedInUsername = localStorage.getItem('userName') || 'admin';
 
     try {
       const checkResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/check-email`, {
@@ -315,10 +310,23 @@ export function UserManagement() {
   };
 
   const handleUpdateRole = async (userId: string, companyUserId: string, role: string) => {
+     if (!company_id) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Company ID is not available.' });
+      return;
+    }
+    const loggedInUsername = localStorage.getItem('userName') || 'admin';
+    const payload = {
+        user_id: userId,
+        company_id: company_id,
+        role: role,
+        status: '2', // Defaulting to 'User' status, this could be made dynamic if needed
+        created_by: loggedInUsername,
+        updated_by: loggedInUsername,
+    };
     try {
-      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users/${companyUserId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ role: role, user_id: userId }),
+      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users/assign`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
       });
       if (!response.ok) throw new Error('Failed to update role.');
       toast({ title: 'Role Updated', description: "The user's role has been changed." });
