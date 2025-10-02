@@ -195,6 +195,11 @@ export function UserManagement() {
     setIsLoading(true);
     let userId;
     const loggedInUsername = localStorage.getItem('userName') || 'admin';
+    if (!loggedInUsername) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not identify current user. Please log in again.' });
+        setIsLoading(false);
+        return;
+    }
 
     try {
       // 1. Check if user exists by email
