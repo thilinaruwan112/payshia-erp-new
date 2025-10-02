@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -231,7 +230,7 @@ export function UserManagement() {
         company_id: company_id,
         role: role,
         status: status,
-        created_by: 'admin', // You might want to get this from the logged in user
+        created_by: 'admin',
         updated_by: 'admin',
       };
       const assignResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users/assign`, {
