@@ -142,15 +142,15 @@ export function PosHeader({
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-9 w-9">
-                        <AvatarImage src={cashier.avatar} alt={cashier.name} data-ai-hint="profile photo"/>
-                        <AvatarFallback>{cashier.name.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={cashier.avatar} alt={cashier.user_name} data-ai-hint="profile photo"/>
+                        <AvatarFallback>{cashier.user_name ? cashier.user_name.charAt(0) : 'U'}</AvatarFallback>
                     </Avatar>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{cashier.name}</p>
+                        <p className="text-sm font-medium leading-none">{cashier.user_name}</p>
                         <p className="text-xs leading-none text-muted-foreground">{cashier.role}</p>
                     </div>
                 </DropdownMenuLabel>
