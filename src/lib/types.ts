@@ -145,6 +145,7 @@ export type User = {
   avatar?: string;
   phone?: string;
   address?: string;
+  companyUserId?: string; // ID from the company_users pivot table
 };
 
 export type Collection = {
@@ -474,7 +475,7 @@ export type ActiveOrder = {
   cart: CartItem[];
   discount: number;
   serviceCharge: number;
-  customer: Customer;
+  customer: User;
   orderType: 'Take Away' | 'Retail' | 'Delivery' | 'Dine-In';
   tableName?: string;
   steward?: User;
