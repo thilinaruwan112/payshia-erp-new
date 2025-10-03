@@ -42,7 +42,7 @@ import { Combobox } from "./ui/combobox";
 
 interface ProductWithApiResponse {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
 }
 
 interface RecipeItem {
@@ -80,6 +80,7 @@ export function BomForm() {
   const { company_id } = useLocation();
   const [recipes, setRecipes] = useState<RecipeItem[]>([]);
   const [selectedRecipeItems, setSelectedRecipeItems] = useState<RecipeItem[]>([]);
+  const [ingredients, setIngredients] = useState<ProductWithApiResponse[]>([]);
 
   const form = useForm<BomFormValues>({
     resolver: zodResolver(bomFormSchema),
@@ -99,9 +100,10 @@ export function BomForm() {
     async function fetchData() {
         if (!company_id) return;
         try {
-            const [productsResponse, recipesResponse] = await Promise.all([
+            const [productsResponse, recipesResponse, ingredientsResponse] = await Promise.all([
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/filter/recipe-type?recipe_type=item_recipe&company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/goods/filter/item-type?item_type=raw,both&company_id=${company_id}`)
             ]);
 
             if (!productsResponse.ok) throw new Error("Failed to fetch products");
@@ -111,6 +113,11 @@ export function BomForm() {
             if(!recipesResponse.ok) throw new Error("Failed to fetch recipes");
             const recipesData = await recipesResponse.json();
             setRecipes(Array.isArray(recipesData.data) ? recipesData.data : []);
+
+            if (!ingredientsResponse.ok) throw new Error("Failed to fetch ingredients");
+            const ingredientsData = await ingredientsResponse.json();
+            setIngredients(ingredientsData.products || []);
+
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
         }
@@ -119,15 +126,15 @@ export function BomForm() {
   }, [company_id, toast]);
 
   const allSkus = React.useMemo(() => {
-    return products.flatMap(p => 
+    return ingredients.flatMap(p => 
         (p.variants || []).map(v => ({
-            label: `${p.product.name} (${v.sku})`,
-            value: v.id,
+            label: `${p.product.name} (${v.variant.sku})`,
+            value: v.variant.id,
             productId: p.product.id,
             name: p.product.name.toLowerCase()
         }))
     );
-  }, [products]);
+  }, [ingredients]);
 
   const finishedGoodId = form.watch("productId");
   const quantityProduced = 1;
@@ -140,7 +147,7 @@ export function BomForm() {
   const finishedGoodsOptions = React.useMemo(() => {
     return products
       .flatMap(p => 
-          (p.variants || []).map(v => ({ product: p.product, variant: v }))
+          (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
       )
       .filter((pv): pv is { product: Product, variant: { id: string, sku: string } } => !!pv.variant?.id && !!pv.variant.sku)
       .map(pv => ({
@@ -152,31 +159,31 @@ export function BomForm() {
   const requiredIngredients = React.useMemo(() => {
       if (selectedRecipeItems.length === 0) return [];
       
-      const allIngredients = products.flatMap(p => 
+      const allIngredientsInfo = ingredients.flatMap(p => 
         (p.variants || []).map(v => ({
-            id: v.id,
+            id: v.variant.id,
             name: p.product.name,
-            sku: v.sku,
+            sku: v.variant.sku,
             unit: p.product.stock_unit || 'Nos'
         }))
       );
 
       return selectedRecipeItems.map(item => {
-          const ingredientProduct = allIngredients.find(ing => ing.id === item.recipe_product);
+          const ingredientInfo = allIngredientsInfo.find(ing => ing.id === item.recipe_product);
           return {
-              name: ingredientProduct?.name || `Product ID: ${item.recipe_product}`,
-              sku: ingredientProduct?.sku || 'N/A',
+              name: ingredientInfo?.name || `Product ID: ${item.recipe_product}`,
+              sku: ingredientInfo?.sku || 'N/A',
               requiredQty: parseFloat(item.qty) * (quantityProduced || 1),
-              unit: ingredientProduct?.unit || 'Nos',
+              unit: ingredientInfo?.unit || 'Nos',
           }
       });
-  }, [selectedRecipeItems, quantityProduced, products]);
+  }, [selectedRecipeItems, quantityProduced, ingredients]);
 
   async function onSubmit(data: BomFormValues) {
     setIsLoading(true);
 
     const finishedGoodVariantId = data.productId;
-    const finishedGoodProduct = allSkus.find(sku => sku.value === finishedGoodVariantId);
+    const finishedGoodProduct = products.flatMap(p => (p.variants || []).map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === finishedGoodVariantId);
 
     if (!finishedGoodProduct || !company_id) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not find finished good product details.' });
@@ -342,7 +349,13 @@ export function BomForm() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormControl>
-                                                    <Input placeholder="Enter raw material name or ID" {...field} />
+                                                    <Combobox
+                                                        options={allSkus}
+                                                        value={field.value}
+                                                        onChange={field.onChange}
+                                                        placeholder="Select an ingredient..."
+                                                        notFoundText="No ingredient found."
+                                                    />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
