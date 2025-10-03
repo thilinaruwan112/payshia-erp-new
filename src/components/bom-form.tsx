@@ -126,12 +126,11 @@ export function BomForm() {
   }, [company_id, toast]);
 
   const allSkus = React.useMemo(() => {
+    if (!ingredients) return [];
     return ingredients.flatMap(p => 
         (p.variants || []).map(v => ({
             label: `${p.product.name} (${v.variant.sku})`,
             value: v.variant.id,
-            productId: p.product.id,
-            name: p.product.name.toLowerCase()
         }))
     );
   }, [ingredients]);
