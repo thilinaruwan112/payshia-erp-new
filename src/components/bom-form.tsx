@@ -76,6 +76,7 @@ export function BomForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id } = useLocation();
   const [recipes, setRecipes] = useState<RecipeItem[]>([]);
@@ -99,27 +100,30 @@ export function BomForm() {
   useEffect(() => {
     async function fetchData() {
         if (!company_id) return;
+        setIsLoading(true);
         try {
-            const [productsResponse, recipesResponse, ingredientsResponse] = await Promise.all([
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/filter/recipe-type?recipe_type=item_recipe&company_id=${company_id}`),
+            const [productsResponse, recipesResponse] = await Promise.all([
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/goods/filter/item-type?item_type=raw,both&company_id=${company_id}`)
             ]);
 
             if (!productsResponse.ok) throw new Error("Failed to fetch products");
             const productsData = await productsResponse.json();
-            setProducts(productsData.products || []);
+            const allProducts = productsData.products || [];
+            
+            // Separate finished goods and ingredients
+            setProducts(allProducts.filter((p: ProductWithApiResponse) => p.product.item_type !== 'raw'));
+            setIngredients(allProducts.filter((p: ProductWithApiResponse) => ['raw', 'both'].includes(p.product.item_type || '')));
+
 
             if(!recipesResponse.ok) throw new Error("Failed to fetch recipes");
             const recipesData = await recipesResponse.json();
             setRecipes(Array.isArray(recipesData.data) ? recipesData.data : []);
 
-            if (!ingredientsResponse.ok) throw new Error("Failed to fetch ingredients");
-            const ingredientsData = await ingredientsResponse.json();
-            setIngredients(ingredientsData.products || []);
-
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
+        } finally {
+            setIsLoading(false);
         }
     }
     fetchData();
@@ -182,9 +186,10 @@ export function BomForm() {
     setIsLoading(true);
 
     const finishedGoodVariantId = data.productId;
-    const finishedGoodProduct = products.flatMap(p => (p.variants || []).map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === finishedGoodVariantId);
+    const finishedGoodProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === finishedGoodVariantId);
 
-    if (!finishedGoodProduct || !company_id) {
+
+    if (!finishedGoodProductInfo || !company_id) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not find finished good product details.' });
         setIsLoading(false);
         return;
@@ -194,7 +199,7 @@ export function BomForm() {
         for (const item of data.items) {
             const payload = {
                 company_id: company_id,
-                main_product: parseInt(finishedGoodProduct.productId, 10),
+                main_product: parseInt(finishedGoodProductInfo.productId, 10),
                 product_variant_id: parseInt(finishedGoodVariantId, 10),
                 recipe_product: item.recipe_product,
                 qty: item.quantity,
