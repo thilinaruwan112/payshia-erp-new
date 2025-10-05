@@ -279,40 +279,71 @@ export function BomForm() {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Recipe Details</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="productId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Finished Good</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select an item with a recipe" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {finishedGoodsOptions.map(item => (
-                                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Finished Good</CardTitle>
+                    <CardDescription>Select the item you are creating a recipe for.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <FormField
+                        control={form.control}
+                        name="productId"
+                        render={({ field }) => (
+                            <FormItem>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select an item with a recipe" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {finishedGoodsOptions.map(item => (
+                                            <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Existing Recipe</CardTitle>
+                    <CardDescription>This is the current recipe for the selected item.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {requiredIngredients.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Ingredient</TableHead>
+                                    <TableHead className="text-right">Required Qty</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {requiredIngredients.map(ing => (
+                                    <TableRow key={ing.sku}>
+                                        <TableCell>{ing.name} <span className="text-xs text-muted-foreground">({ing.sku})</span></TableCell>
+                                        <TableCell className="text-right font-mono">{ing.requiredQty} {ing.unit}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No existing recipe found. Add ingredients below.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+
 
          <Card>
             <CardHeader>
-                <CardTitle>Ingredients / Raw Materials</CardTitle>
-                <CardDescription>Add all the components required to make this item.</CardDescription>
+                <CardTitle>Add/Update Ingredients</CardTitle>
+                <CardDescription>Add all the components required to make this item. This will update the existing recipe.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
