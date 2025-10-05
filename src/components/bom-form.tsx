@@ -34,7 +34,7 @@ import type { Product, ProductVariant } from "@/lib/types";
 import { Loader2, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useLocation } from "./location-provider";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { fetcher } from "@/lib/api";
 import { format } from "date-fns";
@@ -139,7 +139,7 @@ export function BomForm() {
                 stock_unit: p.product.stock_unit || 'Nos',
                 cost_price: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
             }
-        }).filter(Boolean)
+        }).filter(Boolean) as { label: string; value: string; stock_unit: string; cost_price: number; }[]
     );
   }, [ingredients]);
 
@@ -176,7 +176,7 @@ export function BomForm() {
             sku: v.variant.sku,
             unit: p.product.stock_unit || 'Nos'
           }
-        }).filter(Boolean)
+        }).filter(Boolean) as { id: string; name: string; sku: string; unit: string; }[]
       );
 
       return selectedRecipeItems.map(item => {
@@ -244,6 +244,11 @@ export function BomForm() {
   }
 
   const watchedItems = form.watch('items');
+  const grandTotal = watchedItems.reduce((acc, item) => {
+    const quantity = item?.quantity || 0;
+    const costPrice = item?.cost_price || 0;
+    return acc + (quantity * costPrice);
+  }, 0);
 
   return (
     <Form {...form}>
@@ -407,6 +412,13 @@ export function BomForm() {
                            </TableRow>
                          )})}
                     </TableBody>
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-right font-bold">Grand Total</TableCell>
+                        <TableCell className="text-right font-bold font-mono">{grandTotal.toFixed(2)}</TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
+                    </TableFooter>
                 </Table>
                 <Button type="button" variant="outline" size="sm" onClick={() => append({ recipe_product: '', quantity: 1, unit: 'Nos', cost_price: 0 })} className="mt-4">
                     Add Ingredient
