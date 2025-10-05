@@ -291,40 +291,6 @@ export function BomForm() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="recipeType"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Recipe Type</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex items-center space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="Item Recipe" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Item Recipe
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="A La Carte" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          A La Carte
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </CardContent>
         </Card>
 
