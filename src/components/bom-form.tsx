@@ -61,6 +61,7 @@ const recipeItemSchema = z.object({
   recipe_product: z.string().min(1, "Ingredient is required."),
   quantity: z.coerce.number().min(0.001, "Quantity must be greater than 0."),
   unit: z.string().min(1, "Unit is required."),
+  cost_price: z.coerce.number().optional(),
 });
 
 const bomFormSchema = z.object({
@@ -85,7 +86,7 @@ export function BomForm() {
   const form = useForm<BomFormValues>({
     resolver: zodResolver(bomFormSchema),
     defaultValues: {
-      items: [{ recipe_product: "", quantity: 1, unit: "Nos" }],
+      items: [{ recipe_product: "", quantity: 1, unit: "Nos", cost_price: 0 }],
     },
     mode: "onChange",
   });
@@ -135,7 +136,8 @@ export function BomForm() {
             return {
                 label: `${p.product.name} (${v.variant.sku})`,
                 value: v.variant.id,
-                stock_unit: p.product.stock_unit || 'Nos'
+                stock_unit: p.product.stock_unit || 'Nos',
+                cost_price: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
             }
         }).filter(Boolean)
     );
@@ -241,6 +243,8 @@ export function BomForm() {
     }
   }
 
+  const watchedItems = form.watch('items');
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -309,14 +313,21 @@ export function BomForm() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[40%]">Ingredient Name</TableHead>
+                            <TableHead className="w-[30%]">Ingredient Name</TableHead>
                             <TableHead>Quantity</TableHead>
                             <TableHead>Unit</TableHead>
+                            <TableHead>Cost Price</TableHead>
+                            <TableHead>Total Price</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                         {fields.map((field, index) => (
+                         {fields.map((field, index) => {
+                           const quantity = watchedItems[index]?.quantity || 0;
+                           const costPrice = watchedItems[index]?.cost_price || 0;
+                           const totalPrice = quantity * costPrice;
+
+                           return (
                            <TableRow key={field.id}>
                                 <TableCell>
                                     <FormField
@@ -332,6 +343,7 @@ export function BomForm() {
                                                             field.onChange(value);
                                                             const selectedSku = allSkus.find(s => s.value === value);
                                                             form.setValue(`items.${index}.unit`, selectedSku?.stock_unit || 'Nos');
+                                                            form.setValue(`items.${index}.cost_price`, selectedSku?.cost_price || 0);
                                                         }}
                                                         placeholder="Select an ingredient..."
                                                         notFoundText="No ingredient found."
@@ -363,12 +375,29 @@ export function BomForm() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormControl>
-                                                    <Input {...field} readOnly disabled className="bg-muted" />
+                                                    <Input {...field} readOnly disabled className="bg-muted border-none" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
+                                </TableCell>
+                                 <TableCell>
+                                    <FormField
+                                        control={form.control}
+                                        name={`items.${index}.cost_price`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input type="number" {...field} readOnly disabled className="bg-muted border-none text-right" />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </TableCell>
+                                <TableCell className="text-right font-mono">
+                                    {totalPrice.toFixed(2)}
                                 </TableCell>
                                 <TableCell>
                                     <Button variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -376,10 +405,10 @@ export function BomForm() {
                                     </Button>
                                 </TableCell>
                            </TableRow>
-                        ))}
+                         )})}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ recipe_product: '', quantity: 1, unit: 'Nos' })} className="mt-4">
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ recipe_product: '', quantity: 1, unit: 'Nos', cost_price: 0 })} className="mt-4">
                     Add Ingredient
                 </Button>
             </CardContent>
