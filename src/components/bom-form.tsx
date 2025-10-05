@@ -65,7 +65,6 @@ const recipeItemSchema = z.object({
 
 const bomFormSchema = z.object({
   productId: z.string().min(1, "Finished good is required."),
-  recipeType: z.enum(["A La Carte", "Item Recipe"]),
   items: z.array(recipeItemSchema).min(1, "At least one ingredient is required."),
   notes: z.string().optional(),
 });
@@ -86,7 +85,6 @@ export function BomForm() {
   const form = useForm<BomFormValues>({
     resolver: zodResolver(bomFormSchema),
     defaultValues: {
-      recipeType: "Item Recipe",
       items: [{ recipe_product: "", quantity: 1, unit: "Nos" }],
     },
     mode: "onChange",
@@ -129,15 +127,20 @@ export function BomForm() {
     fetchData();
   }, [company_id, toast]);
 
-  const allSkus = React.useMemo(() => {
+ const allSkus = React.useMemo(() => {
     if (!ingredients) return [];
     return ingredients.flatMap(p => 
-        (p.variants || []).map(v => ({
-            label: `${p.product.name} (${v.variant.sku})`,
-            value: v.variant.id,
-        }))
+        (p.variants || []).map(v => {
+            if (!v.variant) return null; // Guard clause
+            return {
+                label: `${p.product.name} (${v.variant.sku})`,
+                value: v.variant.id,
+                stock_unit: p.product.stock_unit || 'Nos'
+            }
+        }).filter(Boolean)
     );
   }, [ingredients]);
+
 
   const finishedGoodId = form.watch("productId");
   const quantityProduced = 1;
@@ -163,16 +166,19 @@ export function BomForm() {
       if (selectedRecipeItems.length === 0) return [];
       
       const allIngredientsInfo = ingredients.flatMap(p => 
-        (p.variants || []).map(v => ({
+        (p.variants || []).map(v => {
+          if (!v.variant) return null;
+          return {
             id: v.variant.id,
             name: p.product.name,
             sku: v.variant.sku,
             unit: p.product.stock_unit || 'Nos'
-        }))
+          }
+        }).filter(Boolean)
       );
 
       return selectedRecipeItems.map(item => {
-          const ingredientInfo = allIngredientsInfo.find(ing => ing.id === item.recipe_product);
+          const ingredientInfo = allIngredientsInfo.find(ing => ing && ing.id === item.recipe_product);
           return {
               name: ingredientInfo?.name || `Product ID: ${item.recipe_product}`,
               sku: ingredientInfo?.sku || 'N/A',
@@ -203,7 +209,7 @@ export function BomForm() {
                 product_variant_id: parseInt(finishedGoodVariantId, 10),
                 recipe_product: item.recipe_product,
                 qty: item.quantity,
-                recipe_type: data.recipeType === 'A La Carte' ? 'ala cart' : 'item_recipe',
+                recipe_type: 'item_recipe',
                 created_by: "admin",
                 created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
             };
@@ -322,7 +328,11 @@ export function BomForm() {
                                                     <Combobox
                                                         options={allSkus}
                                                         value={field.value}
-                                                        onChange={field.onChange}
+                                                        onChange={(value) => {
+                                                            field.onChange(value);
+                                                            const selectedSku = allSkus.find(s => s.value === value);
+                                                            form.setValue(`items.${index}.unit`, selectedSku?.stock_unit || 'Nos');
+                                                        }}
                                                         placeholder="Select an ingredient..."
                                                         notFoundText="No ingredient found."
                                                     />
@@ -352,20 +362,9 @@ export function BomForm() {
                                         name={`items.${index}.unit`}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Unit" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="Nos">Nos (Numbers)</SelectItem>
-                                                        <SelectItem value="KG">KG (Kilogram)</SelectItem>
-                                                        <SelectItem value="Gram">Gram</SelectItem>
-                                                        <SelectItem value="Litre">Litre</SelectItem>
-                                                        <SelectItem value="ml">ml (Millilitre)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                                <FormControl>
+                                                    <Input {...field} readOnly disabled className="bg-muted" />
+                                                </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
