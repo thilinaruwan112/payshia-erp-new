@@ -22,6 +22,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Account } from "@/lib/types";
@@ -68,7 +78,8 @@ const journalEntryFormSchema = z.object({
 .refine(data => {
     const totalDebit = data.lines.reduce((acc, line) => acc + (line.debit || 0), 0);
     const totalCredit = data.lines.reduce((acc, line) => acc + (line.credit || 0), 0);
-    return Math.abs(totalDebit - totalCredit) < 0.001; // Use a small tolerance for floating point comparison
+    // Use a small tolerance for floating point comparison
+    return Math.abs(totalDebit - totalCredit) < 0.001;
 }, {
     message: "Total debits must equal total credits.",
     path: ["lines"],
@@ -94,6 +105,7 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
   const { currencySymbol } = useCurrency();
   const { company_id, currentLocation } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
   
   const defaultValues: Partial<JournalEntryFormValues> = {
     date: new Date(),
@@ -115,6 +127,8 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
     name: "lines",
   });
 
+  const { formState: { isValid } } = form;
+
   async function onSubmit(data: JournalEntryFormValues) {
     if (!company_id || !currentLocation) {
       toast({ variant: 'destructive', title: 'Error', description: 'Company and Location must be set.' });
@@ -124,10 +138,6 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
 
     const debits = data.lines.filter(line => (line.debit || 0) > 0);
     const credits = data.lines.filter(line => (line.credit || 0) > 0);
-
-    // This logic assumes a simple case where one side has one entry and the other has one or more.
-    // A more complex transaction splitter would be needed for many-to-many debits/credits.
-    // For now, we pair the single entry with each of the multiple entries.
 
     const transactions = [];
 
@@ -194,9 +204,14 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
       });
     } finally {
        setIsLoading(false);
+       setIsConfirmOpen(false);
     }
   }
   
+  const handleSaveClick = () => {
+     form.handleSubmit(() => setIsConfirmOpen(true))();
+  };
+
   const { lines } = form.watch();
   const totalDebit = lines.reduce((acc, line) => acc + (Number(line.debit) || 0), 0);
   const totalCredit = lines.reduce((acc, line) => acc + (Number(line.credit) || 0), 0);
@@ -205,8 +220,9 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
 
 
   return (
+    <>
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
                  <h1 className="text-3xl font-bold tracking-tight text-nowrap">New Journal Entry</h1>
@@ -214,7 +230,7 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isLoading}>Cancel</Button>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="button" onClick={handleSaveClick} className="w-full" disabled={isLoading || !isValid}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Entry
                 </Button>
@@ -237,10 +253,7 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
                             <FormControl>
                                 <Button
                                 variant={"outline"}
-                                className={cn(
-                                    "w-[240px] pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                )}
+                                className={cn("w-[240px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
                                 >
                                 {field.value ? (
                                     format(field.value, "PPP")
@@ -375,5 +388,23 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
         </Card>
       </form>
     </Form>
+    <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Journal Entry</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to post this journal entry? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={form.handleSubmit(onSubmit)} disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Continue & Save
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
