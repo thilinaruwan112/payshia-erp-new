@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/card';
 import { DollarSign, Receipt, TrendingUp, TrendingDown } from 'lucide-react';
 import { useMemo } from 'react';
-import type { Account, Order } from '@/lib/types';
+import type { Account, Invoice } from '@/lib/types';
 import {
   Bar,
   BarChart,
@@ -34,6 +34,7 @@ export default function AccountingDashboardPage() {
     const { company_id } = useLocation();
     const { toast } = useToast();
     const [accounts, setAccounts] = React.useState<Account[]>([]);
+    const [invoices, setInvoices] = React.useState<Invoice[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
 
     React.useEffect(() => {
@@ -44,13 +45,19 @@ export default function AccountingDashboardPage() {
       async function fetchData() {
         setIsLoading(true);
         try {
-            const [accountsRes] = await Promise.all([
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/chart-of-accounts/company?company_id=${company_id}`)
+            const [accountsRes, invoicesRes] = await Promise.all([
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-accounts?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/company/latest?company_id=${company_id}`)
             ]);
 
             if (!accountsRes.ok) throw new Error('Failed to fetch chart of accounts');
+            if (!invoicesRes.ok) throw new Error('Failed to fetch invoices');
 
-            setAccounts(await accountsRes.json());
+            const accountsData = await accountsRes.json();
+            const invoicesData = await invoicesRes.json();
+
+            setAccounts(accountsData.data || []);
+            setInvoices(invoicesData || []);
 
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch dashboard data.' });
@@ -63,16 +70,18 @@ export default function AccountingDashboardPage() {
 
 
   const financialSummary = useMemo(() => {
-    const totalRevenue = 0; // Removed order dependency
+    const totalRevenue = invoices
+      .filter((inv) => inv.invoice_status !== '3') // Exclude cancelled
+      .reduce((acc, invoice) => acc + (parseFloat(invoice.grand_total) || 0), 0);
 
     const totalExpenses = accounts
-      .filter((acc) => acc.type === 'Expense')
-      .reduce((acc, expense) => acc + (expense.balance || 0), 0);
+      .filter((acc) => acc.account_type === 'Expense')
+      .reduce((acc, expense) => acc + (expense.balance_info?.balance || 0), 0);
       
     const netIncome = totalRevenue - totalExpenses;
 
-    const accountsPayable = accounts.find(acc => acc.name === 'Accounts Payable')?.balance || 0;
-    const accountsReceivable = accounts.find(acc => acc.name === 'Accounts Receivable')?.balance || 0;
+    const accountsPayable = accounts.find(acc => acc.account_name === 'Accounts Payable')?.balance_info?.balance || 0;
+    const accountsReceivable = accounts.find(acc => acc.account_name === 'Accounts Receivable')?.balance_info?.balance || 0;
 
     return {
       totalRevenue,
@@ -81,10 +90,10 @@ export default function AccountingDashboardPage() {
       accountsPayable,
       accountsReceivable,
     };
-  }, [accounts]);
+  }, [accounts, invoices]);
   
   const chartData = [
-    { name: 'Financials', Expenses: financialSummary.totalExpenses, 'Net Income': financialSummary.netIncome },
+    { name: 'Financials', Revenue: financialSummary.totalRevenue, Expenses: financialSummary.totalExpenses, 'Net Income': financialSummary.netIncome },
   ];
 
   if (isLoading) {
@@ -164,8 +173,8 @@ export default function AccountingDashboardPage() {
           <ResponsiveContainer width="100%" height={350}>
             <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${currencySymbol}${(value/1000).toLocaleString()}k`} />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${currencySymbol}${(value/1000).toLocaleString()}k`} />
                 <Tooltip
                     contentStyle={{
                       backgroundColor: 'hsl(var(--background))',
@@ -176,6 +185,7 @@ export default function AccountingDashboardPage() {
                      formatter={(value: number) => `${currencySymbol}${new Intl.NumberFormat('en-US').format(value)}`}
                 />
                 <Legend />
+                <Bar dataKey="Revenue" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Expenses" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="Net Income" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
             </BarChart>
