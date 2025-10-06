@@ -7,6 +7,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Table,
@@ -15,6 +16,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Calendar as CalendarIcon } from 'lucide-react';
@@ -29,7 +31,7 @@ import type { Account, JournalEntry } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { DateRange } from 'react-day-picker';
-import { format, isWithinInterval, parseISO } from 'date-fns';
+import { format, isWithinInterval, parseISO, isBefore } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 // Mock journal entry data for a single account
@@ -93,18 +95,37 @@ export default function AccountLedgerPage() {
     fetchAccountData();
   }, [accountId, company_id, toast]);
   
-  const ledgerEntries = useMemo(() => {
-    if (!date?.from) {
-      return mockLedger.slice(-20);
+ const { filteredEntries, balanceForward } = useMemo(() => {
+    let entries = mockLedger;
+    let balanceBroughtForward = 0;
+    let filtered;
+
+    if (date?.from) {
+      const from = date.from;
+      const to = date.to || from;
+      
+      const previousEntries = entries.filter(entry => isBefore(parseISO(entry.date), from));
+      balanceBroughtForward = previousEntries.reduce((acc, entry) => acc + (entry.debit - entry.credit), 0);
+      
+      filtered = entries.filter(entry => isWithinInterval(parseISO(entry.date), { start: from, end: to }));
+    } else {
+      const last20Entries = entries.slice(-20);
+      if (last20Entries.length > 0) {
+        const firstDate = parseISO(last20Entries[0].date);
+        const previousEntries = entries.filter(entry => isBefore(parseISO(entry.date), firstDate));
+        balanceBroughtForward = previousEntries.reduce((acc, entry) => acc + (entry.debit - entry.credit), 0);
+      }
+      filtered = last20Entries;
     }
-    const from = date.from;
-    const to = date.to || date.from;
-    return mockLedger.filter(entry => 
-      isWithinInterval(parseISO(entry.date), { start: from, end: to })
-    );
+    
+    return { filteredEntries: filtered, balanceForward: balanceBroughtForward };
   }, [date]);
 
-  let runningBalance = 0;
+  let runningBalance = balanceForward;
+  const closingBalance = filteredEntries.reduce((balance, entry) => {
+    const balanceChange = entry.debit - entry.credit;
+    return balance + balanceChange;
+  }, runningBalance);
 
   return (
     <div className="flex flex-col gap-6">
@@ -195,28 +216,42 @@ export default function AccountLedgerPage() {
                         <TableCell><Skeleton className="h-4 w-24 ml-auto" /></TableCell>
                     </TableRow>
                 ))
-              ) : ledgerEntries.length > 0 ? (
-                ledgerEntries.map((entry, index) => {
-                    const balanceChange = entry.debit - entry.credit;
-                    runningBalance += balanceChange;
-                    return (
-                        <TableRow key={index}>
-                            <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
-                            <TableCell>{entry.narration}</TableCell>
-                            <TableCell className="text-right font-mono">{entry.debit > 0 ? `${currencySymbol}${entry.debit.toFixed(2)}` : '-'}</TableCell>
-                            <TableCell className="text-right font-mono">{entry.credit > 0 ? `${currencySymbol}${entry.credit.toFixed(2)}` : '-'}</TableCell>
-                            <TableCell className="text-right font-mono">{currencySymbol}{runningBalance.toFixed(2)}</TableCell>
-                        </TableRow>
-                    )
-                })
               ) : (
-                <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
-                        No transactions found for this period.
-                    </TableCell>
+                <>
+                <TableRow className="font-semibold bg-muted/30">
+                    <TableCell colSpan={4}>Balance Forward</TableCell>
+                    <TableCell className="text-right font-mono">{currencySymbol}{balanceForward.toFixed(2)}</TableCell>
                 </TableRow>
+                {filteredEntries.length > 0 ? (
+                    filteredEntries.map((entry, index) => {
+                        const balanceChange = entry.debit - entry.credit;
+                        runningBalance += balanceChange;
+                        return (
+                            <TableRow key={index}>
+                                <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
+                                <TableCell>{entry.narration}</TableCell>
+                                <TableCell className="text-right font-mono">{entry.debit > 0 ? `${currencySymbol}${entry.debit.toFixed(2)}` : '-'}</TableCell>
+                                <TableCell className="text-right font-mono">{entry.credit > 0 ? `${currencySymbol}${entry.credit.toFixed(2)}` : '-'}</TableCell>
+                                <TableCell className="text-right font-mono">{currencySymbol}{runningBalance.toFixed(2)}</TableCell>
+                            </TableRow>
+                        )
+                    })
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                            No transactions found for this period.
+                        </TableCell>
+                    </TableRow>
+                )}
+                </>
               )}
             </TableBody>
+            <TableFooter>
+                <TableRow className="font-bold text-lg bg-muted/50">
+                    <TableCell colSpan={4}>Closing Balance</TableCell>
+                    <TableCell className="text-right font-mono">{currencySymbol}{closingBalance.toFixed(2)}</TableCell>
+                </TableRow>
+            </TableFooter>
           </Table>
         </CardContent>
       </Card>
