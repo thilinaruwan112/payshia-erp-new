@@ -82,6 +82,7 @@ export type Product = {
   recipe_type?: 'standard' | 'a_la_carte' | 'item_recipe';
   base_location?: string;
   available_locations?: string;
+  item_type?: 'raw' | 'menu' | 'both';
 };
 
 export type Location = {
@@ -146,6 +147,7 @@ export type User = {
   phone?: string;
   address?: string;
   companyUserId?: string; // ID from the company_users pivot table
+  customer_id: string;
 };
 
 export type Collection = {
@@ -311,11 +313,14 @@ export type Plan = {
 export type AccountType = 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
 
 export type Account = {
-    code: number;
-    name: string;
-    type: AccountType;
-    subType: string;
-    balance: number;
+    account_id: string;
+    account_name: string;
+    account_type: AccountType;
+    balance?: number;
+    code?: string;
+    name?: string;
+    type?: AccountType;
+    subType?: string;
 };
 
 export type JournalEntry = {
@@ -398,7 +403,7 @@ export type Invoice = {
     service_charge: string;
     tendered_amount: string;
     close_type: string;
-    invoice_status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+    invoice_status: 'Draft' | 'Sent' | 'Paid' | 'Overdue' | string;
     payment_status: string;
     chanel: string;
     current_time: string;

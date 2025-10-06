@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { Account } from '@/lib/types';
+import type { Account, AccountType } from '@/lib/types';
 import { useCurrency } from '@/components/currency-provider';
 import React from 'react';
 import { useLocation } from '@/components/location-provider';
@@ -37,7 +37,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetcher } from '@/lib/api';
 
-const getAccountTypeColor = (type: Account['type']) => {
+const getAccountTypeColor = (type: AccountType) => {
   switch (type) {
     case 'Asset':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
@@ -69,12 +69,12 @@ export default function ChartOfAccountsPage() {
     async function fetchAccounts() {
         setIsLoading(true);
         try {
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/chart-of-accounts/company?company_id=${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-accounts?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch chart of accounts');
             }
             const data = await response.json();
-            setAccounts(data);
+            setAccounts(data.data || []);
         } catch (error) {
             toast({
                 variant: 'destructive',
@@ -139,16 +139,16 @@ export default function ChartOfAccountsPage() {
                     </TableRow>
                 ))
               ) : accounts.map((account) => (
-                <TableRow key={account.code}>
-                  <TableCell className="font-mono">{account.code}</TableCell>
-                  <TableCell className="font-medium">{account.name}</TableCell>
+                <TableRow key={account.account_id}>
+                  <TableCell className="font-mono">{account.account_id}</TableCell>
+                  <TableCell className="font-medium">{account.account_name}</TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    <Badge variant="secondary" className={cn(getAccountTypeColor(account.type))}>
-                        {account.type}
+                    <Badge variant="secondary" className={cn(getAccountTypeColor(account.account_type))}>
+                        {account.account_type}
                     </Badge>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                     <Badge variant="outline">{account.subType}</Badge>
+                     <Badge variant="outline">{account.subType || 'N/A'}</Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono">{currencySymbol}{(account.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
