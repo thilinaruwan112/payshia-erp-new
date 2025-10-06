@@ -1,10 +1,9 @@
 
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
 import type { Account, KeySetting } from '@/lib/types';
 import { useLocation } from '@/components/location-provider';
 import { fetcher } from '@/lib/api';
@@ -113,7 +112,7 @@ export default function TransactionSetupPage() {
     const { toast } = useToast();
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
+    const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
     const [settings, setSettings] = useState<Settings>({});
 
     useEffect(() => {
@@ -155,30 +154,32 @@ export default function TransactionSetupPage() {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleSaveChanges = async () => {
+    const handleSaveEntry = async (entryName: string, keys: (string | null)[]) => {
         if (!company_id) return;
-        setIsSaving(true);
+        setSavingStates(prev => ({...prev, [entryName]: true}));
+        
         try {
-            for (const [key, value] of Object.entries(settings)) {
-                if (!value) continue; // Do not save empty settings
-                const payload = {
-                    company_id,
-                    location_id: 0, // 0 for company-wide settings
-                    key,
-                    value,
-                    created_by: 'admin',
-                    updated_by: 'admin',
-                };
-                await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/key-settings`, {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                });
+            for (const key of keys) {
+                if (key && settings[key]) {
+                    const payload = {
+                        company_id,
+                        location_id: 0, // 0 for company-wide settings
+                        key,
+                        value: settings[key],
+                        created_by: 'admin',
+                        updated_by: 'admin',
+                    };
+                    await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/key-settings`, {
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                    });
+                }
             }
-            toast({ title: 'Success', description: 'Transaction settings saved successfully.' });
+            toast({ title: 'Success', description: `${entryName} settings saved successfully.` });
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not save settings.' });
+            toast({ variant: 'destructive', title: 'Error', description: `Could not save ${entryName} settings.` });
         } finally {
-            setIsSaving(false);
+            setSavingStates(prev => ({...prev, [entryName]: false}));
         }
     };
 
@@ -197,10 +198,6 @@ export default function TransactionSetupPage() {
                         Map default accounts for automated journal entries.
                     </p>
                 </div>
-                 <Button onClick={handleSaveChanges} disabled={isSaving || isLoading}>
-                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Save Changes
-                </Button>
             </div>
 
             <Table>
@@ -210,6 +207,7 @@ export default function TransactionSetupPage() {
                         <TableHead>Description</TableHead>
                         <TableHead className="w-1/4">Debit Account</TableHead>
                         <TableHead className="w-1/4">Credit Account</TableHead>
+                        <TableHead className="w-[120px]">Action</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -220,13 +218,14 @@ export default function TransactionSetupPage() {
                                 <TableCell><Skeleton className="h-4 w-full" /></TableCell>
                                 <TableCell><Skeleton className="h-10 w-full" /></TableCell>
                                 <TableCell><Skeleton className="h-10 w-full" /></TableCell>
+                                <TableCell><Skeleton className="h-10 w-full" /></TableCell>
                             </TableRow>
                         ))
                     ) : (
                         transactionMappings.map(section => (
                             <React.Fragment key={section.section}>
                                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                    <TableCell colSpan={4} className="font-bold text-primary">{section.section}</TableCell>
+                                    <TableCell colSpan={5} className="font-bold text-primary">{section.section}</TableCell>
                                 </TableRow>
                                 {section.entries.map(entry => (
                                     <TableRow key={entry.name}>
@@ -255,6 +254,12 @@ export default function TransactionSetupPage() {
                                             ) : (
                                                     <Input value={entry.creditLabel} disabled />
                                             )}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Button onClick={() => handleSaveEntry(entry.name, [entry.debitKey, entry.creditKey])} disabled={savingStates[entry.name]} size="sm">
+                                                {savingStates[entry.name] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                                Save
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))}
