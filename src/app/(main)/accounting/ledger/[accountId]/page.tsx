@@ -44,6 +44,9 @@ export default function AccountLedgerPage() {
   const [ledgerEntries, setLedgerEntries] = React.useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [date, setDate] = React.useState<DateRange | undefined>(undefined);
+  const [balanceForward, setBalanceForward] = React.useState(0);
+  const [closingBalance, setClosingBalance] = React.useState(0);
+
 
   React.useEffect(() => {
     if (!accountId || !company_id) {
@@ -55,11 +58,13 @@ export default function AccountLedgerPage() {
         try {
             const accountResponse = fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-accounts?company_id=${company_id}`);
             
-            let ledgerUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-transactions/get/by-account?account_id=${accountId}&company_id=${company_id}`;
+            let ledgerUrl: string;
             if (date?.from) {
                 const startDate = format(date.from, 'yyyy-MM-dd');
                 const endDate = date.to ? format(date.to, 'yyyy-MM-dd') : startDate;
                 ledgerUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-transactions/by-date-range?start_date=${startDate}&end_date=${endDate}&company_id=${company_id}&account_id=${accountId}`;
+            } else {
+                ledgerUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-transactions/get/by-account?account_id=${accountId}&company_id=${company_id}`;
             }
             
             const ledgerResponse = fetcher(ledgerUrl);
@@ -78,7 +83,37 @@ export default function AccountLedgerPage() {
 
             if (!ledRes.ok) throw new Error('Failed to fetch ledger transactions');
             const ledgerData = await ledRes.json();
-            setLedgerEntries(ledgerData.data || []);
+
+            if (date?.from) {
+                // New API structure for date range
+                setLedgerEntries(ledgerData.data.transactions || []);
+                setBalanceForward(ledgerData.data.balance_forward?.opening_balance || 0);
+                setClosingBalance(ledgerData.data.period_summary?.closing_balance || 0);
+            } else {
+                // Old API structure for default view (last 20)
+                const transactions = ledgerData.data || [];
+                setLedgerEntries(transactions.slice(-20));
+                
+                // Calculate balance forward for default view
+                const olderTransactions = transactions.slice(0, -20);
+                const openingBalance = olderTransactions.reduce((acc: number, entry: JournalEntry) => {
+                    const amount = parseFloat(entry.amount);
+                    if (entry.debit_account_id === accountId) return acc + amount;
+                    if (entry.credit_account_id === accountId) return acc - amount;
+                    return acc;
+                }, 0);
+                setBalanceForward(openingBalance);
+
+                // Calculate closing balance for default view
+                const finalBalance = transactions.reduce((acc: number, entry: JournalEntry) => {
+                    const amount = parseFloat(entry.amount);
+                    if (entry.debit_account_id === accountId) return acc + amount;
+                    if (entry.credit_account_id === accountId) return acc - amount;
+                    return acc;
+                }, 0);
+                setClosingBalance(finalBalance);
+            }
+
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
@@ -94,10 +129,10 @@ export default function AccountLedgerPage() {
     fetchAccountData();
   }, [accountId, company_id, toast, date]);
   
- const { filteredEntries, balanceForward } = useMemo(() => {
-    if (!accountId) return { filteredEntries: [], balanceForward: 0 };
+ const processedEntries = useMemo(() => {
+    if (!accountId) return [];
     
-    const processedEntries = ledgerEntries.map(entry => {
+    return ledgerEntries.map(entry => {
         const amount = parseFloat(entry.amount);
         return {
             ...entry,
@@ -106,41 +141,9 @@ export default function AccountLedgerPage() {
         };
     }).sort((a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime());
     
-    let entries = processedEntries;
-    let balanceBroughtForward = 0;
-    let filtered;
-
-    if (date?.from) {
-      filtered = entries;
-      // Note: If the backend already filters by date, we can simplify this.
-      // Assuming for now the frontend might still need to handle a larger dataset for balance forward.
-    } else {
-      const last20Entries = entries.slice(-20);
-      if (last20Entries.length > 0 && entries.length > 20) {
-        const firstEntryDateStr = last20Entries[0].transaction_date;
-        const firstDate = parseISO(firstEntryDateStr);
-
-        if(isValid(firstDate)) {
-             const previousEntries = entries.filter(entry => {
-                 const entryDate = parseISO(entry.transaction_date);
-                 return isValid(entryDate) && isBefore(entryDate, firstDate);
-            });
-            balanceBroughtForward = previousEntries.reduce((acc, entry) => acc + (entry.debit - entry.credit), 0);
-        }
-      } else {
-         balanceBroughtForward = 0; // No previous entries if showing all
-      }
-      filtered = last20Entries;
-    }
-    
-    return { filteredEntries: filtered, balanceForward: balanceBroughtForward };
-  }, [date, ledgerEntries, accountId]);
+  }, [ledgerEntries, accountId]);
 
   let runningBalance = balanceForward;
-  const closingBalance = (filteredEntries || []).reduce((balance, entry) => {
-    const balanceChange = (entry.debit || 0) - (entry.credit || 0);
-    return balance + balanceChange;
-  }, runningBalance);
 
   return (
     <div className="flex flex-col gap-6">
@@ -237,12 +240,12 @@ export default function AccountLedgerPage() {
                     <TableCell colSpan={4}>Balance Forward</TableCell>
                     <TableCell className="text-right font-mono">{currencySymbol}{balanceForward.toFixed(2)}</TableCell>
                 </TableRow>
-                {filteredEntries.length > 0 ? (
-                    filteredEntries.map((entry, index) => {
+                {processedEntries.length > 0 ? (
+                    processedEntries.map((entry, index) => {
                         const balanceChange = (entry.debit || 0) - (entry.credit || 0);
                         runningBalance += balanceChange;
                         return (
-                            <TableRow key={index}>
+                            <TableRow key={entry.transaction_id}>
                                 <TableCell>{new Date(entry.transaction_date).toLocaleDateString()}</TableCell>
                                 <TableCell>{entry.description}</TableCell>
                                 <TableCell className="text-right font-mono">{(entry.debit || 0) > 0 ? `${currencySymbol}${entry.debit.toFixed(2)}` : '-'}</TableCell>
