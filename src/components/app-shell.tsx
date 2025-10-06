@@ -190,17 +190,17 @@ const navItems = [
       { href: '/purchasing/grn', label: 'Goods Received Notes (GRN)', icon: FileDigit },
     ],
   },
-  // {
-  //   label: 'Accounting',
-  //   icon: Calculator,
-  //   subItems: [
-  //       { href: '/accounting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  //       { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: FileText },
-  //       { href: '/accounting/journal-entries', label: 'Journal Entries', icon: BookUser },
-  //       { href: '/accounting/expenses', label: 'Expenses', icon: Receipt },
-  //       { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
-  //   ],
-  // },
+  {
+    label: 'Accounting',
+    icon: Calculator,
+    subItems: [
+        { href: '/accounting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: FileText },
+        { href: '/accounting/journal-entries', label: 'Journal Entries', icon: BookUser },
+        { href: '/accounting/expenses', label: 'Expenses', icon: Receipt },
+        { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
+    ],
+  },
   // {
   //   label: 'HRM',
   //   icon: Briefcase,
