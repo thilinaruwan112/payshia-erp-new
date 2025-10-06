@@ -1,13 +1,7 @@
 
 'use client';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
@@ -18,6 +12,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 
 type Settings = Record<string, string>;
 
@@ -208,70 +203,66 @@ export default function TransactionSetupPage() {
                 </Button>
             </div>
 
-            <Card>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-1/4">Transaction</TableHead>
-                                <TableHead>Description</TableHead>
-                                <TableHead className="w-1/4">Debit Account</TableHead>
-                                <TableHead className="w-1/4">Credit Account</TableHead>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-1/4">Transaction</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="w-1/4">Debit Account</TableHead>
+                        <TableHead className="w-1/4">Credit Account</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {isLoading ? (
+                        Array.from({length: 8}).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                                <TableCell><Skeleton className="h-10 w-full" /></TableCell>
+                                <TableCell><Skeleton className="h-10 w-full" /></TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
-                                Array.from({length: 8}).map((_, i) => (
-                                    <TableRow key={i}>
-                                        <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
-                                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
-                                        <TableCell><Skeleton className="h-10 w-full" /></TableCell>
-                                        <TableCell><Skeleton className="h-10 w-full" /></TableCell>
+                        ))
+                    ) : (
+                        transactionMappings.map(section => (
+                            <React.Fragment key={section.section}>
+                                <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                    <TableCell colSpan={4} className="font-bold text-primary">{section.section}</TableCell>
+                                </TableRow>
+                                {section.entries.map(entry => (
+                                    <TableRow key={entry.name}>
+                                        <TableCell className="font-medium align-top pt-6">{entry.name}</TableCell>
+                                        <TableCell className="text-muted-foreground align-top pt-6">{entry.description}</TableCell>
+                                        <TableCell>
+                                            {entry.debitKey ? (
+                                                <Combobox 
+                                                    options={accountOptions}
+                                                    value={settings[entry.debitKey] || ''}
+                                                    onChange={(value) => handleSettingChange(entry.debitKey, value)}
+                                                    placeholder={`Select a ${entry.debitLabel}...`}
+                                                />
+                                            ) : (
+                                                <Input value={entry.debitLabel} disabled />
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            {entry.creditKey ? (
+                                                <Combobox 
+                                                    options={accountOptions}
+                                                    value={settings[entry.creditKey] || ''}
+                                                    onChange={(value) => handleSettingChange(entry.creditKey, value)}
+                                                    placeholder={`Select a ${entry.creditLabel}...`}
+                                                />
+                                            ) : (
+                                                    <Input value={entry.creditLabel} disabled />
+                                            )}
+                                        </TableCell>
                                     </TableRow>
-                                ))
-                            ) : (
-                                transactionMappings.map(section => (
-                                    <React.Fragment key={section.section}>
-                                        <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                            <TableCell colSpan={4} className="font-bold text-primary">{section.section}</TableCell>
-                                        </TableRow>
-                                        {section.entries.map(entry => (
-                                            <TableRow key={entry.name}>
-                                                <TableCell className="font-medium align-top pt-6">{entry.name}</TableCell>
-                                                <TableCell className="text-muted-foreground align-top pt-6">{entry.description}</TableCell>
-                                                <TableCell>
-                                                    {entry.debitKey ? (
-                                                        <Combobox 
-                                                            options={accountOptions}
-                                                            value={settings[entry.debitKey] || ''}
-                                                            onChange={(value) => handleSettingChange(entry.debitKey, value)}
-                                                            placeholder={`Select a ${entry.debitLabel}...`}
-                                                        />
-                                                    ) : (
-                                                        <Input value={entry.debitLabel} disabled />
-                                                    )}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {entry.creditKey ? (
-                                                        <Combobox 
-                                                            options={accountOptions}
-                                                            value={settings[entry.creditKey] || ''}
-                                                            onChange={(value) => handleSettingChange(entry.creditKey, value)}
-                                                            placeholder={`Select a ${entry.creditLabel}...`}
-                                                        />
-                                                    ) : (
-                                                         <Input value={entry.creditLabel} disabled />
-                                                    )}
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </React.Fragment>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                                ))}
+                            </React.Fragment>
+                        ))
+                    )}
+                </TableBody>
+            </Table>
         </div>
     );
 }
