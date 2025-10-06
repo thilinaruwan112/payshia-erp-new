@@ -11,7 +11,6 @@ import { Combobox } from '@/components/ui/combobox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
 
 type Settings = Record<string, string>;
 
@@ -160,39 +159,39 @@ export default function TransactionSetupPage() {
         
         try {
             const [debitKey, creditKey] = keys;
-            const payloads = [];
-
+            
             if (debitKey && settings[debitKey]) {
-                payloads.push({
-                    type: "Debit",
+                const debitPayload = {
+                    type: section,
                     credit_account_id: 0,
                     debit_account_id: parseInt(settings[debitKey]),
                     status: "active",
                     company_id: company_id,
                     sub_type: entryName,
                     created_by: "admin"
+                };
+                 await fetcher(`https://qa-server-erp.payshia.com/transaction-setup`, {
+                    method: 'POST',
+                    body: JSON.stringify(debitPayload),
                 });
             }
 
             if (creditKey && settings[creditKey]) {
-                 payloads.push({
-                    type: "Credit",
+                 const creditPayload = {
+                    type: section,
                     credit_account_id: parseInt(settings[creditKey]),
                     debit_account_id: 0,
                     status: "active",
                     company_id: company_id,
                     sub_type: entryName,
                     created_by: "admin"
-                });
-            }
-
-            for (const payload of payloads) {
+                };
                  await fetcher(`https://qa-server-erp.payshia.com/transaction-setup`, {
                     method: 'POST',
-                    body: JSON.stringify(payload),
+                    body: JSON.stringify(creditPayload),
                 });
             }
-
+            
             toast({ title: 'Success', description: `${entryName} settings saved successfully.` });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: `Could not save ${entryName} settings.` });
@@ -221,10 +220,10 @@ export default function TransactionSetupPage() {
             <Table>
                 <TableHeader>
                     <TableRow>
-                        <TableHead className="w-1/4">Transaction</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="w-1/4">Debit Account</TableHead>
-                        <TableHead className="w-1/4">Credit Account</TableHead>
+                        <TableHead className="w-[15%]">Type</TableHead>
+                        <TableHead className="w-[20%]">Transaction</TableHead>
+                        <TableHead>Debit Account</TableHead>
+                        <TableHead>Credit Account</TableHead>
                         <TableHead className="w-[120px]">Action</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -232,57 +231,54 @@ export default function TransactionSetupPage() {
                     {isLoading ? (
                         Array.from({length: 8}).map((_, i) => (
                             <TableRow key={i}>
-                                <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
-                                <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                                 <TableCell><Skeleton className="h-10 w-full" /></TableCell>
                                 <TableCell><Skeleton className="h-10 w-full" /></TableCell>
                                 <TableCell><Skeleton className="h-10 w-full" /></TableCell>
                             </TableRow>
                         ))
                     ) : (
-                        transactionMappings.map(section => (
-                            <React.Fragment key={section.section}>
-                                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                    <TableCell colSpan={5} className="font-bold text-primary">{section.section}</TableCell>
+                        transactionMappings.flatMap(section => 
+                            section.entries.map((entry, index) => (
+                                <TableRow key={entry.name}>
+                                    {index === 0 && (
+                                        <TableCell rowSpan={section.entries.length} className="font-bold text-primary align-top pt-6">{section.section}</TableCell>
+                                    )}
+                                    <TableCell className="font-medium">{entry.name}<p className="text-xs text-muted-foreground font-normal">{entry.description}</p></TableCell>
+                                    <TableCell>
+                                        {entry.debitKey ? (
+                                            <Combobox 
+                                                options={accountOptions}
+                                                value={settings[entry.debitKey] || ''}
+                                                onChange={(value) => handleSettingChange(entry.debitKey!, value)}
+                                                placeholder={`Select a ${entry.debitLabel}...`}
+                                            />
+                                        ) : (
+                                           <Input value={entry.debitLabel} disabled />
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {entry.creditKey ? (
+                                            <Combobox 
+                                                options={accountOptions}
+                                                value={settings[entry.creditKey] || ''}
+                                                onChange={(value) => handleSettingChange(entry.creditKey!, value)}
+                                                placeholder={`Select a ${entry.creditLabel}...`}
+                                            />
+                                        ) : (
+                                            <Input value={entry.creditLabel} disabled />
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button onClick={() => handleSaveEntry(entry.name, [entry.debitKey, entry.creditKey], section.section)} disabled={savingStates[entry.name]} size="sm">
+                                            {savingStates[entry.name] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                            Save
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
-                                {section.entries.map(entry => (
-                                    <TableRow key={entry.name}>
-                                        <TableCell className="font-medium align-top pt-6">{entry.name}</TableCell>
-                                        <TableCell className="text-muted-foreground align-top pt-6">{entry.description}</TableCell>
-                                        <TableCell>
-                                            {entry.debitKey ? (
-                                                <Combobox 
-                                                    options={accountOptions}
-                                                    value={settings[entry.debitKey] || ''}
-                                                    onChange={(value) => handleSettingChange(entry.debitKey!, value)}
-                                                    placeholder={`Select a ${entry.debitLabel}...`}
-                                                />
-                                            ) : (
-                                                <Input value={entry.debitLabel} disabled />
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            {entry.creditKey ? (
-                                                <Combobox 
-                                                    options={accountOptions}
-                                                    value={settings[entry.creditKey] || ''}
-                                                    onChange={(value) => handleSettingChange(entry.creditKey!, value)}
-                                                    placeholder={`Select a ${entry.creditLabel}...`}
-                                                />
-                                            ) : (
-                                                    <Input value={entry.creditLabel} disabled />
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Button onClick={() => handleSaveEntry(entry.name, [entry.debitKey, entry.creditKey], section.section)} disabled={savingStates[entry.name]} size="sm">
-                                                {savingStates[entry.name] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                                Save
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </React.Fragment>
-                        ))
+                            ))
+                        )
                     )}
                 </TableBody>
             </Table>
