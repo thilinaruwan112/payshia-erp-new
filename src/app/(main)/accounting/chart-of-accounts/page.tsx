@@ -150,7 +150,7 @@ export default function ChartOfAccountsPage() {
                     <TableCell className="hidden md:table-cell">
                         <Badge variant="outline">{account.subType || 'N/A'}</Badge>
                     </TableCell>
-                    <TableCell className="text-right font-mono">{currencySymbol}{(account.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right font-mono">{currencySymbol}{(account.balance_info?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-right">
                         <DropdownMenu>
                         <DropdownMenuTrigger asChild>

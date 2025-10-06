@@ -1,5 +1,4 @@
 
-
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -321,6 +320,11 @@ export type Account = {
     name?: string;
     type?: AccountType;
     subType?: string;
+    balance_info?: {
+        balance: number;
+        total_debit: number;
+        total_credit: number;
+    };
 };
 
 export type JournalEntry = {
