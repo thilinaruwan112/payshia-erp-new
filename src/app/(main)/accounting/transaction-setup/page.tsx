@@ -61,24 +61,32 @@ export default function TransactionSetupPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Sales & Receivables</CardTitle>
+                    <CardTitle>Sales & Invoices</CardTitle>
                     <CardDescription>
-                        Configure accounts related to sales invoices and customer payments.
+                        Configure accounts related to sales invoices. This entry is created when an invoice is finalized.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                             <Label>Default Sales Revenue Account</Label>
-                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a revenue account..." />}
-                        </div>
-                        <div className="space-y-2">
-                             <Label>Default Accounts Receivable</Label>
+                             <Label>Accounts Receivable (Debit)</Label>
+                             <p className="text-xs text-muted-foreground">What customers owe you.</p>
                              {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a receivable account..." />}
                         </div>
+                        <div className="space-y-2">
+                             <Label>Sales Revenue (Credit)</Label>
+                             <p className="text-xs text-muted-foreground">Your income from sales.</p>
+                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a revenue account..." />}
+                        </div>
                          <div className="space-y-2">
-                             <Label>Default Cash/Bank for Receipts</Label>
-                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a cash/bank account..." />}
+                             <Label>Cost of Goods Sold (Debit)</Label>
+                              <p className="text-xs text-muted-foreground">The cost of the inventory sold.</p>
+                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a COGS expense account..." />}
+                        </div>
+                         <div className="space-y-2">
+                             <Label>Inventory Asset (Credit)</Label>
+                              <p className="text-xs text-muted-foreground">The value of stock leaving inventory.</p>
+                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select an inventory asset account..." />}
                         </div>
                     </div>
                 </CardContent>
@@ -86,24 +94,64 @@ export default function TransactionSetupPage() {
 
              <Card>
                 <CardHeader>
-                    <CardTitle>Purchasing & Payables</CardTitle>
+                    <CardTitle>Purchasing & Goods Received (GRN)</CardTitle>
                     <CardDescription>
-                       Configure accounts related to goods received and supplier payments.
+                       Configure accounts related to receiving goods from suppliers. This entry is created when a GRN is saved.
                     </CardDescription>
                 </CardHeader>
                  <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                             <Label>Default Inventory Account</Label>
+                             <Label>Inventory Asset (Debit)</Label>
+                             <p className="text-xs text-muted-foreground">The value of stock entering inventory.</p>
                              {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select an inventory asset account..." />}
                         </div>
                         <div className="space-y-2">
-                             <Label>Default Accounts Payable</Label>
+                             <Label>Accounts Payable (Credit)</Label>
+                             <p className="text-xs text-muted-foreground">What you owe to your suppliers.</p>
                              {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a payable account..." />}
                         </div>
-                        <div className="space-y-2">
-                             <Label>Default Cash/Bank for Payments</Label>
-                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a cash/bank account..." />}
+                    </div>
+                </CardContent>
+            </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle>Payments</CardTitle>
+                    <CardDescription>
+                       Configure accounts for customer receipts and supplier payments.
+                    </CardDescription>
+                </CardHeader>
+                 <CardContent className="space-y-8">
+                     <div>
+                        <h4 className="font-semibold mb-2">Customer Payment (Receipt)</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label>Cash / Bank (Debit)</Label>
+                                <p className="text-xs text-muted-foreground">The asset account receiving the funds.</p>
+                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a cash/bank account..." />}
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Accounts Receivable (Credit)</Label>
+                                <p className="text-xs text-muted-foreground">Reduces the amount customers owe.</p>
+                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a receivable account..." />}
+                            </div>
+                        </div>
+                    </div>
+                     <Separator />
+                     <div>
+                        <h4 className="font-semibold mb-2">Supplier Payment</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label>Accounts Payable (Debit)</Label>
+                                 <p className="text-xs text-muted-foreground">Reduces the amount you owe suppliers.</p>
+                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a payable account..." />}
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Cash / Bank (Credit)</Label>
+                                 <p className="text-xs text-muted-foreground">The asset account paying the funds.</p>
+                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a cash/bank account..." />}
+                            </div>
                         </div>
                     </div>
                 </CardContent>
