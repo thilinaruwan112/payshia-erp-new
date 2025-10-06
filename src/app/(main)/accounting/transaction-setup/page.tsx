@@ -11,6 +11,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 
 type Settings = Record<string, string>;
 
@@ -157,47 +158,49 @@ export default function TransactionSetupPage() {
         if (!company_id) return;
         setSavingStates(prev => ({...prev, [entryName]: true}));
         
-        try {
-            const [debitKey, creditKey] = keys;
-            
-            if (debitKey && settings[debitKey]) {
-                const debitPayload = {
-                    type: section,
-                    credit_account_id: 0,
-                    debit_account_id: parseInt(settings[debitKey]),
-                    status: "active",
-                    company_id: company_id,
-                    sub_type: entryName,
-                    created_by: "admin"
-                };
-                 await fetcher(`https://qa-server-erp.payshia.com/transaction-setup`, {
-                    method: 'POST',
-                    body: JSON.stringify(debitPayload),
-                });
-            }
+        const [debitKey, creditKey] = keys;
+        const debitAccountId = debitKey ? settings[debitKey] : null;
+        const creditAccountId = creditKey ? settings[creditKey] : null;
+        
+        let hasError = false;
 
-            if (creditKey && settings[creditKey]) {
-                 const creditPayload = {
-                    type: section,
-                    credit_account_id: parseInt(settings[creditKey]),
-                    debit_account_id: 0,
-                    status: "active",
-                    company_id: company_id,
-                    sub_type: entryName,
-                    created_by: "admin"
-                };
-                 await fetcher(`https://qa-server-erp.payshia.com/transaction-setup`, {
+        const makeRequest = async (accountId: string | null, leg: 'debit' | 'credit') => {
+             if (!accountId) return; // Skip if no account ID
+
+            const payload = {
+                type: section,
+                credit_account_id: leg === 'credit' ? parseInt(accountId) : 0,
+                debit_account_id: leg === 'debit' ? parseInt(accountId) : 0,
+                status: "active",
+                company_id: company_id,
+                sub_type: entryName,
+                created_by: "admin"
+            };
+
+            try {
+                const response = await fetcher(`https://qa-server-erp.payshia.com/transaction-setup`, {
                     method: 'POST',
-                    body: JSON.stringify(creditPayload),
+                    body: JSON.stringify(payload),
                 });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `Failed to save ${leg} leg.`);
+                }
+            } catch (error) {
+                hasError = true;
+                const errorMessage = error instanceof Error ? error.message : `An unknown error occurred on the ${leg} leg.`;
+                toast({ variant: 'destructive', title: 'Error', description: errorMessage });
             }
-            
+        };
+
+        await makeRequest(debitAccountId, 'debit');
+        await makeRequest(creditAccountId, 'credit');
+        
+        if (!hasError) {
             toast({ title: 'Success', description: `${entryName} settings saved successfully.` });
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: `Could not save ${entryName} settings.` });
-        } finally {
-            setSavingStates(prev => ({...prev, [entryName]: false}));
         }
+
+        setSavingStates(prev => ({...prev, [entryName]: false}));
     };
 
 
@@ -239,10 +242,10 @@ export default function TransactionSetupPage() {
                             </TableRow>
                         ))
                     ) : (
-                        transactionMappings.flatMap(section => 
-                            section.entries.map((entry, index) => (
+                        transactionMappings.flatMap((section, sectionIndex) => 
+                            section.entries.map((entry, entryIndex) => (
                                 <TableRow key={entry.name}>
-                                    {index === 0 && (
+                                    {entryIndex === 0 && (
                                         <TableCell rowSpan={section.entries.length} className="font-bold text-primary align-top pt-6">{section.section}</TableCell>
                                     )}
                                     <TableCell className="font-medium">{entry.name}<p className="text-xs text-muted-foreground font-normal">{entry.description}</p></TableCell>
@@ -286,3 +289,4 @@ export default function TransactionSetupPage() {
     );
 }
 
+    
