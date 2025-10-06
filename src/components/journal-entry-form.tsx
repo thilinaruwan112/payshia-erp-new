@@ -37,26 +37,50 @@ import { useLocation } from "./location-provider";
 import { fetcher } from "@/lib/api";
 import React from "react";
 
+const journalLineSchema = z.object({
+    accountId: z.string().min(1, "Account is required."),
+    debit: z.coerce.number().min(0, "Must be positive").optional(),
+    credit: z.coerce.number().min(0, "Must be positive").optional(),
+  })
+  .refine(
+    (data) => (data.debit || 0) > 0 || (data.credit || 0) > 0,
+    {
+      message: "Enter a debit or a credit",
+      path: ["debit"], // Point error to one field for simplicity
+    }
+  )
+ .refine(
+    (data) => !(data.debit && data.debit > 0 && data.credit && data.credit > 0),
+    {
+      message: "Can't be both debit and credit",
+      path: ["credit"],
+    }
+  );
+
+
 const journalEntryFormSchema = z.object({
   date: z.date({
     required_error: "A date is required.",
   }),
   narration: z.string().min(3, "Narration is required."),
-  lines: z.array(
-    z.object({
-      accountId: z.string().min(1, "Account is required."),
-      debit: z.coerce.number().min(0).optional(),
-      credit: z.coerce.number().min(0).optional(),
-    })
-  ).min(2, "At least two lines are required."),
-}).refine(data => {
+  lines: z.array(journalLineSchema).min(2, "At least two lines are required."),
+})
+.refine(data => {
     const totalDebit = data.lines.reduce((acc, line) => acc + (line.debit || 0), 0);
     const totalCredit = data.lines.reduce((acc, line) => acc + (line.credit || 0), 0);
     return Math.abs(totalDebit - totalCredit) < 0.001; // Use a small tolerance for floating point comparison
 }, {
     message: "Total debits must equal total credits.",
     path: ["lines"],
+})
+.refine(data => {
+    const totalDebit = data.lines.reduce((acc, line) => acc + (line.debit || 0), 0);
+    return totalDebit > 0;
+}, {
+    message: "Total debits cannot be zero.",
+    path: ["lines"],
 });
+
 
 type JournalEntryFormValues = z.infer<typeof journalEntryFormSchema>;
 
@@ -338,8 +362,8 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
                             <TableCell>
                                 <Button type="button" variant="outline" size="sm" onClick={() => append({ accountId: '', debit: 0, credit: 0 })}>Add Row</Button>
                             </TableCell>
-                            <TableCell className="text-right font-bold">{currencySymbol}{totalDebit.toFixed(2)}</TableCell>
-                            <TableCell className="text-right font-bold">{currencySymbol}{totalCredit.toFixed(2)}</TableCell>
+                            <TableCell className={cn("text-right font-bold", totalDebit !== totalCredit && "text-destructive")}>{currencySymbol}{totalDebit.toFixed(2)}</TableCell>
+                            <TableCell className={cn("text-right font-bold", totalDebit !== totalCredit && "text-destructive")}>{currencySymbol}{totalCredit.toFixed(2)}</TableCell>
                             <TableCell></TableCell>
                         </TableRow>
                     </TableFooter>
