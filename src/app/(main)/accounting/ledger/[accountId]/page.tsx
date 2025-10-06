@@ -19,7 +19,7 @@ import {
   TableFooter,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, FileDown } from 'lucide-react';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useCurrency } from '@/components/currency-provider';
 import React, { useMemo } from 'react';
@@ -31,8 +31,10 @@ import type { Account, JournalEntry } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { DateRange } from 'react-day-picker';
-import { format, isWithinInterval, parseISO, isBefore, isValid } from 'date-fns';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function AccountLedgerPage() {
   const { accountId } = useParams();
@@ -144,6 +146,86 @@ export default function AccountLedgerPage() {
   }, [ledgerEntries, accountId]);
 
   let runningBalance = balanceForward;
+  
+  const handleExportCsv = () => {
+    const headers = ['Date', 'Narration', 'Debit', 'Credit', 'Balance'];
+    let csvContent = headers.join(',') + '\n';
+    
+    csvContent += `Balance Forward,"",,,${balanceForward.toFixed(2)}\n`;
+
+    let currentBalance = balanceForward;
+    processedEntries.forEach(entry => {
+        const balanceChange = (entry.debit || 0) - (entry.credit || 0);
+        currentBalance += balanceChange;
+        const row = [
+            format(new Date(entry.transaction_date), 'yyyy-MM-dd'),
+            `"${entry.description.replace(/"/g, '""')}"`, // Escape quotes
+            entry.debit || 0,
+            entry.credit || 0,
+            currentBalance.toFixed(2),
+        ].join(',');
+        csvContent += row + '\n';
+    });
+    
+    csvContent += `Closing Balance,"",,,${closingBalance.toFixed(2)}\n`;
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `${account?.account_name || 'ledger'}-report.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handleExportPdf = () => {
+    const doc = new jsPDF();
+    const tableData = processedEntries.map(entry => {
+        const balanceChange = (entry.debit || 0) - (entry.credit || 0);
+        runningBalance += balanceChange;
+        return [
+            format(new Date(entry.transaction_date), 'yyyy-MM-dd'),
+            entry.description,
+            entry.debit > 0 ? `${currencySymbol}${entry.debit.toFixed(2)}` : '-',
+            entry.credit > 0 ? `${currencySymbol}${entry.credit.toFixed(2)}` : '-',
+            `${currencySymbol}${runningBalance.toFixed(2)}`
+        ];
+    });
+
+    doc.setFontSize(18);
+    doc.text(`Ledger for: ${account?.account_name}`, 14, 22);
+    doc.setFontSize(11);
+    if(date?.from) {
+      const dateStr = date.to ? `${format(date.from, 'PPP')} - ${format(date.to, 'PPP')}` : format(date.from, 'PPP');
+      doc.text(`Period: ${dateStr}`, 14, 30);
+    }
+
+    autoTable(doc, {
+      startY: 35,
+      head: [['Date', 'Narration', 'Debit', 'Credit', 'Balance']],
+      body: [
+        [{ content: 'Balance Forward', colSpan: 4, styles: { fontStyle: 'bold' } }, { content: `${currencySymbol}${balanceForward.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold' } }],
+        ...tableData
+      ],
+      foot: [
+        [{ content: 'Closing Balance', colSpan: 4, styles: { fontStyle: 'bold' } }, { content: `${currencySymbol}${closingBalance.toFixed(2)}`, styles: { halign: 'right', fontStyle: 'bold' } }]
+      ],
+      headStyles: { fillColor: [59, 89, 152] },
+      footStyles: { fillColor: [241, 245, 249], textColor: [0,0,0] },
+      didDrawPage: (data) => {
+          // Footer
+          const pageCount = doc.getNumberOfPages();
+          doc.setFontSize(10);
+          doc.text(`Page ${data.pageNumber} of ${pageCount}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+      }
+    });
+
+    doc.save(`${account?.account_name || 'ledger'}-report.pdf`);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -161,7 +243,7 @@ export default function AccountLedgerPage() {
                 </>
            )}
         </div>
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:flex-wrap sm:w-auto">
              <Popover>
                 <PopoverTrigger asChild>
                     <Button
@@ -198,10 +280,14 @@ export default function AccountLedgerPage() {
                 />
                 </PopoverContent>
             </Popover>
-            <Button variant="outline" onClick={() => router.back()}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-            </Button>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handleExportCsv} disabled={processedEntries.length === 0}><FileDown className="mr-2 h-4 w-4" />CSV</Button>
+                <Button variant="outline" onClick={handleExportPdf} disabled={processedEntries.length === 0}><FileDown className="mr-2 h-4 w-4" />PDF</Button>
+                <Button variant="outline" onClick={() => router.back()}>
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back
+                </Button>
+            </div>
         </div>
       </div>
 
@@ -276,3 +362,4 @@ export default function AccountLedgerPage() {
     </div>
   );
 }
+
