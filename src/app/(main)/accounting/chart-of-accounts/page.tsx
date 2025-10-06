@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -138,39 +137,47 @@ export default function ChartOfAccountsPage() {
                         <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                     </TableRow>
                 ))
-              ) : accounts.map((account) => (
-                <TableRow key={account.account_id}>
-                  <TableCell className="font-mono">{account.account_id}</TableCell>
-                  <TableCell className="font-medium">{account.account_name}</TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <Badge variant="secondary" className={cn(getAccountTypeColor(account.account_type))}>
-                        {account.account_type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                     <Badge variant="outline">{account.subType || 'N/A'}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono">{currencySymbol}{(account.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>View Ledger</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          Deactivate
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+              ) : accounts.length > 0 ? (
+                accounts.map((account) => (
+                    <TableRow key={account.account_id}>
+                    <TableCell className="font-mono">{account.account_id}</TableCell>
+                    <TableCell className="font-medium">{account.account_name}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                        <Badge variant="secondary" className={cn(getAccountTypeColor(account.account_type))}>
+                            {account.account_type}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                        <Badge variant="outline">{account.subType || 'N/A'}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{currencySymbol}{(account.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right">
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem>Edit</DropdownMenuItem>
+                            <DropdownMenuItem>View Ledger</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">
+                            Deactivate
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
+                    </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                        No accounts found.
+                    </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
