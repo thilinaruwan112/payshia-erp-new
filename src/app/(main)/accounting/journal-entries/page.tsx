@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -29,46 +28,47 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useCurrency } from '@/components/currency-provider';
 import type { JournalEntry } from '@/lib/types';
-
-const journalEntries: JournalEntry[] = [
-    {
-        id: 'JE-001',
-        date: '2023-10-01',
-        narration: 'To record monthly office rent for September.',
-        totalDebit: 1200,
-        totalCredit: 1200,
-        lines: [
-            { accountCode: 6100, accountName: 'Rent Expense', debit: 1200, credit: 0 },
-            { accountCode: 1010, accountName: 'Cash', debit: 0, credit: 1200 },
-        ]
-    },
-    {
-        id: 'JE-002',
-        date: '2023-10-05',
-        narration: 'To record purchase of office supplies on credit.',
-        totalDebit: 250,
-        totalCredit: 250,
-        lines: [
-            { accountCode: 6200, accountName: 'Office Supplies Expense', debit: 250, credit: 0 },
-            { accountCode: 2010, accountName: 'Accounts Payable', debit: 0, credit: 250 },
-        ]
-    },
-    {
-        id: 'JE-003',
-        date: '2023-10-15',
-        narration: 'Owner investment into the company.',
-        totalDebit: 5000,
-        totalCredit: 5000,
-        lines: [
-            { accountCode: 1010, accountName: 'Cash', debit: 5000, credit: 0 },
-            { accountCode: 3010, accountName: 'Owner\'s Equity', debit: 0, credit: 5000 },
-        ]
-    },
-];
-
+import React from 'react';
+import { useLocation } from '@/components/location-provider';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { fetcher } from '@/lib/api';
 
 export default function JournalEntriesPage() {
     const { currencySymbol } = useCurrency();
+    const { company_id } = useLocation();
+    const { toast } = useToast();
+    const [journalEntries, setJournalEntries] = React.useState<JournalEntry[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        if (!company_id) {
+            setIsLoading(false);
+            return;
+        }
+        async function fetchJournalEntries() {
+            setIsLoading(true);
+            try {
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-transactions?company_id=${company_id}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch journal entries');
+                }
+                const data = await response.json();
+                setJournalEntries(data.data || []);
+            } catch (error) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Error',
+                    description: 'Could not fetch journal entries.'
+                })
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchJournalEntries();
+    }, [company_id, toast]);
+
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -98,42 +98,58 @@ export default function JournalEntriesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
-                <TableHead>Entry ID</TableHead>
-                <TableHead className="hidden sm:table-cell">Narration</TableHead>
-                <TableHead className="text-right">Debits</TableHead>
-                <TableHead className="text-right">Credits</TableHead>
+                <TableHead>Ref Key</TableHead>
+                <TableHead className="hidden sm:table-cell">Description</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {journalEntries.map((entry) => (
-                <TableRow key={entry.id}>
-                  <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
-                  <TableCell className="font-mono">{entry.id}</TableCell>
-                  <TableCell className="hidden sm:table-cell max-w-sm truncate">{entry.narration}</TableCell>
-                  <TableCell className="text-right font-mono">{currencySymbol}{entry.totalDebit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                  <TableCell className="text-right font-mono">{currencySymbol}{entry.totalCredit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onSelect={() => console.log(`Viewing details for ${entry.id}`)}>View Details</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          Reverse Entry
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+              {isLoading ? (
+                Array.from({length: 5}).map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-4 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                    </TableRow>
+                ))
+              ) : journalEntries.length > 0 ? (
+                journalEntries.map((entry) => (
+                    <TableRow key={entry.transaction_id}>
+                    <TableCell>{new Date(entry.transaction_date).toLocaleDateString()}</TableCell>
+                    <TableCell className="font-mono">{entry.ref_key}</TableCell>
+                    <TableCell className="hidden sm:table-cell max-w-sm truncate">{entry.description}</TableCell>
+                    <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(entry.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right">
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem disabled>View Details</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" disabled>
+                            Reverse Entry
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
+                    </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                        No journal entries found.
+                    </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

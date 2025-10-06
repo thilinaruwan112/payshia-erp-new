@@ -328,17 +328,15 @@ export type Account = {
 };
 
 export type JournalEntry = {
-    id: string;
-    date: string;
-    narration: string;
-    totalDebit: number;
-    totalCredit: number;
-    lines: {
-        accountCode: number;
-        accountName: string;
-        debit: number;
-        credit: number;
-    }[];
+    transaction_id: string;
+    debit_account_id: string;
+    credit_account_id: string;
+    amount: string;
+    transaction_date: string;
+    description: string;
+    ref_key: string;
+    location_id: string;
+    company_id: string;
 };
 
 export type Expense = {
