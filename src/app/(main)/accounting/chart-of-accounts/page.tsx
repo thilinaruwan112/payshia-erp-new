@@ -98,7 +98,7 @@ export default function ChartOfAccountsPage() {
           </p>
         </div>
         <Button asChild className="w-full sm:w-auto">
-          <Link href="#">
+          <Link href="/accounting/chart-of-accounts/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Account
           </Link>
