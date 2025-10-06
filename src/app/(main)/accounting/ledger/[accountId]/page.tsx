@@ -17,15 +17,20 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon } from 'lucide-react';
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { useCurrency } from '@/components/currency-provider';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetcher } from '@/lib/api';
 import type { Account, JournalEntry } from '@/lib/types';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { DateRange } from 'react-day-picker';
+import { format, isWithinInterval, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 // Mock journal entry data for a single account
 const mockLedger: (Omit<JournalEntry, 'lines'> & { debit: number; credit: number })[] = [
@@ -34,7 +39,17 @@ const mockLedger: (Omit<JournalEntry, 'lines'> & { debit: number; credit: number
     { id: 'JE-003', date: '2023-10-15', narration: 'Client payment for invoice #INV-001', totalDebit: 5000, totalCredit: 5000, debit: 0, credit: 5000 },
     { id: 'JE-004', date: '2023-10-20', narration: 'Payment to supplier Global Textiles', totalDebit: 1500, totalCredit: 1500, debit: 1500, credit: 0 },
     { id: 'JE-005', date: '2023-10-25', narration: 'Sale of services', totalDebit: 3000, totalCredit: 3000, debit: 0, credit: 3000 },
-];
+    // Adding more data to test the filter
+    ...Array.from({ length: 25 }, (_, i) => ({
+      id: `JE-00${i + 6}`,
+      date: format(new Date(2023, 8, 25 - i), 'yyyy-MM-dd'),
+      narration: `Transaction ${i + 6}`,
+      totalDebit: 100 + i * 10,
+      totalCredit: 100 + i * 10,
+      debit: i % 2 === 0 ? 100 + i * 10 : 0,
+      credit: i % 2 !== 0 ? 100 + i * 10 : 0,
+    }))
+].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
 
 export default function AccountLedgerPage() {
@@ -44,8 +59,8 @@ export default function AccountLedgerPage() {
   const { company_id } = useLocation();
   const { toast } = useToast();
   const [account, setAccount] = React.useState<Account | null>(null);
-  const [ledgerEntries, setLedgerEntries] = React.useState(mockLedger);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [date, setDate] = React.useState<DateRange | undefined>(undefined);
 
   React.useEffect(() => {
     if (!accountId || !company_id) {
@@ -78,12 +93,23 @@ export default function AccountLedgerPage() {
     fetchAccountData();
   }, [accountId, company_id, toast]);
   
+  const ledgerEntries = useMemo(() => {
+    if (!date?.from) {
+      return mockLedger.slice(-20);
+    }
+    const from = date.from;
+    const to = date.to || date.from;
+    return mockLedger.filter(entry => 
+      isWithinInterval(parseISO(entry.date), { start: from, end: to })
+    );
+  }, [date]);
+
   let runningBalance = 0;
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
+        <div className="flex-1">
            {isLoading ? (
                 <>
                     <Skeleton className="h-9 w-64 mb-2" />
@@ -96,17 +122,55 @@ export default function AccountLedgerPage() {
                 </>
            )}
         </div>
-        <Button variant="outline" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Chart of Accounts
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+             <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                        id="date"
+                        variant={"outline"}
+                        className={cn(
+                        "w-full sm:w-[300px] justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                        )}
+                    >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {date?.from ? (
+                        date.to ? (
+                            <>
+                            {format(date.from, "LLL dd, y")} -{" "}
+                            {format(date.to, "LLL dd, y")}
+                            </>
+                        ) : (
+                            format(date.from, "LLL dd, y")
+                        )
+                        ) : (
+                        <span>Pick a date range</span>
+                        )}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={date?.from}
+                    selected={date}
+                    onSelect={setDate}
+                    numberOfMonths={2}
+                />
+                </PopoverContent>
+            </Popover>
+            <Button variant="outline" onClick={() => router.back()}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+            </Button>
+        </div>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Transaction History</CardTitle>
           <CardDescription>
-            The running balance is calculated based on the transactions below.
+            {date?.from ? `Showing transactions for the selected period.` : 'Showing the last 20 transactions. Use the date picker to select a specific range.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -148,7 +212,7 @@ export default function AccountLedgerPage() {
               ) : (
                 <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center">
-                        No transactions found for this account.
+                        No transactions found for this period.
                     </TableCell>
                 </TableRow>
               )}
@@ -159,4 +223,3 @@ export default function AccountLedgerPage() {
     </div>
   );
 }
-
