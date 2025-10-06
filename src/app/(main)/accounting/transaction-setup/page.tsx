@@ -15,7 +15,22 @@ import { Input } from '@/components/ui/input';
 
 type Settings = Record<string, string>;
 
-const transactionMappings = [
+type TransactionEntry = {
+  name: string;
+  description: string;
+  debitKey: string | null;
+  debitLabel: string;
+  creditKey: string | null;
+  creditLabel: string;
+};
+
+type TransactionSection = {
+  section: string;
+  entries: TransactionEntry[];
+};
+
+
+const transactionMappings: TransactionSection[] = [
     {
         section: "Sales",
         entries: [
@@ -107,6 +122,21 @@ const transactionMappings = [
     }
 ];
 
+interface ApiSetting {
+  id: string;
+  type: string;
+  credit_account_id: string;
+  debit_account_id: string;
+  status: string;
+  company_id: string;
+  sub_type: string;
+  created_at: string;
+  created_by: string;
+  updated_at: string | null;
+  updated_by: string | null;
+}
+
+
 export default function TransactionSetupPage() {
     const { company_id } = useLocation();
     const { toast } = useToast();
@@ -125,7 +155,7 @@ export default function TransactionSetupPage() {
             try {
                 const [accountsRes, settingsRes] = await Promise.all([
                     fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-accounts?company_id=${company_id}`),
-                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/key-settings/company?company_id=${company_id}`)
+                    fetcher(`https://qa-server-erp.payshia.com/transaction-setup?company_id=${company_id}`)
                 ]);
                 
                 if (!accountsRes.ok) throw new Error('Failed to fetch chart of accounts');
@@ -133,11 +163,30 @@ export default function TransactionSetupPage() {
                 setAccounts(accountsData.data || []);
                 
                 if (settingsRes.ok) {
-                    const settingsData: KeySetting[] = await settingsRes.json();
-                    const initialSettings = settingsData.reduce((acc: Settings, setting) => {
-                        acc[setting.key] = setting.value;
-                        return acc;
-                    }, {});
+                    const settingsData: {data: ApiSetting[]} = await settingsRes.json();
+                    const apiSettings = settingsData.data || [];
+                    
+                    const initialSettings: Settings = {};
+
+                    transactionMappings.forEach(section => {
+                        section.entries.forEach(entry => {
+                            // Find debit entry
+                            if(entry.debitKey){
+                                const debitSetting = apiSettings.find(s => s.type === section.section && s.sub_type === entry.name && s.debit_account_id !== '0');
+                                if (debitSetting) {
+                                    initialSettings[entry.debitKey] = debitSetting.debit_account_id;
+                                }
+                            }
+                            // Find credit entry
+                            if(entry.creditKey){
+                                const creditSetting = apiSettings.find(s => s.type === section.section && s.sub_type === entry.name && s.credit_account_id !== '0');
+                                if (creditSetting) {
+                                    initialSettings[entry.creditKey] = creditSetting.credit_account_id;
+                                }
+                            }
+                        });
+                    });
+                    
                     setSettings(initialSettings);
                 }
 
@@ -169,8 +218,8 @@ export default function TransactionSetupPage() {
 
             const payload = {
                 type: section,
-                credit_account_id: leg === 'credit' ? parseInt(accountId) : 0,
-                debit_account_id: leg === 'debit' ? parseInt(accountId) : 0,
+                credit_account_id: leg === 'credit' ? parseInt(accountId, 10) : 0,
+                debit_account_id: leg === 'debit' ? parseInt(accountId, 10) : 0,
                 status: "active",
                 company_id: company_id,
                 sub_type: entryName,
@@ -193,8 +242,8 @@ export default function TransactionSetupPage() {
             }
         };
 
-        await makeRequest(debitAccountId, 'debit');
-        await makeRequest(creditAccountId, 'credit');
+        if (debitAccountId) await makeRequest(debitAccountId, 'debit');
+        if (creditAccountId) await makeRequest(creditAccountId, 'credit');
         
         if (!hasError) {
             toast({ title: 'Success', description: `${entryName} settings saved successfully.` });
@@ -289,4 +338,3 @@ export default function TransactionSetupPage() {
     );
 }
 
-    
