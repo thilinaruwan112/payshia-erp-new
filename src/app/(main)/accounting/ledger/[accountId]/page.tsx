@@ -31,28 +31,8 @@ import type { Account, JournalEntry } from '@/lib/types';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { DateRange } from 'react-day-picker';
-import { format, isWithinInterval, parseISO, isBefore } from 'date-fns';
+import { format, isWithinInterval, parseISO, isBefore, isValid } from 'date-fns';
 import { cn } from '@/lib/utils';
-
-// Mock journal entry data for a single account
-const mockLedger: (Omit<JournalEntry, 'lines'> & { debit: number; credit: number })[] = [
-    { id: 'JE-001', date: '2023-10-01', narration: 'Monthly rent for September', totalDebit: 1200, totalCredit: 1200, debit: 1200, credit: 0 },
-    { id: 'JE-002', date: '2023-10-05', narration: 'Office supplies purchase', totalDebit: 250, totalCredit: 250, debit: 250, credit: 0 },
-    { id: 'JE-003', date: '2023-10-15', narration: 'Client payment for invoice #INV-001', totalDebit: 5000, totalCredit: 5000, debit: 0, credit: 5000 },
-    { id: 'JE-004', date: '2023-10-20', narration: 'Payment to supplier Global Textiles', totalDebit: 1500, totalCredit: 1500, debit: 1500, credit: 0 },
-    { id: 'JE-005', date: '2023-10-25', narration: 'Sale of services', totalDebit: 3000, totalCredit: 3000, debit: 0, credit: 3000 },
-    // Adding more data to test the filter
-    ...Array.from({ length: 25 }, (_, i) => ({
-      id: `JE-00${i + 6}`,
-      date: format(new Date(2023, 8, 25 - i), 'yyyy-MM-dd'),
-      narration: `Transaction ${i + 6}`,
-      totalDebit: 100 + i * 10,
-      totalCredit: 100 + i * 10,
-      debit: i % 2 === 0 ? 100 + i * 10 : 0,
-      credit: i % 2 !== 0 ? 100 + i * 10 : 0,
-    }))
-].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
 
 export default function AccountLedgerPage() {
   const { accountId } = useParams();
@@ -61,6 +41,7 @@ export default function AccountLedgerPage() {
   const { company_id } = useLocation();
   const { toast } = useToast();
   const [account, setAccount] = React.useState<Account | null>(null);
+  const [ledgerEntries, setLedgerEntries] = React.useState<JournalEntry[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [date, setDate] = React.useState<DateRange | undefined>(undefined);
 
@@ -72,16 +53,25 @@ export default function AccountLedgerPage() {
     async function fetchAccountData() {
         setIsLoading(true);
         try {
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-accounts?company_id=${company_id}`);
-            if (!response.ok) throw new Error('Failed to fetch accounts');
-            const data = await response.json();
-            const foundAccount = (data.data || []).find((acc: Account) => acc.account_id === accountId);
+            const [accountResponse, ledgerResponse] = await Promise.all([
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-accounts?company_id=${company_id}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-transactions/get/by-account?account_id=${accountId}&company_id=${company_id}`)
+            ]);
+            
+            if (!accountResponse.ok) throw new Error('Failed to fetch accounts');
+            const accountData = await accountResponse.json();
+            const foundAccount = (accountData.data || []).find((acc: Account) => acc.account_id === accountId);
             
             if (foundAccount) {
                 setAccount(foundAccount);
             } else {
                 notFound();
             }
+
+            if (!ledgerResponse.ok) throw new Error('Failed to fetch ledger transactions');
+            const ledgerData = await ledgerResponse.json();
+            setLedgerEntries(ledgerData.data || []);
+
         } catch (error) {
             toast({
                 variant: 'destructive',
@@ -96,34 +86,60 @@ export default function AccountLedgerPage() {
   }, [accountId, company_id, toast]);
   
  const { filteredEntries, balanceForward } = useMemo(() => {
-    let entries = mockLedger;
+    if (!accountId) return { filteredEntries: [], balanceForward: 0 };
+    
+    const processedEntries = ledgerEntries.map(entry => {
+        const amount = parseFloat(entry.amount);
+        return {
+            ...entry,
+            debit: entry.debit_account_id === accountId ? amount : 0,
+            credit: entry.credit_account_id === accountId ? amount : 0,
+        };
+    }).sort((a, b) => new Date(a.transaction_date).getTime() - new Date(b.transaction_date).getTime());
+    
+    let entries = processedEntries;
     let balanceBroughtForward = 0;
     let filtered;
 
     if (date?.from) {
       const from = date.from;
+      // If `to` is not set, use the same day as `from`
       const to = date.to || from;
-      
-      const previousEntries = entries.filter(entry => isBefore(parseISO(entry.date), from));
+
+      const previousEntries = entries.filter(entry => {
+          const entryDate = parseISO(entry.transaction_date);
+          return isValid(entryDate) && isBefore(entryDate, from);
+      });
       balanceBroughtForward = previousEntries.reduce((acc, entry) => acc + (entry.debit - entry.credit), 0);
       
-      filtered = entries.filter(entry => isWithinInterval(parseISO(entry.date), { start: from, end: to }));
+      filtered = entries.filter(entry => {
+          const entryDate = parseISO(entry.transaction_date);
+          return isValid(entryDate) && isWithinInterval(entryDate, { start: from, end: to });
+      });
+
     } else {
       const last20Entries = entries.slice(-20);
       if (last20Entries.length > 0) {
-        const firstDate = parseISO(last20Entries[0].date);
-        const previousEntries = entries.filter(entry => isBefore(parseISO(entry.date), firstDate));
-        balanceBroughtForward = previousEntries.reduce((acc, entry) => acc + (entry.debit - entry.credit), 0);
+        const firstEntryDateStr = last20Entries[0].transaction_date;
+        const firstDate = parseISO(firstEntryDateStr);
+
+        if(isValid(firstDate)) {
+             const previousEntries = entries.filter(entry => {
+                 const entryDate = parseISO(entry.transaction_date);
+                 return isValid(entryDate) && isBefore(entryDate, firstDate);
+            });
+            balanceBroughtForward = previousEntries.reduce((acc, entry) => acc + (entry.debit - entry.credit), 0);
+        }
       }
       filtered = last20Entries;
     }
     
     return { filteredEntries: filtered, balanceForward: balanceBroughtForward };
-  }, [date]);
+  }, [date, ledgerEntries, accountId]);
 
   let runningBalance = balanceForward;
-  const closingBalance = filteredEntries.reduce((balance, entry) => {
-    const balanceChange = entry.debit - entry.credit;
+  const closingBalance = (filteredEntries || []).reduce((balance, entry) => {
+    const balanceChange = (entry.debit || 0) - (entry.credit || 0);
     return balance + balanceChange;
   }, runningBalance);
 
@@ -224,14 +240,14 @@ export default function AccountLedgerPage() {
                 </TableRow>
                 {filteredEntries.length > 0 ? (
                     filteredEntries.map((entry, index) => {
-                        const balanceChange = entry.debit - entry.credit;
+                        const balanceChange = (entry.debit || 0) - (entry.credit || 0);
                         runningBalance += balanceChange;
                         return (
                             <TableRow key={index}>
-                                <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
-                                <TableCell>{entry.narration}</TableCell>
-                                <TableCell className="text-right font-mono">{entry.debit > 0 ? `${currencySymbol}${entry.debit.toFixed(2)}` : '-'}</TableCell>
-                                <TableCell className="text-right font-mono">{entry.credit > 0 ? `${currencySymbol}${entry.credit.toFixed(2)}` : '-'}</TableCell>
+                                <TableCell>{new Date(entry.transaction_date).toLocaleDateString()}</TableCell>
+                                <TableCell>{entry.description}</TableCell>
+                                <TableCell className="text-right font-mono">{(entry.debit || 0) > 0 ? `${currencySymbol}${entry.debit.toFixed(2)}` : '-'}</TableCell>
+                                <TableCell className="text-right font-mono">{(entry.credit || 0) > 0 ? `${currencySymbol}${entry.credit.toFixed(2)}` : '-'}</TableCell>
                                 <TableCell className="text-right font-mono">{currencySymbol}{runningBalance.toFixed(2)}</TableCell>
                             </TableRow>
                         )
@@ -258,3 +274,4 @@ export default function AccountLedgerPage() {
     </div>
   );
 }
+
