@@ -199,6 +199,7 @@ const navItems = [
         { href: '/accounting/journal-entries', label: 'Journal Entries', icon: BookUser },
         { href: '/accounting/expenses', label: 'Expenses', icon: Receipt },
         { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
+        { href: '/accounting/transaction-setup', label: 'Transaction Setup', icon: FileDigit },
     ],
   },
   // {
