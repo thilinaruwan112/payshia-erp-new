@@ -155,7 +155,71 @@ export default function TransactionSetupPage() {
                         </div>
                     </div>
                 </CardContent>
-                 <CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Expenses</CardTitle>
+                    <CardDescription>
+                       Configure accounts for expense claims.
+                    </CardDescription>
+                </CardHeader>
+                 <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                             <Label>Expense Payable (Credit)</Label>
+                             <p className="text-xs text-muted-foreground">Default account for unpaid expenses.</p>
+                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a payable account..." />}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Fixed Assets</CardTitle>
+                    <CardDescription>
+                       Configure accounts for purchasing and depreciating fixed assets.
+                    </CardDescription>
+                </CardHeader>
+                 <CardContent className="space-y-8">
+                     <div>
+                        <h4 className="font-semibold mb-2">Asset Purchase</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label>Fixed Asset Account (Debit)</Label>
+                                <p className="text-xs text-muted-foreground">The asset account to be increased.</p>
+                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a fixed asset account..." />}
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Accounts Payable / Cash (Credit)</Label>
+                                <p className="text-xs text-muted-foreground">The account used for payment.</p>
+                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a payable/cash account..." />}
+                            </div>
+                        </div>
+                    </div>
+                     <Separator />
+                     <div>
+                        <h4 className="font-semibold mb-2">Depreciation</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <Label>Depreciation Expense (Debit)</Label>
+                                 <p className="text-xs text-muted-foreground">The expense account for depreciation.</p>
+                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select a depreciation expense..." />}
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Accumulated Depreciation (Credit)</Label>
+                                 <p className="text-xs text-muted-foreground">The contra-asset account.</p>
+                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} placeholder="Select an accumulated dep. account..." />}
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+
+             <Card>
+                 <CardContent className="pt-6">
                     <Button disabled>Save Changes</Button>
                      <p className="text-xs text-muted-foreground mt-2">Note: Saving functionality is under development.</p>
                 </CardContent>
