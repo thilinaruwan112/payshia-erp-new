@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Loader2, ArrowLeft, Utensils } from 'lucide-react';
+import { Loader2, ArrowLeft, Utensils, User as UserIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
@@ -79,22 +79,40 @@ const OrderTypeSelection = ({ onSelectOrderType, onSelectTable, tables, isLoadin
     )
 }
 
-const StewardSelection = ({ onSelectSteward, onBack, stewards, isLoading }: { onSelectSteward: (steward: User) => void; onBack: () => void; stewards: User[], isLoading: boolean; }) => (
-    <div className="py-4">
-         <Button variant="ghost" onClick={onBack} className="mb-4"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Order Type</Button>
-        <h2 className="text-2xl font-bold mb-4">Select Steward</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-             {isLoading ? Array.from({length: 4}).map((_, i) => <Card key={i} className="p-4 h-40 animate-pulse bg-muted"></Card>) : (
-                stewards.map(steward => (
-                    <Card key={steward.id} className="p-4 text-center cursor-pointer hover:border-primary" onClick={() => onSelectSteward(steward)}>
-                        <Avatar className="h-20 w-20 mx-auto"><AvatarImage src={steward.avatar} alt={steward.name} data-ai-hint="profile photo" /><AvatarFallback>{steward.name.split(' ').map(n => n[0]).join('')}</AvatarFallback></Avatar>
-                        <p className="mt-2 font-semibold">{steward.name}</p><p className="text-xs text-muted-foreground">{steward.role}</p>
-                    </Card>
-                ))
-            )}
+const StewardSelection = ({ onSelectSteward, onBack, stewards, isLoading }: { onSelectSteward: (steward: User) => void; onBack: () => void; stewards: User[], isLoading: boolean; }) => {
+    
+    const noSteward: User = { id: '0', user_name: 'No Steward', role: 'System' };
+    
+    return (
+        <div className="py-4">
+             <Button variant="ghost" onClick={onBack} className="mb-4"><ArrowLeft className="mr-2 h-4 w-4" /> Back to Order Type</Button>
+            <h2 className="text-2xl font-bold mb-4">Select Steward</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {isLoading ? Array.from({length: 4}).map((_, i) => <Card key={i} className="p-4 h-40 animate-pulse bg-muted"></Card>) : (
+                    <>
+                        <Card className="p-4 text-center cursor-pointer hover:border-primary" onClick={() => onSelectSteward(noSteward)}>
+                           <div className="h-20 w-20 mx-auto rounded-full bg-muted flex items-center justify-center">
+                                <UserIcon className="h-10 w-10 text-muted-foreground" />
+                           </div>
+                           <p className="mt-2 font-semibold">No Steward</p>
+                           <p className="text-xs text-muted-foreground">Assign later</p>
+                        </Card>
+                        {stewards.map(steward => (
+                            <Card key={steward.id} className="p-4 text-center cursor-pointer hover:border-primary" onClick={() => onSelectSteward(steward)}>
+                                <Avatar className="h-20 w-20 mx-auto">
+                                    <AvatarImage src={steward.avatar} alt={steward.user_name} data-ai-hint="profile photo" />
+                                    <AvatarFallback>{(steward.first_name || '').charAt(0)}{(steward.last_name || '').charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <p className="mt-2 font-semibold">{steward.first_name} {steward.last_name}</p>
+                                <p className="text-xs text-muted-foreground">{steward.role}</p>
+                            </Card>
+                        ))}
+                    </>
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 interface NewOrderDialogProps {
   isOpen: boolean;
@@ -122,7 +140,7 @@ export function NewOrderDialog({ isOpen, onOpenChange, activeOrders = [], create
         try {
             const [tablesResponse, stewardsResponse, heldOrdersResponse] = await Promise.all([
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?user_status=3&company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/filter/hold/by-company-status?company_id=${company_id}&invoice_status=2`),
             ]);
             if (!tablesResponse.ok) throw new Error('Failed to fetch tables');
@@ -131,13 +149,13 @@ export function NewOrderDialog({ isOpen, onOpenChange, activeOrders = [], create
             const stewardsResult = await stewardsResponse.json();
             const stewardsData = stewardsResult.data || [];
             setStewards((stewardsData || []).map((s: any) => ({ 
-                id: s.id, 
-                name: `${s.first_name} ${s.last_name}`, 
+                id: s.id,
+                user_name: `${s.first_name} ${s.last_name}`, 
                 role: s.acc_type, 
                 avatar: s.img_path, 
                 customer_id: s.id,
-                customer_first_name: s.first_name,
-                customer_last_name: s.last_name,
+                first_name: s.first_name,
+                last_name: s.last_name
              })));
              if (!heldOrdersResponse.ok) throw new Error('Failed to fetch held orders');
             const heldOrdersData = await heldOrdersResponse.json();
@@ -154,7 +172,7 @@ export function NewOrderDialog({ isOpen, onOpenChange, activeOrders = [], create
 
   const handleSelectTable = (tableName: string) => { setSelectedTable(tableName); setStep('steward'); };
   const handleBack = () => { setStep('type'); setSelectedTable(null); };
-  const handleSelectSteward = (steward: User) => { if (selectedTable) createNewOrder('Dine-In', steward, selectedTable); }
+  const handleSelectSteward = (steward: User) => { if (selectedTable) createNewOrder('Dine-In', steward.id !== '0' ? steward : undefined, selectedTable); }
 
   useEffect(() => { if (!isOpen) setTimeout(() => setStep('type'), 200); }, [isOpen]);
 

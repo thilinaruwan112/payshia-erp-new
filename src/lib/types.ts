@@ -1,5 +1,4 @@
 
-
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -82,6 +81,7 @@ export type Product = {
   recipe_type?: 'standard' | 'a_la_carte' | 'item_recipe';
   base_location?: string;
   available_locations?: string;
+  item_type?: 'raw' | 'menu' | 'both';
 };
 
 export type Location = {
@@ -145,6 +145,9 @@ export type User = {
   avatar?: string;
   phone?: string;
   address?: string;
+  companyUserId?: string; // ID from the company_users pivot table
+  customer_id: string;
+  user_status?: string;
 };
 
 export type Collection = {
@@ -310,25 +313,31 @@ export type Plan = {
 export type AccountType = 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
 
 export type Account = {
-    code: number;
-    name: string;
-    type: AccountType;
-    subType: string;
-    balance: number;
+    account_id: string;
+    account_name: string;
+    account_type: AccountType;
+    balance?: number;
+    code?: string;
+    name?: string;
+    type?: AccountType;
+    subType?: string;
+    balance_info?: {
+        balance: number;
+        total_debit: number;
+        total_credit: number;
+    };
 };
 
 export type JournalEntry = {
-    id: string;
-    date: string;
-    narration: string;
-    totalDebit: number;
-    totalCredit: number;
-    lines: {
-        accountCode: number;
-        accountName: string;
-        debit: number;
-        credit: number;
-    }[];
+    transaction_id: string;
+    debit_account_id: string;
+    credit_account_id: string;
+    amount: string;
+    transaction_date: string;
+    description: string;
+    ref_key: string;
+    location_id: string;
+    company_id: string;
 };
 
 export type Expense = {
@@ -397,7 +406,7 @@ export type Invoice = {
     service_charge: string;
     tendered_amount: string;
     close_type: string;
-    invoice_status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+    invoice_status: 'Draft' | 'Sent' | 'Paid' | 'Overdue' | string;
     payment_status: string;
     chanel: string;
     current_time: string;
@@ -412,7 +421,7 @@ export type Invoice = {
     ref_hold: string | null;
     company_id: string;
     items?: InvoiceItem[];
-    customer?: Customer; // Can be added if the new endpoint returns it
+    customer?: User; // Can be added if the new endpoint returns it
 };
 
 export type PaymentReceipt = {
@@ -474,7 +483,7 @@ export type ActiveOrder = {
   cart: CartItem[];
   discount: number;
   serviceCharge: number;
-  customer: Customer;
+  customer: User;
   orderType: 'Take Away' | 'Retail' | 'Delivery' | 'Dine-In';
   tableName?: string;
   steward?: User;

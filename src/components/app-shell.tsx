@@ -190,17 +190,18 @@ const navItems = [
       { href: '/purchasing/grn', label: 'Goods Received Notes (GRN)', icon: FileDigit },
     ],
   },
-  // {
-  //   label: 'Accounting',
-  //   icon: Calculator,
-  //   subItems: [
-  //       { href: '/accounting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  //       { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: FileText },
-  //       { href: '/accounting/journal-entries', label: 'Journal Entries', icon: BookUser },
-  //       { href: '/accounting/expenses', label: 'Expenses', icon: Receipt },
-  //       { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
-  //   ],
-  // },
+  {
+    label: 'Accounting',
+    icon: Calculator,
+    subItems: [
+        { href: '/accounting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: FileText },
+        { href: '/accounting/journal-entries', label: 'Journal Entries', icon: BookUser },
+        { href: '/accounting/expenses', label: 'Expenses', icon: Receipt },
+        { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
+        { href: '/accounting/transaction-setup', label: 'Transaction Setup', icon: FileDigit },
+    ],
+  },
   // {
   //   label: 'HRM',
   //   icon: Briefcase,
@@ -553,7 +554,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (userName) {
       setUser({
         name: userName,
-        email: userEmail || `${userName.toLowerCase().replace(' ', '.')}@payshia.com`,
+        email: userEmail || userName, // Use userName as fallback for email
         role: 'User',
         avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`
       });
