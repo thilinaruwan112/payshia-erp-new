@@ -53,13 +53,21 @@ export default function AccountLedgerPage() {
     async function fetchAccountData() {
         setIsLoading(true);
         try {
-            const [accountResponse, ledgerResponse] = await Promise.all([
-                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-accounts?company_id=${company_id}`),
-                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-transactions/get/by-account?account_id=${accountId}&company_id=${company_id}`)
-            ]);
+            const accountResponse = fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-accounts?company_id=${company_id}`);
             
-            if (!accountResponse.ok) throw new Error('Failed to fetch accounts');
-            const accountData = await accountResponse.json();
+            let ledgerUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-transactions/get/by-account?account_id=${accountId}&company_id=${company_id}`;
+            if (date?.from) {
+                const startDate = format(date.from, 'yyyy-MM-dd');
+                const endDate = date.to ? format(date.to, 'yyyy-MM-dd') : startDate;
+                ledgerUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-transactions/by-date-range?start_date=${startDate}&end_date=${endDate}&company_id=${company_id}&account_id=${accountId}`;
+            }
+            
+            const ledgerResponse = fetcher(ledgerUrl);
+            
+            const [accRes, ledRes] = await Promise.all([accountResponse, ledgerResponse]);
+            
+            if (!accRes.ok) throw new Error('Failed to fetch accounts');
+            const accountData = await accRes.json();
             const foundAccount = (accountData.data || []).find((acc: Account) => acc.account_id === accountId);
             
             if (foundAccount) {
@@ -68,22 +76,23 @@ export default function AccountLedgerPage() {
                 notFound();
             }
 
-            if (!ledgerResponse.ok) throw new Error('Failed to fetch ledger transactions');
-            const ledgerData = await ledgerResponse.json();
+            if (!ledRes.ok) throw new Error('Failed to fetch ledger transactions');
+            const ledgerData = await ledRes.json();
             setLedgerEntries(ledgerData.data || []);
 
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not fetch account data.'
+                description: `Could not fetch account data: ${errorMessage}`
             })
         } finally {
             setIsLoading(false);
         }
     }
     fetchAccountData();
-  }, [accountId, company_id, toast]);
+  }, [accountId, company_id, toast, date]);
   
  const { filteredEntries, balanceForward } = useMemo(() => {
     if (!accountId) return { filteredEntries: [], balanceForward: 0 };
@@ -102,24 +111,12 @@ export default function AccountLedgerPage() {
     let filtered;
 
     if (date?.from) {
-      const from = date.from;
-      // If `to` is not set, use the same day as `from`
-      const to = date.to || from;
-
-      const previousEntries = entries.filter(entry => {
-          const entryDate = parseISO(entry.transaction_date);
-          return isValid(entryDate) && isBefore(entryDate, from);
-      });
-      balanceBroughtForward = previousEntries.reduce((acc, entry) => acc + (entry.debit - entry.credit), 0);
-      
-      filtered = entries.filter(entry => {
-          const entryDate = parseISO(entry.transaction_date);
-          return isValid(entryDate) && isWithinInterval(entryDate, { start: from, end: to });
-      });
-
+      filtered = entries;
+      // Note: If the backend already filters by date, we can simplify this.
+      // Assuming for now the frontend might still need to handle a larger dataset for balance forward.
     } else {
       const last20Entries = entries.slice(-20);
-      if (last20Entries.length > 0) {
+      if (last20Entries.length > 0 && entries.length > 20) {
         const firstEntryDateStr = last20Entries[0].transaction_date;
         const firstDate = parseISO(firstEntryDateStr);
 
@@ -130,6 +127,8 @@ export default function AccountLedgerPage() {
             });
             balanceBroughtForward = previousEntries.reduce((acc, entry) => acc + (entry.debit - entry.credit), 0);
         }
+      } else {
+         balanceBroughtForward = 0; // No previous entries if showing all
       }
       filtered = last20Entries;
     }
@@ -147,7 +146,7 @@ export default function AccountLedgerPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex-1">
-           {isLoading ? (
+           {isLoading && !account ? (
                 <>
                     <Skeleton className="h-9 w-64 mb-2" />
                     <Skeleton className="h-4 w-48" />
@@ -274,4 +273,3 @@ export default function AccountLedgerPage() {
     </div>
   );
 }
-
