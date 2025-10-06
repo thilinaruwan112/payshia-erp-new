@@ -154,27 +154,45 @@ export default function TransactionSetupPage() {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
 
-    const handleSaveEntry = async (entryName: string, keys: (string | null)[]) => {
+    const handleSaveEntry = async (entryName: string, keys: (string | null)[], section: string) => {
         if (!company_id) return;
         setSavingStates(prev => ({...prev, [entryName]: true}));
         
         try {
-            for (const key of keys) {
-                if (key && settings[key]) {
-                    const payload = {
-                        company_id,
-                        location_id: 0, // 0 for company-wide settings
-                        key,
-                        value: settings[key],
-                        created_by: 'admin',
-                        updated_by: 'admin',
-                    };
-                    await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/key-settings`, {
-                        method: 'POST',
-                        body: JSON.stringify(payload),
-                    });
-                }
+            const [debitKey, creditKey] = keys;
+            const payloads = [];
+
+            if (debitKey && settings[debitKey]) {
+                payloads.push({
+                    type: "Debit",
+                    credit_account_id: 0,
+                    debit_account_id: parseInt(settings[debitKey]),
+                    status: "active",
+                    company_id: company_id,
+                    sub_type: entryName,
+                    created_by: "admin"
+                });
             }
+
+            if (creditKey && settings[creditKey]) {
+                 payloads.push({
+                    type: "Credit",
+                    credit_account_id: parseInt(settings[creditKey]),
+                    debit_account_id: 0,
+                    status: "active",
+                    company_id: company_id,
+                    sub_type: entryName,
+                    created_by: "admin"
+                });
+            }
+
+            for (const payload of payloads) {
+                 await fetcher(`https://qa-server-erp.payshia.com/transaction-setup`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                });
+            }
+
             toast({ title: 'Success', description: `${entryName} settings saved successfully.` });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: `Could not save ${entryName} settings.` });
@@ -236,7 +254,7 @@ export default function TransactionSetupPage() {
                                                 <Combobox 
                                                     options={accountOptions}
                                                     value={settings[entry.debitKey] || ''}
-                                                    onChange={(value) => handleSettingChange(entry.debitKey, value)}
+                                                    onChange={(value) => handleSettingChange(entry.debitKey!, value)}
                                                     placeholder={`Select a ${entry.debitLabel}...`}
                                                 />
                                             ) : (
@@ -248,7 +266,7 @@ export default function TransactionSetupPage() {
                                                 <Combobox 
                                                     options={accountOptions}
                                                     value={settings[entry.creditKey] || ''}
-                                                    onChange={(value) => handleSettingChange(entry.creditKey, value)}
+                                                    onChange={(value) => handleSettingChange(entry.creditKey!, value)}
                                                     placeholder={`Select a ${entry.creditLabel}...`}
                                                 />
                                             ) : (
@@ -256,7 +274,7 @@ export default function TransactionSetupPage() {
                                             )}
                                         </TableCell>
                                         <TableCell>
-                                            <Button onClick={() => handleSaveEntry(entry.name, [entry.debitKey, entry.creditKey])} disabled={savingStates[entry.name]} size="sm">
+                                            <Button onClick={() => handleSaveEntry(entry.name, [entry.debitKey, entry.creditKey], section.section)} disabled={savingStates[entry.name]} size="sm">
                                                 {savingStates[entry.name] ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                                 Save
                                             </Button>
@@ -271,3 +289,4 @@ export default function TransactionSetupPage() {
         </div>
     );
 }
+
