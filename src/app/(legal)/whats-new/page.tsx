@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const updates = [
   {
@@ -41,35 +42,50 @@ export default function WhatsNewPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
             <h1 className="text-4xl font-bold tracking-tight">What's New in Payshia ERP</h1>
             <p className="text-lg text-muted-foreground mt-2">
                 We're constantly improving. Here's a log of our latest updates and features.
             </p>
         </div>
-      {updates.map((update, index) => (
-        <Card key={index} className="mb-8">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-2xl">{update.version}</CardTitle>
-              <CardDescription>{update.date}</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-3">
-              {update.changes.map((change, changeIndex) => (
-                <li key={changeIndex} className="flex items-start gap-4">
-                  <Badge variant={getBadgeVariant(change.type)} className="mt-1 whitespace-nowrap">
-                    {change.type}
-                  </Badge>
-                  <p className="text-muted-foreground">{change.description}</p>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      ))}
+      <Card>
+        <CardHeader>
+            <CardTitle>Release Notes</CardTitle>
+            <CardDescription>A summary of recent changes to the platform.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="w-[120px]">Version</TableHead>
+                        <TableHead className="w-[150px]">Date</TableHead>
+                        <TableHead>Changes</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {updates.map((update, index) => (
+                        <TableRow key={index}>
+                            <TableCell className="font-semibold align-top">{update.version}</TableCell>
+                            <TableCell className="text-muted-foreground align-top">{update.date}</TableCell>
+                            <TableCell>
+                                <ul className="space-y-3">
+                                {update.changes.map((change, changeIndex) => (
+                                    <li key={changeIndex} className="flex items-start gap-3">
+                                        <Badge variant={getBadgeVariant(change.type)} className="mt-1 whitespace-nowrap">
+                                            {change.type}
+                                        </Badge>
+                                        <p className="text-muted-foreground">{change.description}</p>
+                                    </li>
+                                ))}
+                                </ul>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
