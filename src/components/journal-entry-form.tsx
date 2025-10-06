@@ -177,7 +177,7 @@ export function JournalEntryForm({ accounts }: JournalEntryFormProps) {
   const totalDebit = lines.reduce((acc, line) => acc + (Number(line.debit) || 0), 0);
   const totalCredit = lines.reduce((acc, line) => acc + (Number(line.credit) || 0), 0);
 
-  const accountOptions = accounts.map(acc => ({ value: String(acc.code), label: `${acc.code} - ${acc.name}`}));
+  const accountOptions = accounts.map(acc => ({ value: acc.account_id, label: `${acc.account_id} - ${acc.account_name}`}));
 
 
   return (

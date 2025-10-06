@@ -147,6 +147,7 @@ export type User = {
   address?: string;
   companyUserId?: string; // ID from the company_users pivot table
   customer_id: string;
+  user_status?: string;
 };
 
 export type Collection = {
@@ -420,7 +421,7 @@ export type Invoice = {
     ref_hold: string | null;
     company_id: string;
     items?: InvoiceItem[];
-    customer?: Customer; // Can be added if the new endpoint returns it
+    customer?: User; // Can be added if the new endpoint returns it
 };
 
 export type PaymentReceipt = {
