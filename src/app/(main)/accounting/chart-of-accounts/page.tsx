@@ -161,9 +161,11 @@ export default function ChartOfAccountsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
-                            <DropdownMenuItem>View Ledger</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
+                            <DropdownMenuItem asChild>
+                                <Link href={`/accounting/ledger/${account.account_id}`}>View Ledger</Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem disabled>Edit</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" disabled>
                             Deactivate
                             </DropdownMenuItem>
                         </DropdownMenuContent>
