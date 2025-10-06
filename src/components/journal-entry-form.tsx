@@ -35,6 +35,7 @@ import { useCurrency } from "./currency-provider";
 import { Combobox } from "./ui/combobox";
 import { useLocation } from "./location-provider";
 import { fetcher } from "@/lib/api";
+import React from "react";
 
 const journalEntryFormSchema = z.object({
   date: z.date({
