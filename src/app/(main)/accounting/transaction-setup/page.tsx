@@ -15,12 +15,103 @@ import type { Account, KeySetting } from '@/lib/types';
 import { useLocation } from '@/components/location-provider';
 import { fetcher } from '@/lib/api';
 import { Combobox } from '@/components/ui/combobox';
-import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
 import { Loader2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 type Settings = Record<string, string>;
+
+const transactionMappings = [
+    {
+        section: "Sales",
+        entries: [
+            {
+                name: "Revenue Recognition",
+                description: "When an invoice is finalized.",
+                debitKey: "sales_receivable_account",
+                debitLabel: "Accounts Receivable",
+                creditKey: "sales_revenue_account",
+                creditLabel: "Sales Revenue",
+            },
+            {
+                name: "Cost of Goods Sold",
+                description: "Cost of the inventory sold.",
+                debitKey: "sales_cogs_account",
+                debitLabel: "Cost of Goods Sold",
+                creditKey: "sales_inventory_account",
+                creditLabel: "Inventory Asset",
+            },
+        ],
+    },
+    {
+        section: "Purchasing & GRN",
+        entries: [
+            {
+                name: "Goods Received",
+                description: "When receiving goods from suppliers via GRN.",
+                debitKey: "purchase_inventory_account",
+                debitLabel: "Inventory Asset",
+                creditKey: "purchase_payable_account",
+                creditLabel: "Accounts Payable",
+            },
+        ],
+    },
+    {
+        section: "Payments",
+        entries: [
+            {
+                name: "Customer Receipt",
+                description: "When a customer payment is recorded.",
+                debitKey: "payment_cash_account",
+                debitLabel: "Cash / Bank",
+                creditKey: "payment_receivable_account",
+                creditLabel: "Accounts Receivable",
+            },
+            {
+                name: "Supplier Payment",
+                description: "When a payment is made to a supplier.",
+                debitKey: "supplier_payment_payable_account",
+                debitLabel: "Accounts Payable",
+                creditKey: "supplier_payment_cash_account",
+                creditLabel: "Cash / Bank",
+            },
+        ],
+    },
+    {
+        section: "Expenses",
+        entries: [
+             {
+                name: "Expense Claim",
+                description: "Default for unpaid expense claims.",
+                debitKey: null,
+                debitLabel: "Specific Expense (from form)",
+                creditKey: "expense_payable_account",
+                creditLabel: "Expense Payable",
+            },
+        ]
+    },
+    {
+        section: "Fixed Assets",
+        entries: [
+            {
+                name: "Asset Purchase",
+                description: "When a fixed asset is purchased.",
+                debitKey: 'asset_purchase_asset_account',
+                debitLabel: 'Fixed Asset Account',
+                creditKey: 'asset_purchase_payment_account',
+                creditLabel: 'A/P or Cash',
+            },
+            {
+                name: "Asset Depreciation",
+                description: "When depreciation is recorded.",
+                debitKey: 'asset_depreciation_expense_account',
+                debitLabel: 'Depreciation Expense',
+                creditKey: 'asset_accumulated_depreciation_account',
+                creditLabel: 'Accumulated Depreciation',
+            }
+        ]
+    }
+];
 
 export default function TransactionSetupPage() {
     const { company_id } = useLocation();
@@ -74,6 +165,7 @@ export default function TransactionSetupPage() {
         setIsSaving(true);
         try {
             for (const [key, value] of Object.entries(settings)) {
+                if (!value) continue; // Do not save empty settings
                 const payload = {
                     company_id,
                     location_id: 0, // 0 for company-wide settings
@@ -103,178 +195,81 @@ export default function TransactionSetupPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Transaction Setup</h1>
-                <p className="text-muted-foreground">
-                    Map default accounts for automated journal entries.
-                </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Transaction Setup</h1>
+                    <p className="text-muted-foreground">
+                        Map default accounts for automated journal entries.
+                    </p>
+                </div>
+                 <Button onClick={handleSaveChanges} disabled={isSaving || isLoading}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                </Button>
             </div>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Sales & Invoices</CardTitle>
-                    <CardDescription>
-                        Configure accounts related to sales invoices. This entry is created when an invoice is finalized.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                             <Label>Accounts Receivable (Debit)</Label>
-                             <p className="text-xs text-muted-foreground">What customers owe you.</p>
-                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['sales_receivable_account'] || ''} onChange={(value) => handleSettingChange('sales_receivable_account', value)} placeholder="Select a receivable account..." />}
-                        </div>
-                        <div className="space-y-2">
-                             <Label>Sales Revenue (Credit)</Label>
-                             <p className="text-xs text-muted-foreground">Your income from sales.</p>
-                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['sales_revenue_account'] || ''} onChange={(value) => handleSettingChange('sales_revenue_account', value)} placeholder="Select a revenue account..." />}
-                        </div>
-                         <div className="space-y-2">
-                             <Label>Cost of Goods Sold (Debit)</Label>
-                              <p className="text-xs text-muted-foreground">The cost of the inventory sold.</p>
-                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['sales_cogs_account'] || ''} onChange={(value) => handleSettingChange('sales_cogs_account', value)} placeholder="Select a COGS expense account..." />}
-                        </div>
-                         <div className="space-y-2">
-                             <Label>Inventory Asset (Credit)</Label>
-                              <p className="text-xs text-muted-foreground">The value of stock leaving inventory.</p>
-                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['sales_inventory_account'] || ''} onChange={(value) => handleSettingChange('sales_inventory_account', value)} placeholder="Select an inventory asset account..." />}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-             <Card>
-                <CardHeader>
-                    <CardTitle>Purchasing & Goods Received (GRN)</CardTitle>
-                    <CardDescription>
-                       Configure accounts related to receiving goods from suppliers. This entry is created when a GRN is saved.
-                    </CardDescription>
-                </CardHeader>
-                 <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                             <Label>Inventory Asset (Debit)</Label>
-                             <p className="text-xs text-muted-foreground">The value of stock entering inventory.</p>
-                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['purchase_inventory_account'] || ''} onChange={(value) => handleSettingChange('purchase_inventory_account', value)} placeholder="Select an inventory asset account..." />}
-                        </div>
-                        <div className="space-y-2">
-                             <Label>Accounts Payable (Credit)</Label>
-                             <p className="text-xs text-muted-foreground">What you owe to your suppliers.</p>
-                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['purchase_payable_account'] || ''} onChange={(value) => handleSettingChange('purchase_payable_account', value)} placeholder="Select a payable account..." />}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-             <Card>
-                <CardHeader>
-                    <CardTitle>Payments</CardTitle>
-                    <CardDescription>
-                       Configure accounts for customer receipts and supplier payments.
-                    </CardDescription>
-                </CardHeader>
-                 <CardContent className="space-y-8">
-                     <div>
-                        <h4 className="font-semibold mb-2">Customer Payment (Receipt)</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label>Cash / Bank (Debit)</Label>
-                                <p className="text-xs text-muted-foreground">The asset account receiving the funds.</p>
-                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['payment_cash_account'] || ''} onChange={(value) => handleSettingChange('payment_cash_account', value)} placeholder="Select a cash/bank account..." />}
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Accounts Receivable (Credit)</Label>
-                                <p className="text-xs text-muted-foreground">Reduces the amount customers owe.</p>
-                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['payment_receivable_account'] || ''} onChange={(value) => handleSettingChange('payment_receivable_account', value)} placeholder="Select a receivable account..." />}
-                            </div>
-                        </div>
-                    </div>
-                     <Separator />
-                     <div>
-                        <h4 className="font-semibold mb-2">Supplier Payment</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label>Accounts Payable (Debit)</Label>
-                                 <p className="text-xs text-muted-foreground">Reduces the amount you owe suppliers.</p>
-                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['supplier_payment_payable_account'] || ''} onChange={(value) => handleSettingChange('supplier_payment_payable_account', value)} placeholder="Select a payable account..." />}
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Cash / Bank (Credit)</Label>
-                                 <p className="text-xs text-muted-foreground">The asset account paying the funds.</p>
-                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['supplier_payment_cash_account'] || ''} onChange={(value) => handleSettingChange('supplier_payment_cash_account', value)} placeholder="Select a cash/bank account..." />}
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-            
-            <Card>
-                <CardHeader>
-                    <CardTitle>Expenses</CardTitle>
-                    <CardDescription>
-                       Configure accounts for expense claims.
-                    </CardDescription>
-                </CardHeader>
-                 <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-2">
-                             <Label>Expense Payable (Credit)</Label>
-                             <p className="text-xs text-muted-foreground">Default account for unpaid expenses.</p>
-                             {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['expense_payable_account'] || ''} onChange={(value) => handleSettingChange('expense_payable_account', value)} placeholder="Select a payable account..." />}
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Fixed Assets</CardTitle>
-                    <CardDescription>
-                       Configure accounts for purchasing and depreciating fixed assets.
-                    </CardDescription>
-                </CardHeader>
-                 <CardContent className="space-y-8">
-                     <div>
-                        <h4 className="font-semibold mb-2">Asset Purchase</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label>Fixed Asset Account (Debit)</Label>
-                                <p className="text-xs text-muted-foreground">The asset account to be increased.</p>
-                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['asset_purchase_asset_account'] || ''} onChange={(value) => handleSettingChange('asset_purchase_asset_account', value)} placeholder="Select a fixed asset account..." />}
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Accounts Payable / Cash (Credit)</Label>
-                                <p className="text-xs text-muted-foreground">The account used for payment.</p>
-                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['asset_purchase_payment_account'] || ''} onChange={(value) => handleSettingChange('asset_purchase_payment_account', value)} placeholder="Select a payable/cash account..." />}
-                            </div>
-                        </div>
-                    </div>
-                     <Separator />
-                     <div>
-                        <h4 className="font-semibold mb-2">Depreciation</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-2">
-                                <Label>Depreciation Expense (Debit)</Label>
-                                 <p className="text-xs text-muted-foreground">The expense account for depreciation.</p>
-                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['asset_depreciation_expense_account'] || ''} onChange={(value) => handleSettingChange('asset_depreciation_expense_account', value)} placeholder="Select a depreciation expense..." />}
-                            </div>
-                            <div className="space-y-2">
-                                <Label>Accumulated Depreciation (Credit)</Label>
-                                 <p className="text-xs text-muted-foreground">The contra-asset account.</p>
-                                {isLoading ? <Skeleton className="h-10" /> : <Combobox options={accountOptions} value={settings['asset_accumulated_depreciation_account'] || ''} onChange={(value) => handleSettingChange('asset_accumulated_depreciation_account', value)} placeholder="Select an accumulated dep. account..." />}
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-
-             <Card>
-                 <CardContent className="pt-6">
-                    <Button onClick={handleSaveChanges} disabled={isSaving || isLoading}>
-                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Changes
-                    </Button>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-1/4">Transaction</TableHead>
+                                <TableHead>Description</TableHead>
+                                <TableHead className="w-1/4">Debit Account</TableHead>
+                                <TableHead className="w-1/4">Credit Account</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                Array.from({length: 8}).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-4 w-3/4" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-full" /></TableCell>
+                                        <TableCell><Skeleton className="h-10 w-full" /></TableCell>
+                                        <TableCell><Skeleton className="h-10 w-full" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                transactionMappings.map(section => (
+                                    <React.Fragment key={section.section}>
+                                        <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                            <TableCell colSpan={4} className="font-bold text-primary">{section.section}</TableCell>
+                                        </TableRow>
+                                        {section.entries.map(entry => (
+                                            <TableRow key={entry.name}>
+                                                <TableCell className="font-medium align-top pt-6">{entry.name}</TableCell>
+                                                <TableCell className="text-muted-foreground align-top pt-6">{entry.description}</TableCell>
+                                                <TableCell>
+                                                    {entry.debitKey ? (
+                                                        <Combobox 
+                                                            options={accountOptions}
+                                                            value={settings[entry.debitKey] || ''}
+                                                            onChange={(value) => handleSettingChange(entry.debitKey, value)}
+                                                            placeholder={`Select a ${entry.debitLabel}...`}
+                                                        />
+                                                    ) : (
+                                                        <Input value={entry.debitLabel} disabled />
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {entry.creditKey ? (
+                                                        <Combobox 
+                                                            options={accountOptions}
+                                                            value={settings[entry.creditKey] || ''}
+                                                            onChange={(value) => handleSettingChange(entry.creditKey, value)}
+                                                            placeholder={`Select a ${entry.creditLabel}...`}
+                                                        />
+                                                    ) : (
+                                                         <Input value={entry.creditLabel} disabled />
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </React.Fragment>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
         </div>
