@@ -32,7 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useLocation } from "../location-provider";
+import { useLocation } from "@/components/location-provider";
 import { fetcher } from "@/lib/api";
 import { format } from "date-fns";
 
