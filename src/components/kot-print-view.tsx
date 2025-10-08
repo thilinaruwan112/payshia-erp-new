@@ -82,7 +82,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             setInvoice(invoiceData);
             
             // Filter items to only include those not yet printed
-            const unprintedItems = (invoiceData.items || []).filter(item => item.printed_status !== '1');
+            const unprintedItems = (invoiceData.items || []).filter(item => String(item.printed_status) !== '1');
             setItemsToPrint(unprintedItems);
             
             if (invoiceData.location_id) {
@@ -106,8 +106,10 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         }
     }
 
-    fetchInvoiceData();
-  }, [invoiceId, companyId, toast]);
+    if (products.length > 0) {
+      fetchInvoiceData();
+    }
+  }, [invoiceId, companyId, toast, products]);
 
    useEffect(() => {
     if (typeof window !== "undefined") {
@@ -131,7 +133,6 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             console.error("Failed to initialize JSPM:", error);
           }
         } else if (retries < 10) {
-          // If JSPM is not loaded, wait 500ms and try again, up to 10 times.
           setTimeout(() => initJSPM(retries + 1), 500);
         } else {
           console.error("JSPM script not loaded after multiple attempts. Make sure the client app is running.");
@@ -143,18 +144,19 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }, []);
   
   const updatePrintedStatus = async () => {
-    if (itemsToPrint.length === 0) return;
+    if (itemsToPrint.length === 0 || !companyId) return;
 
-    const itemIdsToUpdate = itemsToPrint.map(item => item.id);
+    const itemIdsToUpdate = itemsToPrint.map(item => item.id).join(',');
+    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-invoice-items/printed?id=${itemIdsToUpdate}&company_id=${companyId}`;
 
     try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices/items/update-printed-status`, {
+        const response = await fetcher(url, {
             method: 'PUT',
-            body: JSON.stringify({ item_ids: itemIdsToUpdate }),
         });
 
         if (!response.ok) {
-            throw new Error('Failed to update printed status on the server.');
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update printed status on the server.');
         }
 
         console.log('Successfully updated printed status for items:', itemIdsToUpdate);
