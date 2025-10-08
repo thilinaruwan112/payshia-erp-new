@@ -18,7 +18,8 @@ import type { Plan } from '@/lib/types';
 async function getPlans(): Promise<Plan[]> {
     try {
         // In a real app, this would be a fetch call to your server
-        // const response = await fetch('https://server-erp.payshia.com/plans');
+        // const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/plans`);
+
         // const data = await response.json();
         // return data;
         

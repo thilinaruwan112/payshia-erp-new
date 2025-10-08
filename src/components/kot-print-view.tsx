@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -40,7 +39,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
       if (!companyId) return;
       try {
         const response = await fetcher(
-          `https://server-erp.payshia.com/products/get/filter/by-company?company_id=${companyId}`
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/filter/by-company?company_id=${companyId}`
         );
         if (!response.ok) {
           throw new Error('Failed to fetch products');
@@ -66,7 +65,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
 
         setIsLoading(true);
         try {
-            const url = `https://server-erp.payshia.com/pos-invoices?invoicenumber=${invoiceId}&company_id=${companyId}`;
+            const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices?invoicenumber=${invoiceId}&company_id=${companyId}`;
             const response = await fetcher(url);
 
             if (!response.ok) {
@@ -77,7 +76,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             setItemsToPrint(invoiceData.items || []);
             
             if (invoiceData.location_id) {
-                const locResponse = await fetcher(`https://server-erp.payshia.com/locations/${invoiceData.location_id}`);
+                const locResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${invoiceData.location_id}`);
                 if (locResponse.ok) {
                     setLocation(await locResponse.json());
                 }

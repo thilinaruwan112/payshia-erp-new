@@ -1,3 +1,4 @@
+
 'use client'
 
 import { BrandForm } from '@/components/brand-form';
@@ -20,7 +21,7 @@ export default function EditBrandPage({ params }: { params: { id: string } }) {
       if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/brands/${id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();

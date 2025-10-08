@@ -57,14 +57,14 @@ export default function CollectionsPage() {
       }
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/collections/company?company_id=${companyId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/company?company_id=${companyId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch collections');
         }
         const data: Collection[] = await response.json();
         
         const counts = await Promise.all(data.map(async (collection) => {
-            const countResponse = await fetcher(`https://server-erp.payshia.com/collection-products/count/${collection.id}`);
+            const countResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collection-products/count/${collection.id}`);
             if (!countResponse.ok) {
                 console.error(`Failed to fetch count for collection ${collection.id}`);
                 return { ...collection, productCount: 0 };
@@ -93,7 +93,7 @@ export default function CollectionsPage() {
     if (!selectedCollection) return;
 
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/collections/${selectedCollection.id}`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/${selectedCollection.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {

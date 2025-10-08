@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -29,7 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { Account } from '@/lib/types';
+import type { Account, AccountType } from '@/lib/types';
 import { useCurrency } from '@/components/currency-provider';
 import React from 'react';
 import { useLocation } from '@/components/location-provider';
@@ -37,7 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetcher } from '@/lib/api';
 
-const getAccountTypeColor = (type: Account['type']) => {
+const getAccountTypeColor = (type: AccountType) => {
   switch (type) {
     case 'Asset':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
@@ -69,12 +68,12 @@ export default function ChartOfAccountsPage() {
     async function fetchAccounts() {
         setIsLoading(true);
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-accounts?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch chart of accounts');
             }
             const data = await response.json();
-            setAccounts(data);
+            setAccounts(data.data || []);
         } catch (error) {
             toast({
                 variant: 'destructive',
@@ -98,7 +97,7 @@ export default function ChartOfAccountsPage() {
           </p>
         </div>
         <Button asChild className="w-full sm:w-auto">
-          <Link href="#">
+          <Link href="/accounting/chart-of-accounts/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Account
           </Link>
@@ -138,39 +137,49 @@ export default function ChartOfAccountsPage() {
                         <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                     </TableRow>
                 ))
-              ) : accounts.map((account) => (
-                <TableRow key={account.code}>
-                  <TableCell className="font-mono">{account.code}</TableCell>
-                  <TableCell className="font-medium">{account.name}</TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <Badge variant="secondary" className={cn(getAccountTypeColor(account.type))}>
-                        {account.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                     <Badge variant="outline">{account.subType}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right font-mono">{currencySymbol}{(account.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>View Ledger</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          Deactivate
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+              ) : accounts.length > 0 ? (
+                accounts.map((account) => (
+                    <TableRow key={account.account_id}>
+                    <TableCell className="font-mono">{account.account_id}</TableCell>
+                    <TableCell className="font-medium">{account.account_name}</TableCell>
+                    <TableCell className="hidden sm:table-cell">
+                        <Badge variant="secondary" className={cn(getAccountTypeColor(account.account_type))}>
+                            {account.account_type}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                        <Badge variant="outline">{account.subType || 'N/A'}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-mono">{currencySymbol}{(account.balance_info?.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="text-right">
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem asChild>
+                                <Link href={`/accounting/ledger/${account.account_id}`}>View Ledger</Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem disabled>Edit</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" disabled>
+                            Deactivate
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
+                    </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">
+                        No accounts found.
+                    </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

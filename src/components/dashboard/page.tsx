@@ -56,8 +56,8 @@ export default function Dashboard() {
         setIsLoadingData(true);
         try {
             const [inventoryRes, productsRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/inventory/location/${currentLocation.location_id}`),
-                fetcher('https://server-erp.payshia.com/products')
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/inventory/location/${currentLocation.location_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`)
             ]);
             if (!inventoryRes.ok) throw new Error('Failed to fetch inventory');
             if (!productsRes.ok) throw new Error('Failed to fetch products');

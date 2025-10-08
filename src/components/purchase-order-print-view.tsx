@@ -42,10 +42,10 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
       setIsLoading(true);
       try {
         const [poResponse, suppliersResponse, productsResponse, variantsResponse] = await Promise.all([
-           fetcher(`https://server-erp.payshia.com/purchase-orders/${id}`),
-           fetcher('https://server-erp.payshia.com/suppliers'),
-           fetcher('https://server-erp.payshia.com/products'),
-           fetcher('https://server-erp.payshia.com/product-variants'),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/${id}`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
         ]);
         
         if (!poResponse.ok) {
@@ -68,8 +68,8 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
 
         if (poData.company_id && poData.location_id) {
              const [companyRes, locationRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/companies/${poData.company_id}`),
-                fetcher(`https://server-erp.payshia.com/locations/${poData.location_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${poData.company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${poData.location_id}`),
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());

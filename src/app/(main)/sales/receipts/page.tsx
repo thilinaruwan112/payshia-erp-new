@@ -45,7 +45,7 @@ type Receipt = {
     date: string;
     amount: string;
     created_by: string;
-    ref_id: string;
+    ref_id: string; // Invoice number
     location_id: string;
     customer_id: string;
     today_invoice: string;
@@ -69,8 +69,8 @@ export default function ReceiptsPage() {
             setIsLoading(true);
             try {
                 const [receiptResponse, customerResponse] = await Promise.all([
-                    fetcher(`https://server-erp.payshia.com/receipts/company/${company_id}`),
-                    fetcher('https://server-erp.payshia.com/customers'),
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/receipts/company/${company_id}`),
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers`),
                 ]);
 
                 if (!receiptResponse.ok) throw new Error('Failed to fetch receipts');
@@ -173,7 +173,7 @@ export default function ReceiptsPage() {
                       <TableCell className="hidden md:table-cell">
                         <Badge variant="secondary">{getPaymentMethodText(receipt.type)}</Badge>
                       </TableCell>
-                      <TableCell className="text-right font-mono">${parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right font-mono">${' '}{parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -258,7 +258,7 @@ export default function ReceiptsPage() {
                 <CardFooter className="bg-muted/50 p-4">
                   <div className="flex justify-between w-full font-semibold">
                       <span>Amount Paid</span>
-                      <span className="font-mono">${parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="font-mono">${' '}{parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </CardFooter>
               </Card>

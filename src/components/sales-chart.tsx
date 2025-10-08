@@ -25,7 +25,7 @@ export function SalesChart() {
     async function fetchSalesData() {
         setIsLoading(true);
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/orders/company?company_id=${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/company?company_id=${company_id}`);
             if (!response.ok) throw new Error('Failed to fetch sales data');
             const orders: Order[] = await response.json();
             

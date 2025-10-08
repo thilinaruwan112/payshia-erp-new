@@ -66,7 +66,7 @@ export function TableFormDialog({ children, table, onTableCreated }: TableFormDi
 
   async function onSubmit(data: TableFormValues) {
     setIsLoading(true);
-    const url = table ? `https://server-erp.payshia.com/master-tables/${table.id}` : 'https://server-erp.payshia.com/master-tables';
+    const url = table ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/${table.id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables`;
     const method = table ? 'PUT' : 'POST';
 
     const payload = { 

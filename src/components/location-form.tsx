@@ -108,56 +108,37 @@ export function LocationForm({ location }: LocationFormProps) {
     }
     setIsLoading(true);
     
-    // Create URL and Method
-    const url = location ? `https://server-erp.payshia.com/locations/${location.location_id}` : 'https://server-erp.payshia.com/locations';
-    const method = location ? 'PUT' : 'POST';
+    const formData = new FormData();
+    formData.append('location_name', data.location_name);
+    formData.append('location_type', data.location_type);
+    formData.append('address_line1', data.address_line1);
+    formData.append('address_line2', data.address_line2 || '');
+    formData.append('city', data.city);
+    formData.append('phone_1', data.phone_1);
+    formData.append('phone_2', data.phone_2 || '');
+    formData.append('pos_status', data.pos_status ? '1' : '0');
+    formData.append('company_id', String(company_id));
+    formData.append('is_active', '1');
+    formData.append('created_by', 'admin');
+    formData.append('updated_by', "admin");
+    formData.append('pos_token', "101");
 
-    // Handle logo upload separately if it's a new image
-    let logoPath = location?.logo_path || null;
     if (data.logo instanceof File) {
-        const imageFormData = new FormData();
-        imageFormData.append('logo_path', data.logo);
-        imageFormData.append('company_id', String(company_id));
-        // This is a separate call to an endpoint that should handle file upload and return a path
-        // This is a hypothetical endpoint. Replace with your actual image upload endpoint.
-        try {
-            const imageResponse = await fetcher('https://server-erp.payshia.com/locations/upload-logo', {
-                method: 'POST',
-                body: imageFormData,
-                headers: new Headers(), // Let browser set Content-Type for FormData
-            });
-            const imageResult = await imageResponse.json();
-            if (!imageResponse.ok) throw new Error(imageResult.message || 'Image upload failed');
-            logoPath = imageResult.logo_path;
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-            toast({ variant: "destructive", title: "Image Upload Failed", description: errorMessage });
-            setIsLoading(false);
-            return;
-        }
+      formData.append('logo_path', data.logo);
     }
     
-    // Construct the main JSON payload
-    const payload = {
-        location_name: data.location_name,
-        location_type: data.location_type,
-        address_line1: data.address_line1,
-        address_line2: data.address_line2 || '',
-        city: data.city,
-        phone_1: data.phone_1,
-        phone_2: data.phone_2 || '',
-        pos_status: data.pos_status ? 1 : 0,
-        company_id: company_id,
-        is_active: 1, // Assuming active by default
-        updated_by: "admin", // Assuming a logged-in user
-        pos_token: "101", // Default value
-        logo_path: logoPath,
-    };
-    
+    const url = location ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${location.location_id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/locations`;
+    // Use POST for both create and update when using FormData with a file to handle it correctly on many backends
+    const method = 'POST';
+    if (location) {
+        formData.append('_method', 'PUT'); // Method spoofing if backend supports it
+    }
+
     try {
       const response = await fetcher(url, {
         method: method,
-        body: JSON.stringify(payload),
+        body: formData,
+        // Do not set Content-Type header, browser will do it for FormData
       });
 
       if (!response.ok) {

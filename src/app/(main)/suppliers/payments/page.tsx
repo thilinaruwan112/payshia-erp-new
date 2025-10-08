@@ -50,7 +50,7 @@ export default function PaymentsPage() {
             setIsLoading(true);
             try {
                 // This endpoint needs to exist on your server
-                // const response = await fetch(`https://server-erp.payshia.com/payments/company?company_id=${company_id}`);
+                // const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/company?company_id=${company_id}`);
                 // if (!response.ok) throw new Error('Failed to fetch payments');
                 // const data = await response.json();
                 // setPayments(data);

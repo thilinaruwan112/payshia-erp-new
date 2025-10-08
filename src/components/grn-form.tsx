@@ -42,6 +42,7 @@ import React, { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
 import { useLocation } from "./location-provider";
 import { fetcher } from "@/lib/api";
+import { useCurrency } from "./currency-provider";
 
 
 const grnBatchSchema = z.object({
@@ -93,6 +94,7 @@ export function GrnForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { company_id } = useLocation();
+  const { currencySymbol } = useCurrency();
   const poId = searchParams.get('poId');
 
   const [purchaseOrder, setPurchaseOrder] = useState<PurchaseOrder | null>(null);
@@ -131,11 +133,13 @@ export function GrnForm() {
 
         try {
             const [poResponse, suppliersResponse, productsResponse, variantsResponse, locationsResponse] = await Promise.all([
-                 fetcher(`https://server-erp.payshia.com/purchase-orders/${poId}`),
-                 fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
-                 fetcher('https://server-erp.payshia.com/products'),
-                 fetcher('https://server-erp.payshia.com/product-variants'),
-                 fetcher(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`)
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/${poId}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`),
+
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
+
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/company?company_id=${company_id}`)
             ]);
             
             if (!poResponse.ok) throw new Error('Failed to fetch PO data');
@@ -162,7 +166,7 @@ export function GrnForm() {
                     const product = productsData.find(p => p.id === item.product_id);
                     const variant = variantsData.find(v => v.id === item.product_variant_id);
 
-                    const receivedQtyResponse = await fetcher(`https://server-erp.payshia.com/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${poData.po_number}&company_id=${company_id}`);
+                    const receivedQtyResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${poData.po_number}&company_id=${company_id}`);
                     let alreadyReceived = 0;
                     if(receivedQtyResponse.ok) {
                         const receivedQtyData = await receivedQtyResponse.json();
@@ -407,15 +411,15 @@ export function GrnForm() {
                 <CardContent className="space-y-2">
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">Subtotal</span>
-                        <span className="font-mono font-medium">${subTotal.toFixed(2)}</span>
+                        <span className="font-mono font-medium">{currencySymbol}{subTotal.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between">
                         <span className="text-muted-foreground">Tax (Calculated)</span>
-                        <span className="font-mono font-medium">$0.00</span>
+                        <span className="font-mono font-medium">{currencySymbol}0.00</span>
                     </div>
                      <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
                         <span>Grand Total</span>
-                        <span className="font-mono">${subTotal.toFixed(2)}</span>
+                        <span className="font-mono">{currencySymbol}{subTotal.toFixed(2)}</span>
                     </div>
                 </CardContent>
             </Card>
@@ -443,7 +447,7 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
                     <div>
                         <CardTitle className="text-lg">{item.productName} ({item.sku})</CardTitle>
                         <CardDescription>
-                            Order Qty: {item.orderQty} | Received: {item.alreadyReceived} | Balance: {item.receivable} | Rate: ${item.unitRate.toFixed(2)}
+                            Order Qty: {item.orderQty} | Received: {item.alreadyReceived} | Balance: {item.receivable} | Rate: Rs {item.unitRate.toFixed(2)}
                         </CardDescription>
                     </div>
                      {hasError && (
@@ -558,5 +562,7 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
         </Card>
     );
 }
+
+    
 
     

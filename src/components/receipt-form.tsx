@@ -115,7 +115,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
         form.reset({ ...form.getValues(), invoiceId: '', amount: 0 });
 
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedCustomerId}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedCustomerId}`);
             if (!response.ok) {
                 throw new Error("Failed to fetch pending invoices for customer.");
             }
@@ -145,7 +145,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
     setBalanceDetails(null);
 
     try {
-        const balanceResponse = await fetcher(`https://server-erp.payshia.com/invoices/balance?company_id=${company_id}&customer_id=${customerId}&ref_id=${invoice.invoice_number}`);
+        const balanceResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/balance?company_id=${company_id}&customer_id=${customerId}&ref_id=${invoice.invoice_number}`);
 
         if (!balanceResponse.ok) {
             throw new Error("Failed to fetch invoice balance.");
@@ -196,7 +196,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
     };
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/receipts', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/receipts`, {
             method: 'POST',
             body: JSON.stringify(payload),
         });
@@ -215,7 +215,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
 
         // Open print views
         window.open(`/sales-print/receipts/${result.id}`, '_blank');
-        window.open(`/pos-print/receipts/${result.id}/print`, '_blank');
+        window.open(`/pos/receipt/${result.id}/print`, '_blank');
 
         router.push('/sales/receipts');
         router.refresh();

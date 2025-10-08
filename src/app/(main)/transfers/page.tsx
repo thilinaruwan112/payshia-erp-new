@@ -69,8 +69,8 @@ export default function StockTransfersPage() {
             setIsLoading(true);
             try {
                 const [transfersResponse, locationsResponse] = await Promise.all([
-                    fetcher(`https://server-erp.payshia.com/stock-transfers/filter/by-company?company_id=${company_id}`),
-                    fetcher(`https://server-erp.payshia.com/locations/company?company_id=${company_id}`)
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-transfers/filter/by-company?company_id=${company_id}`),
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/company?company_id=${company_id}`)
                 ]);
 
                 if (!transfersResponse.ok) throw new Error('Failed to fetch stock transfers');

@@ -99,6 +99,7 @@ const productFormSchema = z.object({
   categoryId: z.string().min(1, { message: "Please select a category." }),
   brandId: z.string().optional(),
   recipeType: z.enum(["standard", "a_la_carte", "item_recipe"]).optional(),
+  item_type: z.enum(["raw", "menu", "both"]).optional(),
   variants: z.array(variantSchema).min(1, { message: "At least one variant is required." }),
   supplier: z.array(z.string()).optional(),
   customFields: z.array(customFieldSchema).optional(),
@@ -134,7 +135,7 @@ export function ProductForm({ product }: ProductFormProps) {
         let allImages: ProductImage[] = [];
         if (product.variants && product.variants.length > 0) {
             for (const variant of product.variants) {
-                const response = await fetcher(`https://server-erp.payshia.com/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variant.id}`);
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variant.id}`);
                 if (response.ok) {
                     const data: ProductImage[] = await response.json();
                     if(Array.isArray(data)) {
@@ -181,12 +182,12 @@ export function ProductForm({ product }: ProductFormProps) {
     }
     
     if (company_id) {
-        fetchData(`https://server-erp.payshia.com/master-categories/company?company_id=${company_id}`, setCategories, 'categories');
-        fetchData(`https://server-erp.payshia.com/brands/company?company_id=${company_id}`, setBrands, 'brands');
-        fetchData(`https://server-erp.payshia.com/product-colors/company?company_id=${company_id}`, setColors, 'colors');
-        fetchData(`https://server-erp.payshia.com/sizes/filter/company?company_id=${company_id}`, setSizes, 'sizes');
-        fetchData(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`, setSuppliers, 'suppliers');
-        fetchData(`https://server-erp.payshia.com/custom-fields/filter/by-company?company_id=${company_id}`, setCustomFieldMasters, 'custom fields');
+        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`, setCategories, 'categories');
+        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`, setBrands, 'brands');
+        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-colors/company?company_id=${company_id}`, setColors, 'colors');
+        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/sizes/filter/company?company_id=${company_id}`, setSizes, 'sizes');
+        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`, setSuppliers, 'suppliers');
+        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-fields/filter/by-company?company_id=${company_id}`, setCustomFieldMasters, 'custom fields');
     }
   }, [toast, company_id]);
   
@@ -202,6 +203,7 @@ export function ProductForm({ product }: ProductFormProps) {
     categoryId: product?.category_id || "",
     brandId: product?.brand_id || "",
     recipeType: product?.recipe_type || "standard",
+    item_type: product?.item_type || "both",
     variants: product?.variants?.map(v => ({
         id: v.id,
         sku: v.sku,
@@ -261,7 +263,7 @@ export function ProductForm({ product }: ProductFormProps) {
     }
 
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/product-variants/${variantId}`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants/${variantId}`, {
             method: 'DELETE',
         });
 
@@ -301,7 +303,6 @@ export function ProductForm({ product }: ProductFormProps) {
       category: selectedCategory?.name || "",
       category_id: parseInt(data.categoryId, 10),
       brand_id: data.brandId ? parseInt(data.brandId, 10) : undefined,
-      // Main price is now optional
       price: data.variants[0]?.price || 0,
       cost_price: data.variants[0]?.cost_price || 0,
       min_price: data.variants[0]?.min_price || 0,
@@ -316,7 +317,7 @@ export function ProductForm({ product }: ProductFormProps) {
       company_id: company_id,
       lead_time_days: 0,
       reorder_level_qty: 0,
-      item_type: "finished_good",
+      item_type: data.item_type || "both",
       base_location: data.base_location,
       product_image_url: "",
       recipe_type: data.recipeType === 'a_la_carte' ? 'ala cart' : data.recipeType || 'standard',
@@ -337,7 +338,8 @@ export function ProductForm({ product }: ProductFormProps) {
       })),
     };
     
-    const url = product ? `https://server-erp.payshia.com/products/${product.id}` : 'https://server-erp.payshia.com/products';
+    const url = product ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/${product.id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/products`;
+
     const method = product ? 'PUT' : 'POST';
 
     try {
@@ -355,7 +357,7 @@ export function ProductForm({ product }: ProductFormProps) {
       const returnedProduct = result.product;
       const productId = returnedProduct.id;
       
-      const detailsResponse = await fetcher(`https://server-erp.payshia.com/products/details/${productId}`);
+      const detailsResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/details/${productId}`);
       const detailsData = await detailsResponse.json();
 
       setSavedProductId(productId);
@@ -372,7 +374,9 @@ export function ProductForm({ product }: ProductFormProps) {
               product_id: parseInt(productId, 10),
               value: cf.value
             };
-            await fetcher('https://server-erp.payshia.com/custom-field-products', {
+
+            await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-field-products`, {
+
               method: 'POST',
               body: JSON.stringify(customFieldPayload),
             });
@@ -399,7 +403,7 @@ export function ProductForm({ product }: ProductFormProps) {
 
   const handleDeleteImage = async (imageId: string) => {
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/product-images/${imageId}`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/${imageId}`, {
             method: 'DELETE',
         });
         if (!response.ok) {
@@ -603,7 +607,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                         <h3 className="text-sm font-medium mb-2 text-muted-foreground">Front Image</h3>
                                         <div className="relative w-full max-w-xs">
                                             <Image
-                                                src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}`}
+                                                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${frontImage.img_url}`}
                                                 alt={product?.name || 'Front image'}
                                                 width={400}
                                                 height={400}
@@ -629,7 +633,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                             {otherImages.map(image => (
                                                 <div key={image.id} className="relative group">
                                                     <Image
-                                                        src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${image.img_url}`}
+                                                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${image.img_url}`}
                                                         alt={product?.name || 'Product image'}
                                                         width={150}
                                                         height={150}
@@ -917,6 +921,28 @@ export function ProductForm({ product }: ProductFormProps) {
                                     <FormMessage />
                                 </FormItem>
                             )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="item_type"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Item Type</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select an item type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="raw">Raw</SelectItem>
+                                  <SelectItem value="menu">Menu</SelectItem>
+                                  <SelectItem value="both">Both</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
                         />
                         <div className="space-y-2">
                            <FormField

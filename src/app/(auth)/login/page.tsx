@@ -57,7 +57,7 @@ export default function LoginPage() {
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true);
     try {
-        const response = await fetcher('https://server-erp.payshia.com/users/login', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/login`, {
             method: 'POST',
             body: JSON.stringify(data)
         });
@@ -82,7 +82,7 @@ export default function LoginPage() {
         localStorage.setItem('userName', userName);
         
         // Check for company association
-        const companyCheckResponse = await fetcher(`https://server-erp.payshia.com/company-users/filter/by-user?user_id=${userId}`);
+        const companyCheckResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users/filter/by-user?user_id=${userId}`);
         
         if (!companyCheckResponse.ok) {
             throw new Error('Failed to check for company association.');
@@ -99,7 +99,7 @@ export default function LoginPage() {
             const companyId = companyLink.company_id;
 
             // Fetch company details to get the name
-            const companyDetailsResponse = await fetcher(`https://server-erp.payshia.com/companies/${companyId}`);
+            const companyDetailsResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`);
             if (!companyDetailsResponse.ok) {
                 throw new Error('Found company association, but failed to fetch company details.');
             }

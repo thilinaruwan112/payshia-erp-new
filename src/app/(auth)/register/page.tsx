@@ -14,7 +14,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Truck, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '@/components/ui/form';
@@ -73,14 +72,17 @@ export default function RegisterPage() {
     
     const payload = {
         ...data,
-        pass: data.password,
+        pass: data.password, // Correctly map password to pass
         user_status: 'Active',
         acc_type: 'user',
         update_by: 'system',
     };
+    // remove password from the payload as it's sent as 'pass'
+    // @ts-ignore
+    delete payload.password;
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/users', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
             method: 'POST',
             body: JSON.stringify(payload)
         });

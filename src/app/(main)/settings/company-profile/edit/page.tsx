@@ -71,7 +71,7 @@ export default function EditCompanyProfilePage() {
         async function fetchCompanyData() {
             setIsFetching(true);
             try {
-                const response = await fetcher(`https://server-erp.payshia.com/companies/${company_id}`);
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${company_id}`);
                 if (!response.ok) throw new Error('Failed to fetch company data');
                 const data = await response.json();
                 form.reset(data);
@@ -93,7 +93,7 @@ export default function EditCompanyProfilePage() {
         setIsLoading(true);
         
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/companies/${company_id}`, {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${company_id}`, {
                 method: 'PUT',
                 body: JSON.stringify(data),
             });

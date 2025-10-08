@@ -19,6 +19,7 @@ import { Checkbox } from "./ui/checkbox"
 import { Skeleton } from "./ui/skeleton"
 import { useLocation } from "./location-provider"
 import { useToast } from "@/hooks/use-toast"
+import { fetcher } from "@/lib/api"
 
 interface ProductWithApiResponse {
   product: Product;
@@ -55,7 +56,7 @@ export function ProductPickerDialog({ children, onProductsSelected }: ProductPic
             async function fetchProducts() {
                 setIsLoading(true);
                 try {
-                    const response = await fetch(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+                    const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
                     if (!response.ok) {
                         toast({
                             variant: "destructive",

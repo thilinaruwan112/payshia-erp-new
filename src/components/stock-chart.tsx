@@ -27,8 +27,8 @@ export function StockChart({ locationId }: StockChartProps) {
         setIsLoading(true);
         try {
             const [inventoryRes, productsRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/inventory/location/${locationId}`),
-                fetcher('https://server-erp.payshia.com/products')
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/inventory/location/${locationId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`)
             ]);
             if (!inventoryRes.ok) throw new Error('Failed to fetch inventory');
             if (!productsRes.ok) throw new Error('Failed to fetch products');

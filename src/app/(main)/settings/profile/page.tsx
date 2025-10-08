@@ -66,7 +66,7 @@ export default function ProfilePage() {
       };
       
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/users/${userId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${userId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch user data.');
         }
@@ -96,7 +96,7 @@ export default function ProfilePage() {
     };
 
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/users/${userId}`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${userId}`, {
             method: 'PUT',
             body: JSON.stringify(payload)
         });

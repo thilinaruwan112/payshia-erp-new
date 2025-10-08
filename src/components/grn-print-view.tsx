@@ -39,10 +39,10 @@ export function GrnPrintView({ id }: PrintViewProps) {
       setIsLoading(true);
       try {
         const [grnResponse, suppliersResponse, productsResponse, variantsResponse] = await Promise.all([
-           fetcher(`https://server-erp.payshia.com/grn/${id}`),
-           fetcher('https://server-erp.payshia.com/suppliers'),
-           fetcher('https://server-erp.payshia.com/products'),
-           fetcher('https://server-erp.payshia.com/product-variants'),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn/${id}`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
         ]);
         
         if (!grnResponse.ok) {
@@ -65,8 +65,8 @@ export function GrnPrintView({ id }: PrintViewProps) {
 
         if (grnData.company_id && grnData.location_id) {
              const [companyRes, locationRes] = await Promise.all([
-                fetcher(`https://server-erp.payshia.com/companies/${grnData.company_id}`),
-                fetcher(`https://server-erp.payshia.com/locations/${grnData.location_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${grnData.company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${grnData.location_id}`),
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());
@@ -177,8 +177,8 @@ export function GrnPrintView({ id }: PrintViewProps) {
                 <td className="p-3">{item.patch_code}</td>
                 <td className="p-3">{item.expire_date && item.expire_date !== '0000-00-00' ? format(new Date(item.expire_date), 'dd/MM/yy') : 'N/A'}</td>
                 <td className="p-3 text-right">{parseFloat(item.received_qty)}</td>
-                <td className="p-3 text-right">${parseFloat(String(item.order_rate)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="p-3 text-right">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">Rs {parseFloat(String(item.order_rate)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">Rs {item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             ))}
           </tbody>
@@ -189,7 +189,7 @@ export function GrnPrintView({ id }: PrintViewProps) {
         <div className="w-full max-w-xs space-y-2 text-gray-700">
            <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
             <span>Total</span>
-            <span>${parseFloat(grn.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>Rs {parseFloat(grn.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
       </section>
@@ -220,3 +220,5 @@ function PrintViewSkeleton() {
     </div>
   );
 }
+
+    

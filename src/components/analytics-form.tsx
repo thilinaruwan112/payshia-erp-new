@@ -94,7 +94,7 @@ export function AnalyticsFormDialog({ children, setting, onSave }: AnalyticsForm
     };
     
     try {
-        const response = await fetcher('https://server-erp.payshia.com/key-settings', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/key-settings`, {
             method: 'POST',
             body: JSON.stringify(payload)
         });

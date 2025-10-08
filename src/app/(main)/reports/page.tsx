@@ -49,7 +49,7 @@ function ReportsPage() {
         async function fetchInitialData() {
              if (!company_id) return;
              try {
-                const res = await fetch(`https://server-erp.payshia.com/customers/company/filter/?company_id=${company_id}`);
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`);
                 if (res.ok) setCustomers(await res.json());
              } catch (error) {
                  console.error("Failed to fetch initial customer data", error);

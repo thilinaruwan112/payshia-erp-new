@@ -90,7 +90,7 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
       }
       setIsLoadingPastInvoices(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedCustomer}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/filter/pending?company_id=${company_id}&customer_code=${selectedCustomer}`);
         if (!response.ok) throw new Error('Failed to fetch invoices');
         const data: Invoice[] = await response.json();
         setPastInvoices(data || []);
@@ -111,7 +111,7 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
     setSelectedInvoice(invoice);
     setIsLoadingBalance(true);
     try {
-      const balanceResponse = await fetcher(`https://server-erp.payshia.com/invoices/balance?company_id=${company_id}&customer_id=${selectedCustomer}&ref_id=${invoice.invoice_number}`);
+      const balanceResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/balance?company_id=${company_id}&customer_id=${selectedCustomer}&ref_id=${invoice.invoice_number}`);
       if (!balanceResponse.ok) {
         throw new Error('Failed to fetch invoice balance.');
       }
@@ -143,7 +143,7 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
         company_id: company_id,
     };
     try {
-        const response = await fetcher('https://server-erp.payshia.com/receipts', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/receipts`, {
             method: 'POST',
             body: JSON.stringify(payload)
         });
@@ -225,3 +225,5 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
     </Dialog>
   );
 }
+
+    

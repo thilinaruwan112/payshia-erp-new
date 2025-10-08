@@ -120,7 +120,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
       setIsLoadingProducts(true);
       replace([]); // Clear items when supplier changes
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company-and-supplier?company_id=${company_id}&supplier_id=${supplierId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company-and-supplier?company_id=${company_id}&supplier_id=${supplierId}`);
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.message || 'Failed to fetch products for this supplier');
@@ -199,7 +199,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     };
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/purchase-orders', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders`, {
             method: 'POST',
             body: JSON.stringify(poPayload),
         });
@@ -536,5 +536,3 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     </Form>
   );
 }
-
-    

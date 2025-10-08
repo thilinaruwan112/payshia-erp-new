@@ -87,9 +87,9 @@ export default function GrnReceivablePage() {
       setIsLoading(true);
       try {
         const [poResponse, suppliersResponse, grnResponse] = await Promise.all([
-          fetcher(`https://server-erp.payshia.com/purchase-orders/filter/?company_id=${company_id}`),
-          fetcher(`https://server-erp.payshia.com/suppliers/filter/by-company?company_id=${company_id}`),
-          fetcher(`https://server-erp.payshia.com/grn/company/${company_id}`),
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/filter/?company_id=${company_id}`),
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`),
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn/company/${company_id}`),
         ]);
 
         if (!poResponse.ok) throw new Error('Failed to fetch purchase orders');
@@ -105,7 +105,7 @@ export default function GrnReceivablePage() {
             let isFullyReceived = true;
             if (po.items && po.items.length > 0) {
                  for (const item of po.items) {
-                    const qtyCheckUrl = `https://server-erp.payshia.com/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${po.po_number}&company_id=${company_id}`;
+                    const qtyCheckUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-order-items/total-received-qty/?product_id=${item.product_id}&product_variant_id=${item.product_variant_id}&po_number=${po.po_number}&company_id=${company_id}`;
                     const qtyResponse = await fetcher(qtyCheckUrl);
                     if (qtyResponse.ok) {
                         const qtyData = await qtyResponse.json();

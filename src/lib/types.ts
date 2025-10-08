@@ -1,5 +1,4 @@
 
-
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -82,6 +81,7 @@ export type Product = {
   recipe_type?: 'standard' | 'a_la_carte' | 'item_recipe';
   base_location?: string;
   available_locations?: string;
+  item_type?: 'raw' | 'menu' | 'both';
 };
 
 export type Location = {
@@ -121,25 +121,33 @@ export type Order = {
   items: { sku: string; quantity: number }[];
 };
 
+export type Customer = {
+  customer_id: string;
+  customer_first_name: string;
+  customer_last_name: string;
+  phone_number: string;
+  address_line1?: string;
+  address_line2?: string;
+  city_id?: string;
+  email_address?: string;
+  loyaltyPoints?: number;
+};
+
+
 export type User = {
   id: string;
-  customer_id: string;
-  name: string;
-  customer_first_name?: string;
-  customer_last_name?: string;
   first_name?: string;
   last_name?: string;
   user_name?: string;
-  email_address?: string;
-  role: 'Admin' | 'Manager' | 'Sales Agent' | 'Customer' | 'Cashier' | string;
+  email?: string;
+  role: 'Admin' | 'Manager' | 'Sales Agent' | 'Cashier' | string;
   acc_type?: string;
   avatar?: string;
-  loyaltyPoints?: number;
-  email?: string;
   phone?: string;
   address?: string;
-  address_line1?: string;
-  city_id?: string;
+  companyUserId?: string; // ID from the company_users pivot table
+  customer_id: string;
+  user_status?: string;
 };
 
 export type Collection = {
@@ -305,25 +313,31 @@ export type Plan = {
 export type AccountType = 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
 
 export type Account = {
-    code: number;
-    name: string;
-    type: AccountType;
-    subType: string;
-    balance: number;
+    account_id: string;
+    account_name: string;
+    account_type: AccountType;
+    balance?: number;
+    code?: string;
+    name?: string;
+    type?: AccountType;
+    subType?: string;
+    balance_info?: {
+        balance: number;
+        total_debit: number;
+        total_credit: number;
+    };
 };
 
 export type JournalEntry = {
-    id: string;
-    date: string;
-    narration: string;
-    totalDebit: number;
-    totalCredit: number;
-    lines: {
-        accountCode: number;
-        accountName: string;
-        debit: number;
-        credit: number;
-    }[];
+    transaction_id: string;
+    debit_account_id: string;
+    credit_account_id: string;
+    amount: string;
+    transaction_date: string;
+    description: string;
+    ref_key: string;
+    location_id: string;
+    company_id: string;
 };
 
 export type Expense = {
@@ -392,7 +406,7 @@ export type Invoice = {
     service_charge: string;
     tendered_amount: string;
     close_type: string;
-    invoice_status: 'Draft' | 'Sent' | 'Paid' | 'Overdue';
+    invoice_status: 'Draft' | 'Sent' | 'Paid' | 'Overdue' | string;
     payment_status: string;
     chanel: string;
     current_time: string;

@@ -62,7 +62,7 @@ export function ColorForm({ color }: ColorFormProps) {
       return;
     }
     setIsLoading(true);
-    const url = color ? `https://server-erp.payshia.com/colors/${color.id}` : 'https://server-erp.payshia.com/colors';
+    const url = color ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/colors/${color.id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/colors`;
     const method = color ? 'PUT' : 'POST';
 
     const payload = { ...data, company_id: company_id };

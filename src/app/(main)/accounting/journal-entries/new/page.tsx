@@ -22,12 +22,12 @@ export default function NewJournalEntryPage() {
     async function fetchAccounts() {
         setIsLoading(true);
         try {
-            const response = await fetcher(`https://server-erp.payshia.com/chart-of-accounts/company?company_id=${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-accounts?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch chart of accounts');
             }
             const data = await response.json();
-            setAccounts(data);
+            setAccounts(data.data || []);
         } catch (error) {
             toast({
                 variant: 'destructive',

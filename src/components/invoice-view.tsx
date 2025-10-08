@@ -19,6 +19,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useLocation } from './location-provider';
 import { Separator } from './ui/separator';
+import { fetcher } from '@/lib/api';
 
 interface InvoiceViewProps {
     id: string;
@@ -57,7 +58,7 @@ export function InvoiceView({ id }: InvoiceViewProps) {
       if (!id || !company_id) return;
       setIsLoading(true);
       try {
-        const response = await fetch(`https://server-erp.payshia.com/invoices/full/?invoicenumber=${id}&company_id=${company_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/full/?invoicenumber=${id}&company_id=${company_id}`);
         if (!response.ok) {
            if (response.status === 404) notFound();
            throw new Error('Failed to fetch invoice data');

@@ -59,17 +59,17 @@ interface ProductWithApiResponse {
   variants: { variant: ProductVariant }[];
 }
 
-
 const invoiceItemSchema = z.object({
-      sku: z.string().min(1, "Product is required."),
-      productId: z.string().min(1),
-      productVariantId: z.string().min(1),
-      quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
-      unitPrice: z.coerce.number().min(0, "Unit price must be positive."),
-      costPrice: z.coerce.number().min(0),
-      discount: z.coerce.number().min(0, "Discount must be positive.").optional(),
-      selectedBatch: z.string().min(1, "A batch must be selected."),
-    });
+    sku: z.string().min(1, "Product is required."),
+    productId: z.string().min(1),
+    productVariantId: z.string().min(1),
+    quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
+    unitPrice: z.coerce.number().min(0, "Unit price must be positive."),
+    costPrice: z.coerce.number().min(0),
+    discount: z.coerce.number().min(0, "Discount must be positive.").optional(),
+    selectedBatch: z.string(), // Now optional based on refine
+    recipeType: z.string().optional(),
+});
 
 const invoiceFormSchema = z.object({
   invoiceType: z.enum(["Retail", "Wholesale"]),
@@ -77,11 +77,21 @@ const invoiceFormSchema = z.object({
   orderId: z.string().optional(),
   invoiceDate: z.date({ required_error: "Invoice date is required." }),
   dueDate: z.date({ required_error: "Due date is required." }),
-  status: z.enum(["Draft", "Sent", "Paid"]),
+  status: z.enum(["1", "2", "3", "4"]), // 1=Active/Paid, 2=Pending/Hold, 3=Cancelled, 4=Draft
   items: z.array(invoiceItemSchema).min(1, "At least one item is required."),
   discount: z.coerce.number().min(0).optional(),
   serviceCharge: z.coerce.number().min(0).optional(),
   remark: z.string().optional(),
+}).refine(data => {
+    return data.items.every(item => {
+        if (item.recipeType === 'ala cart') {
+            return true; // No batch selection required
+        }
+        return item.selectedBatch && item.selectedBatch.length > 0;
+    });
+}, {
+    message: "A batch must be selected for non-'A La Carte' items.",
+    path: ["items"], // You can refine the path to point to a specific item if needed
 });
 
 type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
@@ -104,7 +114,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         if (!company_id) return;
         setIsLoading(true);
          try {
-            const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
             }
@@ -134,13 +144,14 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
       wholesalePrice: p.product.wholesale_price ? parseFloat(String(p.product.wholesale_price)) : parseFloat(String(p.product.price)),
       costPrice: p.product.cost_price ? parseFloat(String(p.product.cost_price)) : 0,
       skuString: v.variant.sku,
+      recipeType: p.product.recipe_type
   })));
   
   const defaultValues: Partial<InvoiceFormValues> = {
     invoiceType: "Retail",
     invoiceDate: new Date(),
     dueDate: addDays(new Date(), 30),
-    status: 'Draft',
+    status: '1', // Default to Active/Paid
     items: [],
     discount: 0,
     serviceCharge: 0,
@@ -185,6 +196,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                 costPrice: Number(product?.costPrice) || 0,
                 discount: 0,
                 selectedBatch: '',
+                recipeType: product?.recipeType,
             }
         });
         form.setValue('orderId', order.id);
@@ -194,8 +206,15 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
 
   const handleProductSelect = async (productId: string, variantId: string, index: number) => {
     if (!productId || !variantId || !company_id || !currentLocation) return;
+    const skuDetails = allSkus.find(s => s.value === variantId);
+    if (skuDetails?.recipeType === 'ala cart') {
+        setAvailableBatches(prev => ({...prev, [index]: [] }));
+        form.setValue(`items.${index}.selectedBatch`, ''); // Clear batch selection
+        return;
+    }
+
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/stock-entries/summary?company_id=${company_id}&product_id=${productId}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${productId}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
         if (!response.ok) {
             throw new Error("Failed to fetch stock");
         }
@@ -242,7 +261,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         discount_percentage: subtotal > 0 ? (totalDiscountAmount / subtotal) * 100 : 0,
         customer_code: data.customerId,
         service_charge: data.serviceCharge || 0,
-        tendered_amount: data.status === 'Paid' ? grandTotal : 0,
+        tendered_amount: data.status === '1' ? grandTotal : 0, // 1 is Paid
         close_type: "Cash",
         invoice_status: data.status,
         payment_status: "Pending",
@@ -258,7 +277,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         ref_hold: null,
         company_id: company_id,
         items: data.items.map(item => {
-            const batchInfo: StockInfo = JSON.parse(item.selectedBatch);
+            const batchInfo: StockInfo | null = item.selectedBatch ? JSON.parse(item.selectedBatch) : null;
             return {
                 user_id: 1, // Default user_id as per example
                 product_id: parseInt(item.productId),
@@ -272,15 +291,16 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                 hold_status: 0,
                 printed_status: 1,
                 product_variant_id: parseInt(item.productVariantId),
-                patch_code: batchInfo.patch_code,
-                expire_date: batchInfo.expire_date,
+                patch_code: batchInfo?.patch_code || 'N/A',
+                expire_date: batchInfo?.expire_date || '0000-00-00',
                 company_id: company_id,
             }
         })
     };
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/invoices', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices`, {
+
             method: 'POST',
             body: JSON.stringify(payload)
         });
@@ -505,9 +525,10 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem value="Draft">Draft</SelectItem>
-                                    <SelectItem value="Sent">Sent</SelectItem>
-                                    <SelectItem value="Paid">Paid</SelectItem>
+                                    <SelectItem value="1">Active</SelectItem>
+                                    <SelectItem value="2">Pending</SelectItem>
+                                    <SelectItem value="3">Cancelled</SelectItem>
+                                    <SelectItem value="4">Draft</SelectItem>
                                 </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -542,6 +563,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             const quantity = watchedItems[index]?.quantity || 0;
                             const discount = watchedItems[index]?.discount || 0;
                             const total = (unitPrice * quantity) - discount;
+                            const isAlaCarte = watchedItems[index]?.recipeType === 'ala cart';
 
                             return (
                                 <TableRow key={field.id}>
@@ -557,6 +579,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                                             const selected = allSkus.find(s => s.value === value);
                                                             form.setValue(`items.${index}.sku`, selected?.skuString || '');
                                                             form.setValue(`items.${index}.productId`, selected?.productId || '');
+                                                            form.setValue(`items.${index}.recipeType`, selected?.recipeType || 'standard');
                                                             handleProductSelect(selected?.productId || '', selected?.value || '', index);
                                                             const price = invoiceType === 'Wholesale' ? selected?.wholesalePrice : selected?.sellingPrice;
                                                             form.setValue(`items.${index}.unitPrice`, Number(price) || 0);
@@ -582,29 +605,31 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                         />
                                     </TableCell>
                                     <TableCell>
-                                         <FormField
-                                            control={form.control}
-                                            name={`items.${index}.selectedBatch`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <Select onValueChange={field.onChange} value={field.value} disabled={!availableBatches[index]}>
-                                                        <FormControl>
-                                                            <SelectTrigger>
-                                                                <SelectValue placeholder="Select batch" />
-                                                            </SelectTrigger>
-                                                        </FormControl>
-                                                        <SelectContent>
-                                                            {(availableBatches[index] || []).map(stock => (
-                                                                <SelectItem key={stock.patch_code} value={JSON.stringify(stock)}>
-                                                                    {stock.patch_code} (Qty: {parseFloat(stock.stock_balance).toFixed(2)})
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
+                                        {!isAlaCarte && (
+                                            <FormField
+                                                control={form.control}
+                                                name={`items.${index}.selectedBatch`}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <Select onValueChange={field.onChange} value={field.value} disabled={!availableBatches[index]}>
+                                                            <FormControl>
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Select batch" />
+                                                                </SelectTrigger>
+                                                            </FormControl>
+                                                            <SelectContent>
+                                                                {(availableBatches[index] || []).map(stock => (
+                                                                    <SelectItem key={stock.patch_code} value={JSON.stringify(stock)}>
+                                                                        {stock.patch_code} (Qty: {parseFloat(stock.stock_balance).toFixed(2)})
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <FormField

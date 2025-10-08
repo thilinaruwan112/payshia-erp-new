@@ -65,7 +65,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     try {
       for (const variant of variantsToFetch) {
         if (!variant.id) continue;
-        const response = await fetcher(`https://server-erp.payshia.com/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/get/img?company_id=${companyId}&product_id=${productId}&product_variant_id=${variant.id}`);
         if (response.ok) {
           const data = await response.json();
           if (Array.isArray(data)) {
@@ -142,7 +142,9 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     formData.append('images[]', fileToUpload);
 
     try {
-      const response = await fetcher('https://server-erp.payshia.com/product-images/upload-multiple', {
+
+      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/upload-multiple`, {
+
         method: 'POST',
         body: formData,
         headers: new Headers(), // Reset headers so fetch can set multipart/form-data
@@ -183,7 +185,7 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
   const handleDeleteImage = async () => {
     if (!selectedImageForDeletion) return;
     try {
-        const response = await fetcher(`https://server-erp.payshia.com/product-images/${selectedImageForDeletion.id}`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/${selectedImageForDeletion.id}`, {
             method: 'DELETE',
         });
         if (!response.ok) {

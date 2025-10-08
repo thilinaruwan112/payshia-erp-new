@@ -20,7 +20,7 @@ export default function EditSizePage({ params }: { params: { id: string } }) {
       if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/sizes/${id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/sizes/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();

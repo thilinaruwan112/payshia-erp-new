@@ -36,10 +36,25 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "./location-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Textarea } from "./ui/textarea";
+import { fetcher } from "@/lib/api";
+import { format } from "date-fns";
+import { Combobox } from "./ui/combobox";
 
-interface ProductWithVariants {
+interface ProductWithApiResponse {
     product: Product;
     variants: ProductVariant[];
+}
+
+interface RecipeItem {
+    id: string;
+    company_id: string;
+    product_variant_id: string;
+    main_product: string;
+    recipe_product: string;
+    qty: string;
+    recipe_type: string;
+    created_by: string;
+    created_at: string;
 }
 
 const productionNoteFormSchema = z.object({
@@ -54,10 +69,10 @@ export function ProductionNoteForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [products, setProducts] = useState<ProductWithVariants[]>([]);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
-  const { company_id } = useLocation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
+  const [selectedRecipeItems, setSelectedRecipeItems] = useState<RecipeItem[]>([]);
+  const { company_id, currentLocation } = useLocation();
 
   const form = useForm<ProductionNoteFormValues>({
     resolver: zodResolver(productionNoteFormSchema),
@@ -67,102 +82,145 @@ export function ProductionNoteForm() {
     mode: "onChange",
   });
 
-  const finishedGoodId = form.watch("finishedGoodId");
+  const finishedGoodId = form.watch("finishedGoodId"); // This is the variant ID
   const quantityProduced = form.watch("quantity");
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchProducts() {
         if (!company_id) return;
+        setIsLoading(true);
         try {
-            // In a real app, you'd fetch recipes and filter by company
-            const [productsResponse, recipesResponse] = await Promise.all([
-                fetch(`https://server-erp.payshia.com/products/with-variants?company_id=${company_id}`),
-                Promise.resolve({ ok: true, json: () => Promise.resolve([]) }) // Mocking recipe fetch
-            ]);
-
-            if (!productsResponse.ok) throw new Error("Failed to fetch products");
-            const productsData = await productsResponse.json();
-            setProducts(productsData.products || []);
-
-            if(!recipesResponse.ok) throw new Error("Failed to fetch recipes");
-            const recipesData = await recipesResponse.json();
-            setRecipes(recipesData);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/filter/recipe-type?recipe_type=item_recipe&company_id=${company_id}`);
+            if (!response.ok) throw new Error("Failed to fetch products");
+            const data = await response.json();
+            setProducts(data.products || []);
         } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required product data.' });
+        } finally {
+            setIsLoading(false);
         }
     }
-    fetchData();
+    fetchProducts();
   }, [company_id, toast]);
   
   useEffect(() => {
-    const recipe = recipes.find(r => r.finished_good_id === finishedGoodId) || null;
-    setSelectedRecipe(recipe);
-  }, [finishedGoodId, recipes]);
+    async function fetchRecipe() {
+        if (!finishedGoodId || !company_id) {
+            setSelectedRecipeItems([]);
+            return;
+        }
+
+        const selectedProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v, productId: p.product.id}))).find(v => v.id === finishedGoodId);
+        
+        if (!selectedProductInfo) return;
+
+        try {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes/get/filter?company_id=${company_id}&main_product=${selectedProductInfo.productId}&product_variant_id=${finishedGoodId}`);
+            if (!response.ok) throw new Error('Failed to fetch recipe for the selected product.');
+            const data = await response.json();
+            setSelectedRecipeItems(data.data || []);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch recipe ingredients.' });
+            setSelectedRecipeItems([]);
+        }
+    }
+    fetchRecipe();
+  }, [finishedGoodId, company_id, products, toast]);
 
   const finishedGoodsOptions = React.useMemo(() => {
-    const goodsWithItemRecipe = recipes.filter(r => r.recipe_type === "Item Recipe").map(r => r.finished_good_id);
     return products
-        .flatMap(p => p.variants.map(v => ({ product: p.product, variant: v })))
-        .filter(pv => goodsWithItemRecipe.includes(pv.variant.id))
+        .flatMap(p => 
+            (p.variants || []).map(v => ({ product: p.product, variant: v }))
+        )
+        .filter((pv): pv is { product: Product, variant: { id: string, sku: string } } => !!pv.variant?.id && !!pv.variant.sku)
         .map(pv => ({
             label: `${pv.product.name} (${pv.variant.sku})`,
             value: pv.variant.id,
         }));
-  }, [products, recipes]);
+  }, [products]);
   
   const requiredIngredients = React.useMemo(() => {
-      if (!selectedRecipe) return [];
-      return selectedRecipe.items.map(item => {
-          const ingredientProduct = products.flatMap(p => p.variants.map(v => ({...v, productName: p.product.name}))).find(v => v.id === item.ingredient_id);
+      if (selectedRecipeItems.length === 0) return [];
+      
+      const allIngredients = products.flatMap(p => 
+        (p.variants || []).map(v => ({
+            id: v.id,
+            name: p.product.name,
+            sku: v.sku,
+            unit: p.product.stock_unit || 'Nos'
+        }))
+      );
+      
+      return selectedRecipeItems.map(item => {
+          const ingredientInfo = allIngredients.find(ing => ing.id === item.recipe_product);
           return {
-              name: ingredientProduct?.productName || 'Unknown Ingredient',
-              sku: ingredientProduct?.sku || 'N/A',
-              requiredQty: item.quantity * quantityProduced,
-              unit: item.unit,
+              name: ingredientInfo?.name || `Product ID: ${item.recipe_product}`,
+              sku: ingredientInfo?.sku || 'N/A',
+              requiredQty: parseFloat(item.qty) * quantityProduced,
+              unit: ingredientInfo?.unit || 'Nos',
           }
       });
-  }, [selectedRecipe, quantityProduced, products]);
+  }, [selectedRecipeItems, quantityProduced, products]);
 
   async function onSubmit(data: ProductionNoteFormValues) {
-    setIsLoading(true);
-    console.log(data);
-    toast({
-      title: "Work in Progress",
-      description: "Saving Production Notes is not yet implemented.",
-    });
-    // In a real app, this would deduct raw materials and add finished goods to inventory
-    setIsLoading(false);
+    if (!company_id || !currentLocation) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No company or location selected.' });
+        return;
+    }
+    setIsSubmitting(true);
+    
+    const selectedProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v, productId: p.product.id}))).find(v => v.id === data.finishedGoodId);
+
+    if (!selectedProductInfo) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not find product details.' });
+        setIsSubmitting(false);
+        return;
+    }
+
+    const payload = {
+        product_id: parseInt(selectedProductInfo.productId),
+        product_variant_id: parseInt(data.finishedGoodId),
+        company_id: company_id,
+        location_id: parseInt(currentLocation.location_id, 10),
+        quantity: data.quantity,
+        notes: data.notes || '',
+        created_by: 1, // Placeholder for logged-in user ID
+        updated_by: 1,
+        is_active: 1,
+    };
+    
+    try {
+
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/production-notes`, {
+
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to create production note.');
+        }
+
+        toast({
+            title: "Production Note Created",
+            description: "The production has been successfully recorded.",
+        });
+        
+        router.refresh();
+        router.push('/production/bom'); // Or a new history page
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Submission Failed', description: errorMessage });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-nowrap">
-              Create Production Note
-            </h1>
-            <p className="text-muted-foreground">
-              Record the production of a finished good from its raw materials.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => router.back()}
-              className="w-full"
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Note
-            </Button>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
                 <Card>

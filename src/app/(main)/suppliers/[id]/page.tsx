@@ -1,3 +1,4 @@
+
 'use client'
 
 import { SupplierForm } from '@/components/supplier-form';
@@ -20,7 +21,7 @@ export default function EditSupplierPage({ params }: { params: { id: string } })
       if (!id) return;
       setIsLoading(true);
       try {
-        const response = await fetcher(`https://server-erp.payshia.com/suppliers/${id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/${id}`);
         if (!response.ok) {
            if (response.status === 404) {
              notFound();

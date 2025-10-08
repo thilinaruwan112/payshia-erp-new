@@ -78,7 +78,7 @@ export function CustomerForm({ customer }: CustomerFormProps) {
       return;
     }
     setIsLoading(true);
-    const url = customer ? `https://server-erp.payshia.com/customers/${customer.customer_id}` : 'https://server-erp.payshia.com/customers';
+    const url = customer ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${customer.customer_id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/customers`;
     const method = customer ? 'PUT' : 'POST';
 
      const payload = {

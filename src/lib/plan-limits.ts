@@ -1,6 +1,7 @@
 
 import { plans } from './mock-data/plans';
 import type { Plan, Location } from './types';
+import { fetcher } from './api';
 
 // In a real app, you'd get this from the user's session or authentication context.
 const MOCK_CURRENT_USER_PLAN_ID = 'plan-basic';
@@ -40,7 +41,7 @@ export async function checkPlanLimit(type: LimitType): Promise<{
     case 'locations':
        limit = currentPlan.limits.locations;
        try {
-        const response = await fetch('https://server-erp.payshia.com/locations');
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations`);
         const data: Location[] = await response.json();
         usage = data.length;
       } catch (e) {

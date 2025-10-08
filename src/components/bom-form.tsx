@@ -30,11 +30,11 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, ProductVariant, Recipe } from "@/lib/types";
+import type { Product, ProductVariant } from "@/lib/types";
 import { Loader2, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useLocation } from "./location-provider";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { fetcher } from "@/lib/api";
 import { format } from "date-fns";
@@ -45,15 +45,27 @@ interface ProductWithApiResponse {
     variants: { variant: ProductVariant }[];
 }
 
+interface RecipeItem {
+    id: string;
+    company_id: string;
+    product_variant_id: string;
+    main_product: string;
+    recipe_product: string;
+    qty: string;
+    recipe_type: string;
+    created_by: string;
+    created_at: string;
+}
+
 const recipeItemSchema = z.object({
   recipe_product: z.string().min(1, "Ingredient is required."),
   quantity: z.coerce.number().min(0.001, "Quantity must be greater than 0."),
   unit: z.string().min(1, "Unit is required."),
+  cost_price: z.coerce.number().optional(),
 });
 
 const bomFormSchema = z.object({
   productId: z.string().min(1, "Finished good is required."),
-  recipeType: z.enum(["A La Carte", "Item Recipe"]),
   items: z.array(recipeItemSchema).min(1, "At least one ingredient is required."),
   notes: z.string().optional(),
 });
@@ -64,14 +76,17 @@ export function BomForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id } = useLocation();
+  const [recipes, setRecipes] = useState<RecipeItem[]>([]);
+  const [selectedRecipeItems, setSelectedRecipeItems] = useState<RecipeItem[]>([]);
+  const [ingredients, setIngredients] = useState<ProductWithApiResponse[]>([]);
 
   const form = useForm<BomFormValues>({
     resolver: zodResolver(bomFormSchema),
     defaultValues: {
-      recipeType: "Item Recipe",
-      items: [{ recipe_product: "", quantity: 1, unit: "Nos" }],
+      items: [{ recipe_product: "", quantity: 1, unit: "Nos", cost_price: 0 }],
     },
     mode: "onChange",
   });
@@ -82,38 +97,107 @@ export function BomForm() {
   });
 
   useEffect(() => {
-    async function fetchProducts() {
-      if (!company_id) return;
-      try {
-        const response = await fetcher(`https://server-erp.payshia.com/products/with-variants/by-company?company_id=${company_id}`);
-        if (!response.ok) throw new Error("Failed to fetch products");
-        const data = await response.json();
-        setProducts(data.products || []);
-      } catch (error) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products.' });
-      }
+    async function fetchData() {
+        if (!company_id) return;
+        setIsLoading(true);
+        try {
+            const [productsResponse, recipesResponse] = await Promise.all([
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes`),
+            ]);
+
+            if (!productsResponse.ok) throw new Error("Failed to fetch products");
+            const productsData = await productsResponse.json();
+            const allProducts = productsData.products || [];
+            
+            // Separate finished goods and ingredients
+            setProducts(allProducts.filter((p: ProductWithApiResponse) => p.product.item_type !== 'raw'));
+            setIngredients(allProducts.filter((p: ProductWithApiResponse) => ['raw', 'both'].includes(p.product.item_type || '')));
+
+
+            if(!recipesResponse.ok) throw new Error("Failed to fetch recipes");
+            const recipesData = await recipesResponse.json();
+            setRecipes(Array.isArray(recipesData.data) ? recipesData.data : []);
+
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
+        } finally {
+            setIsLoading(false);
+        }
     }
-    fetchProducts();
+    fetchData();
   }, [company_id, toast]);
 
-  const allSkus = React.useMemo(() => {
-    return products.flatMap(p => 
-        (p.variants || []).map(v => ({
-            label: `${p.product.name} (${v.variant.sku})`,
-            value: v.variant.id,
-            productId: p.product.id,
-            name: p.product.name.toLowerCase()
-        }))
+ const allSkus = React.useMemo(() => {
+    if (!ingredients) return [];
+    return ingredients.flatMap(p => 
+        (p.variants || []).map(v => {
+            if (!v.variant) return null; // Guard clause
+            return {
+                label: `${p.product.name} (${v.variant.sku})`,
+                value: v.variant.id,
+                stock_unit: p.product.stock_unit || 'Nos',
+                cost_price: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
+            }
+        }).filter(Boolean) as { label: string; value: string; stock_unit: string; cost_price: number; }[]
     );
+  }, [ingredients]);
+
+
+  const finishedGoodId = form.watch("productId");
+  const quantityProduced = 1;
+
+  useEffect(() => {
+    const items = recipes.filter(r => r.product_variant_id === finishedGoodId) || [];
+    setSelectedRecipeItems(items);
+  }, [finishedGoodId, recipes]);
+
+  const finishedGoodsOptions = React.useMemo(() => {
+    return products
+      .flatMap(p => 
+          (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
+      )
+      .filter((pv): pv is { product: Product, variant: { id: string, sku: string } } => !!pv.variant?.id && !!pv.variant.sku)
+      .map(pv => ({
+          label: `${pv.product.name} (${pv.variant.sku})`,
+          value: pv.variant.id,
+      }));
   }, [products]);
+  
+  const requiredIngredients = React.useMemo(() => {
+      if (selectedRecipeItems.length === 0) return [];
+      
+      const allIngredientsInfo = ingredients.flatMap(p => 
+        (p.variants || []).map(v => {
+          if (!v.variant) return null;
+          return {
+            id: v.variant.id,
+            name: p.product.name,
+            sku: v.variant.sku,
+            unit: p.product.stock_unit || 'Nos'
+          }
+        }).filter(Boolean) as { id: string; name: string; sku: string; unit: string; }[]
+      );
+
+      return selectedRecipeItems.map(item => {
+          const ingredientInfo = allIngredientsInfo.find(ing => ing && ing.id === item.recipe_product);
+          return {
+              name: ingredientInfo?.name || `Product ID: ${item.recipe_product}`,
+              sku: ingredientInfo?.sku || 'N/A',
+              requiredQty: parseFloat(item.qty) * (quantityProduced || 1),
+              unit: ingredientInfo?.unit || 'Nos',
+          }
+      });
+  }, [selectedRecipeItems, quantityProduced, ingredients]);
 
   async function onSubmit(data: BomFormValues) {
     setIsLoading(true);
 
     const finishedGoodVariantId = data.productId;
-    const finishedGoodProduct = allSkus.find(sku => sku.value === finishedGoodVariantId);
+    const finishedGoodProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === finishedGoodVariantId);
 
-    if (!finishedGoodProduct || !company_id) {
+
+    if (!finishedGoodProductInfo || !company_id) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not find finished good product details.' });
         setIsLoading(false);
         return;
@@ -123,16 +207,16 @@ export function BomForm() {
         for (const item of data.items) {
             const payload = {
                 company_id: company_id,
-                main_product: parseInt(finishedGoodProduct.productId, 10),
+                main_product: parseInt(finishedGoodProductInfo.productId, 10),
                 product_variant_id: parseInt(finishedGoodVariantId, 10),
                 recipe_product: item.recipe_product,
                 qty: item.quantity,
-                recipe_type: data.recipeType === 'A La Carte' ? 'ala cart' : 'item_recipe',
+                recipe_type: 'item_recipe',
                 created_by: "admin",
                 created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
             };
 
-            const response = await fetcher('https://server-erp.payshia.com/product-recipes', {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes`, {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
@@ -158,6 +242,13 @@ export function BomForm() {
         setIsLoading(false);
     }
   }
+
+  const watchedItems = form.watch('items');
+  const grandTotal = watchedItems.reduce((acc, item) => {
+    const quantity = item?.quantity || 0;
+    const costPrice = item?.cost_price || 0;
+    return acc + (quantity * costPrice);
+  }, 0);
 
   return (
     <Form {...form}>
@@ -188,87 +279,91 @@ export function BomForm() {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Recipe Details</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="productId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Finished Good</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a finished product" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {allSkus.map(sku => (
-                                <SelectItem key={sku.value} value={sku.value}>{sku.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="recipeType"
-              render={({ field }) => (
-                <FormItem className="space-y-3">
-                  <FormLabel>Recipe Type</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex items-center space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="Item Recipe" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Item Recipe
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="A La Carte" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          A La Carte
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Finished Good</CardTitle>
+                    <CardDescription>Select the item you are creating a recipe for.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <FormField
+                        control={form.control}
+                        name="productId"
+                        render={({ field }) => (
+                            <FormItem>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select an item with a recipe" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {finishedGoodsOptions.map(item => (
+                                            <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Existing Recipe</CardTitle>
+                    <CardDescription>This is the current recipe for the selected item.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {requiredIngredients.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Ingredient</TableHead>
+                                    <TableHead className="text-right">Required Qty</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {requiredIngredients.map(ing => (
+                                    <TableRow key={ing.sku}>
+                                        <TableCell>{ing.name} <span className="text-xs text-muted-foreground">({ing.sku})</span></TableCell>
+                                        <TableCell className="text-right font-mono">{ing.requiredQty} {ing.unit}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No existing recipe found. Add ingredients below.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+
 
          <Card>
             <CardHeader>
-                <CardTitle>Ingredients / Raw Materials</CardTitle>
-                <CardDescription>Add all the components required to make this item.</CardDescription>
+                <CardTitle>Add/Update Ingredients</CardTitle>
+                <CardDescription>Add all the components required to make this item. This will update the existing recipe.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[40%]">Ingredient Name</TableHead>
+                            <TableHead className="w-[30%]">Ingredient Name</TableHead>
                             <TableHead>Quantity</TableHead>
                             <TableHead>Unit</TableHead>
+                            <TableHead>Cost Price</TableHead>
+                            <TableHead>Total Price</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                         {fields.map((field, index) => (
+                         {fields.map((field, index) => {
+                           const quantity = watchedItems[index]?.quantity || 0;
+                           const costPrice = watchedItems[index]?.cost_price || 0;
+                           const totalPrice = quantity * costPrice;
+
+                           return (
                            <TableRow key={field.id}>
                                 <TableCell>
                                     <FormField
@@ -277,7 +372,18 @@ export function BomForm() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormControl>
-                                                    <Input placeholder="Enter raw material name or ID" {...field} />
+                                                    <Combobox
+                                                        options={allSkus}
+                                                        value={field.value}
+                                                        onChange={(value) => {
+                                                            field.onChange(value);
+                                                            const selectedSku = allSkus.find(s => s.value === value);
+                                                            form.setValue(`items.${index}.unit`, selectedSku?.stock_unit || 'Nos');
+                                                            form.setValue(`items.${index}.cost_price`, selectedSku?.cost_price || 0);
+                                                        }}
+                                                        placeholder="Select an ingredient..."
+                                                        notFoundText="No ingredient found."
+                                                    />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -304,24 +410,30 @@ export function BomForm() {
                                         name={`items.${index}.unit`}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger>
-                                                            <SelectValue placeholder="Unit" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent>
-                                                        <SelectItem value="Nos">Nos (Numbers)</SelectItem>
-                                                        <SelectItem value="KG">KG (Kilogram)</SelectItem>
-                                                        <SelectItem value="Gram">Gram</SelectItem>
-                                                        <SelectItem value="Litre">Litre</SelectItem>
-                                                        <SelectItem value="ml">ml (Millilitre)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
+                                                <FormControl>
+                                                    <Input {...field} readOnly disabled className="bg-muted border-none" />
+                                                </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
+                                </TableCell>
+                                 <TableCell>
+                                    <FormField
+                                        control={form.control}
+                                        name={`items.${index}.cost_price`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input type="number" {...field} readOnly disabled className="bg-muted border-none text-right" />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </TableCell>
+                                <TableCell className="text-right font-mono">
+                                    {totalPrice.toFixed(2)}
                                 </TableCell>
                                 <TableCell>
                                     <Button variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -329,10 +441,17 @@ export function BomForm() {
                                     </Button>
                                 </TableCell>
                            </TableRow>
-                        ))}
+                         )})}
                     </TableBody>
+                    <TableFooter>
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-right font-bold">Grand Total</TableCell>
+                        <TableCell className="text-right font-bold font-mono">{grandTotal.toFixed(2)}</TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
+                    </TableFooter>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ recipe_product: '', quantity: 1, unit: 'Nos' })} className="mt-4">
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ recipe_product: '', quantity: 1, unit: 'Nos', cost_price: 0 })} className="mt-4">
                     Add Ingredient
                 </Button>
             </CardContent>

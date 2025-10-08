@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { KotPrintView } from '@/components/kot-print-view';

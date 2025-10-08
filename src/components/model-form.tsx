@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,6 +28,7 @@ import { useState } from "react";
 import { Textarea } from "./ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useLocation } from "./location-provider";
+import { fetcher } from "@/lib/api";
 
 const modelFormSchema = z.object({
   name: z.string().min(2, "Model name must be at least 2 characters."),
@@ -62,17 +64,14 @@ export function ModelForm({ model }: ModelFormProps) {
       return;
     }
     setIsLoading(true);
-    const url = model ? `https://server-erp.payshia.com/master-models/${model.id}` : 'https://server-erp.payshia.com/master-models';
+    const url = model ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/master-models/${model.id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/master-models`;
     const method = model ? 'PUT' : 'POST';
 
     const payload = { ...data, company_id: company_id };
 
     try {
-      const response = await fetch(url, {
+      const response = await fetcher(url, {
         method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(payload),
       });
       

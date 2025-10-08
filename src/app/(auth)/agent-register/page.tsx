@@ -72,14 +72,17 @@ export default function AgentRegisterPage() {
     
     const payload = {
         ...data,
-        pass: data.password,
+        pass: data.password, // Correctly map password to pass
         user_status: 'Active',
-        acc_type: 'agent', // Set account type to agent
+        acc_type: 'agent',
         update_by: 'system',
     };
+    // remove password from the payload as it's sent as 'pass'
+    // @ts-ignore
+    delete payload.password;
 
     try {
-        const response = await fetcher('https://server-erp.payshia.com/users', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`, {
             method: 'POST',
             body: JSON.stringify(payload)
         });
