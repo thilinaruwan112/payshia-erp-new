@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -431,6 +432,7 @@ export default function POSPage() {
                         table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
                         cost_price: item.product.costPrice || 0,
                         product_variant_id: parseInt(item.product.variant.id, 10),
+                        printed_status: 0, // Always 0 for new/additional items
                     };
                 }
                 return null;
