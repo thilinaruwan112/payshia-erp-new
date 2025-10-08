@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -413,21 +414,25 @@ export default function POSPage() {
     if (currentOrder.originalInvoiceNumber) {
         const itemsToUpdatePayload = currentOrder.cart
             .map(item => {
-                const newItemQty = item.quantity;
+                // If originalItemId exists, it's an old item. Check for quantity increase.
+                // If it doesn't exist, it's a brand new item added to the cart.
+                const isNewItem = !item.originalItemId;
                 const originalQty = item.originalQuantity || 0;
-                const qtyToAdd = newItemQty - originalQty;
-                
-                if (qtyToAdd > 0) {
+                const newQty = item.quantity;
+                const qtyToAdd = newQty - originalQty;
+
+                if (isNewItem || qtyToAdd > 0) {
                     return {
                         user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
                         product_id: parseInt(item.product.id, 10),
                         item_price: item.product.price,
                         item_discount: item.itemDiscount || 0,
-                        quantity: qtyToAdd,
+                        quantity: isNewItem ? newQty : qtyToAdd,
                         customer_id: parseInt(currentOrder.customer.customer_id, 10),
                         table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
                         cost_price: item.product.costPrice || 0,
                         product_variant_id: parseInt(item.product.variant.id, 10),
+                        printed_status: 0, // Always 0 for new/additional items
                     };
                 }
                 return null;
@@ -683,7 +688,7 @@ export default function POSPage() {
       }));
   };
   
-  const updateCustomer = (orderId: string, customer: Customer) => {
+  const updateCustomer = (orderId: string, customer: User) => {
     setActiveOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, customer } : order));
   };
 
@@ -849,3 +854,8 @@ export default function POSPage() {
     </>
   );
 }
+
+    
+
+    
+
