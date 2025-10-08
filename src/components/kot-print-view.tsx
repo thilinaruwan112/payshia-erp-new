@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import type { Invoice, InvoiceItem, Product, Location } from '@/lib/types';
+import type { Invoice, InvoiceItem, Product, Location, ProductVariant } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -15,6 +15,11 @@ interface KotPrintViewProps {
   companyId: string | null;
 }
 
+interface ProductWithApiResponse {
+    product: Product;
+    variants: { variant: ProductVariant }[];
+}
+
 // Extend the Window interface for JSPrintManager
 declare global {
   interface Window {
@@ -25,7 +30,7 @@ declare global {
 
 export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const [location, setLocation] = useState<Location | null>(null);
   const [itemsToPrint, setItemsToPrint] = useState<InvoiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,7 +44,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
       if (!companyId) return;
       try {
         const response = await fetcher(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/filter/by-company?company_id=${companyId}`
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${companyId}`
         );
         if (!response.ok) {
           throw new Error('Failed to fetch products');
@@ -235,17 +240,18 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }, [isLoading, invoice, products, itemsToPrint, isJspmConnected]);
 
   const getProductName = (productId: number) => {
-    const product = products.find((p) => p.id === String(productId));
-    if (!product) return `Product ID: ${productId}`;
-    
-    const variantId = itemsToPrint.find(item => item.product_id === productId)?.product_variant_id;
-    const variant = product.variants.find(v => v.id === variantId);
+    const productData = products.find(p => p.product.id === String(productId));
+    if (!productData) return `Product ID: ${productId}`;
+
+    const item = itemsToPrint.find(i => i.product_id === productId);
+    const variant = productData.variants.find(v => v.variant.id === item?.product_variant_id)?.variant;
 
     if (variant) {
-        const variantAttributes = [variant.color, variant.size].filter(Boolean).join(' - ');
-        return variantAttributes ? `${product.name} - ${variantAttributes}` : `${product.name} (${variant.sku})`;
+      const variantAttributes = [variant.color, variant.size].filter(Boolean).join(' - ');
+      return variantAttributes ? `${productData.product.name} - ${variantAttributes}` : `${productData.product.name} (${variant.sku})`;
     }
-    return product.name;
+
+    return productData.product.name;
   };
   
   if (isLoading) {
