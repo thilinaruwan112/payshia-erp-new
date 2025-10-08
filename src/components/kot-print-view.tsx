@@ -73,7 +73,10 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             }
             const invoiceData: Invoice = await response.json();
             setInvoice(invoiceData);
-            setItemsToPrint(invoiceData.items || []);
+            
+            // Filter items to only include those not yet printed
+            const unprintedItems = (invoiceData.items || []).filter(item => item.printed_status !== '1');
+            setItemsToPrint(unprintedItems);
             
             if (invoiceData.location_id) {
                 const locResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${invoiceData.location_id}`);
