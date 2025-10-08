@@ -131,9 +131,39 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
       setTimeout(initJSPM, 500);
     }
   }, []);
+  
+  const updatePrintedStatus = async () => {
+    if (itemsToPrint.length === 0) return;
+
+    const itemIdsToUpdate = itemsToPrint.map(item => item.id);
+
+    try {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices/items/update-printed-status`, {
+            method: 'PUT',
+            body: JSON.stringify({ item_ids: itemIdsToUpdate }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update printed status on the server.');
+        }
+
+        console.log('Successfully updated printed status for items:', itemIdsToUpdate);
+
+    } catch (error) {
+         console.error('Failed to update printed status:', error);
+         toast({
+            variant: 'destructive',
+            title: 'Printing Status Error',
+            description: 'Could not update the print status on the server. Items may print again.',
+         });
+    }
+  }
+
 
   const handlePrint = async () => {
     if (!kotRef.current) return;
+    
+    await updatePrintedStatus();
 
     if (!window.JSPM || !isJspmConnected) {
         console.warn("JSPM not ready or not connected. Falling back to browser print.");
@@ -191,7 +221,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
                 handlePrint();
             } else {
                 console.warn("JSPM did not connect in time, falling back to browser print.");
-                window.print();
+                updatePrintedStatus().then(() => window.print());
             }
         }, 2000); // Wait 2 seconds for connection
         return () => clearTimeout(timeout);
@@ -200,10 +230,17 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }, [isLoading, invoice, products, itemsToPrint, isJspmConnected]);
 
   const getProductName = (productId: number) => {
-    return (
-      products.find((p) => p.id === String(productId))?.name ||
-      `Product ID: ${productId}`
-    );
+    const product = products.find((p) => p.id === String(productId));
+    if (!product) return `Product ID: ${productId}`;
+    
+    const variantId = itemsToPrint.find(item => item.product_id === productId)?.product_variant_id;
+    const variant = product.variants.find(v => v.id === variantId);
+
+    if (variant) {
+        const variantAttributes = [variant.color, variant.size].filter(Boolean).join(' - ');
+        return variantAttributes ? `${product.name} - ${variantAttributes}` : `${product.name} (${variant.sku})`;
+    }
+    return product.name;
   };
   
   if (isLoading) {
@@ -264,9 +301,9 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
       <div className="flex justify-between text-xs">
         <p>
           Order:{' '}
-          {invoice.remark?.includes('Dine-In')
-            ? invoice.table_id
-            : 'Take Away'}
+          {invoice.remark?.includes('Dine-In') && invoice.table_id !== '0'
+            ? `Table ${invoice.table_id}`
+            : invoice.remark || 'Take Away'}
         </p>
         <p>{format(new Date(), 'dd/MM/yy HH:mm')}</p>
       </div>
