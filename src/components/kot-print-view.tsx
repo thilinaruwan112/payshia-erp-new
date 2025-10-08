@@ -135,7 +135,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         } else if (retries < 10) {
           setTimeout(() => initJSPM(retries + 1), 500);
         } else {
-          console.error("JSPM script not loaded after multiple attempts. Make sure the client app is running.");
+          console.error("JSPM script not loaded! Make sure the client app is running.");
         }
       };
       
@@ -147,7 +147,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     if (itemsToPrint.length === 0 || !companyId) return;
 
     const itemIdsToUpdate = itemsToPrint.map(item => item.id).join(',');
-    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-invoice-items/printed?id=${itemIdsToUpdate}&company_id=${companyId}`;
+    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-invoice-items/printed?ids=${itemIdsToUpdate}&company_id=${companyId}`;
 
     try {
         const response = await fetcher(url, {
