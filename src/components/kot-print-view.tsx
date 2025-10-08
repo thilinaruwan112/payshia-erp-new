@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import type { Invoice, InvoiceItem, Product, Location } from '@/lib/types';
+import type { Invoice, InvoiceItem, Product, Location, ProductVariant } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -15,6 +15,11 @@ interface KotPrintViewProps {
   companyId: string | null;
 }
 
+interface ProductWithApiResponse {
+    product: Product;
+    variants: { variant: ProductVariant }[];
+}
+
 // Extend the Window interface for JSPrintManager
 declare global {
   interface Window {
@@ -25,7 +30,7 @@ declare global {
 
 export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const [location, setLocation] = useState<Location | null>(null);
   const [itemsToPrint, setItemsToPrint] = useState<InvoiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,12 +44,14 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
       if (!companyId) return;
       try {
         const response = await fetcher(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/filter/by-company?company_id=${companyId}`
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${companyId}`
         );
         if (!response.ok) {
           throw new Error('Failed to fetch products');
         }
-        setProducts(await response.json());
+        const productsData = await response.json();
+        setProducts(productsData.products || []);
+
       } catch (error) {
         toast({
           variant: 'destructive',
@@ -73,7 +80,10 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             }
             const invoiceData: Invoice = await response.json();
             setInvoice(invoiceData);
-            setItemsToPrint(invoiceData.items || []);
+            
+            // Filter items to only include those not yet printed
+            const unprintedItems = (invoiceData.items || []).filter(item => String(item.printed_status) !== '1');
+            setItemsToPrint(unprintedItems);
             
             if (invoiceData.location_id) {
                 const locResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${invoiceData.location_id}`);
@@ -96,41 +106,76 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         }
     }
 
-    fetchInvoiceData();
-  }, [invoiceId, companyId, toast]);
+    if (products.length > 0) {
+      fetchInvoiceData();
+    }
+  }, [invoiceId, companyId, toast, products]);
 
    useEffect(() => {
     if (typeof window !== "undefined") {
-      const initJSPM = () => {
-        if (!window.JSPM) {
-          console.error("JSPM script not loaded! Make sure the client app is running.");
-          return;
-        }
-        try {
+      const initJSPM = (retries = 0) => {
+        if (window.JSPM) {
+          try {
             const { JSPrintManager } = window.JSPM;
             JSPrintManager.auto_reconnect = true;
             JSPrintManager.start();
 
             JSPrintManager.WS.onOpen = () => {
-                console.log("✅ JSPM Connected!");
-                setIsJspmConnected(true);
+              console.log("✅ JSPM Connected!");
+              setIsJspmConnected(true);
             };
 
             JSPrintManager.WS.onClose = () => {
-                console.log("❌ JSPM Disconnected!");
-                setIsJspmConnected(false);
+              console.log("❌ JSPM Disconnected!");
+              setIsJspmConnected(false);
             };
-        } catch (error) {
+          } catch (error) {
             console.error("Failed to initialize JSPM:", error);
+          }
+        } else if (retries < 10) {
+          setTimeout(() => initJSPM(retries + 1), 500);
+        } else {
+          console.error("JSPM script not loaded! Make sure the client app is running.");
         }
       };
-      // Give JSPM a moment to load on the window object
-      setTimeout(initJSPM, 500);
+      
+      initJSPM();
     }
   }, []);
+  
+  const updatePrintedStatus = async () => {
+    if (itemsToPrint.length === 0 || !companyId) return;
+
+    const itemIdsToUpdate = itemsToPrint.map(item => item.id).join(',');
+    const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-invoice-items/printed?ids=${itemIdsToUpdate}&company_id=${companyId}`;
+
+    try {
+        const response = await fetcher(url, {
+            method: 'PUT',
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update printed status on the server.');
+        }
+
+        console.log('Successfully updated printed status for items:', itemIdsToUpdate);
+
+    } catch (error) {
+         console.error('Failed to update printed status:', error);
+         toast({
+            variant: 'destructive',
+            title: 'Printing Status Error',
+            description: 'Could not update the print status on the server. Items may print again.',
+         });
+    }
+  }
+
 
   const handlePrint = async () => {
     if (!kotRef.current) return;
+    
+    await updatePrintedStatus();
 
     if (!window.JSPM || !isJspmConnected) {
         console.warn("JSPM not ready or not connected. Falling back to browser print.");
@@ -188,7 +233,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
                 handlePrint();
             } else {
                 console.warn("JSPM did not connect in time, falling back to browser print.");
-                window.print();
+                updatePrintedStatus().then(() => window.print());
             }
         }, 2000); // Wait 2 seconds for connection
         return () => clearTimeout(timeout);
@@ -197,10 +242,18 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }, [isLoading, invoice, products, itemsToPrint, isJspmConnected]);
 
   const getProductName = (productId: number) => {
-    return (
-      products.find((p) => p.id === String(productId))?.name ||
-      `Product ID: ${productId}`
-    );
+    const productData = products.find(p => p.product.id === String(productId));
+    if (!productData) return `Product ID: ${productId}`;
+
+    const item = itemsToPrint.find(i => i.product_id === productId);
+    const variant = productData.variants.find(v => v.variant.id === item?.product_variant_id)?.variant;
+
+    if (variant) {
+      const variantAttributes = [variant.color, variant.size].filter(Boolean).join(' - ');
+      return variantAttributes ? `${productData.product.name} - ${variantAttributes}` : `${productData.product.name} (${variant.sku})`;
+    }
+
+    return productData.product.name;
   };
   
   if (isLoading) {
@@ -261,9 +314,9 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
       <div className="flex justify-between text-xs">
         <p>
           Order:{' '}
-          {invoice.remark?.includes('Dine-In')
-            ? invoice.table_id
-            : 'Take Away'}
+          {invoice.remark?.includes('Dine-In') && invoice.table_id !== '0'
+            ? `Table ${invoice.table_id}`
+            : invoice.remark || 'Take Away'}
         </p>
         <p>{format(new Date(), 'dd/MM/yy HH:mm')}</p>
       </div>

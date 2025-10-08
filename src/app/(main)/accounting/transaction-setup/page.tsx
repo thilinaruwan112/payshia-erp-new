@@ -211,45 +211,33 @@ export default function TransactionSetupPage() {
         const debitAccountId = debitKey ? settings[debitKey] : null;
         const creditAccountId = creditKey ? settings[creditKey] : null;
         
-        let hasError = false;
-
-        const makeRequest = async (accountId: string | null, leg: 'debit' | 'credit') => {
-             if (!accountId) return; // Skip if no account ID
-
-            const payload = {
-                type: section,
-                credit_account_id: leg === 'credit' ? parseInt(accountId, 10) : 0,
-                debit_account_id: leg === 'debit' ? parseInt(accountId, 10) : 0,
-                status: "active",
-                company_id: company_id,
-                sub_type: entryName,
-                created_by: "admin"
-            };
-
-            try {
-                const response = await fetcher(`https://qa-server-erp.payshia.com/transaction-setup`, {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || `Failed to save ${leg} leg.`);
-                }
-            } catch (error) {
-                hasError = true;
-                const errorMessage = error instanceof Error ? error.message : `An unknown error occurred on the ${leg} leg.`;
-                toast({ variant: 'destructive', title: 'Error', description: errorMessage });
-            }
+        const payload = {
+            type: section,
+            sub_type: entryName,
+            debit_account_id: debitAccountId ? parseInt(debitAccountId, 10) : 0,
+            credit_account_id: creditAccountId ? parseInt(creditAccountId, 10) : 0,
+            status: "active",
+            company_id: company_id,
+            created_by: "admin"
         };
-
-        if (debitAccountId) await makeRequest(debitAccountId, 'debit');
-        if (creditAccountId) await makeRequest(creditAccountId, 'credit');
         
-        if (!hasError) {
-            toast({ title: 'Success', description: `${entryName} settings saved successfully.` });
-        }
+        try {
+            const response = await fetcher(`https://qa-server-erp.payshia.com/transaction-setup`, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Failed to save settings for ${entryName}.`);
+            }
+             toast({ title: 'Success', description: `${entryName} settings saved successfully.` });
 
-        setSavingStates(prev => ({...prev, [entryName]: false}));
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : `An unknown error occurred.`;
+            toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+        } finally {
+            setSavingStates(prev => ({...prev, [entryName]: false}));
+        }
     };
 
 
@@ -337,4 +325,3 @@ export default function TransactionSetupPage() {
         </div>
     );
 }
-
