@@ -44,7 +44,9 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         if (!response.ok) {
           throw new Error('Failed to fetch products');
         }
-        setProducts(await response.json());
+        const productsData = await response.json();
+        setProducts(productsData.products || []);
+
       } catch (error) {
         toast({
           variant: 'destructive',
@@ -104,31 +106,34 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
 
    useEffect(() => {
     if (typeof window !== "undefined") {
-      const initJSPM = () => {
-        if (!window.JSPM) {
-          console.error("JSPM script not loaded! Make sure the client app is running.");
-          return;
-        }
-        try {
+      const initJSPM = (retries = 0) => {
+        if (window.JSPM) {
+          try {
             const { JSPrintManager } = window.JSPM;
             JSPrintManager.auto_reconnect = true;
             JSPrintManager.start();
 
             JSPrintManager.WS.onOpen = () => {
-                console.log("✅ JSPM Connected!");
-                setIsJspmConnected(true);
+              console.log("✅ JSPM Connected!");
+              setIsJspmConnected(true);
             };
 
             JSPrintManager.WS.onClose = () => {
-                console.log("❌ JSPM Disconnected!");
-                setIsJspmConnected(false);
+              console.log("❌ JSPM Disconnected!");
+              setIsJspmConnected(false);
             };
-        } catch (error) {
+          } catch (error) {
             console.error("Failed to initialize JSPM:", error);
+          }
+        } else if (retries < 10) {
+          // If JSPM is not loaded, wait 500ms and try again, up to 10 times.
+          setTimeout(() => initJSPM(retries + 1), 500);
+        } else {
+          console.error("JSPM script not loaded after multiple attempts. Make sure the client app is running.");
         }
       };
-      // Give JSPM a moment to load on the window object
-      setTimeout(initJSPM, 500);
+      
+      initJSPM();
     }
   }, []);
   
