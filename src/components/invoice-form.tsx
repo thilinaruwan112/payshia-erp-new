@@ -279,7 +279,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         ref_hold: null,
         company_id: company_id,
         billing_address: selectedCustomer ? {
-            user_id: selectedCustomer.id,
+            user_id: selectedCustomer.customer_id, // Corrected from selectedCustomer.id
             address_type: "billing",
             first_name: selectedCustomer.customer_first_name,
             last_name: selectedCustomer.customer_last_name,
