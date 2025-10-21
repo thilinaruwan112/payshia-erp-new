@@ -31,6 +31,7 @@ interface ProductWithApiResponse {
 
 const adjustmentItemSchema = z.object({
   productVariantId: z.string().min(1, "Product is required."),
+  selectedBatch: z.string().min(1, "A batch must be selected."),
   currentStock: z.number().default(0),
   newQuantity: z.coerce.number().min(0, "Quantity must be a positive number.").default(0),
   costPrice: z.number().default(0),
@@ -53,6 +54,7 @@ export function StockAdjustmentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id, currentLocation } = useLocation();
+  const [availableBatches, setAvailableBatches] = useState<Record<number, StockInfo[]>>({});
 
   const form = useForm<StockAdjustmentFormValues>({
     resolver: zodResolver(stockAdjustmentFormSchema),
@@ -119,9 +121,27 @@ export function StockAdjustmentForm() {
             throw new Error('Failed to fetch stock for this product.');
         }
         const data = await response.json();
-        const totalStock = data.total_stock[0]?.stock_balance ? parseFloat(data.total_stock[0].stock_balance) : 0;
-        form.setValue(`items.${index}.currentStock`, totalStock);
-        form.setValue(`items.${index}.newQuantity`, totalStock); // Set initial new quantity to current stock
+        const batches = (data.grouped_by_expire_date || []).filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
+        
+        batches.sort((a: StockInfo, b: StockInfo) => {
+            if (a.expire_date === '0000-00-00') return 1;
+            if (b.expire_date === '0000-00-00') return -1;
+            return new Date(a.expire_date).getTime() - new Date(b.expire_date).getTime();
+        });
+
+        setAvailableBatches(prev => ({ ...prev, [index]: batches }));
+        
+        // Auto-select the first batch (soonest to expire)
+        if (batches.length > 0) {
+            const firstBatch = batches[0];
+            form.setValue(`items.${index}.selectedBatch`, JSON.stringify(firstBatch));
+            form.setValue(`items.${index}.currentStock`, parseFloat(firstBatch.stock_balance));
+            form.setValue(`items.${index}.newQuantity`, parseFloat(firstBatch.stock_balance));
+        } else {
+             form.setValue(`items.${index}.selectedBatch`, '');
+             form.setValue(`items.${index}.currentStock`, 0);
+             form.setValue(`items.${index}.newQuantity`, 0);
+        }
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -143,12 +163,14 @@ export function StockAdjustmentForm() {
         if (variance === 0) return null; // No change, no entry
 
         const skuDetails = allSkus.find(s => s.value === item.productVariantId);
+        const batchInfo: StockInfo = JSON.parse(item.selectedBatch);
+        
         return {
             type: variance > 0 ? "IN" : "OUT",
             quantity: Math.abs(variance),
-            patch_code: "ADJUSTMENT",
+            patch_code: batchInfo.patch_code,
             manufacture_date: format(new Date(), 'yyyy-MM-dd'),
-            expire_date: '0000-00-00',
+            expire_date: batchInfo.expire_date,
             product_id: parseInt(skuDetails!.productId),
             product_variant_id: parseInt(item.productVariantId),
             reference: `${data.type}: ${data.remark || "Stock Adjustment"}`,
@@ -283,7 +305,8 @@ export function StockAdjustmentForm() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[30%]">Product</TableHead>
+                  <TableHead className="w-[25%]">Product</TableHead>
+                  <TableHead className="w-[20%]">Batch / Expiry</TableHead>
                   <TableHead>Current Stock</TableHead>
                   <TableHead>Physical Qty</TableHead>
                   <TableHead>Variance</TableHead>
@@ -308,6 +331,37 @@ export function StockAdjustmentForm() {
                                         handleProductSelect(value, index);
                                     }}
                                     placeholder="Select an item"
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <FormField
+                                    control={form.control}
+                                    name={`items.${index}.selectedBatch`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <Select onValueChange={(value) => {
+                                                field.onChange(value);
+                                                const batchInfo: StockInfo = JSON.parse(value);
+                                                form.setValue(`items.${index}.currentStock`, parseFloat(batchInfo.stock_balance));
+                                                form.setValue(`items.${index}.newQuantity`, parseFloat(batchInfo.stock_balance));
+                                            }} value={field.value} disabled={!availableBatches[index]}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select batch" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {(availableBatches[index] || []).map(batch => (
+                                                        <SelectItem key={`${batch.patch_code}-${batch.expire_date}`} value={JSON.stringify(batch)}>
+                                                            {batch.patch_code} ({parseFloat(batch.stock_balance)})
+                                                            {batch.expire_date !== '0000-00-00' && ` - ${format(new Date(batch.expire_date), 'dd/MM/yy')}`}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
                                 />
                             </TableCell>
                             <TableCell>
@@ -345,7 +399,7 @@ export function StockAdjustmentForm() {
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-right font-bold">Total Adjustment Value</TableCell>
+                  <TableCell colSpan={6} className="text-right font-bold">Total Adjustment Value</TableCell>
                   <TableCell className={cn("text-right font-bold font-mono", grandTotal > 0 ? "text-green-600" : grandTotal < 0 ? "text-destructive" : "")}>{grandTotal.toFixed(2)}</TableCell>
                   <TableCell></TableCell>
                 </TableRow>
@@ -355,7 +409,7 @@ export function StockAdjustmentForm() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => append({ productVariantId: "", currentStock: 0, newQuantity: 0, costPrice: 0, reason: "" })}
+                onClick={() => append({ productVariantId: "", selectedBatch: "", currentStock: 0, newQuantity: 0, costPrice: 0, reason: "" })}
                 className="mt-4"
                 >
                 Add another item
