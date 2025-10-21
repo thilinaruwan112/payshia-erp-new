@@ -2,23 +2,23 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, ProductVariant } from "@/lib/types";
+import type { Product, ProductVariant, StockInfo } from "@/lib/types";
 import { Loader2, Trash2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useLocation } from "./location-provider";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
 import { fetcher } from "@/lib/api";
 import { format } from "date-fns";
 import { Textarea } from "./ui/textarea";
+import { Combobox } from "./ui/combobox";
 
 interface ProductWithApiResponse {
     product: Product;
@@ -27,12 +27,14 @@ interface ProductWithApiResponse {
 
 const adjustmentItemSchema = z.object({
   productVariantId: z.string().min(1, "Product is required."),
-  type: z.enum(["IN", "OUT"]),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
-  reason: z.string().min(3, "Reason is required."),
+  currentStock: z.number().default(0),
+  newQuantity: z.coerce.number().min(0, "Quantity must be a positive number.").default(0),
+  costPrice: z.number().default(0),
+  reason: z.string().optional(),
 });
 
 const stockAdjustmentFormSchema = z.object({
+  remark: z.string().optional(),
   items: z.array(adjustmentItemSchema).min(1, "At least one adjustment item is required."),
 });
 
@@ -49,7 +51,7 @@ export function StockAdjustmentForm() {
   const form = useForm<StockAdjustmentFormValues>({
     resolver: zodResolver(stockAdjustmentFormSchema),
     defaultValues: {
-      items: [{ productVariantId: "", type: "OUT", quantity: 1, reason: "" }],
+      items: [],
     },
     mode: "onChange",
   });
@@ -77,15 +79,43 @@ export function StockAdjustmentForm() {
     fetchProducts();
   }, [company_id, toast]);
 
-  const allSkus = React.useMemo(() => {
+  const allSkus = useMemo(() => {
     return products.flatMap(p =>
       (p.variants || []).map(v => ({
         label: `${p.product.name} (${v.variant.sku})`,
         value: v.variant.id,
         productId: p.product.id,
+        costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
       }))
     );
   }, [products]);
+
+  const handleProductSelect = async (variantId: string, index: number) => {
+    if (!currentLocation) {
+        toast({ variant: 'destructive', title: 'Location not set', description: 'Please select a location first.' });
+        return;
+    }
+    const skuDetails = allSkus.find(s => s.value === variantId);
+    if (!skuDetails) return;
+
+    form.setValue(`items.${index}.costPrice`, skuDetails.costPrice);
+
+    try {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${skuDetails.variantId}&location_id=${currentLocation.location_id}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch stock for this product.');
+        }
+        const data = await response.json();
+        const totalStock = data.total_stock[0]?.stock_balance ? parseFloat(data.total_stock[0].stock_balance) : 0;
+        form.setValue(`items.${index}.currentStock`, totalStock);
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Error fetching stock', description: errorMessage });
+        form.setValue(`items.${index}.currentStock`, 0);
+    }
+  }
+
 
   async function onSubmit(data: StockAdjustmentFormValues) {
     if (!currentLocation || !company_id) {
@@ -95,16 +125,19 @@ export function StockAdjustmentForm() {
     setIsSubmitting(true);
     
     const stockEntries = data.items.map(item => {
+        const variance = item.newQuantity - item.currentStock;
+        if (variance === 0) return null; // No change, no entry
+
         const skuDetails = allSkus.find(s => s.value === item.productVariantId);
         return {
-            type: item.type,
-            quantity: item.quantity,
+            type: variance > 0 ? "IN" : "OUT",
+            quantity: Math.abs(variance),
             patch_code: "ADJUSTMENT",
             manufacture_date: format(new Date(), 'yyyy-MM-dd'),
             expire_date: '0000-00-00',
             product_id: parseInt(skuDetails!.productId),
             product_variant_id: parseInt(item.productVariantId),
-            reference: item.reason,
+            reference: data.remark || "Stock Adjustment",
             location_id: parseInt(currentLocation.location_id, 10),
             created_by: "admin",
             is_active: "1",
@@ -112,7 +145,13 @@ export function StockAdjustmentForm() {
             company_id: company_id,
             transaction_type: "stock_adjustment",
         }
-    });
+    }).filter(Boolean); // Filter out nulls
+
+    if (stockEntries.length === 0) {
+        toast({ title: 'No Changes', description: 'No stock adjustments were needed.'});
+        setIsSubmitting(false);
+        return;
+    }
 
     try {
       const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/bulk`, {
@@ -128,7 +167,7 @@ export function StockAdjustmentForm() {
         description: "The stock levels have been successfully updated.",
       });
       router.refresh();
-      form.reset();
+      form.reset({ items: [] });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({ variant: 'destructive', title: 'Submission Failed', description: errorMessage });
@@ -136,112 +175,126 @@ export function StockAdjustmentForm() {
       setIsSubmitting(false);
     }
   }
+  
+  const watchedItems = form.watch('items');
+
+  const grandTotal = useMemo(() => {
+    return watchedItems.reduce((acc, item) => {
+        const variance = (item.newQuantity || 0) - (item.currentStock || 0);
+        const lineValue = variance * (item.costPrice || 0);
+        return acc + lineValue;
+    }, 0);
+  }, [watchedItems]);
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle>Adjustment Details</CardTitle>
-            <CardDescription>Add items and specify the adjustment type and quantity.</CardDescription>
+            <CardTitle>Stock Adjustment / Stock Take</CardTitle>
+            <CardDescription>
+                Add items and enter the final physical quantity. The system will calculate the variance and adjustment value.
+                Current Location: <strong>{currentLocation?.location_name || 'Not Set'}</strong>
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[40%]">Product</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Quantity</TableHead>
-                  <TableHead>Reason</TableHead>
+                  <TableHead className="w-[30%]">Product</TableHead>
+                  <TableHead>Current Stock</TableHead>
+                  <TableHead>Physical Qty</TableHead>
+                  <TableHead>Variance</TableHead>
+                  <TableHead>Cost Price</TableHead>
+                  <TableHead className="text-right">Line Value</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {fields.map((field, index) => (
-                  <TableRow key={field.id}>
-                    <TableCell>
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.productVariantId`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl><SelectTrigger><SelectValue placeholder="Select an item" /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                {allSkus.map(item => (
-                                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-                    <TableCell>
-                       <FormField
-                        control={form.control}
-                        name={`items.${index}.type`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                <SelectItem value="IN">IN (Add Stock)</SelectItem>
-                                <SelectItem value="OUT">OUT (Remove Stock)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-                    <TableCell>
-                       <FormField
-                        control={form.control}
-                        name={`items.${index}.quantity`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl><Input type="number" placeholder="1" {...field} /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-                     <TableCell>
-                       <FormField
-                        control={form.control}
-                        name={`items.${index}.reason`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl><Input placeholder="e.g. Damaged Goods" {...field} /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {fields.length > 1 && (
-                        <Button variant="ghost" size="icon" onClick={() => remove(index)}>
-                          <Trash2 className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {fields.map((field, index) => {
+                    const item = watchedItems[index];
+                    const variance = (item.newQuantity || 0) - (item.currentStock || 0);
+                    const lineValue = variance * (item.costPrice || 0);
+                    return (
+                        <TableRow key={field.id}>
+                            <TableCell>
+                                <Combobox
+                                    options={allSkus}
+                                    value={item.productVariantId}
+                                    onChange={(value) => {
+                                        form.setValue(`items.${index}.productVariantId`, value);
+                                        handleProductSelect(value, index);
+                                    }}
+                                    placeholder="Select an item"
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <Input type="number" value={item.currentStock} readOnly disabled className="bg-muted border-none" />
+                            </TableCell>
+                            <TableCell>
+                                <FormField
+                                    control={form.control}
+                                    name={`items.${index}.newQuantity`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl><Input type="number" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </TableCell>
+                            <TableCell>
+                                <Input type="number" value={variance} readOnly disabled className={cn("bg-muted border-none", variance > 0 ? "text-green-600" : variance < 0 ? "text-destructive" : "")} />
+                            </TableCell>
+                            <TableCell>
+                                <Input type="number" value={item.costPrice} readOnly disabled className="bg-muted border-none" />
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                                {lineValue.toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                                <Button variant="ghost" size="icon" onClick={() => remove(index)}>
+                                <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                            </TableCell>
+                        </TableRow>
+                    );
+                })}
               </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={5} className="text-right font-bold">Total Adjustment Value</TableCell>
+                  <TableCell className={cn("text-right font-bold font-mono", grandTotal > 0 ? "text-green-600" : grandTotal < 0 ? "text-destructive" : "")}>{grandTotal.toFixed(2)}</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </TableFooter>
             </Table>
              <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => append({ productVariantId: "", type: "OUT", quantity: 1, reason: "" })}
+                onClick={() => append({ productVariantId: "", currentStock: 0, newQuantity: 0, costPrice: 0, reason: "" })}
                 className="mt-4"
                 >
                 Add another item
             </Button>
           </CardContent>
-          <CardFooter>
+          <CardFooter className="flex flex-col items-end gap-4">
+             <div className="w-full max-w-sm">
+                <FormField
+                    control={form.control}
+                    name="remark"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Remark / Reason for Adjustment</FormLabel>
+                        <FormControl>
+                            <Textarea placeholder="e.g. Monthly stock take, Damaged goods disposal" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
             <Button type="submit" disabled={isSubmitting || isLoading}>
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Adjustments
