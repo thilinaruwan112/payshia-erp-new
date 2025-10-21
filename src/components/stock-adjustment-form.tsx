@@ -19,6 +19,7 @@ import { fetcher } from "@/lib/api";
 import { format } from "date-fns";
 import { Textarea } from "./ui/textarea";
 import { Combobox } from "./ui/combobox";
+import { cn } from "@/lib/utils";
 
 interface ProductWithApiResponse {
     product: Product;
