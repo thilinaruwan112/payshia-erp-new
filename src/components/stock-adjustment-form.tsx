@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Product, ProductVariant, StockInfo } from "@/lib/types";
 import { Loader2, Trash2 } from "lucide-react";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useLocation } from "./location-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
 import { fetcher } from "@/lib/api";
@@ -57,10 +57,15 @@ export function StockAdjustmentForm() {
     mode: "onChange",
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "items",
   });
+
+  // Reset form if location changes
+  useEffect(() => {
+    replace([]);
+  }, [currentLocation, replace]);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -91,7 +96,7 @@ export function StockAdjustmentForm() {
     );
   }, [products]);
 
-  const handleProductSelect = async (variantId: string, index: number) => {
+  const handleProductSelect = useCallback(async (variantId: string, index: number) => {
     if (!currentLocation) {
         toast({ variant: 'destructive', title: 'Location not set', description: 'Please select a location first.' });
         return;
@@ -109,13 +114,14 @@ export function StockAdjustmentForm() {
         const data = await response.json();
         const totalStock = data.total_stock[0]?.stock_balance ? parseFloat(data.total_stock[0].stock_balance) : 0;
         form.setValue(`items.${index}.currentStock`, totalStock);
+        form.setValue(`items.${index}.newQuantity`, totalStock); // Set initial new quantity to current stock
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         toast({ variant: 'destructive', title: 'Error fetching stock', description: errorMessage });
         form.setValue(`items.${index}.currentStock`, 0);
     }
-  }
+  }, [company_id, currentLocation, allSkus, form, toast]);
 
 
   async function onSubmit(data: StockAdjustmentFormValues) {
