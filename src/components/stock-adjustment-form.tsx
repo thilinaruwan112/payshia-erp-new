@@ -114,7 +114,7 @@ export function StockAdjustmentForm() {
     form.setValue(`items.${index}.costPrice`, skuDetails.costPrice);
 
     try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${skuDetails.variantId}&location_id=${currentLocation.location_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
         if (!response.ok) {
             throw new Error('Failed to fetch stock for this product.');
         }
