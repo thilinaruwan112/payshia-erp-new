@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Product, ProductVariant, StockInfo } from "@/lib/types";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, CalendarIcon } from "lucide-react";
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useLocation } from "./location-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
@@ -20,6 +20,9 @@ import { format } from "date-fns";
 import { Textarea } from "./ui/textarea";
 import { Combobox } from "./ui/combobox";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Calendar } from "./ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 interface ProductWithApiResponse {
     product: Product;
@@ -35,6 +38,8 @@ const adjustmentItemSchema = z.object({
 });
 
 const stockAdjustmentFormSchema = z.object({
+  date: z.date({ required_error: "An adjustment date is required." }),
+  type: z.enum(["Adjustment", "Wastage"], { required_error: "An adjustment type is required." }),
   remark: z.string().optional(),
   items: z.array(adjustmentItemSchema).min(1, "At least one adjustment item is required."),
 });
@@ -52,6 +57,8 @@ export function StockAdjustmentForm() {
   const form = useForm<StockAdjustmentFormValues>({
     resolver: zodResolver(stockAdjustmentFormSchema),
     defaultValues: {
+      date: new Date(),
+      type: "Adjustment",
       items: [],
     },
     mode: "onChange",
@@ -144,7 +151,7 @@ export function StockAdjustmentForm() {
             expire_date: '0000-00-00',
             product_id: parseInt(skuDetails!.productId),
             product_variant_id: parseInt(item.productVariantId),
-            reference: data.remark || "Stock Adjustment",
+            reference: `${data.type}: ${data.remark || "Stock Adjustment"}`,
             location_id: parseInt(currentLocation.location_id, 10),
             created_by: "admin",
             is_active: "1",
@@ -197,11 +204,79 @@ export function StockAdjustmentForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card>
+            <CardHeader>
+                <CardTitle>Adjustment Details</CardTitle>
+                 <CardDescription>
+                    Select the date and type of adjustment for location: <strong>{currentLocation?.location_name || 'Not Set'}</strong>
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col justify-end">
+                        <FormLabel>Date</FormLabel>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                )}
+                                >
+                                {field.value ? (
+                                    format(field.value, "PPP")
+                                ) : (
+                                    <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                initialFocus
+                            />
+                            </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                 <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                        <FormItem className="flex flex-col justify-end">
+                        <FormLabel>Type</FormLabel>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select adjustment type" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="Adjustment">Adjustment</SelectItem>
+                                <SelectItem value="Wastage">Wastage</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </CardContent>
+        </Card>
+        <Card>
           <CardHeader>
             <CardTitle>Stock Adjustment / Stock Take</CardTitle>
             <CardDescription>
                 Add items and enter the final physical quantity. The system will calculate the variance and adjustment value.
-                Current Location: <strong>{currentLocation?.location_name || 'Not Set'}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent>
