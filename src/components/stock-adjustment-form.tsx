@@ -194,7 +194,7 @@ export function StockAdjustmentForm() {
                 variance: variance,
                 cost_price: item.costPrice,
                 patch_code: batchInfo.patch_code,
-                manufacture_date: batchInfo.total_in ? format(new Date(batchInfo.total_in), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+                manufacture_date: batchInfo.manufacture_date ? format(new Date(batchInfo.manufacture_date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
                 expire_date: batchInfo.expire_date,
             };
         })
@@ -467,4 +467,5 @@ export function StockAdjustmentForm() {
       </form>
     </Form>
   );
-}
+
+    
