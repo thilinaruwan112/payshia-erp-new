@@ -179,6 +179,7 @@ export function StockAdjustmentForm() {
                 product_id: parseInt(skuDetails.productId, 10),
                 product_variant_id: parseInt(item.productVariantId, 10),
                 company_id: company_id,
+                location_id: parseInt(currentLocation.location_id, 10),
                 set_quantity: item.newQuantity,
                 variance: variance,
                 cost_price: item.costPrice,
