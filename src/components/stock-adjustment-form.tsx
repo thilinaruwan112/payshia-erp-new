@@ -183,12 +183,13 @@ export function StockAdjustmentForm() {
                 variance: variance,
                 cost_price: item.costPrice,
                 patch_code: batchInfo.patch_code,
+                expire_date: batchInfo.expire_date,
                 created_by: "admin_user",
                 updated_by: "admin_user",
                 is_active: 1
             };
             
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-adjesments`, {
+            const response = await fetcher(`https://qa-server-erp.payshia.com/stock-adjesments`, {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });
