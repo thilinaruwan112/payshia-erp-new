@@ -157,53 +157,54 @@ export function StockAdjustmentForm() {
       return;
     }
     setIsSubmitting(true);
-    
-    const stockEntries = data.items.map(item => {
-        const variance = item.newQuantity - item.currentStock;
-        if (variance === 0) return null; // No change, no entry
+    const itemsWithStockChange = data.items.filter(item => item.newQuantity - item.currentStock !== 0);
 
-        const skuDetails = allSkus.find(s => s.value === item.productVariantId);
-        const batchInfo: StockInfo = JSON.parse(item.selectedBatch);
-        
-        return {
-            type: variance > 0 ? "IN" : "OUT",
-            quantity: Math.abs(variance),
-            patch_code: batchInfo.patch_code,
-            manufacture_date: format(new Date(), 'yyyy-MM-dd'),
-            expire_date: batchInfo.expire_date,
-            product_id: parseInt(skuDetails!.productId),
-            product_variant_id: parseInt(item.productVariantId),
-            reference: `${data.type}: ${data.remark || "Stock Adjustment"}`,
-            location_id: parseInt(currentLocation.location_id, 10),
-            created_by: "admin",
-            is_active: "1",
-            ref_id: `ADJ-${Date.now()}`,
-            company_id: company_id,
-            transaction_type: "stock_adjustment",
-        }
-    }).filter(Boolean); // Filter out nulls
-
-    if (stockEntries.length === 0) {
+    if (itemsWithStockChange.length === 0) {
         toast({ title: 'No Changes', description: 'No stock adjustments were needed.'});
         setIsSubmitting(false);
         return;
     }
 
     try {
-      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/bulk`, {
-        method: 'POST',
-        body: JSON.stringify({ entries: stockEntries }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to save stock adjustments.');
-      }
-      toast({
-        title: "Stock Adjustments Saved",
-        description: "The stock levels have been successfully updated.",
-      });
-      router.refresh();
-      form.reset({ items: [] });
+        for (const item of itemsWithStockChange) {
+            const variance = item.newQuantity - item.currentStock;
+            const skuDetails = allSkus.find(s => s.value === item.productVariantId);
+            const batchInfo: StockInfo = JSON.parse(item.selectedBatch);
+
+            if (!skuDetails) {
+                throw new Error(`Could not find product details for one of the items.`);
+            }
+
+            const payload = {
+                product_id: parseInt(skuDetails.productId, 10),
+                product_variant_id: parseInt(item.productVariantId, 10),
+                company_id: company_id,
+                set_quantity: item.newQuantity,
+                variance: variance,
+                cost_price: item.costPrice,
+                patch_code: batchInfo.patch_code,
+                created_by: "admin_user",
+                updated_by: "admin_user",
+                is_active: 1
+            };
+            
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-adjesments`, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+            
+             if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to save one or more stock adjustments.');
+            }
+        }
+        
+        toast({
+            title: "Stock Adjustments Saved",
+            description: "The stock levels have been successfully updated.",
+        });
+        router.refresh();
+        form.reset({ items: [] });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({ variant: 'destructive', title: 'Submission Failed', description: errorMessage });
