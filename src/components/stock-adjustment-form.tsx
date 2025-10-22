@@ -164,41 +164,52 @@ export function StockAdjustmentForm() {
         setIsSubmitting(false);
         return;
     }
-
-    try {
-        for (const item of itemsWithStockChange) {
+    
+    const totalValue = itemsWithStockChange.reduce((acc, item) => {
+        const variance = (item.newQuantity || 0) - (item.currentStock || 0);
+        const lineValue = variance * (item.costPrice || 0);
+        return acc + lineValue;
+    }, 0);
+    
+    const payload = {
+        location_id: parseInt(currentLocation.location_id, 10),
+        date: format(data.date, 'yyyy-MM-dd'),
+        type: data.type.toLowerCase(),
+        total_value: totalValue,
+        company_id: company_id,
+        created_by: 1, // Placeholder
+        items: itemsWithStockChange.map(item => {
             const variance = item.newQuantity - item.currentStock;
             const skuDetails = allSkus.find(s => s.value === item.productVariantId);
             const batchInfo: StockInfo = JSON.parse(item.selectedBatch);
-
+            
             if (!skuDetails) {
-                throw new Error(`Could not find product details for one of the items.`);
+                 throw new Error(`Could not find product details for one of the items.`);
             }
 
-            const payload = {
+            return {
                 product_id: parseInt(skuDetails.productId, 10),
                 product_variant_id: parseInt(item.productVariantId, 10),
-                company_id: company_id,
-                location_id: parseInt(currentLocation.location_id),
                 set_quantity: item.newQuantity,
                 variance: variance,
                 cost_price: item.costPrice,
                 patch_code: batchInfo.patch_code,
+                manufacture_date: batchInfo.total_in ? format(new Date(batchInfo.total_in), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
                 expire_date: batchInfo.expire_date,
-                created_by: "admin_user",
-                updated_by: "admin_user",
-                is_active: 1
             };
-            
-            const response = await fetcher(`https://qa-server-erp.payshia.com/stock-adjesments`, {
-                method: 'POST',
-                body: JSON.stringify(payload),
-            });
-            
-             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to save one or more stock adjustments.');
-            }
+        })
+    };
+
+
+    try {
+        const response = await fetcher(`https://qa-server-erp.payshia.com/stock-adjesment-main`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to save stock adjustments.');
         }
         
         toast({
@@ -207,6 +218,7 @@ export function StockAdjustmentForm() {
         });
         router.refresh();
         form.reset({ items: [] });
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       toast({ variant: 'destructive', title: 'Submission Failed', description: errorMessage });
