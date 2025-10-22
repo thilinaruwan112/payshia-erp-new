@@ -179,7 +179,7 @@ export function StockAdjustmentForm() {
                 product_id: parseInt(skuDetails.productId, 10),
                 product_variant_id: parseInt(item.productVariantId, 10),
                 company_id: company_id,
-                location_id: parseInt(currentLocation.location_id, 10),
+                location_id: parseInt(currentLocation.location_id),
                 set_quantity: item.newQuantity,
                 variance: variance,
                 cost_price: item.costPrice,
@@ -326,14 +326,26 @@ export function StockAdjustmentForm() {
                     return (
                         <TableRow key={field.id}>
                             <TableCell>
-                                <Combobox
-                                    options={allSkus}
-                                    value={item.productVariantId}
-                                    onChange={(value) => {
-                                        form.setValue(`items.${index}.productVariantId`, value);
-                                        handleProductSelect(value, index);
-                                    }}
-                                    placeholder="Select an item"
+                                <FormField
+                                    control={form.control}
+                                    name={`items.${index}.productVariantId`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormControl>
+                                                <Combobox
+                                                    options={allSkus}
+                                                    value={field.value}
+                                                    onChange={(value) => {
+                                                        field.onChange(value);
+                                                        handleProductSelect(value, index);
+                                                    }}
+                                                    placeholder="Select an item"
+                                                    notFoundText="No items found."
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
                                 />
                             </TableCell>
                             <TableCell>
