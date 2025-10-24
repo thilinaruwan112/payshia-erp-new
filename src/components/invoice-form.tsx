@@ -176,9 +176,9 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
 
   const availableOrders = React.useMemo(() => {
     if (!customerId) return [];
-    const customer = customers.find(c => c.id === customerId);
+    const customer = customers.find(c => c.customer_id === customerId);
     if (!customer) return [];
-    return orders.filter(o => o.customerName === customer.name && o.status !== 'Cancelled');
+    return orders.filter(o => o.customerName === `${customer.customer_first_name} ${customer.customer_last_name}` && o.status !== 'Cancelled');
   }, [customerId, customers, orders]);
   
   const handleOrderChange = (orderId: string) => {
@@ -252,6 +252,8 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         setIsLoading(false);
         return;
     }
+    
+    const selectedCustomer = customers.find(c => c.customer_id === data.customerId);
 
     const payload = {
         invoice_date: format(data.invoiceDate, 'yyyy-MM-dd'),
@@ -276,6 +278,21 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         remark: data.remark || "",
         ref_hold: null,
         company_id: company_id,
+        billing_address: selectedCustomer ? {
+            user_id: selectedCustomer.customer_id, // Corrected from selectedCustomer.id
+            address_type: "billing",
+            first_name: selectedCustomer.customer_first_name,
+            last_name: selectedCustomer.customer_last_name,
+            phone: selectedCustomer.phone_number,
+            address_line1: selectedCustomer.address_line1 || "",
+            address_line2: selectedCustomer.address_line2 || "",
+            city: selectedCustomer.city_id || "",
+            state: "Western Province", // Placeholder
+            postal_code: "10100", // Placeholder
+            country: "Sri Lanka",
+            is_default: 1,
+            save_info: 1
+        } : undefined,
         items: data.items.map(item => {
             const batchInfo: StockInfo | null = item.selectedBatch ? JSON.parse(item.selectedBatch) : null;
             return {
@@ -289,7 +306,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                 cost_price: item.costPrice,
                 is_active: 1,
                 hold_status: 0,
-                printed_status: 1,
+                printed_status: 0,
                 product_variant_id: parseInt(item.productVariantId),
                 patch_code: batchInfo?.patch_code || 'N/A',
                 expire_date: batchInfo?.expire_date || '0000-00-00',
@@ -300,7 +317,6 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
 
     try {
         const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices`, {
-
             method: 'POST',
             body: JSON.stringify(payload)
         });

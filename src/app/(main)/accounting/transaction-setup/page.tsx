@@ -66,6 +66,27 @@ const transactionMappings: TransactionSection[] = [
         ],
     },
     {
+        section: "Stock Adjustment",
+        entries: [
+            {
+                name: "Increase",
+                description: "When stock is increased via adjustment.",
+                debitKey: 'stock_increase_debit_account',
+                debitLabel: 'Inventory Asset',
+                creditKey: 'stock_increase_credit_account',
+                creditLabel: 'Stock Adjustment Account',
+            },
+            {
+                name: "Decrease",
+                description: "When stock is decreased via adjustment/wastage.",
+                debitKey: 'stock_decrease_debit_account',
+                debitLabel: 'Stock Adjustment Account',
+                creditKey: 'stock_decrease_credit_account',
+                creditLabel: 'Inventory Asset',
+            },
+        ]
+    },
+    {
         section: "Payments",
         entries: [
             {
