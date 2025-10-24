@@ -467,5 +467,6 @@ export function StockAdjustmentForm() {
       </form>
     </Form>
   );
+}
 
     
