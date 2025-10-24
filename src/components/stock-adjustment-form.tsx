@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 interface ProductWithApiResponse {
     product: Product;
-    variants: { variant: ProductVariant }[];
+    variants: ProductVariant[];
 }
 
 const adjustmentItemSchema = z.object({
@@ -97,10 +97,10 @@ export function StockAdjustmentForm() {
   const allSkus = useMemo(() => {
     return products.flatMap(p =>
       (p.variants || []).map(v => ({
-        label: `${p.product.name} (${v.variant.sku})`,
-        value: v.variant.id,
+        label: `${p.product.name} (${v.sku})`,
+        value: v.id,
         productId: p.product.id,
-        costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
+        costPrice: v.cost_price ? parseFloat(String(v.cost_price)) : 0,
       }))
     );
   }, [products]);
