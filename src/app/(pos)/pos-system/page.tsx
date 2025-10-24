@@ -49,11 +49,18 @@ interface CollectionProductLink {
     product_id: string;
 }
 
+type Category = {
+  id: string;
+  name: string;
+};
+
+
 export default function POSPage() {
   const { toast } = useToast();
   const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [tables, setTables] = useState<TableType[]>([]);
   const [stewards, setStewards] = useState<User[]>([]);
@@ -158,21 +165,23 @@ export default function POSPage() {
         }
         setIsLoading(true);
         try {
-            const [productsResponse, collectionsResponse, brandsResponse, customersResponse, tablesResponse, stewardsResponse] = await Promise.all([
+            const [productsResponse, collectionsResponse, brandsResponse, categoriesResponse, customersResponse, tablesResponse, stewardsResponse] = await Promise.all([
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`)
             ]);
 
-            if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !customersResponse.ok) {
+            if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !categoriesResponse.ok || !customersResponse.ok) {
                 throw new Error('Failed to fetch POS data');
             }
             const productsData: { products: ProductWithVariantsResponse[] } = await productsResponse.json();
             const collectionsData: Collection[] = await collectionsResponse.json();
             const brandsData: Brand[] = await brandsResponse.json();
+            const categoriesData: Category[] = await categoriesResponse.json();
             const customersData: Customer[] = await customersResponse.json();
             const tablesData: TableType[] = await tablesResponse.json();
             const stewardsResult = await stewardsResponse.json();
@@ -193,6 +202,7 @@ export default function POSPage() {
 
             setCollections(collectionsData || []);
             setBrands(brandsData || []);
+            setCategories(categoriesData || []);
             
             const locationFilteredProducts = (productsData.products || []).filter(p => 
                 p.product.available_locations?.split(',').includes(currentLocation.location_id) && p.product.item_type !== 'raw'
@@ -204,6 +214,7 @@ export default function POSPage() {
                 if (!p.variants || p.variants.length === 0) {
                     return [{
                         ...p.product,
+                        category: categoriesData.find(c => c.id === p.product.category_id)?.name || p.product.category,
                         imageUrl: mainProductFrontImage ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${mainProductFrontImage}` : undefined,
                         price: parseFloat(p.product.price as any) || 0,
                         min_price: parseFloat(p.product.min_price as any) || 0,
@@ -223,6 +234,7 @@ export default function POSPage() {
 
                     return {
                         ...p.product,
+                        category: categoriesData.find(c => c.id === p.product.category_id)?.name || p.product.category,
                         imageUrl: finalImageUrl ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${finalImageUrl}` : undefined,
                         price: parseFloat(v.variant.price as any) || 0,
                         min_price: parseFloat(v.variant.min_price as any) || 0,
@@ -725,7 +737,7 @@ export default function POSPage() {
      />
   ) : null;
   
-  const categories = ['All', ...new Set(posProducts.map((p) => p.category))];
+  const allCategories = ['All', ...new Set(posProducts.map((p) => p.category))];
 
   if (isLocationLoading) return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (!currentLocation) return <LocationSelectionDialog open={!currentLocation} locations={availableLocations.filter(loc => loc.pos_status === '1')} onSelectLocation={(loc) => setCurrentLocation(loc)} />;
@@ -813,7 +825,7 @@ export default function POSPage() {
                         <div className="h-full p-2">
                             <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
                             <div className="flex flex-col gap-1">
-                                {categories.map(cat => <Button key={cat} variant={activeFilter.type === 'category' && activeFilter.value === cat ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('category', cat)}>{cat}</Button>)}
+                                {allCategories.map(cat => <Button key={cat} variant={activeFilter.type === 'category' && activeFilter.value === cat ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('category', cat)}>{cat}</Button>)}
                             </div>
                             <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 my-2 pt-2 border-t">Collections</h3>
                             <div className="flex flex-col gap-1">
@@ -858,4 +870,3 @@ export default function POSPage() {
     
 
     
-

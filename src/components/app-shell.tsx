@@ -160,6 +160,7 @@ const navItems = [
       { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
       { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
       { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
+      { href: '/inventory/stock-adjustment', label: 'Stock Adjustment', icon: ArrowRightLeft },
       { href: '/inventory/opening-stock', label: 'Opening Stock', icon: PackagePlus },
       { href: '/inventory/forecast', label: 'AI Forecast', icon: TrendingUp },
     ],
