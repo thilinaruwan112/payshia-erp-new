@@ -49,7 +49,7 @@ const OrderTypeSelection = ({ onSelectOrderType, onSelectTable, tables, isLoadin
 
     return (
         <div className="py-4">
-             <div className="grid grid-cols-3 gap-4 mb-8">
+             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                 <Button variant="outline" className="h-24 text-lg" onClick={() => onSelectOrderType('Take Away')}>Take Away</Button>
                 <Button variant="outline" className="h-24 text-lg" onClick={() => onSelectOrderType('Retail')}>Retail</Button>
                 <Button variant="outline" className="h-24 text-lg" onClick={() => onSelectOrderType('Delivery')}>Delivery</Button>
