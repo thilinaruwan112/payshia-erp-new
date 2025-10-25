@@ -19,7 +19,7 @@ interface LocationContextType {
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
 export function LocationProvider({ children }: { children: React.ReactNode }) {
-  const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
+  const [currentLocation, setCurrentLocationState] = useState<Location | null>(null);
   const [availableLocations, setAvailableLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [company_id, setCompanyId] = useState<number | null>(null);
@@ -32,20 +32,25 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     if (storedCompanyId) {
       setCompanyId(parseInt(storedCompanyId, 10));
     } else {
-        setIsLoading(false); // No company ID, so no locations to fetch
+      setIsLoading(false);
     }
   }, []);
 
+  const handleSetCurrentLocation = (location: Location) => {
+    setCurrentLocationState(location);
+    sessionStorage.setItem('currentLocation', JSON.stringify(location));
+  };
+  
   useEffect(() => {
     const storedLocation = sessionStorage.getItem('currentLocation');
     if (storedLocation) {
         try {
-            setCurrentLocation(JSON.parse(storedLocation));
+            setCurrentLocationState(JSON.parse(storedLocation));
         } catch (e) {
             console.error("Failed to parse stored location", e);
         }
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     async function fetchLocations() {
@@ -66,28 +71,17 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
 
         setAvailableLocations(companyLocations);
 
-        // This logic ensures that if you're in the POS and no location is set in the session,
-        // you're prompted to select one.
         const storedLocation = sessionStorage.getItem('currentLocation');
-        if (!storedLocation) {
-            if (isPos) {
-                const posEnabledLocations = companyLocations.filter(loc => loc.pos_status === "1");
-                setAvailableLocations(posEnabledLocations);
-                 // If only one POS location, set it automatically. Otherwise the dialog will open.
-                 if (posEnabledLocations.length === 1) {
-                    handleSetCurrentLocation(posEnabledLocations[0]);
-                 }
-            }
-        } else {
-            // If a location is already stored, ensure it's valid for the current context.
+        if (storedLocation) {
             const parsedLocation: Location = JSON.parse(storedLocation);
-            if(isPos && parsedLocation.pos_status !== '1') {
-                // If the stored location is not POS-enabled, clear it to force selection.
-                sessionStorage.removeItem('currentLocation');
-                setCurrentLocation(null);
+             if (companyLocations.some(l => l.location_id === parsedLocation.location_id)) {
+                setCurrentLocationState(parsedLocation);
             } else {
-                setCurrentLocation(parsedLocation);
+                sessionStorage.removeItem('currentLocation');
+                setCurrentLocationState(null);
             }
+        } else if (companyLocations.length === 1) {
+            handleSetCurrentLocation(companyLocations[0]);
         }
 
       } catch (error) {
@@ -101,12 +95,19 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       }
     }
     fetchLocations();
-  }, [toast, isPos, company_id]);
+  }, [toast, company_id]);
 
-  const handleSetCurrentLocation = (location: Location) => {
-    setCurrentLocation(location);
-    sessionStorage.setItem('currentLocation', JSON.stringify(location));
-  };
+  useEffect(() => {
+    if (isPos && currentLocation && currentLocation.pos_status !== '1') {
+      toast({
+        title: 'Location Not POS-Enabled',
+        description: `"${currentLocation.location_name}" is not a POS location. Please select a valid one.`,
+        variant: 'destructive',
+      });
+      sessionStorage.removeItem('currentLocation');
+      setCurrentLocationState(null);
+    }
+  }, [isPos, currentLocation, toast]);
 
 
   const value = useMemo(() => ({
@@ -118,16 +119,19 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   }), [currentLocation, availableLocations, isLoading, company_id]);
 
   const posEnabledLocations = availableLocations.filter(loc => loc.pos_status === "1");
-  const showLocationDialog = !isLoading && isPos && posEnabledLocations.length > 0 && !currentLocation;
+  const shouldShowDialog = !isLoading && availableLocations.length > 0 && !currentLocation;
 
   return (
     <LocationContext.Provider value={value as LocationContextType}>
-        <LocationSelectionDialog 
-            open={showLocationDialog}
-            locations={posEnabledLocations}
-            onSelectLocation={handleSetCurrentLocation}
-        />
-        {!showLocationDialog && children}
+        {shouldShowDialog ? (
+            <LocationSelectionDialog 
+                open={shouldShowDialog}
+                locations={isPos ? posEnabledLocations : availableLocations}
+                onSelectLocation={handleSetCurrentLocation}
+            />
+        ) : (
+            children
+        )}
     </LocationContext.Provider>
   );
 }
