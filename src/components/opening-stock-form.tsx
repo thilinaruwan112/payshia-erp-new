@@ -54,6 +54,7 @@ const openingStockItemSchema = z.object({
   quantity: z.coerce.number().min(0, "Quantity must be a positive number.").default(0),
   batchNumber: z.string().optional(),
   expiryDate: z.date().optional(),
+  cost_value: z.coerce.number().optional(),
 });
 
 const openingStockFormSchema = z.object({
@@ -114,6 +115,7 @@ export function OpeningStockForm() {
               quantity: 0,
               batchNumber: `OPEN-${v.variant.sku}`,
               expiryDate: undefined,
+              cost_value: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
           }));
           replace(variants);
       } else {
@@ -137,27 +139,25 @@ export function OpeningStockForm() {
         return;
     }
     
-    const stockEntries = itemsWithStock.map(item => ({
-        type: "IN",
-        quantity: item.quantity,
-        patch_code: item.batchNumber || `OPEN-${item.sku}`,
-        manufacture_date: format(new Date(), 'yyyy-MM-dd'),
-        expire_date: item.expiryDate ? format(item.expiryDate, 'yyyy-MM-dd') : '0000-00-00',
-        product_id: parseInt(data.productId, 10),
-        reference: "Opening Stock",
+    const payload = {
+        company_id: company_id,
         location_id: parseInt(currentLocation.location_id, 10),
         created_by: "admin",
-        is_active: "1",
-        ref_id: "N/A",
-        company_id: company_id,
-        transaction_type: "opening_stock",
-        product_variant_id: parseInt(item.productVariantId, 10),
-    }));
+        current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+        items: itemsWithStock.map(item => ({
+            product_id: parseInt(data.productId, 10),
+            product_variant_id: parseInt(item.productVariantId, 10),
+            cost_value: item.cost_value || 0,
+            quantity: item.quantity,
+            patch_code: item.batchNumber || `OPEN-${item.sku}`,
+            expire_date: item.expiryDate ? format(item.expiryDate, 'yyyy-MM-dd') : undefined,
+        })),
+    };
 
     try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/bulk`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/opening-stock`, {
             method: 'POST',
-            body: JSON.stringify({ entries: stockEntries }),
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
