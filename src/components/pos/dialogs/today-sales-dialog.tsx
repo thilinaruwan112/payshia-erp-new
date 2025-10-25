@@ -81,54 +81,68 @@ export function TodaySalesDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0">
-        <DialogHeader className="p-4 border-b flex-row items-center justify-between">
-          <PayshiaPosLogo />
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" onClick={fetchInvoices} disabled={isLoading}>
-              <RefreshCcw className={cn("h-5 w-5", isLoading && "animate-spin")} />
-            </Button>
-            <DialogClose asChild>
-                <Button variant="ghost" size="icon">
-                    <X className="h-5 w-5" />
-                </Button>
-            </DialogClose>
+  <DialogContent className="max-w-md p-0 bg-black text-white flex flex-col max-h-[90vh]">
+    {/* Fixed Header */}
+    <DialogHeader className="p-6 border-b border-gray-800 shrink-0">
+      <PayshiaPosLogo />          
+    </DialogHeader>
+    
+    {/* Scrollable Content Area */}
+    <div className="flex-1 overflow-hidden flex flex-col">
+      <div className="p-6 pb-4 shrink-0">
+        <h2 className="text-xl font-semibold">Today Invoice List</h2>
+      </div>
+
+      <ScrollArea className="flex-1 px-6">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
           </div>
-        </DialogHeader>
-        <div className="p-6 space-y-4">
-            <h2 className="text-xl font-semibold">Today Invoice List</h2>
-            {isLoading ? (
-                <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>
-            ) : invoices.length === 0 ? (
-                <div className="bg-primary text-primary-foreground text-center p-4 rounded-md">
-                    No Invoices for Today
+        ) : invoices.length === 0 ? (
+          <div className="bg-primary text-primary-foreground text-center p-4 rounded-md">
+            No Invoices for Today
+          </div>
+        ) : (
+          <div className="space-y-3 pb-4">
+            {invoices.map(inv => (
+              <div 
+                key={inv.id} 
+                className="flex justify-between items-center bg-gray-900 p-4 rounded-lg border border-gray-800"
+              >
+                <div>
+                  <p className="font-semibold text-base">{inv.invoice_number}</p>
+                  <p className="text-sm text-gray-400 mt-1">
+                    {format(new Date(inv.current_time), "hh:mm a")}
+                  </p>
                 </div>
-            ) : (
-                <ScrollArea className="h-64 border rounded-md">
-                    <div className="p-2 space-y-2">
-                        {invoices.map(inv => (
-                             <div key={inv.id} className="flex justify-between items-center bg-muted/50 p-2 rounded-md">
-                                <div>
-                                    <p className="font-semibold">{inv.invoice_number}</p>
-                                    <p className="text-xs text-muted-foreground">{format(new Date(inv.current_time), "hh:mm a")}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <div className="font-bold text-lg text-right w-24">{currencySymbol}{parseFloat(inv.grand_total).toFixed(2)}</div>
-                                  <Button size="icon" variant="ghost" onClick={() => handleReprint(inv.invoice_number, inv.company_id)}><Printer className="h-4 w-4" /></Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </ScrollArea>
-            )}
-             <div className="border-t pt-4">
-                <div className="flex justify-between items-center text-lg font-bold">
-                    <span>Total Sales</span>
-                    <span>{currencySymbol}{totalSales.toFixed(2)}</span>
+                <div className="flex items-center gap-3">
+                  <div className="font-bold text-lg">
+                    {currencySymbol} {parseFloat(inv.grand_total).toFixed(2)}
+                  </div>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="hover:bg-gray-800"
+                    onClick={() => handleReprint(inv.invoice_number, inv.company_id)}
+                  >
+                    <Printer className="h-4 w-4" />
+                  </Button>
                 </div>
-            </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+              </div>
+            ))}
+          </div>
+        )}
+      </ScrollArea>
+    </div>
+
+    {/* Fixed Footer */}
+    <div className="border-t border-gray-800 p-6 shrink-0 bg-black">
+      <div className="flex justify-between items-center text-lg font-bold">
+        <span>Total Sales</span>
+        <span>{currencySymbol} {totalSales.toFixed(2)}</span>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
   );
 }
