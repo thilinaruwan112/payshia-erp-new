@@ -29,9 +29,9 @@ import {
 import { format } from 'date-fns';
 import { useLocation } from '../location-provider';
 import { Skeleton } from '../ui/skeleton';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { fetcher } from '@/lib/api';
+import { PayshiaPosLogo } from './payshia-pos-logo';
 
 interface PosHeaderProps {
   searchTerm: string;
@@ -123,8 +123,7 @@ export function PosHeader({
   return (
     <header className="p-4 border-b border-border flex flex-wrap items-center gap-4 sticky top-0 bg-background z-10">
       <Link href="/" className="flex items-center gap-2 text-xl font-bold mr-4 order-1">
-        <Image src="https://content-provider.payshia.com/payshia-erp/branding/payshia-erp-logo-01.webp" alt="Payshia ERP Logo" width={32} height={32} />
-        <span>Payshia POS</span>
+        <PayshiaPosLogo />
       </Link>
       <DateTimeLocation />
       <div className="relative flex-1 w-full sm:w-auto sm:flex-grow-[2] order-3 sm:order-3">

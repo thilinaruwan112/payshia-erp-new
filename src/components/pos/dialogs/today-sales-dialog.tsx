@@ -18,20 +18,12 @@ import { useCurrency } from '@/components/currency-provider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { fetcher } from '@/lib/api';
+import { PayshiaPosLogo } from '../payshia-pos-logo';
 
 interface TodaySalesDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const PayshiaPosLogo = () => (
-  <div className="flex items-center gap-2">
-    <Truck className="h-8 w-8 text-primary transform -scale-x-100" />
-    <span className="text-3xl font-bold tracking-tight">
-      PAYSHIA <span className="text-primary">POS</span>
-    </span>
-  </div>
-);
 
 export function TodaySalesDialog({
   isOpen,
@@ -81,67 +73,65 @@ export function TodaySalesDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-  <DialogContent className="max-w-md p-0 flex flex-col max-h-[90vh]">
-    {/* Fixed Header */}
-    <DialogHeader className="p-6 border-b shrink-0">
-      <PayshiaPosLogo />          
-    </DialogHeader>
-    
-    {/* Scrollable Content Area */}
-    <div className="flex-1 overflow-hidden flex flex-col">
-      <div className="p-6 pb-4 shrink-0">
-        <h2 className="text-xl font-semibold">Today's Invoice List</h2>
-      </div>
+      <DialogContent className="max-w-md p-0 flex flex-col max-h-[90vh]">
+        <DialogHeader className="p-6 border-b shrink-0">
+          <PayshiaPosLogo />          
+        </DialogHeader>
+        
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="p-6 pb-4 shrink-0">
+            <h2 className="text-xl font-semibold">Today's Invoice List</h2>
+          </div>
 
-      <ScrollArea className="flex-1 px-6">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : invoices.length === 0 ? (
-          <div className="bg-muted text-muted-foreground text-center p-4 rounded-md">
-            No Invoices for Today
-          </div>
-        ) : (
-          <div className="space-y-3 pb-4">
-            {invoices.map(inv => (
-              <div 
-                key={inv.id} 
-                className="flex justify-between items-center bg-card p-4 rounded-lg border"
-              >
-                <div>
-                  <p className="font-semibold text-base">{inv.invoice_number}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {format(new Date(inv.current_time), "hh:mm a")}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="font-bold text-lg">
-                    {currencySymbol} {parseFloat(inv.grand_total).toFixed(2)}
-                  </div>
-                  <Button 
-                    size="icon" 
-                    variant="ghost" 
-                    onClick={() => handleReprint(inv.invoice_number, inv.company_id)}
-                  >
-                    <Printer className="h-4 w-4" />
-                  </Button>
-                </div>
+          <ScrollArea className="flex-1 px-6">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin" />
               </div>
-            ))}
-          </div>
-        )}
-      </ScrollArea>
-    </div>
+            ) : invoices.length === 0 ? (
+              <div className="bg-muted text-muted-foreground text-center p-4 rounded-md">
+                No Invoices for Today
+              </div>
+            ) : (
+              <div className="space-y-3 pb-4">
+                {invoices.map(inv => (
+                  <div 
+                    key={inv.id} 
+                    className="flex justify-between items-center bg-card p-4 rounded-lg border"
+                  >
+                    <div>
+                      <p className="font-semibold text-base">{inv.invoice_number}</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {format(new Date(inv.current_time), "hh:mm a")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="font-bold text-lg">
+                        {currencySymbol} {parseFloat(inv.grand_total).toFixed(2)}
+                      </div>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="hover:bg-muted"
+                        onClick={() => handleReprint(inv.invoice_number, inv.company_id)}
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </div>
 
-    {/* Fixed Footer */}
-    <div className="border-t p-6 shrink-0 bg-background">
-      <div className="flex justify-between items-center text-lg font-bold">
-        <span>Total Sales</span>
-        <span>{currencySymbol} {totalSales.toFixed(2)}</span>
-      </div>
-    </div>
-  </DialogContent>
-</Dialog>
+        <div className="border-t p-6 shrink-0 bg-background">
+          <div className="flex justify-between items-center text-lg font-bold">
+            <span>Total Sales</span>
+            <span>{currencySymbol} {totalSales.toFixed(2)}</span>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
