@@ -72,7 +72,7 @@ export function TodaySalesDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 flex flex-col max-h-[90vh]">
+      <DialogContent className="max-w-md p-0 flex flex-col max-h-[100vh]">
         <DialogHeader className="p-6 border-b shrink-0">
           <PayshiaPosLogo />
         </DialogHeader>
