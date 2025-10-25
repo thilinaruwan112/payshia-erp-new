@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,26 +55,27 @@ export function RefundDialog({ isOpen, onOpenChange, customers }: RefundDialogPr
     }
   }, []);
 
-  useEffect(() => {
-    async function fetchReturns() {
-      if (!company_id) return;
-      setIsLoading(true);
-      try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-returns/filter/by-company?company_id=${company_id}`);
-        if (!response.ok) throw new Error('Failed to fetch returns');
-        const data: TransactionReturn[] = await response.json();
-        setTransactionReturns(data || []);
-      } catch (error) {
-         toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch recent returns.' });
-        setTransactionReturns([]);
-      } finally {
-        setIsLoading(false);
-      }
+  const fetchReturns = async () => {
+    if (!company_id) return;
+    setIsLoading(true);
+    try {
+      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-returns/filter/by-company?company_id=${company_id}`);
+      if (!response.ok) throw new Error('Failed to fetch returns');
+      const data: TransactionReturn[] = await response.json();
+      setTransactionReturns(data || []);
+    } catch (error) {
+       toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch recent returns.' });
+      setTransactionReturns([]);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     if (isOpen && !selectedReturn) {
         fetchReturns();
     }
-  }, [isOpen, selectedReturn, toast, company_id]);
+  }, [isOpen, selectedReturn, company_id]);
 
   const handleReturnSelect = async (returnData: TransactionReturn) => {
     if (!company_id) return;
