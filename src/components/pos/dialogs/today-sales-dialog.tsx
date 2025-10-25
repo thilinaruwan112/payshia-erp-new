@@ -81,16 +81,16 @@ export function TodaySalesDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-  <DialogContent className="max-w-md p-0 bg-black text-white flex flex-col max-h-[90vh]">
+  <DialogContent className="max-w-md p-0 flex flex-col max-h-[90vh]">
     {/* Fixed Header */}
-    <DialogHeader className="p-6 border-b border-gray-800 shrink-0">
+    <DialogHeader className="p-6 border-b shrink-0">
       <PayshiaPosLogo />          
     </DialogHeader>
     
     {/* Scrollable Content Area */}
     <div className="flex-1 overflow-hidden flex flex-col">
       <div className="p-6 pb-4 shrink-0">
-        <h2 className="text-xl font-semibold">Today Invoice List</h2>
+        <h2 className="text-xl font-semibold">Today's Invoice List</h2>
       </div>
 
       <ScrollArea className="flex-1 px-6">
@@ -99,7 +99,7 @@ export function TodaySalesDialog({
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : invoices.length === 0 ? (
-          <div className="bg-primary text-primary-foreground text-center p-4 rounded-md">
+          <div className="bg-muted text-muted-foreground text-center p-4 rounded-md">
             No Invoices for Today
           </div>
         ) : (
@@ -107,11 +107,11 @@ export function TodaySalesDialog({
             {invoices.map(inv => (
               <div 
                 key={inv.id} 
-                className="flex justify-between items-center bg-gray-900 p-4 rounded-lg border border-gray-800"
+                className="flex justify-between items-center bg-card p-4 rounded-lg border"
               >
                 <div>
                   <p className="font-semibold text-base">{inv.invoice_number}</p>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     {format(new Date(inv.current_time), "hh:mm a")}
                   </p>
                 </div>
@@ -121,8 +121,7 @@ export function TodaySalesDialog({
                   </div>
                   <Button 
                     size="icon" 
-                    variant="ghost" 
-                    className="hover:bg-gray-800"
+                    variant="ghost"
                     onClick={() => handleReprint(inv.invoice_number, inv.company_id)}
                   >
                     <Printer className="h-4 w-4" />
@@ -136,7 +135,7 @@ export function TodaySalesDialog({
     </div>
 
     {/* Fixed Footer */}
-    <div className="border-t border-gray-800 p-6 shrink-0 bg-black">
+    <div className="border-t p-6 shrink-0 bg-background">
       <div className="flex justify-between items-center text-lg font-bold">
         <span>Total Sales</span>
         <span>{currencySymbol} {totalSales.toFixed(2)}</span>
