@@ -19,6 +19,8 @@ import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { fetcher } from '@/lib/api';
+import { PayshiaPosLogo } from '../payshia-pos-logo';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const OrderTypeSelection = ({ onSelectOrderType, onSelectTable, tables, isLoadingTables, activeOrders, heldOrders }: { 
     onSelectOrderType: (type: ActiveOrder['orderType']) => void; 
@@ -61,8 +63,8 @@ const OrderTypeSelection = ({ onSelectOrderType, onSelectTable, tables, isLoadin
                             return (
                             <Card key={table.id} className={cn("p-3 transition-colors flex flex-col justify-between h-28", inUse ? "bg-muted/50 cursor-not-allowed" : "cursor-pointer hover:border-primary")} onClick={() => handleTableClick(table)}>
                                <div className="flex justify-between items-start">
-                                 <Badge variant="destructive" className="bg-orange-600">Dine-In</Badge>
-                                 <Badge variant={!inUse ? 'default' : 'destructive'} className={cn(!inUse && 'bg-green-600')}>
+                                 <Badge variant="secondary" className="bg-primary/10 text-primary">Dine-In</Badge>
+                                 <Badge variant={!inUse ? 'default' : 'destructive'} className={cn(!inUse ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500', "text-primary-foreground")}>
                                     {!inUse ? 'Available' : 'In Use'}
                                  </Badge>
                                </div>
@@ -81,7 +83,7 @@ const OrderTypeSelection = ({ onSelectOrderType, onSelectTable, tables, isLoadin
 
 const StewardSelection = ({ onSelectSteward, onBack, stewards, isLoading }: { onSelectSteward: (steward: User) => void; onBack: () => void; stewards: User[], isLoading: boolean; }) => {
     
-    const noSteward: User = { id: '0', user_name: 'No Steward', role: 'System' };
+    const noSteward: User = { id: '0', user_name: 'No Steward', role: 'System', first_name: 'No', last_name: 'Steward', customer_id: '0' };
     
     return (
         <div className="py-4">
@@ -178,23 +180,31 @@ export function NewOrderDialog({ isOpen, onOpenChange, activeOrders = [], create
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl sm:min-h-[70vh]">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">Create New Order</DialogTitle>
-          <DialogDescription>Select an order type or choose a table for dine-in.</DialogDescription>
+      <DialogContent className="max-w-5xl p-0 flex flex-col h-[90vh]">
+        <DialogHeader className="p-6 border-b shrink-0">
+          <PayshiaPosLogo />
+          <DialogDescription className="text-muted-foreground pt-2">
+            Select an order type or choose a table for dine-in.
+          </DialogDescription>
         </DialogHeader>
-        {step === 'type' ? (
-          <OrderTypeSelection 
-            onSelectOrderType={(type) => createNewOrder(type)} 
-            onSelectTable={handleSelectTable} 
-            tables={tables} 
-            isLoadingTables={isLoadingTables} 
-            activeOrders={activeOrders} 
-            heldOrders={heldOrders}
-          />
-        ) : (
-          <StewardSelection onBack={handleBack} onSelectSteward={handleSelectSteward} stewards={stewards} isLoading={isLoadingStewards} />
-        )}
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-6">
+                {step === 'type' ? (
+                <OrderTypeSelection 
+                    onSelectOrderType={(type) => createNewOrder(type)} 
+                    onSelectTable={handleSelectTable} 
+                    tables={tables} 
+                    isLoadingTables={isLoadingTables} 
+                    activeOrders={activeOrders} 
+                    heldOrders={heldOrders}
+                />
+                ) : (
+                <StewardSelection onBack={handleBack} onSelectSteward={handleSelectSteward} stewards={stewards} isLoading={isLoadingStewards} />
+                )}
+            </div>
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
