@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -10,13 +9,12 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { RefreshCcw, X, Truck, Loader2, Printer } from 'lucide-react';
+import { RefreshCcw, X, Loader2, Printer } from 'lucide-react';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { format, isToday } from 'date-fns';
 import { useCurrency } from '@/components/currency-provider';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
 import { fetcher } from '@/lib/api';
 import { PayshiaPosLogo } from '../payshia-pos-logo';
 
