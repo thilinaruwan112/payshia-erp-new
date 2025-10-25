@@ -9,12 +9,13 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { RefreshCcw, X, Loader2, Printer } from 'lucide-react';
+import { RefreshCcw, X, Truck, Loader2, Printer } from 'lucide-react';
 import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { format, isToday } from 'date-fns';
 import { useCurrency } from '@/components/currency-provider';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import { fetcher } from '@/lib/api';
 import { PayshiaPosLogo } from '../payshia-pos-logo';
 
@@ -73,7 +74,7 @@ export function TodaySalesDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-0 flex flex-col max-h-[90vh]">
         <DialogHeader className="p-6 border-b shrink-0">
-          <PayshiaPosLogo />          
+          <PayshiaPosLogo />
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden flex flex-col">

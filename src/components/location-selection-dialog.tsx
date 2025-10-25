@@ -12,21 +12,13 @@ import {
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Building, Truck } from 'lucide-react';
+import { PayshiaPosLogo } from './pos/payshia-pos-logo';
 
 interface LocationSelectionDialogProps {
   open: boolean;
   locations: Location[];
   onSelectLocation: (location: Location) => void;
 }
-
-const PayshiaPosLogo = () => (
-  <div className="flex items-center gap-2">
-    <Truck className="h-8 w-8 text-primary transform -scale-x-100" />
-    <span className="text-3xl font-bold tracking-tight">
-      PAYSHIA <span className="text-primary">POS</span>
-    </span>
-  </div>
-);
 
 export function LocationSelectionDialog({
   open,
