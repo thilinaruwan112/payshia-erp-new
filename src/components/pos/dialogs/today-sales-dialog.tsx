@@ -121,7 +121,7 @@ export function TodaySalesDialog({
                   </div>
                   <Button 
                     size="icon" 
-                    variant="ghost"
+                    variant="ghost" 
                     onClick={() => handleReprint(inv.invoice_number, inv.company_id)}
                   >
                     <Printer className="h-4 w-4" />

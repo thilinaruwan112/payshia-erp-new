@@ -35,10 +35,10 @@ export function LocationSelectionDialog({
 }: LocationSelectionDialogProps) {
   return (
     <Dialog open={open}>
-      <DialogContent className="max-w-3xl p-0 bg-black text-white flex flex-col h-auto max-h-[90vh]" hideCloseButton>
-        <DialogHeader className="p-6 border-b border-gray-800 shrink-0">
+      <DialogContent className="max-w-3xl p-0 flex flex-col h-auto max-h-[90vh]" hideCloseButton>
+        <DialogHeader className="p-6 border-b shrink-0">
             <PayshiaPosLogo />
-             <DialogDescription className="text-gray-400 pt-2">
+             <DialogDescription className="text-muted-foreground pt-2">
                 Choose the location you are currently operating from to begin sales.
             </DialogDescription>
         </DialogHeader>
@@ -48,15 +48,15 @@ export function LocationSelectionDialog({
               {locations.map((loc) => (
                 <div
                   key={loc.location_id}
-                  className="bg-gray-900 p-6 rounded-lg border border-gray-800 hover:border-primary transition-all cursor-pointer flex flex-col text-center items-center gap-4"
+                  className="bg-card p-6 rounded-lg border hover:border-primary transition-all cursor-pointer flex flex-col text-center items-center gap-4"
                   onClick={() => onSelectLocation(loc)}
                 >
-                    <div className="p-4 bg-gray-800 rounded-full border border-gray-700">
+                    <div className="p-4 bg-muted rounded-full border">
                         <Building className="h-8 w-8 text-primary" />
                     </div>
                     <div className="flex-grow">
                         <p className="font-semibold text-lg">{loc.location_name}</p>
-                        <p className="text-sm text-gray-400">{loc.city}</p>
+                        <p className="text-sm text-muted-foreground">{loc.city}</p>
                     </div>
                 </div>
               ))}
