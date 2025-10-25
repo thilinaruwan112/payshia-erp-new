@@ -27,7 +27,7 @@ export function LocationSelectionDialog({
 }: LocationSelectionDialogProps) {
   return (
     <Dialog open={open}>
-      <DialogContent className="max-w-3xl p-0 flex flex-col h-auto max-h-[90vh]" hideCloseButton>
+      <DialogContent className="max-w-3xl p-0 flex flex-col h-auto max-h-[100vh]" hideCloseButton>
         <DialogHeader className="p-6 border-b shrink-0">
             <PayshiaPosLogo />
              <DialogDescription className="text-muted-foreground pt-2">

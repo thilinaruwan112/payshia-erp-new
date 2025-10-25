@@ -149,7 +149,7 @@ export function RefundDialog({ isOpen, onOpenChange, customers }: RefundDialogPr
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl p-0 flex flex-col h-[90vh]">
+      <DialogContent className="max-w-4xl p-0 flex flex-col max-h-[100vh]">
         <DialogHeader className="p-6 border-b shrink-0 flex-row items-center justify-between">
             <div className="flex items-center gap-4">
                 {selectedReturn && <Button variant="ghost" onClick={() => setSelectedReturn(null)}><ArrowLeft className="h-5 w-5 mr-2" /> Back</Button>}
