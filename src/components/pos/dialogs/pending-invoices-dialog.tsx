@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Invoice, User } from '@/lib/types';
 import {
   Dialog,
@@ -75,9 +76,8 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
       setCurrentCashier({
         id: userId,
         customer_id: userId,
-        name: userName,
+        user_name: userName,
         role: 'Cashier',
-        avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`,
       });
     }
   }, []);
@@ -137,7 +137,7 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
     const payload = {
         type: paymentMethod === 'Cash' ? '0' : paymentMethod === 'Card' ? '1' : '2',
         is_active: 1, date: format(new Date(), 'yyyy-MM-dd'),
-        amount: parseFloat(paymentAmount), created_by: parseInt(currentCashier.customer_id, 10),
+        amount: parseFloat(paymentAmount), created_by: parseInt(currentCashier.id, 10),
         ref_id: selectedInvoice.invoice_number, location_id: parseInt(currentLocation.location_id, 10),
         customer_id: parseInt(selectedInvoice.customer_code, 10), today_invoice: selectedInvoice.invoice_number,
         company_id: company_id,
@@ -166,7 +166,7 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 flex flex-col max-h-[90vh]">
+      <DialogContent className="max-w-md p-0 flex flex-col max-h-[100vh]">
         <DialogHeader className="p-6 border-b shrink-0">
           <PayshiaPosLogo />
         </DialogHeader>
@@ -219,7 +219,7 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
                     </Card>
                   )}
                 </div>
-            </ScrollArea>
+           </ScrollArea>
         </div>
         <DialogFooter className="p-6 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
