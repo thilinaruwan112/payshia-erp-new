@@ -72,6 +72,12 @@ export function ReturnDialog({
   isSubmittingReturn,
   handleProcessReturn,
 }: ReturnDialogProps) {
+
+  const customerOptions = customers.map(c => ({
+    value: c.customer_id,
+    label: `${c.customer_first_name} ${c.customer_last_name}`,
+  }));
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl p-0 flex flex-col max-h-[100vh]">
@@ -101,9 +107,9 @@ export function ReturnDialog({
                         <SelectValue placeholder="Select a customer..." />
                     </SelectTrigger>
                     <SelectContent>
-                        {customers.map((c) => (
-                        <SelectItem key={c.customer_id} value={c.customer_id}>
-                            {c.name}
+                        {customerOptions.map((c) => (
+                        <SelectItem key={c.value} value={c.value}>
+                            {c.label}
                         </SelectItem>
                         ))}
                     </SelectContent>
