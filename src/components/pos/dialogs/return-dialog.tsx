@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { ProductPickerDialog } from '@/components/product-picker-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { PayshiaPosLogo } from '../payshia-pos-logo';
 
 export type ReturnItem = {
     id: string;
@@ -73,159 +74,162 @@ export function ReturnDialog({
 }: ReturnDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl flex flex-col h-[90vh]">
-        <DialogHeader>
-          <DialogTitle>Process a Return</DialogTitle>
+      <DialogContent className="max-w-4xl p-0 flex flex-col max-h-[90vh]">
+        <DialogHeader className="p-6 border-b shrink-0">
+            <PayshiaPosLogo />
         </DialogHeader>
-        <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full pr-6">
-            <div className="space-y-4">
-              <RadioGroup value={returnType} onValueChange={(v) => setReturnType(v as 'invoice' | 'manual')} className="flex gap-4">
-                <div>
-                  <RadioGroupItem value="invoice" id="r-invoice" />
-                  <Label htmlFor="r-invoice" className="ml-2">Return with Invoice</Label>
-                </div>
-                <div>
-                  <RadioGroupItem value="manual" id="r-manual" />
-                  <Label htmlFor="r-manual" className="ml-2">Manual Return</Label>
-                </div>
-              </RadioGroup>
-
-              {!selectedCustomer ? (
-                <Select onValueChange={setSelectedCustomer}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a customer..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((c) => (
-                      <SelectItem key={c.customer_id} value={c.customer_id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <>
-                  <div className="flex justify-between items-center bg-muted p-2 rounded-md">
-                    <p>
-                      Customer: <span className="font-semibold">{customers.find((c) => c.customer_id === selectedCustomer)?.name}</span>
-                    </p>
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedCustomer(null)}>
-                      Change
-                    </Button>
-                  </div>
-
-                  {returnType === 'invoice' ? (
-                    <Select
-                      onValueChange={(invNumber) => handleInvoiceSelect(pastInvoices.find((i) => i.invoice_number === invNumber)!)}
-                      disabled={isLoadingPastInvoices}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Invoice to Return From" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {pastInvoices.map((inv) => (
-                          <SelectItem key={inv.id} value={inv.invoice_number}>
-                            {inv.invoice_number}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <ProductPickerDialog
-                      onProductsSelected={(products) => {
-                        const newItems = products.map((p) => ({
-                          id: p.variant.id,
-                          name: p.variantName,
-                          unit: p.stock_unit || 'Nos',
-                          rate: p.price as number,
-                          quantity: 1,
-                          originalQuantity: 999, // For manual returns, no original limit
-                          amount: p.price as number,
-                          reason: '',
-                          productId: p.id,
-                          productVariantId: p.variant.id,
-                        }));
-                        setReturnItems(newItems);
-                      }}
-                    >
-                      <Button variant="outline">Add Products to Return</Button>
-                    </ProductPickerDialog>
-                  )}
-
-                  <Textarea
-                    placeholder="General Reason for Return (Optional)"
-                    value={returnReason}
-                    onChange={(e) => setReturnReason(e.target.value)}
-                  />
-                  <div className="border rounded-md">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Item</TableHead>
-                          <TableHead>Return Qty</TableHead>
-                          <TableHead>Reason</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {isLoadingPastInvoices ? (
-                          <TableRow>
-                            <TableCell colSpan={3} className="text-center">
-                              <Loader2 className="mx-auto h-6 w-6 animate-spin" />
-                            </TableCell>
-                          </TableRow>
-                        ) : returnItems.length > 0 ? (
-                          returnItems.map((item, index) => (
-                            <TableRow key={index}>
-                              <TableCell>{item.name}</TableCell>
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  value={item.quantity}
-                                  onChange={(e) => {
-                                    const newQty = parseInt(e.target.value) || 0;
-                                    setReturnItems((prev) =>
-                                      prev.map((p, i) =>
-                                        i === index
-                                          ? { ...p, quantity: Math.min(newQty, item.originalQuantity), amount: Math.min(newQty, item.originalQuantity) * p.rate }
-                                          : p
-                                      )
-                                    )
-                                  }}
-                                  className="w-24"
-                                  max={item.originalQuantity}
-                                />
-                                <p className="text-xs text-muted-foreground">Max: {item.originalQuantity}</p>
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={item.reason}
-                                  onChange={(e) =>
-                                    setReturnItems((prev) =>
-                                      prev.map((p, i) => (i === index ? { ...p, reason: e.target.value } : p))
-                                    )
-                                  }
-                                  placeholder="Item-specific reason"
-                                />
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={3} className="text-center text-muted-foreground">
-                              Select an invoice or add products manually.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </>
-              )}
+        <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="p-6 pb-4 shrink-0">
+                 <h2 className="text-xl font-semibold">Process a Return</h2>
             </div>
-          </ScrollArea>
+            <ScrollArea className="flex-1 px-6">
+                <div className="space-y-4 py-4">
+                <RadioGroup value={returnType} onValueChange={(v) => setReturnType(v as 'invoice' | 'manual')} className="flex gap-4">
+                    <div>
+                    <RadioGroupItem value="invoice" id="r-invoice" />
+                    <Label htmlFor="r-invoice" className="ml-2">Return with Invoice</Label>
+                    </div>
+                    <div>
+                    <RadioGroupItem value="manual" id="r-manual" />
+                    <Label htmlFor="r-manual" className="ml-2">Manual Return</Label>
+                    </div>
+                </RadioGroup>
+
+                {!selectedCustomer ? (
+                    <Select onValueChange={setSelectedCustomer}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select a customer..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {customers.map((c) => (
+                        <SelectItem key={c.customer_id} value={c.customer_id}>
+                            {c.name}
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                ) : (
+                    <>
+                    <div className="flex justify-between items-center bg-muted p-2 rounded-md">
+                        <p>
+                        Customer: <span className="font-semibold">{customers.find((c) => c.customer_id === selectedCustomer)?.name}</span>
+                        </p>
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedCustomer(null)}>
+                        Change
+                        </Button>
+                    </div>
+
+                    {returnType === 'invoice' ? (
+                        <Select
+                        onValueChange={(invNumber) => handleInvoiceSelect(pastInvoices.find((i) => i.invoice_number === invNumber)!)}
+                        disabled={isLoadingPastInvoices}
+                        >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select Invoice to Return From" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {pastInvoices.map((inv) => (
+                            <SelectItem key={inv.id} value={inv.invoice_number}>
+                                {inv.invoice_number}
+                            </SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                    ) : (
+                        <ProductPickerDialog
+                        onProductsSelected={(products) => {
+                            const newItems = products.map((p) => ({
+                            id: p.variant.id,
+                            name: p.variantName,
+                            unit: p.stock_unit || 'Nos',
+                            rate: p.price as number,
+                            quantity: 1,
+                            originalQuantity: 999, // For manual returns, no original limit
+                            amount: p.price as number,
+                            reason: '',
+                            productId: p.id,
+                            productVariantId: p.variant.id,
+                            }));
+                            setReturnItems(newItems);
+                        }}
+                        >
+                        <Button variant="outline">Add Products to Return</Button>
+                        </ProductPickerDialog>
+                    )}
+
+                    <Textarea
+                        placeholder="General Reason for Return (Optional)"
+                        value={returnReason}
+                        onChange={(e) => setReturnReason(e.target.value)}
+                    />
+                    <div className="border rounded-md">
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Item</TableHead>
+                            <TableHead>Return Qty</TableHead>
+                            <TableHead>Reason</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoadingPastInvoices ? (
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-center">
+                                <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                                </TableCell>
+                            </TableRow>
+                            ) : returnItems.length > 0 ? (
+                            returnItems.map((item, index) => (
+                                <TableRow key={index}>
+                                <TableCell>{item.name}</TableCell>
+                                <TableCell>
+                                    <Input
+                                    type="number"
+                                    value={item.quantity}
+                                    onChange={(e) => {
+                                        const newQty = parseInt(e.target.value) || 0;
+                                        setReturnItems((prev) =>
+                                        prev.map((p, i) =>
+                                            i === index
+                                            ? { ...p, quantity: Math.min(newQty, item.originalQuantity), amount: Math.min(newQty, item.originalQuantity) * p.rate }
+                                            : p
+                                        )
+                                        )
+                                    }}
+                                    className="w-24"
+                                    max={item.originalQuantity}
+                                    />
+                                    <p className="text-xs text-muted-foreground">Max: {item.originalQuantity}</p>
+                                </TableCell>
+                                <TableCell>
+                                    <Input
+                                    value={item.reason}
+                                    onChange={(e) =>
+                                        setReturnItems((prev) =>
+                                        prev.map((p, i) => (i === index ? { ...p, reason: e.target.value } : p))
+                                        )
+                                    }
+                                    placeholder="Item-specific reason"
+                                    />
+                                </TableCell>
+                                </TableRow>
+                            ))
+                            ) : (
+                            <TableRow>
+                                <TableCell colSpan={3} className="text-center text-muted-foreground">
+                                Select an invoice or add products manually.
+                                </TableCell>
+                            </TableRow>
+                            )}
+                        </TableBody>
+                        </Table>
+                    </div>
+                    </>
+                )}
+                </div>
+           </ScrollArea>
         </div>
-        <DialogFooter className="border-t pt-4">
+        <DialogFooter className="p-6 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

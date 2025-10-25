@@ -9,20 +9,18 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
-import { Plus, X, Loader2 } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { useLocation } from '../location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { useCurrency } from '../currency-provider';
 import { Badge } from '../ui/badge';
-import { ScrollArea } from '../ui/scroll-area';
 import { fetcher } from '@/lib/api';
 
 interface AddToCartDialogProps {

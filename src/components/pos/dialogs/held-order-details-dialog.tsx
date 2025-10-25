@@ -27,6 +27,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Separator } from '@/components/ui/separator';
 import { useLocation } from '@/components/location-provider';
 import { fetcher } from '@/lib/api';
+import { PayshiaPosLogo } from '../payshia-pos-logo';
 
 interface HeldOrderDetailsDialogProps {
   isOpen: boolean;
@@ -67,12 +68,12 @@ export function HeldOrderDetailsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl flex flex-col h-[80vh]">
-        <DialogHeader>
-          <DialogTitle>Held Orders</DialogTitle>
-          <DialogDescription>
-            Select a held order to continue.
-          </DialogDescription>
+      <DialogContent className="max-w-3xl p-0 flex flex-col h-[80vh]">
+        <DialogHeader className="p-6 border-b shrink-0">
+            <PayshiaPosLogo />
+             <DialogDescription className="text-muted-foreground pt-2">
+                Select a held order to continue.
+            </DialogDescription>
         </DialogHeader>
         <div className="flex-1 min-h-0">
           <ScrollArea className="h-full">
@@ -118,7 +119,7 @@ export function HeldOrderDetailsDialog({
                     </TableBody>
                   </Table>
                   {/* Mobile Card View */}
-                  <div className="space-y-4 md:hidden p-1">
+                  <div className="space-y-4 md:hidden p-4">
                     {heldOrders.map((order) => (
                         <Card key={order.id}>
                           <CardHeader>
@@ -156,7 +157,7 @@ export function HeldOrderDetailsDialog({
             </div>
           </ScrollArea>
         </div>
-        <DialogFooter className="pt-4 border-t">
+        <DialogFooter className="p-6 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
@@ -165,5 +166,3 @@ export function HeldOrderDetailsDialog({
     </Dialog>
   );
 }
-
-    

@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 interface ProductWithApiResponse {
     product: Product;
-    variants: { variant: ProductVariant }[];
+    variants: ProductVariant[];
 }
 
 const adjustmentItemSchema = z.object({
@@ -81,7 +81,7 @@ export function StockAdjustmentForm() {
       if (!company_id) return;
       setIsLoading(true);
       try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/goods/filter/item-type?item_type=raw,both&company_id=${company_id}`);
         if (!response.ok) throw new Error("Failed to fetch products");
         const data = await response.json();
         setProducts(data.products || []);
@@ -97,10 +97,10 @@ export function StockAdjustmentForm() {
   const allSkus = useMemo(() => {
     return products.flatMap(p =>
       (p.variants || []).map(v => ({
-        label: `${p.product.name} (${v.variant.sku})`,
-        value: v.variant.id,
+        label: `${p.product.name} (${v.sku})`,
+        value: v.id,
         productId: p.product.id,
-        costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
+        costPrice: v.cost_price ? parseFloat(String(v.cost_price)) : 0,
       }))
     );
   }, [products]);
@@ -202,7 +202,7 @@ export function StockAdjustmentForm() {
 
 
     try {
-        const response = await fetcher(`https://qa-server-erp.payshia.com/stock-adjesment-main`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-adjesment-main`, {
             method: 'POST',
             body: JSON.stringify(payload),
         });
@@ -468,5 +468,3 @@ export function StockAdjustmentForm() {
     </Form>
   );
 }
-
-    
