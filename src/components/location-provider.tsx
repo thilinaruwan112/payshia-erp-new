@@ -19,7 +19,7 @@ interface LocationContextType {
 const LocationContext = createContext<LocationContextType | undefined>(undefined);
 
 export function LocationProvider({ children }: { children: React.ReactNode }) {
-  const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
+  const [currentLocation, setCurrentLocationState] = useState<Location | null>(null);
   const [availableLocations, setAvailableLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [company_id, setCompanyId] = useState<number | null>(null);
@@ -32,20 +32,25 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     if (storedCompanyId) {
       setCompanyId(parseInt(storedCompanyId, 10));
     } else {
-        setIsLoading(false); // No company ID, so no locations to fetch
+      setIsLoading(false);
     }
   }, []);
 
+  const handleSetCurrentLocation = (location: Location) => {
+    setCurrentLocationState(location);
+    sessionStorage.setItem('currentLocation', JSON.stringify(location));
+  };
+  
   useEffect(() => {
     const storedLocation = sessionStorage.getItem('currentLocation');
     if (storedLocation) {
         try {
-            setCurrentLocation(JSON.parse(storedLocation));
+            setCurrentLocationState(JSON.parse(storedLocation));
         } catch (e) {
             console.error("Failed to parse stored location", e);
         }
     }
-  }, [])
+  }, []);
 
   useEffect(() => {
     async function fetchLocations() {
@@ -70,13 +75,12 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         if (storedLocation) {
             const parsedLocation: Location = JSON.parse(storedLocation);
              if (companyLocations.some(l => l.location_id === parsedLocation.location_id)) {
-                setCurrentLocation(parsedLocation);
+                setCurrentLocationState(parsedLocation);
             } else {
                 sessionStorage.removeItem('currentLocation');
-                setCurrentLocation(null);
+                setCurrentLocationState(null);
             }
         } else if (companyLocations.length === 1) {
-            // If only one location, set it automatically
             handleSetCurrentLocation(companyLocations[0]);
         }
 
@@ -93,10 +97,17 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     fetchLocations();
   }, [toast, company_id]);
 
-  const handleSetCurrentLocation = (location: Location) => {
-    setCurrentLocation(location);
-    sessionStorage.setItem('currentLocation', JSON.stringify(location));
-  };
+  useEffect(() => {
+    if (isPos && currentLocation && currentLocation.pos_status !== '1') {
+      toast({
+        title: 'Location Not POS-Enabled',
+        description: `"${currentLocation.location_name}" is not a POS location. Please select a valid one.`,
+        variant: 'destructive',
+      });
+      sessionStorage.removeItem('currentLocation');
+      setCurrentLocationState(null);
+    }
+  }, [isPos, currentLocation, toast]);
 
 
   const value = useMemo(() => ({
@@ -110,15 +121,17 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   const posEnabledLocations = availableLocations.filter(loc => loc.pos_status === "1");
   const shouldShowDialog = !isLoading && availableLocations.length > 0 && !currentLocation;
 
-
   return (
     <LocationContext.Provider value={value as LocationContextType}>
-        <LocationSelectionDialog 
-            open={shouldShowDialog}
-            locations={isPos ? posEnabledLocations : availableLocations}
-            onSelectLocation={handleSetCurrentLocation}
-        />
-        {!shouldShowDialog && children}
+        {shouldShowDialog ? (
+            <LocationSelectionDialog 
+                open={shouldShowDialog}
+                locations={isPos ? posEnabledLocations : availableLocations}
+                onSelectLocation={handleSetCurrentLocation}
+            />
+        ) : (
+            children
+        )}
     </LocationContext.Provider>
   );
 }
