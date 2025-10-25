@@ -179,7 +179,7 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
                 <div className="space-y-4 py-4">
                   <Select onValueChange={setSelectedCustomer} value={selectedCustomer || ''}>
                     <SelectTrigger><SelectValue placeholder="Select a customer..." /></SelectTrigger>
-                    <SelectContent>{customers.map((c) => <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>)}</SelectContent>
+                    <SelectContent>{customers.map((c) => <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>)}</SelectContent>
                   </Select>
                   {isLoadingPastInvoices ? <Loader2 className="mx-auto h-6 w-6 animate-spin" /> : pastInvoices.length > 0 ? (
                     <RadioGroup onValueChange={(invoiceNumber) => handleInvoiceSelect(pastInvoices.find((i) => i.invoice_number === invoiceNumber)!)} value={selectedInvoice?.invoice_number}>
