@@ -130,6 +130,8 @@ export function TodaySalesDialog({
             <span>{currencySymbol} {totalSales.toFixed(2)}</span>
           </div>
         </div>
+
+        
       </DialogContent>
     </Dialog>
   );
