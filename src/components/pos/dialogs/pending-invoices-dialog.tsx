@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -7,7 +6,6 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle,
   DialogFooter,
   DialogDescription
 } from '@/components/ui/dialog';
@@ -23,6 +21,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/components/location-provider';
 import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { PayshiaPosLogo } from '../payshia-pos-logo';
 
 interface BalanceDetails {
     grand_total: string;
@@ -166,55 +166,62 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Pay Pending Invoices</DialogTitle>
-          <DialogDescription>Settle outstanding balances for a customer.</DialogDescription>
+      <DialogContent className="max-w-md p-0 flex flex-col max-h-[90vh]">
+        <DialogHeader className="p-6 border-b shrink-0">
+          <PayshiaPosLogo />
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <Select onValueChange={setSelectedCustomer} value={selectedCustomer || ''}>
-            <SelectTrigger><SelectValue placeholder="Select a customer..." /></SelectTrigger>
-            <SelectContent>{customers.map((c) => <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>)}</SelectContent>
-          </Select>
-          {isLoadingPastInvoices ? <Loader2 className="mx-auto h-6 w-6 animate-spin" /> : pastInvoices.length > 0 ? (
-            <RadioGroup onValueChange={(invoiceNumber) => handleInvoiceSelect(pastInvoices.find((i) => i.invoice_number === invoiceNumber)!)} value={selectedInvoice?.invoice_number}>
-              {pastInvoices.map((invoice) => (
-                <div key={invoice.id} className="flex items-center space-x-2">
-                  <RadioGroupItem value={invoice.invoice_number} id={invoice.id} />
-                  <Label htmlFor={invoice.id} className="flex justify-between w-full">
-                    <span>{invoice.invoice_number} ({format(new Date(invoice.invoice_date), 'dd/MM/yy')})</span>
-                    <span>{currencySymbol}{parseFloat(invoice.grand_total).toFixed(2)}</span>
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          ) : selectedCustomer && <p className="text-center text-muted-foreground text-sm">No pending invoices for this customer.</p>}
-
-          {selectedInvoice && (
-            <Card>
-              <CardContent className="pt-4 space-y-4">
-                {isLoadingBalance ? <Loader2 className="mx-auto h-6 w-6 animate-spin" /> : balanceDetails && (
-                  <div className="text-center bg-muted p-4 rounded-md">
-                    <p className="text-muted-foreground">Balance Due</p>
-                    <p className="text-3xl font-bold">{currencySymbol}{balanceDetails.balance.toFixed(2)}</p>
-                  </div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor='payment-method'>Payment Method</Label>
-                  <Select onValueChange={setPaymentMethod} defaultValue={paymentMethod}>
-                    <SelectTrigger id='payment-method'><SelectValue placeholder="Payment Method" /></SelectTrigger>
-                    <SelectContent><SelectItem value="Cash">Cash</SelectItem><SelectItem value="Card">Card</SelectItem></SelectContent>
+        <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="p-6 pb-4 shrink-0">
+                 <h2 className="text-xl font-semibold">Pay Pending Invoices</h2>
+                 <p className="text-muted-foreground">Settle outstanding balances for a customer.</p>
+            </div>
+            <ScrollArea className="flex-1 px-6">
+                <div className="space-y-4 py-4">
+                  <Select onValueChange={setSelectedCustomer} value={selectedCustomer || ''}>
+                    <SelectTrigger><SelectValue placeholder="Select a customer..." /></SelectTrigger>
+                    <SelectContent>{customers.map((c) => <SelectItem key={c.customer_id} value={c.customer_id}>{c.name}</SelectItem>)}</SelectContent>
                   </Select>
+                  {isLoadingPastInvoices ? <Loader2 className="mx-auto h-6 w-6 animate-spin" /> : pastInvoices.length > 0 ? (
+                    <RadioGroup onValueChange={(invoiceNumber) => handleInvoiceSelect(pastInvoices.find((i) => i.invoice_number === invoiceNumber)!)} value={selectedInvoice?.invoice_number}>
+                      {pastInvoices.map((invoice) => (
+                        <div key={invoice.id} className="flex items-center space-x-2">
+                          <RadioGroupItem value={invoice.invoice_number} id={invoice.id} />
+                          <Label htmlFor={invoice.id} className="flex justify-between w-full">
+                            <span>{invoice.invoice_number} ({format(new Date(invoice.invoice_date), 'dd/MM/yy')})</span>
+                            <span>{currencySymbol}{parseFloat(invoice.grand_total).toFixed(2)}</span>
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  ) : selectedCustomer && <p className="text-center text-muted-foreground text-sm">No pending invoices for this customer.</p>}
+
+                  {selectedInvoice && (
+                    <Card>
+                      <CardContent className="pt-4 space-y-4">
+                        {isLoadingBalance ? <Loader2 className="mx-auto h-6 w-6 animate-spin" /> : balanceDetails && (
+                          <div className="text-center bg-muted p-4 rounded-md">
+                            <p className="text-muted-foreground">Balance Due</p>
+                            <p className="text-3xl font-bold">{currencySymbol}{balanceDetails.balance.toFixed(2)}</p>
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          <Label htmlFor='payment-method'>Payment Method</Label>
+                          <Select onValueChange={setPaymentMethod} defaultValue={paymentMethod}>
+                            <SelectTrigger id='payment-method'><SelectValue placeholder="Payment Method" /></SelectTrigger>
+                            <SelectContent><SelectItem value="Cash">Cash</SelectItem><SelectItem value="Card">Card</SelectItem></SelectContent>
+                          </Select>
+                        </div>
+                         <div className="space-y-2">
+                          <Label htmlFor='payment-amount'>Amount</Label>
+                          <Input id='payment-amount' placeholder="Amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} />
+                         </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
-                 <div className="space-y-2">
-                  <Label htmlFor='payment-amount'>Amount</Label>
-                  <Input id='payment-amount' placeholder="Amount" type="number" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} />
-                 </div>
-              </CardContent>
-            </Card>
-          )}
+            </ScrollArea>
         </div>
-        <DialogFooter>
+        <DialogFooter className="p-6 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleCreateReceipt} disabled={isLoadingBalance || !selectedInvoice || isSubmittingPayment}>
             {isSubmittingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -225,5 +232,3 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
     </Dialog>
   );
 }
-
-    
