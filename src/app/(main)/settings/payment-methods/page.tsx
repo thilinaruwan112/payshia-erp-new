@@ -126,6 +126,7 @@ export default function PaymentMethodsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[100px]">ID</TableHead>
                   <TableHead>Method Name</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -136,6 +137,7 @@ export default function PaymentMethodsPage() {
                 {isLoading ? (
                   Array.from({ length: 3 }).map((_, i) => (
                     <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-12" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                       <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
                     </TableRow>
@@ -143,6 +145,7 @@ export default function PaymentMethodsPage() {
                 ) : (
                   methods.map((method) => (
                     <TableRow key={method.id}>
+                      <TableCell className="font-mono">{method.id}</TableCell>
                       <TableCell className="font-medium">{method.method}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -172,7 +175,7 @@ export default function PaymentMethodsPage() {
                 )}
                 {!isLoading && methods.length === 0 && (
                     <TableRow>
-                        <TableCell colSpan={2} className="h-24 text-center">
+                        <TableCell colSpan={3} className="h-24 text-center">
                             No payment methods found.
                         </TableCell>
                     </TableRow>
