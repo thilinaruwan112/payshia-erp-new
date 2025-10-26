@@ -163,6 +163,7 @@ function GuestReceiptContent() {
       <div id="receipt-print-area" ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
           {logoUrl && <Image src={logoUrl} alt="logo" width={60} height={60} className="mx-auto my-1" />}
+          <p>{location?.location_name}</p>
           <p>{location?.address_line1}, {location?.city}</p>
           <p>Tel: {location?.phone_1}</p>
           <div className="my-2 border-t-2 border-dashed border-black"></div>
@@ -190,9 +191,9 @@ function GuestReceiptContent() {
               </tr>
           </thead>
           <tbody>
-            {invoice.items?.map((item, index) => (
+            {(invoice.items || []).map((item, index) => (
               <tr key={index}>
-                <td className="py-1 align-top w-[50%]">{item.productName}</td>
+                <td className="py-1 align-top w-[50%]">{(item as any).product_print_name || item.productName}</td>
                 <td className="py-1 align-top text-center">{parseFloat(String(item.quantity))}</td>
                 <td className="py-1 align-top text-right">{parseFloat(String(item.item_price)).toFixed(2)}</td>
                 <td className="py-1 align-top text-right">{(parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))).toFixed(2)}</td>
@@ -234,7 +235,6 @@ export default function GuestReceiptPage() {
     return (
         <Suspense fallback={<div>Loading...</div>}>
             <GuestReceiptContent />
-           
         </Suspense>
     )
 }
