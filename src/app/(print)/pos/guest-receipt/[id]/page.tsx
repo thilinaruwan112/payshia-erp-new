@@ -129,9 +129,7 @@ function GuestReceiptContent() {
 
     // Optional: Clean up the style element after printing
     // The timeout is to ensure the print dialog has had time to process the styles
-    setTimeout(() => {
-        document.head.removeChild(style);
-    }, 1000);
+    
   };
 
   useEffect(() => {
@@ -166,7 +164,7 @@ function GuestReceiptContent() {
   
   return (
     <div className="flex flex-col items-center">
-      <div id="receipt-print-area" ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
+      <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
           {logoUrl && <Image src={logoUrl} alt="logo" width={60} height={60} className="mx-auto my-1" />}
           <p>{location?.location_name}</p>
