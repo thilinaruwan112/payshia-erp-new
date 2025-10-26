@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
+import { Button } from '@/components/ui/button';
 
 interface Company {
     id: string;
@@ -89,17 +90,15 @@ function GuestReceiptContent() {
     style.innerHTML = `
         @media print {
             @page {
-                size: 80mm ${heightInMm + 5}mm; /* Add a small margin */
+                size: 80mm ${heightInMm}mm; /* Set the calculated height */
                 margin: 0;
             }
         }
     `;
     document.head.appendChild(style);
 
-    setTimeout(() => {
-        window.print();
-        document.head.removeChild(style); // Clean up the style tag after printing
-    }, 500);
+  
+    window.print();
   };
 
   useEffect(() => {
@@ -131,70 +130,70 @@ function GuestReceiptContent() {
   const totalDiscount = totals.itemDiscounts + totals.discount;
   
   return (
-    <>
-    <div id="receipt-print-area" ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
-      <div className="text-center mb-2">
-        <h1 className="font-bold text-xl">GUEST RECEIPT</h1>
-        <p className="text-xs">*** This is not a final bill ***</p>
-      </div>
-      
-      <div className="flex justify-between text-xs">
-        <p>Order: {orderName}</p>
-        <p>{format(new Date(date), "dd/MM/yy HH:mm")}</p>
-      </div>
-       <div className="flex justify-between text-xs">
-        <p>Cashier: {cashierName}</p>
-      </div>
-
-      <div className="my-2 border-t-2 border-dashed border-black"></div>
-
-      <table className="w-full text-xs">
-        <thead>
-            <tr>
-                <th className='text-left'>ITEM</th>
-                <th className='text-center'>QTY</th>
-                <th className='text-right'>PRICE</th>
-                <th className='text-right'>TOTAL</th>
-            </tr>
-        </thead>
-        <tbody>
-          {items?.map((item: any, index: number) => (
-            <tr key={index}>
-              <td className="py-1 align-top w-[50%]">{item.name}</td>
-              <td className="py-1 align-top text-center">{item.quantity}</td>
-              <td className="py-1 align-top text-right">{item.price.toFixed(2)}</td>
-              <td className="py-1 align-top text-right">{item.total.toFixed(2)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-       <div className="my-2 border-t-2 border-dashed border-black"></div>
-       <div className="space-y-1 text-xs">
-        <div className="flex justify-between">
-          <span>Subtotal:</span>
-          <span>{totals.subtotal.toFixed(2)}</span>
+    <div className="flex flex-col items-center">
+      <div id="receipt-print-area" ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
+        <div className="text-center mb-2">
+          <h1 className="font-bold text-xl">GUEST RECEIPT</h1>
+          <p className="text-xs">*** This is not a final bill ***</p>
         </div>
-        <div className="flex justify-between">
-          <span>Discount:</span>
-          <span>-{totalDiscount.toFixed(2)}</span>
+        
+        <div className="flex justify-between text-xs">
+          <p>Order: {orderName}</p>
+          <p>{format(new Date(date), "dd/MM/yy HH:mm")}</p>
         </div>
-         <div className="flex justify-between">
-          <span>Service Charge:</span>
-          <span>{totals.serviceCharge.toFixed(2)}</span>
+        <div className="flex justify-between text-xs">
+          <p>Cashier: {cashierName}</p>
         </div>
-        <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
-          <span>TOTAL:</span>
-          <span>{totals.total.toFixed(2)}</span>
+
+        <div className="my-2 border-t-2 border-dashed border-black"></div>
+
+        <table className="w-full text-xs">
+          <thead>
+              <tr>
+                  <th className='text-left'>ITEM</th>
+                  <th className='text-center'>QTY</th>
+                  <th className='text-right'>PRICE</th>
+                  <th className='text-right'>TOTAL</th>
+              </tr>
+          </thead>
+          <tbody>
+            {items?.map((item: any, index: number) => (
+              <tr key={index}>
+                <td className="py-1 align-top w-[50%]">{item.name}</td>
+                <td className="py-1 align-top text-center">{item.quantity}</td>
+                <td className="py-1 align-top text-right">{item.price.toFixed(2)}</td>
+                <td className="py-1 align-top text-right">{item.total.toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div className="my-2 border-t-2 border-dashed border-black"></div>
+        <div className="space-y-1 text-xs">
+          <div className="flex justify-between">
+            <span>Subtotal:</span>
+            <span>{totals.subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Discount:</span>
+            <span>-{totalDiscount.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Service Charge:</span>
+            <span>{totals.serviceCharge.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
+            <span>TOTAL:</span>
+            <span>{totals.total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="text-center mt-4 text-xs">
+            <p>Thank You!</p>
         </div>
       </div>
-
-       <div className="text-center mt-4 text-xs">
-           <p>Thank You!</p>
-       </div>
+      <Button className="w-[80mm] mt-2 print:hidden" onClick={() => window.print()}>Print</Button>
     </div>
-    <button className="bg-blue-500 text-white px-4 py-2 rounded-md mt-4" onClick={() => window.print()}>Print</button>
-    </>
   );
 }
 
