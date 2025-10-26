@@ -170,6 +170,11 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                  if (filterValues['location'] && filterValues['location'] !== 'all') {
                     params.append('location_id', filterValues['location']);
                 }
+            } else if (reportName === 'Invoice Wise Sales Report') {
+                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/sales-invoice-wise`;
+                 if (filterValues['location'] && filterValues['location'] !== 'all') {
+                    params.append('location_id', filterValues['location']);
+                }
             } else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
                  setIsFetching(false);
@@ -186,8 +191,8 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             if (!response.ok) throw new Error(`Failed to fetch ${reportName} data`);
             const data = await response.json();
             
-            if (reportName === 'Item Wise Sales') {
-                onShowReport(data.data?.report_data || { items: [], summary: {} });
+            if (reportName === 'Item Wise Sales' || reportName === 'Invoice Wise Sales Report') {
+                onShowReport(data.data?.report_data || { items: [], invoices: [], summary: {} });
             } else if (reportName === 'Item Master Report') {
                 onShowReport(data.products || []);
             } else {
