@@ -150,6 +150,9 @@ export function OpeningStockForm() {
 
       if (!response.ok) {
         const errorData = await response.json();
+        if (response.status === 409) {
+          throw new Error(errorData.message || 'Opening stock already exists for this location.');
+        }
         throw new Error(errorData.message || 'Failed to save opening stock.');
       }
 
