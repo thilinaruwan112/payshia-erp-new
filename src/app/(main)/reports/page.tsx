@@ -14,6 +14,7 @@ import { PurchaseOrderReportView } from '@/components/reports/purchase-order-rep
 import { SalesSummaryReportView } from '@/components/reports/sales-summary-report-view';
 import { GrnReportView } from '@/components/reports/grn-report-view';
 import { InvoiceReportView } from '@/components/reports/invoice-report-view';
+import { ItemWiseSalesReportView } from '@/components/reports/item-wise-sales-report-view';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import jsPDF from 'jspdf';
@@ -25,7 +26,7 @@ interface ProductWithVariants {
     product: Product;
     variants: ProductVariant[];
 }
-type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[] | Invoice[] | GoodsReceivedNote[];
+type ReportData = any;
 
 function ReportsPage() {
     const searchParams = useSearchParams();
@@ -85,7 +86,7 @@ function ReportsPage() {
     }, [selectedReport, company_id, toast, reportData]);
 
     const handleExportCSV = useCallback(() => {
-        if (reportData.length === 0) {
+        if (!reportData || (Array.isArray(reportData) && reportData.length === 0)) {
             toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
             return;
         }
@@ -93,28 +94,29 @@ function ReportsPage() {
         let headers: string[] = [];
         let rows: string[][] = [];
         let filename = 'report.csv';
+        const dataToExport = Array.isArray(reportData) ? reportData : reportData.items || [];
 
-        if(selectedReport === 'Customer Master Report' && reportData.length > 0 && 'customer_first_name' in reportData[0]) {
+        if(selectedReport === 'Customer Master Report' && dataToExport.length > 0 && 'customer_first_name' in dataToExport[0]) {
             headers = ["Customer Name", "Phone Number", "Email", "Address"];
-            rows = (reportData as User[]).map(customer => [
+            rows = (dataToExport as User[]).map(customer => [
                 `"${customer.customer_first_name} ${customer.customer_last_name}"`,
                 customer.phone_number || '',
                 customer.email_address || '',
                 `"${customer.address_line1 || ''}, ${customer.city}"`
             ]);
             filename = 'customer_report.csv';
-        } else if (selectedReport === 'Supplier Master Report' && reportData.length > 0 && 'supplier_name' in reportData[0]) {
+        } else if (selectedReport === 'Supplier Master Report' && dataToExport.length > 0 && 'supplier_name' in dataToExport[0]) {
              headers = ["Supplier Name", "Contact Person", "Phone", "Email"];
-            rows = (reportData as Supplier[]).map(supplier => [
+            rows = (dataToExport as Supplier[]).map(supplier => [
                 `"${supplier.supplier_name}"`,
                 `"${supplier.contact_person}"`,
                 supplier.telephone,
                 supplier.email
             ]);
             filename = 'supplier_report.csv';
-        } else if (selectedReport === 'Item Master Report' && reportData.length > 0 && 'product' in reportData[0]) {
+        } else if (selectedReport === 'Item Master Report' && dataToExport.length > 0 && 'product' in dataToExport[0]) {
             headers = ['Product Name', 'SKU', 'Category', 'Brand', 'Stock'];
-            rows = (reportData as ProductWithVariants[]).flatMap(p => 
+            rows = (dataToExport as ProductWithVariants[]).flatMap(p => 
                 p.variants.map(v => ([
                     p.product.name,
                     v.sku,
@@ -124,7 +126,26 @@ function ReportsPage() {
                 ]))
             );
             filename = 'item_master_report.csv';
+        } else if (selectedReport === 'Item Wise Sales') {
+            headers = ['Product Name', 'SKU', 'Total Quantity', 'Total Sales', 'Total Cost', 'Total Discount', 'Gross Profit'];
+            rows = (dataToExport).map((item: any) => [
+                `"${item.product_name}"`,
+                `"${item.variant_sku}"`,
+                item.total_quantity,
+                item.total_sales,
+                item.total_cost,
+                item.total_discount,
+                item.gross_profit,
+            ]);
+            filename = 'item_wise_sales.csv';
         }
+
+
+        if (headers.length === 0) {
+            toast({ variant: 'destructive', title: 'Export Not Ready', description: 'CSV export is not configured for this report yet.' });
+            return;
+        }
+
 
         const csvContent = "data:text/csv;charset=utf-8," 
             + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -138,7 +159,7 @@ function ReportsPage() {
     }, [reportData, selectedReport, toast]);
     
     const handleExportPdf = useCallback(() => {
-        if (reportData.length === 0) {
+        if (!reportData || (Array.isArray(reportData) && reportData.length === 0)) {
             toast({ variant: 'destructive', title: 'No data', description: 'Please view the report first to export.' });
             return;
         }
@@ -149,28 +170,29 @@ function ReportsPage() {
         let head: string[][] = [];
         let body: (string | number)[][] = [];
         let filename = 'report.pdf';
+        const dataToExport = Array.isArray(reportData) ? reportData : reportData.items || [];
 
-        if(selectedReport === 'Customer Master Report' && reportData.length > 0 && 'customer_first_name' in reportData[0]) {
+        if(selectedReport === 'Customer Master Report' && dataToExport.length > 0 && 'customer_first_name' in dataToExport[0]) {
             head = [['Customer Name', 'Phone Number', 'Email', 'Address']];
-            body = (reportData as User[]).map(customer => [
+            body = (dataToExport as User[]).map(customer => [
                 `${customer.customer_first_name} ${customer.customer_last_name}`,
                 customer.phone_number || '',
                 customer.email_address || '',
                 `${customer.address_line1 || ''}, ${customer.city}`
             ]);
             filename = 'customer_report.pdf';
-        } else if (selectedReport === 'Supplier Master Report' && reportData.length > 0 && 'supplier_name' in reportData[0]) {
+        } else if (selectedReport === 'Supplier Master Report' && dataToExport.length > 0 && 'supplier_name' in dataToExport[0]) {
             head = [['Supplier Name', 'Contact Person', 'Phone', 'Email']];
-            body = (reportData as Supplier[]).map(supplier => [
+            body = (dataToExport as Supplier[]).map(supplier => [
                 supplier.supplier_name,
                 supplier.contact_person,
                 supplier.telephone,
                 supplier.email,
             ]);
             filename = 'supplier_report.pdf';
-        } else if (selectedReport === 'Item Master Report' && reportData.length > 0 && 'product' in reportData[0]) {
+        } else if (selectedReport === 'Item Master Report' && dataToExport.length > 0 && 'product' in dataToExport[0]) {
             head = [['Product Name', 'SKU', 'Category', 'Brand', 'Stock']];
-            body = (reportData as ProductWithVariants[]).flatMap(p => 
+            body = (dataToExport as ProductWithVariants[]).flatMap(p => 
                 p.variants.map(v => ([
                     p.product.name,
                     v.sku,
@@ -180,6 +202,11 @@ function ReportsPage() {
                 ]))
             );
             filename = 'item_master_report.pdf';
+        }
+
+        if (head.length === 0) {
+            toast({ variant: 'destructive', title: 'Export Not Ready', description: 'PDF export is not configured for this report yet.' });
+            return;
         }
 
         autoTable(doc, { head, body, startY: 25 });
@@ -192,6 +219,8 @@ function ReportsPage() {
           handleSelectReport(reportParam);
       }
     }, [searchParams, handleSelectReport]);
+
+    const hasData = Array.isArray(reportData) ? reportData.length > 0 : reportData?.items?.length > 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -225,26 +254,29 @@ function ReportsPage() {
                             onExportPdf={handleExportPdf}
                             reportData={reportData}
                         />
-                         {reportData.length > 0 && selectedReport === 'Customer Master Report' && (
+                         {hasData && selectedReport === 'Customer Master Report' && (
                             <CustomerReportView customers={reportData as User[]} />
                          )}
-                         {reportData.length > 0 && selectedReport === 'Supplier Master Report' && (
+                         {hasData && selectedReport === 'Supplier Master Report' && (
                             <SupplierReportView suppliers={reportData as Supplier[]} />
                          )}
-                          {reportData.length > 0 && selectedReport === 'Item Master Report' && (
+                          {hasData && selectedReport === 'Item Master Report' && (
                             <ItemMasterReportView products={reportData as ProductWithVariants[]} />
                          )}
-                         {reportData.length > 0 && selectedReport === 'Purchase Order Report' && (
+                         {hasData && selectedReport === 'Purchase Order Report' && (
                             <PurchaseOrderReportView purchaseOrders={reportData as PurchaseOrder[]} />
                          )}
-                          {reportData.length > 0 && selectedReport === 'Sales Summary Report' && (
+                          {hasData && selectedReport === 'Sales Summary Report' && (
                             <SalesSummaryReportView invoices={reportData as Invoice[]} customers={customers} />
                          )}
-                         {reportData.length > 0 && selectedReport === 'GRN Report' && (
+                         {hasData && selectedReport === 'GRN Report' && (
                             <GrnReportView grns={reportData as GoodsReceivedNote[]} />
                          )}
-                         {reportData.length > 0 && selectedReport === 'Invoice Report' && (
+                         {hasData && selectedReport === 'Invoice Report' && (
                             <InvoiceReportView invoices={reportData as Invoice[]} customers={customers} />
+                         )}
+                          {hasData && selectedReport === 'Item Wise Sales' && (
+                            <ItemWiseSalesReportView reportData={reportData} />
                          )}
                     </div>
                 ) : (

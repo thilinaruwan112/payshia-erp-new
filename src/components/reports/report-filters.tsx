@@ -33,7 +33,7 @@ interface ProductWithVariants {
     product: Product;
     variants: ProductVariant[];
 }
-type ReportData = User[] | Supplier[] | ProductWithVariants[] | PurchaseOrder[] | Invoice[] | GoodsReceivedNote[];
+type ReportData = any;
 
 interface Category { id: string; name: string };
 interface CustomField { id: string; field_name: string; }
@@ -165,23 +165,34 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                 params.append('invoice_status', '1');
             } else if (reportName === 'GRN Report') {
                  url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/grn/company/${company_id}`;
-            }
-             else {
+            } else if (reportName === 'Item Wise Sales') {
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/sales-item-wise`;
+                 if (filterValues['location'] && filterValues['location'] !== 'all') {
+                    params.append('location_id', filterValues['location']);
+                }
+            } else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
                  setIsFetching(false);
                  return;
             }
             
             if (dateRange?.from) {
-                params.append('from_date', format(dateRange.from, 'yyyy-MM-dd'));
-                params.append('to_date', format(dateRange.to || dateRange.from, 'yyyy-MM-dd'));
+                params.append('start_date', format(dateRange.from, 'yyyy-MM-dd'));
+                params.append('end_date', format(dateRange.to || dateRange.from, 'yyyy-MM-dd'));
             }
             
             const finalUrl = `${url}?${params.toString()}`;
             const response = await fetcher(finalUrl);
             if (!response.ok) throw new Error(`Failed to fetch ${reportName} data`);
             const data = await response.json();
-            onShowReport(reportName === 'Item Master Report' ? data.products || [] : data || []);
+            
+            if (reportName === 'Item Wise Sales') {
+                onShowReport(data.data?.report_data || { items: [], summary: {} });
+            } else if (reportName === 'Item Master Report') {
+                onShowReport(data.products || []);
+            } else {
+                onShowReport(data || []);
+            }
         } catch (error) {
              toast({ variant: 'destructive', title: 'Error', description: `Could not fetch ${reportName} data.`});
         } finally {
@@ -390,11 +401,11 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                     <Printer className="mr-2 h-4 w-4" />
                     Print
                 </Button>
-                <Button variant="outline" onClick={onExportCsv} disabled={reportData.length === 0}>
+                <Button variant="outline" onClick={onExportCsv} disabled={!reportData || (Array.isArray(reportData) && reportData.length === 0)}>
                     <FileDown className="mr-2 h-4 w-4" />
                     Export CSV
                 </Button>
-                <Button variant="outline" onClick={onExportPdf} disabled={reportData.length === 0}>
+                <Button variant="outline" onClick={onExportPdf} disabled={!reportData || (Array.isArray(reportData) && reportData.length === 0)}>
                     <FileDown className="mr-2 h-4 w-4" />
                     Export PDF
                 </Button>
