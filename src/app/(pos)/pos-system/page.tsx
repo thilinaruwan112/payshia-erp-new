@@ -502,7 +502,7 @@ export default function POSPage() {
         created_by: currentCashier.user_name, 
         is_active: 1, 
         steward_id: currentOrder.steward?.id || "N/A",
-        cost_value: currentOrder.cart.reduce((acc, item) => acc + ((item.product.costPrice as number || 0) * item.quantity), 0),
+        cost_value: currentOrder.cart.reduce((acc, item) => acc + ((item.product.cost_price as number || 0) * item.quantity), 0),
         remark: `${currentOrder.orderType} order`, 
         ref_hold: "direct",
         company_id: String(company_id),
@@ -745,18 +745,6 @@ export default function POSPage() {
   if (isLocationLoading) return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (!currentLocation) return <LocationSelectionDialog open={!currentLocation} locations={availableLocations.filter(loc => loc.pos_status === '1')} onSelectLocation={(loc) => setCurrentLocation(loc)} />;
   if (!currentCashier) return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-4">Loading cashier details...</p></div>
-
-  const handleGuestReceipt = () => {
-    if (!currentOrder || !currentOrder.originalInvoiceNumber) {
-      toast({
-        variant: 'destructive',
-        title: 'Not a Held Order',
-        description: 'Guest receipts can only be printed for orders that have been held (sent to the kitchen).',
-      });
-      return;
-    }
-    window.open(`/pos/guest-receipt/print?id=${currentOrder.originalInvoiceNumber}`, '_blank');
-  };
 
   return (
     <>

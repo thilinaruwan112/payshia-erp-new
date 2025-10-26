@@ -395,29 +395,15 @@ export function OrderPanel({
   }
 
   const handleGuestReceipt = () => {
-    if (!order || cart.length === 0) {
+    if (!order.originalInvoiceNumber) {
       toast({
         variant: 'destructive',
-        title: 'Cart is empty',
-        description: 'Cannot print a receipt for an empty order.',
+        title: 'Not a Held Order',
+        description: 'Guest receipts can only be printed for orders that have been held (sent to the kitchen).',
       });
       return;
     }
-    const receiptData = {
-      orderName,
-      cashierName,
-      date: new Date().toISOString(),
-      items: cart.map(item => ({
-        name: item.product.variantName,
-        quantity: item.quantity,
-        price: item.product.price,
-        total: (item.product.price as number) * item.quantity,
-      })),
-      totals: orderTotals,
-    };
-    
-    const dataString = encodeURIComponent(JSON.stringify(receiptData));
-    window.open(`/pos/guest-receipt/[id]?data=${dataString}`.replace('[id]', 'print'), '_blank');
+    window.open(`/pos/guest-receipt/${order.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
   };
 
   return (
@@ -585,7 +571,7 @@ export function OrderPanel({
              <Button variant="outline" onClick={onHoldAndKitchen} disabled={cart.length === 0} className="h-12">
                 <Notebook className="mr-2 h-4 w-4" /> Hold
             </Button>
-             <Button variant="secondary" onClick={handleGuestReceipt} disabled={cart.length === 0} className="h-12">
+             <Button variant="secondary" onClick={handleGuestReceipt} disabled={!order.originalInvoiceNumber} className="h-12">
                 <Receipt className="mr-2 h-4 w-4" /> Guest Receipt
             </Button>
             <Button variant="destructive" onClick={() => onClearCart(orderId)} disabled={cart.length === 0} className="h-12">
