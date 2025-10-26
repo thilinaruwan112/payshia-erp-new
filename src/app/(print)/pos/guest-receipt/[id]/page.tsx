@@ -1,7 +1,12 @@
 
 'use client';
 
-import { notFound, useParams } from 'next/navigation';
+// Import the external CSS file
+import '../../print-receipt.css';
+
+
+
+import { notFound, useParams, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import type { Invoice, User, Location } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -28,6 +33,7 @@ declare global {
 
 function GuestReceiptContent() {
   const { id } = useParams() as { id: string };
+  const searchParams = useSearchParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
@@ -36,16 +42,14 @@ function GuestReceiptContent() {
   const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
   const [isJspmConnected, setIsJspmConnected] = useState(false);
-  const [companyId, setCompanyId] = useState<string | null>(null);
+  const companyId = searchParams.get('company_id');
 
    useEffect(() => {
-    const compId = localStorage.getItem('companyId');
-    setCompanyId(compId);
-  }, []);
-
-  useEffect(() => {
     async function fetchInvoiceData() {
-        if (!id || !companyId) return;
+        if (!id || !companyId) {
+            setIsLoading(false);
+            return;
+        }
         setIsLoading(true);
         try {
             const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices?invoicenumber=${id}&company_id=${companyId}`);
@@ -114,7 +118,7 @@ function GuestReceiptContent() {
     style.innerHTML = `
         @media print {
             @page {
-                size: 80mm ${heightInMm}mm; /* Set the calculated height */
+                size: 80mm ${heightInMm+5}mm; /* Set the calculated height */
                 margin: 0;
             }
         }
@@ -159,8 +163,8 @@ function GuestReceiptContent() {
       <div id="receipt-print-area" ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
           {logoUrl && <Image src={logoUrl} alt="logo" width={60} height={60} className="mx-auto my-1" />}
-          <p className="text-xs">{location?.address_line1}, {location?.city}</p>
-          <p className="text-xs">Tel: {location?.phone_1}</p>
+          <p>{location?.address_line1}, {location?.city}</p>
+          <p>Tel: {location?.phone_1}</p>
           <div className="my-2 border-t-2 border-dashed border-black"></div>
           <h1 className="font-bold text-lg">GUEST RECEIPT</h1>
         </div>
@@ -230,6 +234,7 @@ export default function GuestReceiptPage() {
     return (
         <Suspense fallback={<div>Loading...</div>}>
             <GuestReceiptContent />
+           
         </Suspense>
     )
 }
