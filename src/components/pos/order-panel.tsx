@@ -60,7 +60,8 @@ interface OrderPanelProps {
   isDrawer?: boolean;
   onClose?: () => void;
   setDiscount: (discount: number) => void;
-  setServiceCharge: (serviceCharge: number) => void;
+  isServiceChargeActive: boolean;
+  setIsServiceChargeActive: (isActive: boolean) => void;
   onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
   availableTables: TableType[];
   availableStewards: User[];
@@ -193,49 +194,6 @@ const DiscountDialog = ({
   );
 };
 
-const ServiceChargeDialog = ({
-  currentValue,
-  setServiceCharge,
-  onClose,
-}: {
-  currentValue: number;
-  setServiceCharge: (d: number) => void;
-  onClose: () => void;
-}) => {
-  const { currencySymbol } = useCurrency();
-  const [chargeValue, setChargeValue] = React.useState(currentValue.toString());
-
-  const applyCharge = () => {
-    setServiceCharge(Number(chargeValue));
-    onClose();
-  };
-
-  return (
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Apply Service Charge</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-2">
-        <Label htmlFor="charge-value">Service Charge Amount ({currencySymbol})</Label>
-        <Input
-          id="charge-value"
-          type="number"
-          placeholder="e.g. 10.00"
-          value={chargeValue}
-          onChange={(e) => setChargeValue(e.target.value)}
-        />
-      </div>
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button onClick={applyCharge}>Apply</Button>
-      </DialogFooter>
-    </DialogContent>
-  );
-};
-
-
 const EditOrderDialog = ({ order, onUpdateDetails, availableTables, availableStewards, onClose }: { 
     order: ActiveOrder;
     onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
@@ -320,7 +278,8 @@ export function OrderPanel({
   isDrawer,
   onClose,
   setDiscount,
-  setServiceCharge,
+  isServiceChargeActive,
+  setIsServiceChargeActive,
   onUpdateDetails,
   availableTables,
   availableStewards,
@@ -332,7 +291,6 @@ export function OrderPanel({
   const { currencySymbol } = useCurrency();
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
-  const [isServiceChargeOpen, setServiceChargeOpen] = React.useState(false);
   const [isEditOrderOpen, setEditOrderOpen] = React.useState(false);
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
@@ -594,21 +552,17 @@ export function OrderPanel({
           <span>Item Discounts</span>
           <span>-{currencySymbol}{orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
-        <Dialog open={isServiceChargeOpen} onOpenChange={setServiceChargeOpen}>
-          <DialogTrigger asChild>
-            <div className="flex justify-between items-center text-sm cursor-pointer hover:text-primary">
-              <span className="flex items-center gap-2">
-                <PlusSquare className="h-4 w-4" /> Service Charge
-              </span>
-              <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
-            </div>
-          </DialogTrigger>
-          <ServiceChargeDialog
-            currentValue={serviceCharge}
-            setServiceCharge={setServiceCharge}
-            onClose={() => setServiceChargeOpen(false)}
-          />
-        </Dialog>
+        <div className="flex justify-between items-center text-sm">
+          <span className="flex items-center gap-2">
+            <Switch
+                id="service-charge-toggle"
+                checked={isServiceChargeActive}
+                onCheckedChange={setIsServiceChargeActive}
+            />
+            <Label htmlFor="service-charge-toggle">Service Charge (10%)</Label>
+          </span>
+          <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
+        </div>
          <div className="flex justify-between text-sm text-green-600">
           <span>Order Discount</span>
           <span>-{currencySymbol}{discount.toFixed(2)}</span>

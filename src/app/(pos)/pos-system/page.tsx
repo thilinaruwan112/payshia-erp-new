@@ -80,6 +80,7 @@ export default function POSPage() {
   const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
   
+  const [isServiceChargeActive, setIsServiceChargeActive] = useState(true);
 
   const [currentCashier, setCurrentCashier] = useState<User | null>(null);
   const { currentLocation, isLoading: isLocationLoading, setCurrentLocation, availableLocations, company_id } = useLocation();
@@ -683,10 +684,32 @@ export default function POSPage() {
      setActiveOrders((prevOrders) => prevOrders.map((order) => order.id === currentOrderId ? { ...order, discount: newDiscount } : order));
   }
 
-  const setServiceCharge = (newServiceCharge: number) => {
+  const setServiceCharge = useCallback((charge: number) => {
     if (!currentOrderId) return;
-    setActiveOrders((prevOrders) => prevOrders.map((order) => order.id === currentOrderId ? { ...order, serviceCharge: newServiceCharge } : order));
-  };
+    setActiveOrders((prevOrders) =>
+      prevOrders.map((order) =>
+        order.id === currentOrderId ? { ...order, serviceCharge: charge } : order
+      )
+    );
+  }, [currentOrderId]);
+
+  const orderTotals = useMemo((): OrderInfo => {
+    if (!currentOrder) return { subtotal: 0, serviceCharge: 0, discount: 0, itemDiscounts: 0, total: 0 };
+
+    const subtotal = currentOrder.cart.reduce((acc, item) => acc + (item.product.price as number) * item.quantity, 0);
+    const itemDiscounts = currentOrder.cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
+    
+    const serviceCharge = isServiceChargeActive ? subtotal * 0.10 : 0;
+    
+    // Update the service charge in the state if it's different
+    if (serviceCharge !== currentOrder.serviceCharge) {
+      // Use a function that is stable and doesn't depend on `setServiceCharge` changing
+      setTimeout(() => setServiceCharge(serviceCharge), 0);
+    }
+    
+    const total = subtotal - itemDiscounts + serviceCharge - currentOrder.discount;
+    return { subtotal, serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
+  }, [currentOrder, isServiceChargeActive, setServiceCharge]);
   
   const onUpdateDetails = (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => {
       setActiveOrders(prevOrders => prevOrders.map(order => {
@@ -716,13 +739,6 @@ export default function POSPage() {
   }, [searchTerm, activeFilter, posProducts, collectionProducts]);
   
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
-  const orderTotals = useMemo((): OrderInfo => {
-     if (!currentOrder) return { subtotal: 0, serviceCharge: 0, discount: 0, itemDiscounts: 0, total: 0 };
-     const subtotal = currentOrder.cart.reduce((acc, item) => acc + (item.product.price as number) * item.quantity, 0);
-     const itemDiscounts = currentOrder.cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
-     const total = subtotal - itemDiscounts + currentOrder.serviceCharge - currentOrder.discount;
-     return { subtotal, serviceCharge: currentOrder.serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
-  }, [currentOrder]);
   
   const orderPanelComponent = currentOrder && currentCashier ? (
      <OrderPanel
@@ -731,7 +747,10 @@ export default function POSPage() {
         onUpdateQuantity={updateQuantity} onRemoveItem={removeFromCart} onClearCart={onClearCart}
         onHoldAndKitchen={handleHoldAndKitchen}
         isDrawer={isDrawerOpen} onClose={() => setDrawerOpen(false)}
-        setDiscount={setDiscount} setServiceCharge={setServiceCharge} onUpdateDetails={onUpdateDetails}
+        setDiscount={setDiscount} 
+        isServiceChargeActive={isServiceChargeActive}
+        setIsServiceChargeActive={setIsServiceChargeActive}
+        onUpdateDetails={onUpdateDetails}
         availableTables={tables} availableStewards={stewards}
         customers={customers} onUpdateCustomer={updateCustomer}
      />
@@ -870,3 +889,4 @@ export default function POSPage() {
     
 
     
+
