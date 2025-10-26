@@ -3,12 +3,13 @@
 
 import { notFound, useParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
-import type { Invoice, User, Location, Product, InvoiceItem } from '@/lib/types';
+import type { Invoice, User, Location } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { fetcher } from '@/lib/api';
+import { Button } from '@/components/ui/button';
 
 interface Company {
     id: string;
@@ -35,15 +36,18 @@ function GuestReceiptContent() {
   const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
   const [isJspmConnected, setIsJspmConnected] = useState(false);
+  const [companyId, setCompanyId] = useState<string | null>(null);
+
+   useEffect(() => {
+    const compId = localStorage.getItem('companyId');
+    setCompanyId(compId);
+  }, []);
 
   useEffect(() => {
     async function fetchInvoiceData() {
-        if (!id) return;
+        if (!id || !companyId) return;
         setIsLoading(true);
         try {
-            const companyId = localStorage.getItem('companyId');
-            if (!companyId) throw new Error("Company not found");
-
             const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/pos-invoices?invoicenumber=${id}&company_id=${companyId}`);
             if (!response.ok) {
                  if (response.status === 404) notFound();
@@ -73,7 +77,7 @@ function GuestReceiptContent() {
         }
     }
     fetchInvoiceData();
-  }, [id, toast]);
+  }, [id, companyId, toast]);
 
 
   useEffect(() => {
@@ -146,6 +150,9 @@ function GuestReceiptContent() {
   }
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
+  const totalDiscount = parseFloat(invoice.discount_amount);
+  const subtotal = parseFloat(invoice.inv_amount);
+  const total = parseFloat(invoice.grand_total);
   
   return (
     <div className="flex flex-col items-center">
@@ -194,11 +201,11 @@ function GuestReceiptContent() {
         <div className="space-y-1 text-xs">
           <div className="flex justify-between">
             <span>Subtotal:</span>
-            <span>{parseFloat(invoice.inv_amount).toFixed(2)}</span>
+            <span>{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
             <span>Discount:</span>
-            <span>-{parseFloat(invoice.discount_amount).toFixed(2)}</span>
+            <span>-{totalDiscount.toFixed(2)}</span>
           </div>
          <div className="flex justify-between">
           <span>Service Charge:</span>
@@ -206,7 +213,7 @@ function GuestReceiptContent() {
         </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
-            <span>{parseFloat(invoice.grand_total).toFixed(2)}</span>
+            <span>{total.toFixed(2)}</span>
           </div>
         </div>
 
