@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, ProductVariant } from "@/lib/types";
+import type { Product, ProductVariant, StockInfo } from "@/lib/types";
 import { Loader2, Trash2, CalendarIcon } from "lucide-react";
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useLocation } from "./location-provider";
@@ -52,6 +52,7 @@ const openingStockItemSchema = z.object({
 
 const openingStockFormSchema = z.object({
   locationId: z.string().min(1, "Location is required."),
+  date: z.date(),
   items: z.array(openingStockItemSchema).min(1, { message: "Please add at least one item." }),
 });
 
@@ -69,6 +70,7 @@ export function OpeningStockForm() {
     resolver: zodResolver(openingStockFormSchema),
     defaultValues: {
       items: [{ productVariantId: "", quantity: 0, batchNumber: "" }],
+      date: new Date(),
     },
     mode: "onChange",
   });
@@ -169,17 +171,17 @@ export function OpeningStockForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle>Enter Opening Stock</CardTitle>
+            <CardTitle>Opening Stock Details</CardTitle>
             <CardDescription>
-              Input the initial stock for your products at a specific location.
+              Set the initial inventory levels for your products at a specific location.
             </CardDescription>
           </CardHeader>
-           <CardContent>
+           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
               name="locationId"
               render={({ field }) => (
-                <FormItem className="max-w-sm">
+                <FormItem>
                   <FormLabel>Location</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
@@ -197,7 +199,28 @@ export function OpeningStockForm() {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date</FormLabel>
+                  <FormControl>
+                    <Input readOnly disabled value={format(field.value, "PPP")} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Stock Items</CardTitle>
+            <CardDescription>
+              Add products and their initial quantities.
+            </CardDescription>
+          </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
