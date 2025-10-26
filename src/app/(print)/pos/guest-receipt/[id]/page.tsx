@@ -109,7 +109,7 @@ function GuestReceiptContent() {
 
   const handlePrint = async () => {
     if (!receiptRef.current) return;
-    
+
     // Calculate height and set print styles
     const heightInPixels = receiptRef.current.offsetHeight;
     const heightInMm = (heightInPixels * 25.4) / 96; // Assuming 96 DPI
@@ -118,7 +118,7 @@ function GuestReceiptContent() {
     style.innerHTML = `
         @media print {
             @page {
-                size: 80mm ${heightInMm+5}mm; /* Set the calculated height */
+                size: 80mm ${heightInMm + 5}mm; /* Set the calculated height */
                 margin: 0;
             }
         }
@@ -193,7 +193,7 @@ function GuestReceiptContent() {
           <tbody>
             {(invoice.items || []).map((item, index) => (
               <tr key={index}>
-                <td className="py-1 align-top w-[50%]">{(item as any).product_print_name || item.productName}</td>
+                <td className="py-1 align-top w-[50%]">{item.product_print_name}</td>
                 <td className="py-1 align-top text-center">{parseFloat(String(item.quantity))}</td>
                 <td className="py-1 align-top text-right">{parseFloat(String(item.item_price)).toFixed(2)}</td>
                 <td className="py-1 align-top text-right">{(parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))).toFixed(2)}</td>
@@ -222,8 +222,16 @@ function GuestReceiptContent() {
           </div>
         </div>
 
-        <div className="text-center mt-4 text-xs">
-            <p>Thank You!</p>
+        <div className="text-center mt-4 text-xs space-y-1 border-t pt-2">
+            <p>Software by Payshia</p>
+            <Image 
+                src="https://content-provider.payshia.com/payshia-erp/branding/payshia-erp-logo-01.webp" 
+                alt="Payshia Logo" 
+                width={24} 
+                height={24} 
+                className="mx-auto" 
+            />
+            <p>0770481363 | www.payshia.com</p>
         </div>
       </div>
       <Button className="w-full mt-2 print:hidden max-w-[80mm]" onClick={() => window.print()}>Print</Button>
@@ -235,6 +243,7 @@ export default function GuestReceiptPage() {
     return (
         <Suspense fallback={<div>Loading...</div>}>
             <GuestReceiptContent />
+           
         </Suspense>
     )
 }
