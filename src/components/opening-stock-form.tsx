@@ -11,9 +11,9 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
@@ -137,6 +137,7 @@ export function OpeningStockForm() {
             quantity: item.quantity,
             patch_code: item.batchNumber || `OPEN-${skuDetails?.label.split('(')[1].replace(')','')}`,
             expire_date: item.expiryDate ? format(item.expiryDate, 'yyyy-MM-dd') : undefined,
+            transaction_type: 'OPENING_STOCK',
         }
       }),
     };
