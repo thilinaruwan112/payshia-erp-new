@@ -4,14 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,19 +19,27 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Product, ProductVariant } from "@/lib/types";
 import { Loader2, Trash2, CalendarIcon } from "lucide-react";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useLocation } from "./location-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
 import { fetcher } from "@/lib/api";
-import { format } from 'date-fns';
+import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { Combobox } from "./ui/combobox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 
 interface ProductWithApiResponse {
-  product: Product;
-  variants: { variant: ProductVariant }[];
+    product: Product;
+    variants: { variant: ProductVariant }[];
 }
 
 const openingStockItemSchema = z.object({
@@ -50,6 +51,7 @@ const openingStockItemSchema = z.object({
 });
 
 const openingStockFormSchema = z.object({
+  locationId: z.string().min(1, "Location is required."),
   items: z.array(openingStockItemSchema).min(1, { message: "Please add at least one item." }),
 });
 
@@ -61,7 +63,7 @@ export function OpeningStockForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
-  const { company_id, currentLocation } = useLocation();
+  const { company_id, availableLocations } = useLocation();
 
   const form = useForm<OpeningStockFormValues>({
     resolver: zodResolver(openingStockFormSchema),
@@ -106,8 +108,8 @@ export function OpeningStockForm() {
   }, [products]);
 
   async function onSubmit(data: OpeningStockFormValues) {
-    if (!currentLocation || !company_id) {
-      toast({ variant: 'destructive', title: 'Error', description: 'No location or company selected.' });
+    if (!company_id) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
       return;
     }
     setIsSubmitting(true);
@@ -121,7 +123,7 @@ export function OpeningStockForm() {
 
     const payload = {
       company_id: company_id,
-      location_id: parseInt(currentLocation.location_id, 10),
+      location_id: parseInt(data.locationId, 10),
       created_by: "admin",
       current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
       items: itemsWithStock.map(item => {
@@ -169,9 +171,33 @@ export function OpeningStockForm() {
           <CardHeader>
             <CardTitle>Enter Opening Stock</CardTitle>
             <CardDescription>
-              Input the initial stock for your products at the current location: <strong>{currentLocation?.location_name}</strong>
+              Input the initial stock for your products at a specific location.
             </CardDescription>
           </CardHeader>
+           <CardContent>
+            <FormField
+              control={form.control}
+              name="locationId"
+              render={({ field }) => (
+                <FormItem className="max-w-sm">
+                  <FormLabel>Location</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a location" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {availableLocations.map(loc => (
+                          <SelectItem key={loc.location_id} value={loc.location_id}>{loc.location_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
