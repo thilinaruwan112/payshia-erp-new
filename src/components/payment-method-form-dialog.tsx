@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { fetcher } from "@/lib/api";
+import { useLocation } from "./location-provider";
 
 const formSchema = z.object({
   method: z.string().min(2, "Method name must be at least 2 characters."),
@@ -43,6 +44,7 @@ export function PaymentMethodFormDialog({ children, onSave }: PaymentMethodFormD
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const { company_id } = useLocation();
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -53,11 +55,16 @@ export function PaymentMethodFormDialog({ children, onSave }: PaymentMethodFormD
   });
 
   async function onSubmit(data: FormValues) {
+    if (!company_id) {
+      toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
+      return;
+    }
     setIsLoading(true);
     const username = localStorage.getItem('userName') || 'admin';
     const payload = {
         method: data.method,
         created_by: username,
+        company_id: company_id
     };
     
     try {
