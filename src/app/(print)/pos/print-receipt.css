@@ -18,11 +18,7 @@
       top: 0;
       width: 100%;
       
-    }
-    @page {
-      size: 78mm 255.42mm; /* Set the calculated height */
-      margin: 0; /* Adjust margins as needed */
-    }
+    }   
   }
 
   body {
