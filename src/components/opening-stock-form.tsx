@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -58,6 +57,15 @@ const openingStockFormSchema = z.object({
 
 type OpeningStockFormValues = z.infer<typeof openingStockFormSchema>;
 
+interface ExistingStockEntry {
+  id: string;
+  product_id: string;
+  product_variant_id: string;
+  quantity: string;
+  patch_code: string;
+  expire_date: string;
+}
+
 export function OpeningStockForm() {
   const router = useRouter();
   const { toast } = useToast();
@@ -65,6 +73,7 @@ export function OpeningStockForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id, availableLocations } = useLocation();
+  const [existingStock, setExistingStock] = useState<ExistingStockEntry[]>([]);
 
   const form = useForm<OpeningStockFormValues>({
     resolver: zodResolver(openingStockFormSchema),
@@ -115,6 +124,7 @@ export function OpeningStockForm() {
       return;
     }
     setIsSubmitting(true);
+    setExistingStock([]); // Clear previous existing stock on new submission
     const itemsWithStock = data.items.filter(item => item.quantity > 0);
 
     if (itemsWithStock.length === 0) {
@@ -150,24 +160,38 @@ export function OpeningStockForm() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        if (response.status === 409) {
-          throw new Error(errorData.message || 'Opening stock already exists for this location.');
+        if (response.status === 409 && errorData.existing_data) {
+          setExistingStock(errorData.existing_data);
+          toast({
+            variant: "destructive",
+            title: errorData.error,
+            description: errorData.message,
+          });
+        } else {
+            throw new Error(errorData.message || 'Failed to save opening stock.');
         }
-        throw new Error(errorData.message || 'Failed to save opening stock.');
+      } else {
+         toast({
+            title: "Opening Stock Saved",
+            description: "The initial stock levels have been successfully recorded.",
+        });
+        router.push('/inventory/dashboard');
+        router.refresh();
       }
 
-      toast({
-        title: "Opening Stock Saved",
-        description: "The initial stock levels have been successfully recorded.",
-      });
-      router.push('/inventory/dashboard');
-      router.refresh();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-      toast({ variant: 'destructive', title: 'Submission Failed', description: errorMessage });
+      if (!existingStock.length) { // Only show generic error if it's not a 409
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Submission Failed', description: errorMessage });
+      }
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  const getProductNameByVariantId = (variantId: string) => {
+    const found = allSkus.find(sku => sku.value === variantId);
+    return found ? found.label : 'Unknown Product';
   }
 
   return (
@@ -218,6 +242,38 @@ export function OpeningStockForm() {
             />
           </CardContent>
         </Card>
+        {existingStock.length > 0 && (
+          <Card className="border-destructive">
+            <CardHeader>
+              <CardTitle className="text-destructive">Existing Opening Stock</CardTitle>
+              <CardDescription>
+                The selected location already has opening stock records. You can only create one opening stock entry per location.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Batch Code</TableHead>
+                      <TableHead>Expiry Date</TableHead>
+                      <TableHead className="text-right">Quantity</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {existingStock.map(entry => (
+                      <TableRow key={entry.id}>
+                        <TableCell>{getProductNameByVariantId(entry.product_variant_id)}</TableCell>
+                        <TableCell>{entry.patch_code}</TableCell>
+                        <TableCell>{entry.expire_date !== '0000-00-00' ? format(new Date(entry.expire_date), 'dd MMM, yyyy') : 'N/A'}</TableCell>
+                        <TableCell className="text-right">{parseFloat(entry.quantity).toFixed(2)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardHeader>
             <CardTitle>Stock Items</CardTitle>
