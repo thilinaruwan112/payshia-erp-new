@@ -109,7 +109,7 @@ function GuestReceiptContent() {
 
   const handlePrint = async () => {
     if (!receiptRef.current) return;
-
+    
     // Calculate height and set print styles
     const heightInPixels = receiptRef.current.offsetHeight;
     const heightInMm = (heightInPixels * 25.4) / 96; // Assuming 96 DPI
@@ -118,14 +118,20 @@ function GuestReceiptContent() {
     style.innerHTML = `
         @media print {
             @page {
-                size: 80mm ${heightInMm + 5}mm; /* Set the calculated height */
+                size: 80mm ${heightInMm + 5}mm; /* Add some buffer */
                 margin: 0;
             }
         }
     `;
     document.head.appendChild(style);
-  
+
     window.print();
+
+    // Optional: Clean up the style element after printing
+    // The timeout is to ensure the print dialog has had time to process the styles
+    setTimeout(() => {
+        document.head.removeChild(style);
+    }, 1000);
   };
 
   useEffect(() => {
@@ -173,7 +179,7 @@ function GuestReceiptContent() {
         <div className="text-xs space-y-0.5">
           <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
           <div className="flex justify-between"><p>Customer: {customer?.first_name || 'Walk-in'}</p></div>
-          <div className="flex justify-between"><p>Date: {format(new Date(invoice.invoice_date), "yyyy-MM-dd HH:mm:ss")}</p></div>
+          <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
           <div className="flex justify-between"><p>Cashier: {invoice.created_by}</p></div>
           {invoice.steward_id !== "N/A" && <div className="flex justify-between"><p>Steward: {invoice.steward_id}</p></div>}
           {invoice.table_id !== '0' && <div className="flex justify-between"><p>Table: {invoice.table_id}</p></div>}
