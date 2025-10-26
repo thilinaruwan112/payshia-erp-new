@@ -1,6 +1,11 @@
 
 'use client';
 
+// Import the external CSS file
+import '../../print-receipt.css';
+
+
+
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import type { Invoice } from '@/lib/types';
@@ -75,7 +80,26 @@ function GuestReceiptContent() {
 
   const handlePrint = async () => {
     if (!receiptRef.current) return;
-    setTimeout(() => window.print(), 500);
+    
+    // Calculate height and set print styles
+    const heightInPixels = receiptRef.current.offsetHeight;
+    const heightInMm = (heightInPixels * 25.4) / 96; // Assuming 96 DPI
+    
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @media print {
+            @page {
+                size: 80mm ${heightInMm + 5}mm; /* Add a small margin */
+                margin: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+
+    setTimeout(() => {
+        window.print();
+        document.head.removeChild(style); // Clean up the style tag after printing
+    }, 500);
   };
 
   useEffect(() => {
@@ -107,7 +131,8 @@ function GuestReceiptContent() {
   const totalDiscount = totals.itemDiscounts + totals.discount;
   
   return (
-    <div ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
+    <>
+    <div id="receipt-print-area" ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
       <div className="text-center mb-2">
         <h1 className="font-bold text-xl">GUEST RECEIPT</h1>
         <p className="text-xs">*** This is not a final bill ***</p>
@@ -137,8 +162,8 @@ function GuestReceiptContent() {
             <tr key={index}>
               <td className="py-1 align-top w-[50%]">{item.name}</td>
               <td className="py-1 align-top text-center">{item.quantity}</td>
-              <td className="py-1 align-top text-right">${item.price.toFixed(2)}</td>
-              <td className="py-1 align-top text-right">${item.total.toFixed(2)}</td>
+              <td className="py-1 align-top text-right">{item.price.toFixed(2)}</td>
+              <td className="py-1 align-top text-right">{item.total.toFixed(2)}</td>
             </tr>
           ))}
         </tbody>
@@ -148,19 +173,19 @@ function GuestReceiptContent() {
        <div className="space-y-1 text-xs">
         <div className="flex justify-between">
           <span>Subtotal:</span>
-          <span>${totals.subtotal.toFixed(2)}</span>
+          <span>{totals.subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
           <span>Discount:</span>
-          <span>-${totalDiscount.toFixed(2)}</span>
+          <span>-{totalDiscount.toFixed(2)}</span>
         </div>
          <div className="flex justify-between">
           <span>Service Charge:</span>
-          <span>${totals.serviceCharge.toFixed(2)}</span>
+          <span>{totals.serviceCharge.toFixed(2)}</span>
         </div>
         <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
           <span>TOTAL:</span>
-          <span>${totals.total.toFixed(2)}</span>
+          <span>{totals.total.toFixed(2)}</span>
         </div>
       </div>
 
@@ -168,6 +193,8 @@ function GuestReceiptContent() {
            <p>Thank You!</p>
        </div>
     </div>
+    <button className="bg-blue-500 text-white px-4 py-2 rounded-md mt-4" onClick={() => window.print()}>Print</button>
+    </>
   );
 }
 
@@ -175,6 +202,7 @@ export default function GuestReceiptPage() {
     return (
         <Suspense fallback={<div>Loading...</div>}>
             <GuestReceiptContent />
+           
         </Suspense>
     )
 }

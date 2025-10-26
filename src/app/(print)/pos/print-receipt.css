@@ -1,0 +1,32 @@
+@page {
+    size: 78mm auto;
+    margin: 0mm;
+  }
+  
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #receipt-print-area,
+    #receipt-print-area * {
+      visibility: visible;
+
+    }
+    #receipt-print-area {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      
+    }
+    @page {
+      size: 78mm 255.42mm; /* Set the calculated height */
+      margin: 0; /* Adjust margins as needed */
+    }
+  }
+
+  body {
+    /* Set a gray background on the page so the white receipt "paper" stands out */
+    background-color: #f0f0f0;
+    font-family: 'Courier New', Courier, monospace;     
+  }
