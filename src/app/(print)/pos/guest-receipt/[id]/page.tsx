@@ -5,8 +5,6 @@
 // Import the external CSS file
 import '../../print-receipt.css';
 
-
-
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import type { Invoice } from '@/lib/types';
@@ -128,7 +126,7 @@ function GuestReceiptContent() {
     );
   }
   
-  const { items, totals, orderName, cashierName, date, locationName, companyName, logoPath } = receiptData;
+  const { items, totals, orderName, cashierName, date, locationName, companyName, logoPath, locationAddress, locationPhone, invoiceNumber, customerName, stewardName, tableName } = receiptData;
   const totalDiscount = totals.itemDiscounts + totals.discount;
   const logoUrl = logoPath ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${logoPath}` : null;
   
@@ -136,17 +134,20 @@ function GuestReceiptContent() {
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
-          {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
-          <h1 className="font-bold text-xl">GUEST RECEIPT</h1>
-          <p className="text-xs">*** This is not a final bill ***</p>
+          {logoUrl && <Image src={logoUrl} alt="logo" width={60} height={60} className="mx-auto my-1" />}
+          <p className="text-xs">{locationAddress}</p>
+          <p className="text-xs">Tel: {locationPhone}</p>
+          <div className="my-2 border-t-2 border-dashed border-black"></div>
+          <h1 className="font-bold text-lg">GUEST RECEIPT</h1>
         </div>
         
-        <div className="flex justify-between text-xs">
-          <p>Order: {orderName}</p>
-          <p>{format(new Date(date), "dd/MM/yy HH:mm")}</p>
-        </div>
-        <div className="flex justify-between text-xs">
-          <p>Cashier: {cashierName}</p>
+        <div className="text-xs space-y-0.5">
+          <div className="flex justify-between"><p>Invoice #: {invoiceNumber}</p></div>
+          <div className="flex justify-between"><p>Customer: {customerName}</p></div>
+          <div className="flex justify-between"><p>Date: {format(new Date(date), "yyyy-MM-dd HH:mm:ss")}</p></div>
+          <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
+          {stewardName && <div className="flex justify-between"><p>Steward: {stewardName}</p></div>}
+          {tableName && <div className="flex justify-between"><p>Table: {tableName}</p></div>}
         </div>
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>
@@ -182,10 +183,10 @@ function GuestReceiptContent() {
             <span>Discount:</span>
             <span>-{totalDiscount.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between">
-            <span>Service Charge:</span>
-            <span>{totals.serviceCharge.toFixed(2)}</span>
-          </div>
+         <div className="flex justify-between">
+          <span>Service Charge:</span>
+          <span>{totals.serviceCharge.toFixed(2)}</span>
+        </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
             <span>{totals.total.toFixed(2)}</span>

@@ -748,11 +748,11 @@ export default function POSPage() {
   if (!currentCashier) return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-4">Loading cashier details...</p></div>
 
   const handleGuestReceipt = () => {
-    if (!order || !currentLocation) {
+    if (!currentOrder || !currentLocation) {
         toast({ variant: 'destructive', title: 'Error', description: 'No active order or location selected.'});
         return;
     };
-    if (cart.length === 0) {
+    if (currentOrder.cart.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Cart is empty',
@@ -761,10 +761,10 @@ export default function POSPage() {
       return;
     }
     const receiptData = {
-      orderName,
-      cashierName,
+      orderName: currentOrder.name,
+      cashierName: currentCashier.user_name,
       date: new Date().toISOString(),
-      items: cart.map(item => ({
+      items: currentOrder.cart.map(item => ({
         name: item.product.variantName,
         quantity: item.quantity,
         price: item.product.price,
@@ -774,10 +774,16 @@ export default function POSPage() {
       locationName: currentLocation.location_name,
       companyName: 'Payshia ERP', // This might need to come from a context/API
       logoPath: currentLocation.logo_path,
+      locationAddress: `${currentLocation.address_line1}, ${currentLocation.city}`,
+      locationPhone: currentLocation.phone_1,
+      invoiceNumber: currentOrder.originalInvoiceNumber || `KOT-${currentOrder.id.slice(-4)}`,
+      customerName: currentOrder.customer.name,
+      stewardName: currentOrder.steward?.name,
+      tableName: currentOrder.tableName,
     };
     
     const dataString = encodeURIComponent(JSON.stringify(receiptData));
-    window.open(`/pos/guest-receipt/print?data=${dataString}`, '_blank');
+    window.open(`/pos/guest-receipt/print?data=${dataString}`.replace('[id]', 'print'), '_blank');
   };
 
   return (
@@ -907,5 +913,6 @@ export default function POSPage() {
     
 
     
+
 
 
