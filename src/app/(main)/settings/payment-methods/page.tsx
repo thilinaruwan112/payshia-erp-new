@@ -48,7 +48,7 @@ export default function PaymentMethodsPage() {
     }
     setIsLoading(true);
     try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment-method`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment-method/filter/by-company?company_id=${company_id}`);
         if (!response.ok) {
             throw new Error('Failed to fetch payment methods');
         }
