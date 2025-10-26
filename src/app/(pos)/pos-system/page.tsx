@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -748,42 +747,15 @@ export default function POSPage() {
   if (!currentCashier) return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-4">Loading cashier details...</p></div>
 
   const handleGuestReceipt = () => {
-    if (!currentOrder || !currentLocation) {
-        toast({ variant: 'destructive', title: 'Error', description: 'No active order or location selected.'});
-        return;
-    };
-    if (currentOrder.cart.length === 0) {
+    if (!currentOrder || !currentOrder.originalInvoiceNumber) {
       toast({
         variant: 'destructive',
-        title: 'Cart is empty',
-        description: 'Cannot print a receipt for an empty order.',
+        title: 'Not a Held Order',
+        description: 'Guest receipts can only be printed for orders that have been held (sent to the kitchen).',
       });
       return;
     }
-    const receiptData = {
-      orderName: currentOrder.name,
-      cashierName: currentCashier.user_name,
-      date: new Date().toISOString(),
-      items: currentOrder.cart.map(item => ({
-        name: item.product.variantName,
-        quantity: item.quantity,
-        price: item.product.price,
-        total: (item.product.price as number) * item.quantity,
-      })),
-      totals: orderTotals,
-      locationName: currentLocation.location_name,
-      companyName: 'Payshia ERP', // This might need to come from a context/API
-      logoPath: currentLocation.logo_path,
-      locationAddress: `${currentLocation.address_line1}, ${currentLocation.city}`,
-      locationPhone: currentLocation.phone_1,
-      invoiceNumber: currentOrder.originalInvoiceNumber || `KOT-${currentOrder.id.slice(-4)}`,
-      customerName: currentOrder.customer.name,
-      stewardName: currentOrder.steward?.name,
-      tableName: currentOrder.tableName,
-    };
-    
-    const dataString = encodeURIComponent(JSON.stringify(receiptData));
-    window.open(`/pos/guest-receipt/print?data=${dataString}`.replace('[id]', 'print'), '_blank');
+    window.open(`/pos/guest-receipt/print?id=${currentOrder.originalInvoiceNumber}`, '_blank');
   };
 
   return (
@@ -909,10 +881,3 @@ export default function POSPage() {
     </>
   );
 }
-
-    
-
-    
-
-
-
