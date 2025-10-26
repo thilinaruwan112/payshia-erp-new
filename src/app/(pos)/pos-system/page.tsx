@@ -684,15 +684,6 @@ export default function POSPage() {
      setActiveOrders((prevOrders) => prevOrders.map((order) => order.id === currentOrderId ? { ...order, discount: newDiscount } : order));
   }
 
-  const setServiceCharge = useCallback((charge: number) => {
-    if (!currentOrderId) return;
-    setActiveOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === currentOrderId ? { ...order, serviceCharge: charge } : order
-      )
-    );
-  }, [currentOrderId]);
-
   const orderTotals = useMemo((): OrderInfo => {
     if (!currentOrder) return { subtotal: 0, serviceCharge: 0, discount: 0, itemDiscounts: 0, total: 0 };
 
@@ -701,15 +692,9 @@ export default function POSPage() {
     
     const serviceCharge = isServiceChargeActive ? subtotal * 0.10 : 0;
     
-    // Update the service charge in the state if it's different
-    if (serviceCharge !== currentOrder.serviceCharge) {
-      // Use a function that is stable and doesn't depend on `setServiceCharge` changing
-      setTimeout(() => setServiceCharge(serviceCharge), 0);
-    }
-    
     const total = subtotal - itemDiscounts + serviceCharge - currentOrder.discount;
     return { subtotal, serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
-  }, [currentOrder, isServiceChargeActive, setServiceCharge]);
+  }, [currentOrder, isServiceChargeActive]);
   
   const onUpdateDetails = (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => {
       setActiveOrders(prevOrders => prevOrders.map(order => {
@@ -761,6 +746,39 @@ export default function POSPage() {
   if (isLocationLoading) return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (!currentLocation) return <LocationSelectionDialog open={!currentLocation} locations={availableLocations.filter(loc => loc.pos_status === '1')} onSelectLocation={(loc) => setCurrentLocation(loc)} />;
   if (!currentCashier) return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /><p className="ml-4">Loading cashier details...</p></div>
+
+  const handleGuestReceipt = () => {
+    if (!order || !currentLocation) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No active order or location selected.'});
+        return;
+    };
+    if (cart.length === 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Cart is empty',
+        description: 'Cannot print a receipt for an empty order.',
+      });
+      return;
+    }
+    const receiptData = {
+      orderName,
+      cashierName,
+      date: new Date().toISOString(),
+      items: cart.map(item => ({
+        name: item.product.variantName,
+        quantity: item.quantity,
+        price: item.product.price,
+        total: (item.product.price as number) * item.quantity,
+      })),
+      totals: orderTotals,
+      locationName: currentLocation.location_name,
+      companyName: 'Payshia ERP', // This might need to come from a context/API
+      logoPath: currentLocation.logo_path,
+    };
+    
+    const dataString = encodeURIComponent(JSON.stringify(receiptData));
+    window.open(`/pos/guest-receipt/print?data=${dataString}`, '_blank');
+  };
 
   return (
     <>
@@ -889,4 +907,5 @@ export default function POSPage() {
     
 
     
+
 

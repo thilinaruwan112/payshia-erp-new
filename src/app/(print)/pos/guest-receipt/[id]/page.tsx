@@ -1,4 +1,5 @@
 
+
 'use client';
 
 // Import the external CSS file
@@ -14,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 interface Company {
     id: string;
@@ -126,13 +128,15 @@ function GuestReceiptContent() {
     );
   }
   
-  const { items, totals, orderName, cashierName, date } = receiptData;
+  const { items, totals, orderName, cashierName, date, locationName, companyName, logoPath } = receiptData;
   const totalDiscount = totals.itemDiscounts + totals.discount;
+  const logoUrl = logoPath ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${logoPath}` : null;
   
   return (
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
+          {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
           <h1 className="font-bold text-xl">GUEST RECEIPT</h1>
           <p className="text-xs">*** This is not a final bill ***</p>
         </div>
@@ -192,7 +196,7 @@ function GuestReceiptContent() {
             <p>Thank You!</p>
         </div>
       </div>
-      <Button className="w-[80mm] mt-2 print:hidden" onClick={() => window.print()}>Print</Button>
+      <Button className="w-full mt-2 print:hidden max-w-[80mm]" onClick={() => window.print()}>Print</Button>
     </div>
   );
 }
