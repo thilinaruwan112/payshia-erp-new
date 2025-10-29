@@ -62,6 +62,13 @@ type Size = {
     value: string;
 }
 
+type CustomField = {
+  field_id: string;
+  field_name: string;
+  description: string;
+  value: string;
+}
+
 type CustomFieldMaster = {
     id: string;
     field_name: string;
@@ -110,7 +117,7 @@ const productFormSchema = z.object({
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
 interface ProductFormProps {
-  product?: Product;
+  product?: Product & { images?: ProductImage[], custom_fields?: CustomField[] };
 }
 
 export function ProductForm({ product }: ProductFormProps) {
@@ -126,7 +133,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const [sizes, setSizes] = useState<Size[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [customFieldMasters, setCustomFieldMasters] = useState<CustomFieldMaster[]>([]);
-  const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [productImages, setProductImages] = useState<ProductImage[]>(product?.images || []);
   const { company_id, availableLocations } = useLocation();
 
   const fetchProductImages = useCallback(async () => {
@@ -219,7 +226,7 @@ export function ProductForm({ product }: ProductFormProps) {
         const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
         return foundSupplier ? foundSupplier.supplier_id : '';
     }).filter(Boolean) || [],
-    customFields: [],
+    customFields: product?.custom_fields?.map(cf => ({ master_custom_field_id: cf.field_id, value: cf.value })) || [],
     base_location: product?.base_location || "",
     available_locations: product?.available_locations?.split(',') || [],
   };
@@ -231,13 +238,26 @@ export function ProductForm({ product }: ProductFormProps) {
   });
   
   useEffect(() => {
-    if (customFieldMasters.length > 0 && form.getValues('customFields')?.length === 0) {
-        form.setValue('customFields', customFieldMasters.map(field => ({
-            master_custom_field_id: field.id,
-            value: '', 
+    if (product?.custom_fields && customFieldMasters.length > 0) {
+        const existingCustomFields = product.custom_fields.map(cf => ({
+            master_custom_field_id: cf.field_id,
+            value: cf.value,
+        }));
+        const masterIdsInProduct = new Set(existingCustomFields.map(f => f.master_custom_field_id));
+        const missingMasterFields = customFieldMasters
+            .filter(mf => !masterIdsInProduct.has(mf.id))
+            .map(mf => ({
+                master_custom_field_id: mf.id,
+                value: '',
+            }));
+        form.setValue('customFields', [...existingCustomFields, ...missingMasterFields]);
+    } else if (customFieldMasters.length > 0 && !product?.custom_fields) {
+        form.setValue('customFields', customFieldMasters.map(mf => ({
+            master_custom_field_id: mf.id,
+            value: '',
         })));
     }
-  }, [customFieldMasters, form]);
+  }, [customFieldMasters, product, form]);
   
   useEffect(() => {
     if (product?.supplier && suppliers.length > 0) {
@@ -357,7 +377,7 @@ export function ProductForm({ product }: ProductFormProps) {
       const returnedProduct = result.product;
       const productId = returnedProduct.id;
       
-      const detailsResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/details/${productId}`);
+      const detailsResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/details/full/slug/?slug=${returnedProduct.slug}`);
       const detailsData = await detailsResponse.json();
 
       setSavedProductId(productId);
@@ -607,7 +627,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                         <h3 className="text-sm font-medium mb-2 text-muted-foreground">Front Image</h3>
                                         <div className="relative w-full max-w-xs">
                                             <Image
-                                                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${frontImage.img_url}`}
+                                                src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}`}
                                                 alt={product?.name || 'Front image'}
                                                 width={400}
                                                 height={400}
@@ -633,7 +653,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                             {otherImages.map(image => (
                                                 <div key={image.id} className="relative group">
                                                     <Image
-                                                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${image.img_url}`}
+                                                        src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${image.img_url}`}
                                                         alt={product?.name || 'Product image'}
                                                         width={150}
                                                         height={150}
@@ -666,7 +686,7 @@ export function ProductForm({ product }: ProductFormProps) {
                   <CardContent className="space-y-4">
                     {customFieldMasters.length > 0 && customFieldsInForm && customFieldMasters
                       .filter(masterField => customFieldsInForm.some(cf => cf.master_custom_field_id === masterField.id))
-                      .map((masterField) => {
+                      .map((masterField, masterIndex) => {
                           const fieldIndex = customFieldsInForm.findIndex(cf => cf.master_custom_field_id === masterField.id);
                           if (fieldIndex === -1) return null;
 
