@@ -136,67 +136,67 @@ export function ProductForm({ product }: ProductFormProps) {
   const [productImages, setProductImages] = useState<ProductImage[]>(product?.images || []);
   const { company_id, availableLocations } = useLocation();
 
-  const fetchProductImages = useCallback(async () => {
-    if (!product || !company_id) return;
+  const fetchData = useCallback(async () => {
+    if (!company_id) return;
+  
+    const urls: { [key: string]: string } = {
+      categories: `${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`,
+      brands: `${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`,
+      colors: `${process.env.NEXT_PUBLIC_API_BASE_URL}/product-colors/company?company_id=${company_id}`,
+      sizes: `${process.env.NEXT_PUBLIC_API_BASE_URL}/sizes/filter/company?company_id=${company_id}`,
+      suppliers: `${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`,
+      customFields: `${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-fields/filter/by-company?company_id=${company_id}`,
+    };
+  
     try {
+      const responses = await Promise.all(Object.values(urls).map(url => fetcher(url)));
+      const dataPromises = responses.map(res => res.json());
+      const [
+        categoriesData,
+        brandsData,
+        colorsData,
+        sizesData,
+        suppliersData,
+        customFieldsData,
+      ] = await Promise.all(dataPromises);
+  
+      setCategories(categoriesData || []);
+      setBrands(brandsData || []);
+      setColors(colorsData || []);
+      setSizes(sizesData || []);
+      setSuppliers(suppliersData || []);
+      setCustomFieldMasters(customFieldsData || []);
+  
+      // Fetch images only if a product exists
+      if (product) {
         let allImages: ProductImage[] = [];
         if (product.variants && product.variants.length > 0) {
-            for (const variant of product.variants) {
-                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variant.id}`);
-                if (response.ok) {
-                    const data: ProductImage[] = await response.json();
-                    if(Array.isArray(data)) {
-                        allImages = [...allImages, ...data];
-                    }
-                }
+          for (const variant of product.variants) {
+            const imgResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variant.id}`);
+            if (imgResponse.ok) {
+              const imgData = await imgResponse.json();
+              if (Array.isArray(imgData)) {
+                allImages = [...allImages, ...imgData];
+              }
             }
+          }
         }
         const uniqueImages = Array.from(new Map(allImages.map(img => [img.id, img])).values());
         setProductImages(uniqueImages);
-    } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Could not load product images." });
-    }
-  }, [product, company_id, toast]);
-
-  useEffect(() => {
-    if (product && company_id) {
-      fetchProductImages();
-    }
-  }, [product, company_id, fetchProductImages]);
-
-
-  useEffect(() => {
-    async function fetchData(url: string, setData: Function, type: string) {
-       try {
-        const response = await fetcher(url);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch ${type}`);
-        }
-        const data = await response.json();
-        if (type === 'products') {
-            setData(data.products || []);
-        } else {
-            setData(data || []);
-        }
-      } catch (error) {
-        console.error(error);
-        toast({
-          variant: "destructive",
-          title: `Failed to load ${type}`,
-          description: `Could not fetch ${type} from the server.`,
-        });
       }
+    } catch (error) {
+      console.error("Data fetching error:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to load initial data",
+        description: "Could not fetch necessary data from the server.",
+      });
     }
-    
-    if (company_id) {
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`, setCategories, 'categories');
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`, setBrands, 'brands');
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-colors/company?company_id=${company_id}`, setColors, 'colors');
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/sizes/filter/company?company_id=${company_id}`, setSizes, 'sizes');
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`, setSuppliers, 'suppliers');
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-fields/filter/by-company?company_id=${company_id}`, setCustomFieldMasters, 'custom fields');
-    }
-  }, [toast, company_id]);
+  }, [company_id, product, toast]);
+  
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
   
   const defaultValues: Partial<ProductFormValues> = {
     name: product?.name || "",
