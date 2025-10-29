@@ -136,6 +136,12 @@ export function ProductForm({ product }: ProductFormProps) {
   const [productImages, setProductImages] = useState<ProductImage[]>(product?.images || []);
   const { company_id, availableLocations } = useLocation();
 
+  const normalizeRecipeType = (apiValue?: string) => {
+    if (apiValue === 'ala cart') return 'a_la_carte';
+    if (apiValue === 'standard' || apiValue === 'item_recipe') return apiValue;
+    return 'standard';
+  };
+  
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
     defaultValues: {
@@ -149,7 +155,7 @@ export function ProductForm({ product }: ProductFormProps) {
       status: product?.status || "active",
       categoryId: product?.category_id || "",
       brandId: product?.brand_id || "",
-      recipeType: product?.recipe_type || "standard",
+      recipeType: normalizeRecipeType(product?.recipe_type) as ProductFormValues['recipeType'],
       item_type: product?.item_type || "both",
       variants: product?.variants?.map(v => ({
           id: v.id,
