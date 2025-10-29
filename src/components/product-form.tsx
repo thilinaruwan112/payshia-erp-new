@@ -136,6 +136,45 @@ export function ProductForm({ product }: ProductFormProps) {
   const [productImages, setProductImages] = useState<ProductImage[]>(product?.images || []);
   const { company_id, availableLocations } = useLocation();
 
+  const form = useForm<ProductFormValues>({
+    resolver: zodResolver(productFormSchema),
+    defaultValues: {
+      name: product?.name || "",
+      printName: product?.print_name || "",
+      tamilName: product?.tamil_name || "",
+      sinhalaName: product?.sinhala_name || "",
+      displayName: product?.display_name || "",
+      description: product?.description || "",
+      stockUnit: product?.stock_unit || "Nos",
+      status: product?.status || "active",
+      categoryId: product?.category_id || "",
+      brandId: product?.brand_id || "",
+      recipeType: product?.recipe_type || "standard",
+      item_type: product?.item_type || "both",
+      variants: product?.variants?.map(v => ({
+          id: v.id,
+          sku: v.sku,
+          barcode: v.barcode || "",
+          colorId: v.color_id ?? undefined,
+          sizeId: v.size_id ?? undefined,
+          price: v.price ? parseFloat(String(v.price)) : 0,
+          cost_price: v.cost_price ? parseFloat(String(v.cost_price)) : 0,
+          min_price: v.min_price ? parseFloat(String(v.min_price)) : 0,
+          wholesale_price: v.wholesale_price ? parseFloat(String(v.wholesale_price)) : 0,
+      })) || [{ sku: "", barcode: "", colorId: "", sizeId: "", price: 0 }],
+      supplier: [],
+      customFields: [],
+      base_location: product?.base_location || "",
+      available_locations: product?.available_locations?.split(',') || [],
+    },
+    mode: "onChange",
+  });
+  
+  const { fields, append, remove } = useFieldArray({
+    name: "variants",
+    control: form.control,
+  });
+
   const fetchData = useCallback(async () => {
     if (!company_id) return;
   
@@ -166,12 +205,43 @@ export function ProductForm({ product }: ProductFormProps) {
       setSizes(sizesData || []);
       setSuppliers(suppliersData || []);
       setCustomFieldMasters(customFieldsData || []);
-  
+      
+      // Now that master data is loaded, set form values that depend on it
+      if (product?.supplier && suppliersData.length > 0) {
+        const supplierIds = product.supplier.split(',').map(sName => {
+            const foundSupplier = suppliersData.find((s: Supplier) => s.supplier_name === sName.trim());
+            return foundSupplier ? foundSupplier.supplier_id : null;
+        }).filter(Boolean) as string[];
+        form.setValue('supplier', supplierIds);
+      }
+
+      if (product?.custom_fields && customFieldsData.length > 0) {
+        const existingCustomFields = product.custom_fields.map(cf => ({
+            master_custom_field_id: cf.field_id,
+            value: cf.value,
+        }));
+        const masterIdsInProduct = new Set(existingCustomFields.map(f => f.master_custom_field_id));
+        const missingMasterFields = customFieldsData
+            .filter((mf: CustomFieldMaster) => !masterIdsInProduct.has(mf.id))
+            .map((mf: CustomFieldMaster) => ({
+                master_custom_field_id: mf.id,
+                value: '',
+            }));
+        form.setValue('customFields', [...existingCustomFields, ...missingMasterFields]);
+      } else if (customFieldsData.length > 0 && !product?.custom_fields) {
+        form.setValue('customFields', customFieldsData.map((mf: CustomFieldMaster) => ({
+            master_custom_field_id: mf.id,
+            value: '',
+        })));
+      }
+
       // Fetch images only if a product exists
       if (product) {
         let allImages: ProductImage[] = [];
-        if (product.variants && product.variants.length > 0) {
-          for (const variant of product.variants) {
+        const variantsToFetch = product.variants && product.variants.length > 0 ? product.variants : [{ id: product.id, sku: '', product_id: product.id }];
+        for (const variant of variantsToFetch) {
+          if (!variant.id) continue;
+          try {
             const imgResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variant.id}`);
             if (imgResponse.ok) {
               const imgData = await imgResponse.json();
@@ -179,6 +249,8 @@ export function ProductForm({ product }: ProductFormProps) {
                 allImages = [...allImages, ...imgData];
               }
             }
+          } catch(e) {
+             console.error(`Failed to fetch images for variant ${variant.id}`, e);
           }
         }
         const uniqueImages = Array.from(new Map(allImages.map(img => [img.id, img])).values());
@@ -192,87 +264,11 @@ export function ProductForm({ product }: ProductFormProps) {
         description: "Could not fetch necessary data from the server.",
       });
     }
-  }, [company_id, product, toast]);
-  
+  }, [company_id, product, toast, form]);
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-  
-  const defaultValues: Partial<ProductFormValues> = {
-    name: product?.name || "",
-    printName: product?.print_name || "",
-    tamilName: product?.tamil_name || "",
-    sinhalaName: product?.sinhala_name || "",
-    displayName: product?.display_name || "",
-    description: product?.description || "",
-    stockUnit: product?.stock_unit || "Nos",
-    status: product?.status || "active",
-    categoryId: product?.category_id || "",
-    brandId: product?.brand_id || "",
-    recipeType: product?.recipe_type || "standard",
-    item_type: product?.item_type || "both",
-    variants: product?.variants?.map(v => ({
-        id: v.id,
-        sku: v.sku,
-        barcode: v.barcode || "",
-        colorId: v.color_id ?? undefined,
-        sizeId: v.size_id ?? undefined,
-        price: v.price ? parseFloat(String(v.price)) : 0,
-        cost_price: v.cost_price ? parseFloat(String(v.cost_price)) : 0,
-        min_price: v.min_price ? parseFloat(String(v.min_price)) : 0,
-        wholesale_price: v.wholesale_price ? parseFloat(String(v.wholesale_price)) : 0,
-    })) || [{ sku: "", barcode: "", colorId: "", sizeId: "", price: 0 }],
-    supplier: product?.supplier?.split(',').map(sName => {
-        const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
-        return foundSupplier ? foundSupplier.supplier_id : '';
-    }).filter(Boolean) || [],
-    customFields: product?.custom_fields?.map(cf => ({ master_custom_field_id: cf.field_id, value: cf.value })) || [],
-    base_location: product?.base_location || "",
-    available_locations: product?.available_locations?.split(',') || [],
-  };
-
-  const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productFormSchema),
-    defaultValues,
-    mode: "onChange",
-  });
-  
-  useEffect(() => {
-    if (product?.custom_fields && customFieldMasters.length > 0) {
-        const existingCustomFields = product.custom_fields.map(cf => ({
-            master_custom_field_id: cf.field_id,
-            value: cf.value,
-        }));
-        const masterIdsInProduct = new Set(existingCustomFields.map(f => f.master_custom_field_id));
-        const missingMasterFields = customFieldMasters
-            .filter(mf => !masterIdsInProduct.has(mf.id))
-            .map(mf => ({
-                master_custom_field_id: mf.id,
-                value: '',
-            }));
-        form.setValue('customFields', [...existingCustomFields, ...missingMasterFields]);
-    } else if (customFieldMasters.length > 0 && !product?.custom_fields) {
-        form.setValue('customFields', customFieldMasters.map(mf => ({
-            master_custom_field_id: mf.id,
-            value: '',
-        })));
-    }
-  }, [customFieldMasters, product, form]);
-  
-  useEffect(() => {
-    if (product?.supplier && suppliers.length > 0) {
-        const supplierIds = product.supplier.split(',').map(sName => {
-            const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
-            return foundSupplier ? foundSupplier.supplier_id : null;
-        }).filter(Boolean) as string[];
-        form.setValue('supplier', supplierIds);
-    }
-  }, [product, suppliers, form]);
-
-  const { fields, append, remove } = useFieldArray({
-    name: "variants",
-    control: form.control,
-  });
 
   const handleRemoveVariant = async (index: number) => {
     const variantId = form.getValues(`variants.${index}.id`);
