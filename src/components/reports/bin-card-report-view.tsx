@@ -57,8 +57,8 @@ export const BinCardReportView = ({ reportData }: { reportData: ReportData }) =>
                             <TableRow key={`${tx.transaction_date}-${index}`}>
                                 <TableCell>{format(new Date(tx.transaction_date), 'yyyy-MM-dd')}</TableCell>
                                 <TableCell>{tx.description}</TableCell>
-                                <TableCell className="text-right font-mono text-green-600">{tx.in > '0' ? parseFloat(tx.in).toFixed(2) : '-'}</TableCell>
-                                <TableCell className="text-right font-mono text-destructive">{tx.out > '0' ? parseFloat(tx.out).toFixed(2) : '-'}</TableCell>
+                                <TableCell className="text-right font-mono text-green-600">{parseFloat(tx.in) > 0 ? parseFloat(tx.in).toFixed(2) : '-'}</TableCell>
+                                <TableCell className="text-right font-mono text-destructive">{parseFloat(tx.out) > 0 ? parseFloat(tx.out).toFixed(2) : '-'}</TableCell>
                                 <TableCell className="text-right font-mono font-bold">{tx.balance.toFixed(2)}</TableCell>
                             </TableRow>
                         )) : (
