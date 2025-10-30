@@ -182,7 +182,10 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                     params.append('location_id', filterValues['location']);
                 }
                 if (filterValues['item'] && filterValues['item'] !== 'all') {
-                    params.append('product_variant_id', filterValues['item']);
+                    const selectedVariant = products.flatMap(p => p.variants).find(v => v.id === filterValues['item']);
+                    if (selectedVariant) {
+                       params.append('product_variant_id', selectedVariant.id);
+                    }
                 }
                 if (filterValues['category'] && filterValues['category'] !== 'all') {
                     params.append('category_id', filterValues['category']);
@@ -192,6 +195,22 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                 }
                 if (singleDate) {
                     params.append('before_date', format(singleDate, 'yyyy-MM-dd'));
+                }
+            } else if (reportName === 'Bin Card Report') {
+                if (!filterValues['item'] || filterValues['item'] === 'all' || !dateRange?.from) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Filters Required',
+                        description: 'Please select an item and a date range for the Bin Card Report.',
+                    });
+                    setIsFetching(false);
+                    return;
+                }
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/bin-card`;
+                const selectedVariant = products.flatMap(p => p.variants).find(v => v.id === filterValues['item']);
+                if (selectedVariant) {
+                    params.append('product_id', selectedVariant.product_id!);
+                    params.append('product_variant_id', selectedVariant.id);
                 }
             }
             
@@ -211,8 +230,8 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             if (!response.ok) throw new Error(`Failed to fetch ${reportName} data`);
             const data = await response.json();
             
-            if (reportName === 'Item Wise Sales' || reportName === 'Invoice Wise Sales Report') {
-                onShowReport(data.data?.report_data || { items: [], invoices: [], summary: {} });
+            if (['Item Wise Sales', 'Invoice Wise Sales Report', 'Bin Card Report'].includes(reportName)) {
+                onShowReport(data.data || { items: [], invoices: [], summary: {} });
             } else if (reportName === 'Item Master Report') {
                 onShowReport(data.products || []);
             } else if (reportName === 'Stock Balance Report') {

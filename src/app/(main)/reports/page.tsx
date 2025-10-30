@@ -17,6 +17,7 @@ import { InvoiceReportView } from '@/components/reports/invoice-report-view';
 import { ItemWiseSalesReportView } from '@/components/reports/item-wise-sales-report-view';
 import { InvoiceWiseSalesReportView } from '@/components/reports/invoice-wise-sales-report-view';
 import { StockBalanceReportView } from '@/components/reports/stock-balance-report-view';
+import { BinCardReportView } from '@/components/reports/bin-card-report-view';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import jsPDF from 'jspdf';
@@ -222,7 +223,7 @@ function ReportsPage() {
       }
     }, [searchParams, handleSelectReport]);
 
-    const hasData = Array.isArray(reportData) ? reportData.length > 0 : (reportData?.items?.length > 0 || reportData?.invoices?.length > 0 || reportData?.data?.length > 0);
+    const hasData = Array.isArray(reportData) ? reportData.length > 0 : (reportData?.items?.length > 0 || reportData?.invoices?.length > 0 || reportData?.data?.length > 0 || reportData?.transactions?.length > 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -285,6 +286,9 @@ function ReportsPage() {
                          )}
                          {hasData && selectedReport === 'Stock Balance Report' && (
                             <StockBalanceReportView reportData={reportData} />
+                         )}
+                          {hasData && selectedReport === 'Bin Card Report' && (
+                            <BinCardReportView reportData={reportData} />
                          )}
                     </div>
                 ) : (
