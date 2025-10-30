@@ -609,3 +609,14 @@ export type KeySetting = {
   locationName?: string; // For client-side display
   originalSetting?: KeySetting; // For forms
 };
+
+export type PaymentMethod = {
+  id: string;
+  method: string;
+  company_id: string;
+  created_by: string;
+  created_at: string;
+  updated_by: string | null;
+  updated_at: string | null;
+  is_active: string;
+};

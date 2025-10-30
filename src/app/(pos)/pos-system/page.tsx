@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import type { Product, Customer, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem, User } from '@/lib/types';
+import type { Product, Customer, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem, User, PaymentMethod } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -63,6 +63,7 @@ export default function POSPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [tables, setTables] = useState<TableType[]>([]);
   const [stewards, setStewards] = useState<User[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
@@ -165,14 +166,15 @@ export default function POSPage() {
         }
         setIsLoading(true);
         try {
-            const [productsResponse, collectionsResponse, brandsResponse, categoriesResponse, customersResponse, tablesResponse, stewardsResponse] = await Promise.all([
+            const [productsResponse, collectionsResponse, brandsResponse, categoriesResponse, customersResponse, tablesResponse, stewardsResponse, paymentMethodsResponse] = await Promise.all([
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`)
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment-method/filter/by-company?company_id=${company_id}`),
             ]);
 
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !categoriesResponse.ok || !customersResponse.ok) {
@@ -185,6 +187,9 @@ export default function POSPage() {
             const customersData: Customer[] = await customersResponse.json();
             const tablesData: TableType[] = await tablesResponse.json();
             const stewardsResult = await stewardsResponse.json();
+            const paymentMethodsData = await paymentMethodsResponse.json();
+
+            setPaymentMethods(paymentMethodsData || []);
             const stewardsData = stewardsResult.data || [];
             
             setTables(tablesData || []);
@@ -728,6 +733,7 @@ export default function POSPage() {
      <OrderPanel
         key={currentOrder.id} order={currentOrder} orderTotals={orderTotals}
         cashierName={currentCashier.user_name} currentLocation={currentLocation}
+        paymentMethods={paymentMethods}
         onUpdateQuantity={updateQuantity} onRemoveItem={removeFromCart} onClearCart={onClearCart}
         onHoldAndKitchen={handleHoldAndKitchen}
         isDrawer={isDrawerOpen} onClose={() => setDrawerOpen(false)}

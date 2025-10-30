@@ -3,7 +3,7 @@
 
 import React from 'react';
 import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
-import type { User, Table as TableType, Location, Invoice, Customer } from '@/lib/types';
+import type { User, Table as TableType, Location, Invoice, Customer, PaymentMethod } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -53,6 +53,7 @@ interface OrderPanelProps {
   orderTotals: OrderInfo;
   cashierName: string;
   currentLocation: Location | null;
+  paymentMethods: PaymentMethod[];
   onUpdateQuantity: (variantId: string, batchCode: string, newQuantity: number) => void;
   onRemoveItem: (uniqueId: string) => void;
   onClearCart: (invoiceId: string) => void;
@@ -89,9 +90,11 @@ type Receipt = {
 const PaymentDialog = ({
   orderTotals,
   onSuccessfulPayment,
+  paymentMethods,
 }: {
   orderTotals: OrderInfo;
   onSuccessfulPayment: (paymentMethod: string, tenderedAmount: number) => void;
+  paymentMethods: PaymentMethod[];
 }) => {
   const { currencySymbol } = useCurrency();
   const [amountTendered, setAmountTendered] = React.useState('');
@@ -108,20 +111,16 @@ const PaymentDialog = ({
           <p className="text-4xl font-bold">{currencySymbol}{orderTotals.total.toFixed(2)}</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <Button
-            variant="outline"
-            className="h-20 text-lg"
-            onClick={() => onSuccessfulPayment('Cash', orderTotals.total)}
-          >
-            Cash
-          </Button>
-          <Button
-            variant="outline"
-            className="h-20 text-lg"
-            onClick={() => onSuccessfulPayment('Card', orderTotals.total)}
-          >
-            <CreditCard className="mr-2" /> Card
-          </Button>
+          {paymentMethods.map((method) => (
+            <Button
+              key={method.id}
+              variant="outline"
+              className="h-20 text-lg"
+              onClick={() => onSuccessfulPayment(method.id, orderTotals.total)}
+            >
+              {method.method}
+            </Button>
+          ))}
         </div>
         <div>
           <Label htmlFor="amount-tendered">Amount Tendered</Label>
@@ -144,7 +143,7 @@ const PaymentDialog = ({
           <Button variant="outline">Cancel</Button>
         </DialogClose>
         <Button
-          onClick={() => onSuccessfulPayment('Cash', Number(amountTendered))}
+          onClick={() => onSuccessfulPayment('0', Number(amountTendered))}
           disabled={!amountTendered || change < 0}
         >
           Confirm Payment
@@ -271,6 +270,7 @@ export function OrderPanel({
   orderTotals,
   cashierName,
   currentLocation,
+  paymentMethods,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -295,10 +295,10 @@ export function OrderPanel({
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
 
-  const handleSuccessfulPayment = async (paymentMethod: string, tenderedAmount: number) => {
+  const handleSuccessfulPayment = async (paymentMethodId: string, tenderedAmount: number) => {
     toast({
       title: 'Payment Processing...',
-      description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
+      description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)}.`,
     });
 
     if (!currentLocation || !company_id || !customer) {
@@ -322,7 +322,7 @@ export function OrderPanel({
         customer_code: customer.customer_id,
         service_charge: orderTotals.serviceCharge,
         tendered_amount: tenderedAmount,
-        close_type: paymentMethod,
+        close_type: paymentMethodId,
         invoice_status: '1', // Paid
         payment_status: "Paid",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
@@ -590,6 +590,7 @@ export function OrderPanel({
         <PaymentDialog
             orderTotals={orderTotals}
             onSuccessfulPayment={handleSuccessfulPayment}
+            paymentMethods={paymentMethods}
         />
         </Dialog>
       </footer>
