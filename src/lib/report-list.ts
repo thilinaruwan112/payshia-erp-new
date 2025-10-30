@@ -49,4 +49,3 @@ export const reportCategories = [
 ];
 
 export const allReports = reportCategories.flatMap(cat => cat.reports);
-

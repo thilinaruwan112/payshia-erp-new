@@ -218,6 +218,14 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                  if (filterValues['location'] && filterValues['location'] !== 'all') {
                     params.append('location_id', filterValues['location']);
                 }
+            } else if (reportName === 'Stock Transfer Report') {
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/stock-transfer`;
+                if (filterValues['fromLocation'] && filterValues['fromLocation'] !== 'all') {
+                    params.append('from_location', filterValues['fromLocation']);
+                }
+                 if (filterValues['toLocation'] && filterValues['toLocation'] !== 'all') {
+                    params.append('to_location', filterValues['toLocation']);
+                }
             }
             
             else {
@@ -236,7 +244,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             if (!response.ok) throw new Error(`Failed to fetch ${reportName} data`);
             const data = await response.json();
             
-            if (['Item Wise Sales', 'Invoice Wise Sales Report', 'Bin Card Report'].includes(reportName)) {
+            if (['Item Wise Sales', 'Invoice Wise Sales Report', 'Bin Card Report', 'Stock Transfer Report'].includes(reportName)) {
                 onShowReport(data.data || { items: [], invoices: [], summary: {} });
             } else if (reportName === 'Item Master Report') {
                 onShowReport(data.products || []);

@@ -3,7 +3,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, Suspense, useCallback } from 'react';
-import type { User, Supplier, Product, ProductVariant, PurchaseOrder, Invoice, GoodsReceivedNote } from '@/lib/types';
+import type { User, Supplier, Product, ProductVariant, PurchaseOrder, Invoice, GoodsReceivedNote, StockTransfer } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { ReportFilters } from '@/components/reports/report-filters';
 import { ReportList } from '@/components/reports/report-list';
@@ -18,6 +18,7 @@ import { ItemWiseSalesReportView } from '@/components/reports/item-wise-sales-re
 import { InvoiceWiseSalesReportView } from '@/components/reports/invoice-wise-sales-report-view';
 import { StockBalanceReportView } from '@/components/reports/stock-balance-report-view';
 import { BinCardReportView } from '@/components/reports/bin-card-report-view';
+import { StockTransferReportView } from '@/components/reports/stock-transfer-report-view';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import jsPDF from 'jspdf';
@@ -223,7 +224,7 @@ function ReportsPage() {
       }
     }, [searchParams, handleSelectReport]);
 
-    const hasData = Array.isArray(reportData) ? reportData.length > 0 : (reportData?.items?.length > 0 || reportData?.invoices?.length > 0 || reportData?.data?.length > 0 || reportData?.transactions?.length > 0);
+    const hasData = Array.isArray(reportData) ? reportData.length > 0 : (reportData?.items?.length > 0 || reportData?.invoices?.length > 0 || reportData?.data?.length > 0 || reportData?.transactions?.length > 0 || reportData?.transfers?.length > 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -289,6 +290,9 @@ function ReportsPage() {
                          )}
                           {hasData && selectedReport === 'Bin Card Report' && (
                             <BinCardReportView reportData={reportData} />
+                         )}
+                         {hasData && selectedReport === 'Stock Transfer Report' && (
+                            <StockTransferReportView reportData={reportData} />
                          )}
                     </div>
                 ) : (
