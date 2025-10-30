@@ -215,6 +215,9 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                    params.append('product_id', selectedProduct.product.id);
                    params.append('product_variant_id', selectedVariant.id);
                 }
+                 if (filterValues['location'] && filterValues['location'] !== 'all') {
+                    params.append('location_id', filterValues['location']);
+                }
             }
             
             else {
