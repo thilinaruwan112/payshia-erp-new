@@ -31,7 +31,7 @@ import { fetcher } from '@/lib/api';
 
 interface ProductWithVariants {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
 }
 type ReportData = any;
 
@@ -182,8 +182,10 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                     params.append('location_id', filterValues['location']);
                 }
                 if (filterValues['item'] && filterValues['item'] !== 'all') {
-                    const selectedVariant = products.flatMap(p => p.variants).find(v => v.id === filterValues['item']);
-                    if (selectedVariant) {
+                    const selectedProduct = products.find(p => p.variants.some(v => v.variant.id === filterValues['item']));
+                    const selectedVariant = selectedProduct?.variants.find(v => v.variant.id === filterValues['item'])?.variant;
+                    if (selectedProduct && selectedVariant) {
+                       params.append('product_id', selectedProduct.product.id);
                        params.append('product_variant_id', selectedVariant.id);
                     }
                 }
@@ -207,10 +209,11 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                     return;
                 }
                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/bin-card`;
-                const selectedVariant = products.flatMap(p => p.variants).find(v => v.id === filterValues['item']);
-                if (selectedVariant) {
-                    params.append('product_id', selectedVariant.product_id!);
-                    params.append('product_variant_id', selectedVariant.id);
+                const selectedProduct = products.find(p => p.variants.some(v => v.variant.id === filterValues['item']));
+                const selectedVariant = selectedProduct?.variants.find(v => v.variant.id === filterValues['item'])?.variant;
+                if (selectedProduct && selectedVariant) {
+                   params.append('product_id', selectedProduct.product.id);
+                   params.append('product_variant_id', selectedVariant.id);
                 }
             }
             
