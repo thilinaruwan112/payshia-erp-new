@@ -762,7 +762,7 @@ export default function POSPage() {
         customers={customers} 
         onLoadOrder={handleLoadOrder} 
       />
-      <PendingInvoicesDialog isOpen={isPendingInvoicesDialogOpen} onOpenChange={setPendingInvoicesDialogOpen} customers={customers} />
+      <PendingInvoicesDialog isOpen={isPendingInvoicesDialogOpen} onOpenChange={setPendingInvoicesDialogOpen} customers={customers} paymentMethods={paymentMethods} />
       <ReturnDialog 
           isOpen={isReturnDialogOpen} 
           onOpenChange={setReturnDialogOpen} 
