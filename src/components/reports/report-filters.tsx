@@ -66,6 +66,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
     // State for filter values
     const [filterValues, setFilterValues] = useState<Record<string, string>>({});
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+    const [singleDate, setSingleDate] = React.useState<Date | undefined>(new Date());
 
     const handleFilterChange = (filterName: string, value: string) => {
         setFilterValues(prev => ({ ...prev, [filterName]: value }));
@@ -189,6 +190,9 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                 if (filterValues['brand'] && filterValues['brand'] !== 'all') {
                     params.append('brand_id', filterValues['brand']);
                 }
+                if (singleDate) {
+                    params.append('before_date', format(singleDate, 'yyyy-MM-dd'));
+                }
             }
             
             else {
@@ -311,10 +315,15 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                     )}
                      {hasFilter('date') && (
                         <div className="space-y-1.5">
-                            <Label>Date</Label>
+                            <Label>As of Date</Label>
                             <Popover>
-                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{'Select...'}</Button></PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
+                                <PopoverTrigger asChild>
+                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !singleDate && "text-muted-foreground")}>
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {singleDate ? format(singleDate, "PPP") : <span>Pick a date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={singleDate} onSelect={setSingleDate} /></PopoverContent>
                             </Popover>
                         </div>
                     )}

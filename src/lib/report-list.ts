@@ -18,7 +18,7 @@ export const reportCategories = [
     { 
         name: 'Stock', 
         reports: [
-            { name: 'Stock Balance Report', href: '/reports/stock-balance', filters: ['location', 'category', 'brand', 'item'] },
+            { name: 'Stock Balance Report', href: '/reports/stock-balance', filters: ['date', 'location', 'category', 'brand', 'item'] },
             { name: 'Stock Transfer Report', href: '/transfers', filters: ['dateRange', 'fromLocation', 'toLocation'] },
             { name: 'Bin Card Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
             { name: 'Stock Movement Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
@@ -49,3 +49,4 @@ export const reportCategories = [
 ];
 
 export const allReports = reportCategories.flatMap(cat => cat.reports);
+
