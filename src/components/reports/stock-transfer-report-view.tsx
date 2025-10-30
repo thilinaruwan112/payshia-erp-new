@@ -5,11 +5,12 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Truck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { useCurrency } from '../currency-provider';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface TransferItem {
     id: string;
@@ -94,6 +95,7 @@ export const StockTransferReportView = ({ reportData }: { reportData: ReportData
                             <TableHead>Date</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Qty</TableHead>
+                            <TableHead className="w-[100px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -105,10 +107,18 @@ export const StockTransferReportView = ({ reportData }: { reportData: ReportData
                                 <TableCell>{format(new Date(transfer.transfer_date), 'yyyy-MM-dd')}</TableCell>
                                 <TableCell><Badge variant="secondary" className={cn(getStatusColor(transfer.status))}>{transfer.status}</Badge></TableCell>
                                 <TableCell className="text-right font-mono">{parseFloat(transfer.total_quantity).toFixed(2)}</TableCell>
+                                <TableCell>
+                                    <Button asChild variant="outline" size="sm">
+                                        <Link href={`/transfers/${transfer.id}`}>
+                                            <Eye className="h-4 w-4 mr-2" />
+                                            Details
+                                        </Link>
+                                    </Button>
+                                </TableCell>
                             </TableRow>
                         )) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center h-24">No transfers found for the selected criteria.</TableCell>
+                                <TableCell colSpan={7} className="text-center h-24">No transfers found for the selected criteria.</TableCell>
                             </TableRow>
                         )}
                     </TableBody>
