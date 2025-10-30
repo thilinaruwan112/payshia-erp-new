@@ -16,6 +16,7 @@ import { GrnReportView } from '@/components/reports/grn-report-view';
 import { InvoiceReportView } from '@/components/reports/invoice-report-view';
 import { ItemWiseSalesReportView } from '@/components/reports/item-wise-sales-report-view';
 import { InvoiceWiseSalesReportView } from '@/components/reports/invoice-wise-sales-report-view';
+import { StockBalanceReportView } from '@/components/reports/stock-balance-report-view';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import jsPDF from 'jspdf';
@@ -95,7 +96,7 @@ function ReportsPage() {
         let headers: string[] = [];
         let rows: string[][] = [];
         let filename = 'report.csv';
-        const dataToExport = Array.isArray(reportData) ? reportData : reportData.items || [];
+        const dataToExport = Array.isArray(reportData) ? reportData : reportData.items || reportData.data || [];
 
         if(selectedReport === 'Customer Master Report' && dataToExport.length > 0 && 'customer_first_name' in dataToExport[0]) {
             headers = ["Customer Name", "Phone Number", "Email", "Address"];
@@ -171,7 +172,7 @@ function ReportsPage() {
         let head: string[][] = [];
         let body: (string | number)[][] = [];
         let filename = 'report.pdf';
-        const dataToExport = Array.isArray(reportData) ? reportData : reportData.items || [];
+        const dataToExport = Array.isArray(reportData) ? reportData : reportData.items || reportData.data || [];
 
         if(selectedReport === 'Customer Master Report' && dataToExport.length > 0 && 'customer_first_name' in dataToExport[0]) {
             head = [['Customer Name', 'Phone Number', 'Email', 'Address']];
@@ -221,7 +222,7 @@ function ReportsPage() {
       }
     }, [searchParams, handleSelectReport]);
 
-    const hasData = Array.isArray(reportData) ? reportData.length > 0 : (reportData?.items?.length > 0 || reportData?.invoices?.length > 0);
+    const hasData = Array.isArray(reportData) ? reportData.length > 0 : (reportData?.items?.length > 0 || reportData?.invoices?.length > 0 || reportData?.data?.length > 0);
 
   return (
     <div className="flex flex-col gap-6">
@@ -281,6 +282,9 @@ function ReportsPage() {
                          )}
                          {hasData && selectedReport === 'Invoice Wise Sales Report' && (
                             <InvoiceWiseSalesReportView reportData={reportData} />
+                         )}
+                         {hasData && selectedReport === 'Stock Balance Report' && (
+                            <StockBalanceReportView reportData={reportData} />
                          )}
                     </div>
                 ) : (

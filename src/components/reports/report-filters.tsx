@@ -175,7 +175,14 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                  if (filterValues['location'] && filterValues['location'] !== 'all') {
                     params.append('location_id', filterValues['location']);
                 }
-            } else {
+            } else if (reportName === 'Stock Balance Report') {
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/stock-balance`;
+                 if (filterValues['location'] && filterValues['location'] !== 'all') {
+                    params.append('location_id', filterValues['location']);
+                }
+            }
+            
+            else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
                  setIsFetching(false);
                  return;
@@ -195,7 +202,10 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                 onShowReport(data.data?.report_data || { items: [], invoices: [], summary: {} });
             } else if (reportName === 'Item Master Report') {
                 onShowReport(data.products || []);
-            } else {
+            } else if (reportName === 'Stock Balance Report') {
+                 onShowReport(data.data || []);
+            }
+            else {
                 onShowReport(data || []);
             }
         } catch (error) {
