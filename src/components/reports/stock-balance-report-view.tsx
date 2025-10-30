@@ -61,8 +61,6 @@ export const StockBalanceReportView = ({ reportData }: { reportData: StockBalanc
                             <TableHead>Variant Name</TableHead>
                             <TableHead className="text-right">Sale Price</TableHead>
                             <TableHead className="text-right">Cost Price</TableHead>
-                            <TableHead className="text-right">Stock In</TableHead>
-                            <TableHead className="text-right">Stock Out</TableHead>
                             <TableHead className="text-right font-bold">Balance</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -73,14 +71,12 @@ export const StockBalanceReportView = ({ reportData }: { reportData: StockBalanc
                                 <TableCell>{item.variant_name}</TableCell>
                                 <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(item.sale_price).toFixed(2)}</TableCell>
                                 <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(item.cost_price).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono text-green-600">{parseFloat(item.total_in).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono text-red-600">{parseFloat(item.total_out).toFixed(2)}</TableCell>
                                 <TableCell className="text-right font-mono font-bold">{parseFloat(item.stock_balance).toFixed(2)}</TableCell>
                             </TableRow>
                         ))}
                         {paginatedData.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">
+                                <TableCell colSpan={5} className="h-24 text-center">
                                     No stock data available for the selected criteria.
                                 </TableCell>
                             </TableRow>
