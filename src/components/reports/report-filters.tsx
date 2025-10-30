@@ -95,7 +95,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                 fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`, setSuppliers, 'suppliers');
             }
             if (filters.includes('item')) {
-                 fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants?company_id=${company_id}`, setProducts, 'products');
+                 fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`, setProducts, 'products');
             }
             if (filters.includes('category')) {
                 fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`, setCategories, 'categories');
@@ -131,8 +131,8 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
         { value: 'all', label: 'All Items' },
         ...products.flatMap(p => 
             (p.variants || []).map(v => ({
-                value: v.id,
-                label: `${p.product.name} (${v.sku})`
+                value: v.variant.id,
+                label: `${p.product.name} (${v.variant.sku})`
             }))
         )
     ];
@@ -157,7 +157,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             } else if (reportName === 'Supplier Master Report') {
                  url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company`;
             } else if (reportName === 'Item Master Report') {
-                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants`;
+                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company`;
             } else if (reportName === 'Purchase Order Report') {
                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/filter/`;
             } else if (reportName === 'Sales Summary Report' || reportName === 'Invoice Report') {
@@ -179,6 +179,15 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/stock-balance`;
                  if (filterValues['location'] && filterValues['location'] !== 'all') {
                     params.append('location_id', filterValues['location']);
+                }
+                if (filterValues['item'] && filterValues['item'] !== 'all') {
+                    params.append('product_variant_id', filterValues['item']);
+                }
+                if (filterValues['category'] && filterValues['category'] !== 'all') {
+                    params.append('category_id', filterValues['category']);
+                }
+                if (filterValues['brand'] && filterValues['brand'] !== 'all') {
+                    params.append('brand_id', filterValues['brand']);
                 }
             }
             
