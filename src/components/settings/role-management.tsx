@@ -19,12 +19,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { PermissionEditDialog } from './permission-edit-dialog';
 import type { Role } from '@/lib/types';
 import { useLocation } from '../location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { fetcher } from '@/lib/api';
 import { Skeleton } from '../ui/skeleton';
+import Link from 'next/link';
 
 export function RoleManagement() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -32,12 +32,6 @@ export function RoleManagement() {
   const { company_id } = useLocation();
   const { toast } = useToast();
   
-  const handlePermissionsUpdate = (roleId: string, updatedPermissions: string[]) => {
-    setRoles(prevRoles => prevRoles.map(role => 
-        role.id === roleId ? { ...role, permissions: updatedPermissions } : role
-    ));
-  };
-
   useEffect(() => {
     async function fetchRoles() {
       if (!company_id) {
@@ -52,11 +46,10 @@ export function RoleManagement() {
         }
         const result = await response.json();
         if (result.status === 'success') {
-          // Initialize userCount and permissions for client-side state
+          // Initialize userCount for client-side state
           const formattedRoles = result.data.map((role: any) => ({
             ...role,
             userCount: 0, // API doesn't provide this, so we default it
-            permissions: [], // Permissions will be managed client-side for now
           }));
           setRoles(formattedRoles);
         } else {
@@ -119,11 +112,11 @@ export function RoleManagement() {
                   <TableCell>{role.description}</TableCell>
                   <TableCell className="hidden sm:table-cell">{role.userCount}</TableCell>
                   <TableCell className="text-right">
-                    <PermissionEditDialog role={role} onPermissionsUpdate={handlePermissionsUpdate}>
-                        <Button size="sm" variant="outline">
+                    <Button asChild size="sm" variant="outline">
+                        <Link href={`/settings/roles/${role.id}`}>
                             Edit Permissions
-                        </Button>
-                    </PermissionEditDialog>
+                        </Link>
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
