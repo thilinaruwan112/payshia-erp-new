@@ -21,6 +21,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '..
 import { fetcher } from '@/lib/api';
 import { Skeleton } from '../ui/skeleton';
 import { useLocation } from '../location-provider';
+import { Loader2 } from 'lucide-react';
 
 interface Page {
     id: string;
@@ -60,7 +61,9 @@ export function PermissionEditDialog({
   const { company_id } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [permissionCategories, setPermissionCategories] = useState<PermissionCategory[]>([]);
+  const [pages, setPages] = useState<Page[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   
   useEffect(() => {
@@ -82,9 +85,10 @@ export function PermissionEditDialog({
             
             if (!pagesResponse.ok) throw new Error('Failed to fetch pages for permissions.');
             const pagesResult = await pagesResponse.json();
-            const pages: Page[] = pagesResult.data || [];
+            const allPages: Page[] = pagesResult.data || [];
+            setPages(allPages);
 
-            const grouped = pages.reduce((acc: Record<string, PermissionCategory>, page) => {
+            const grouped = allPages.reduce((acc: Record<string, PermissionCategory>, page) => {
                 const categoryName = page.category || 'Other';
                 if (!acc[categoryName]) {
                     acc[categoryName] = { category: categoryName, pages: [] };
@@ -100,7 +104,7 @@ export function PermissionEditDialog({
             
             const initialPermissions: string[] = [];
             rolePermissions.forEach(perm => {
-                const page = pages.find(p => p.id === perm.page_id);
+                const page = allPages.find(p => p.id === perm.page_id);
                 if (page) {
                     if (perm.right_access === '1') {
                         initialPermissions.push(`${page.name}:read`);
@@ -157,13 +161,68 @@ export function PermissionEditDialog({
     });
   };
 
-  const handleSaveChanges = () => {
-    onPermissionsUpdate(role.id, selectedPermissions);
-    toast({
-      title: 'Permissions Updated',
-      description: `Permissions for the "${role.name}" role have been saved.`,
+  const handleSaveChanges = async () => {
+    if (!company_id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Company ID is missing.' });
+        return;
+    }
+    setIsSubmitting(true);
+
+    const permissionsPayload: { [pageId: string]: { right_access: boolean; process_access: boolean } } = {};
+
+    pages.forEach(page => {
+        const hasRead = selectedPermissions.includes(`${page.name}:read`);
+        const hasProcess = selectedPermissions.includes(`${page.name}:process`);
+        if(hasRead || hasProcess) {
+            permissionsPayload[page.id] = {
+                right_access: hasRead,
+                process_access: hasProcess
+            };
+        }
     });
-    setIsOpen(false);
+    
+     // Handle super admin separately
+    if (isSuperAdmin) {
+        const adminPage = pages.find(p => p.name === 'admin-all');
+        if (adminPage) {
+            permissionsPayload[adminPage.id] = { right_access: true, process_access: true };
+        }
+    }
+
+
+    const finalPayload = {
+      role_id: parseInt(role.id, 10),
+      company_id: company_id,
+      permissions: permissionsPayload,
+    };
+
+    try {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/role-permissions/bulk-update/`, {
+            method: 'POST',
+            body: JSON.stringify(finalPayload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to update permissions.');
+        }
+
+        onPermissionsUpdate(role.id, selectedPermissions);
+        toast({
+            title: 'Permissions Updated',
+            description: `Permissions for the "${role.name}" role have been saved.`,
+        });
+        setIsOpen(false);
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: errorMessage,
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   return (
@@ -252,7 +311,10 @@ export function PermissionEditDialog({
           <Button variant="outline" onClick={() => setIsOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSaveChanges}>Save Changes</Button>
+          <Button onClick={handleSaveChanges} disabled={isSubmitting}>
+             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Save Changes
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
