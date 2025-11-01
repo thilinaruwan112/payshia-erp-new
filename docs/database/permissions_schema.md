@@ -106,6 +106,25 @@ CREATE TABLE user_roles (
     FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 ```
+---
+
+### 7. `page_user_permissions` (Junction Table)
+
+This table assigns page-specific permissions directly to a user, overriding their role-based permissions.
+
+```sql
+CREATE TABLE page_user_permissions (
+    user_id INT NOT NULL,
+    page_id INT NOT NULL,
+    company_id INT NOT NULL,
+    right_access BOOLEAN DEFAULT FALSE,
+    process_access BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (user_id, page_id, company_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE,
+    FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
+);
+```
 
 ## How It Works
 
@@ -113,4 +132,5 @@ CREATE TABLE user_roles (
 2.  **Generate Permissions**: Create all possible combinations of pages and actions in the `permissions` table.
 3.  **Assign to Roles**: Link permissions to roles in the `role_permissions` table.
 4.  **Check Access**: When a user tries to access a page, your backend would check if their assigned role(s) have the necessary permission (e.g., access to 'products' page with 'read' action).
+
 
