@@ -40,14 +40,67 @@ CREATE TABLE permissions (
 );
 ```
 
-**Example Data:**
+**Example Data (Full List):**
+This script will populate the table with all the permissions needed for the application.
+
 ```sql
 INSERT INTO permissions (name, description) VALUES
-('sales:read', 'Can view sales dashboards, orders, and invoices.'),
-('sales:process', 'Can create, edit, and delete sales orders and invoices.'),
-('inventory:read', 'Can view products, stock levels, and transfers.'),
-('inventory:process', 'Can create, edit, and delete products and manage stock.'),
-('admin:all', 'Grants access to all permissions unconditionally.');
+-- Sales
+('sales-dashboard:read', 'Can view the Sales Dashboard page'),
+('sales-dashboard:process', 'Can perform actions on the Sales Dashboard page'),
+('orders:read', 'Can view the Orders page'),
+('orders:process', 'Can process orders'),
+('invoices:read', 'Can view the Invoices page'),
+('invoices:process', 'Can create, edit, and delete invoices'),
+('receipts:read', 'Can view the Receipts page'),
+('receipts:process', 'Can create, edit, and delete receipts'),
+
+-- CRM
+('crm-customers:read', 'Can view the Customers page'),
+('crm-customers:process', 'Can create, edit, and delete customers'),
+
+-- Inventory & Products
+('inventory-dashboard:read', 'Can view the Inventory Dashboard page'),
+('inventory-dashboard:process', 'Can perform actions on the Inventory Dashboard page'),
+('products:read', 'Can view the All Products page'),
+('products:process', 'Can create, edit, and delete products'),
+('product-categories:read', 'Can view the Product Categories page'),
+('product-categories:process', 'Can create, edit, and delete product categories'),
+('product-collections:read', 'Can view the Product Collections page'),
+('product-collections:process', 'Can create, edit, and delete product collections'),
+('product-brands:read', 'Can view the Product Brands page'),
+('product-brands:process', 'Can create, edit, and delete product brands'),
+('stock-transfers:read', 'Can view the Stock Transfers page'),
+('stock-transfers:process', 'Can create, edit, and delete stock transfers'),
+('opening-stock:read', 'Can view the Opening Stock page'),
+('opening-stock:process', 'Can set opening stock levels'),
+
+-- Purchasing
+('purchase-orders:read', 'Can view the Purchase Orders page'),
+('purchase-orders:process', 'Can create, edit, and approve purchase orders'),
+('grn:read', 'Can view the Goods Received Notes page'),
+('grn:process', 'Can create and process Goods Received Notes'),
+
+-- Accounting
+('accounting-dashboard:read', 'Can view the Accounting Dashboard page'),
+('accounting-dashboard:process', 'Can perform actions on the Accounting Dashboard page'),
+('chart-of-accounts:read', 'Can view the Chart of Accounts'),
+('chart-of-accounts:process', 'Can create, edit, and delete accounts'),
+('journal-entries:read', 'Can view Journal Entries'),
+('journal-entries:process', 'Can create and post Journal Entries'),
+('expenses:read', 'Can view Expenses'),
+('expenses:process', 'Can record and manage Expenses'),
+
+-- Settings
+('settings-company:read', 'Can view the Company Profile'),
+('settings-company:process', 'Can edit the Company Profile'),
+('settings-users:read', 'Can view Users and Roles'),
+('settings-users:process', 'Can invite users and manage roles'),
+('settings-locations:read', 'Can view Locations'),
+('settings-locations:process', 'Can create, edit, and delete Locations'),
+
+-- Admin
+('admin-all:process', 'Grants full access to all pages and actions');
 ```
 
 ---
@@ -69,9 +122,10 @@ CREATE TABLE role_permissions (
 **Example Data:**
 ```sql
 -- Give Sales Agent read and process permissions for sales
+-- Assuming role 'Sales Agent' has ID=2 and permissions 'invoices:read' and 'invoices:process' have IDs 5 and 6
 INSERT INTO role_permissions (role_id, permission_id) VALUES
-(2, 1), -- Sales Agent -> sales:read
-(2, 2); -- Sales Agent -> sales:process
+(2, 5), -- Sales Agent -> invoices:read
+(2, 6); -- Sales Agent -> invoices:process
 ```
 
 ---
@@ -104,4 +158,4 @@ INSERT INTO user_roles (user_id, role_id) VALUES
     2.  Find all `role_id`s for that user from the `user_roles` table.
     3.  Find all `permission_id`s associated with those roles from the `role_permissions` table.
     4.  Find the names of those permissions from the `permissions` table.
-2.  **Enforce Access**: Your application code then checks if the required permission (e.g., `'inventory:process'`) exists in the list of permissions granted to the user. If `admin:all` is present, all checks pass automatically.
+2.  **Enforce Access**: Your application code then checks if the required permission (e.g., `'inventory:process'`) exists in the list of permissions granted to the user. If `admin:all:process` is present, all checks pass automatically.
