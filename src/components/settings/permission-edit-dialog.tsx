@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { fetcher } from '@/lib/api';
 import { Skeleton } from '../ui/skeleton';
+import { useLocation } from '../location-provider';
 
 interface Page {
     id: string;
@@ -32,6 +33,15 @@ interface Page {
 interface PermissionCategory {
     category: string;
     pages: Page[];
+}
+
+interface RolePermission {
+    id: string;
+    role_id: string;
+    page_id: string;
+    company_id: string;
+    right_access: string;
+    process_access: string;
 }
 
 
@@ -47,49 +57,73 @@ export function PermissionEditDialog({
   onPermissionsUpdate,
 }: PermissionEditDialogProps) {
   const { toast } = useToast();
+  const { company_id } = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [permissionCategories, setPermissionCategories] = useState<PermissionCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>(
-    role.permissions || []
-  );
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   
   useEffect(() => {
-    async function fetchPages() {
-        if (!isOpen) return;
+    async function fetchPermissionsData() {
+        if (!isOpen || !company_id) return;
         setIsLoading(true);
+        setSelectedPermissions([]);
         try {
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/pages`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch pages for permissions.');
-            }
-            const result = await response.json();
-            if (result.status === 'success') {
-                const pages: Page[] = result.data;
-                const grouped = pages.reduce((acc: Record<string, PermissionCategory>, page) => {
-                    const categoryName = page.category || 'Other';
-                    if (!acc[categoryName]) {
-                        acc[categoryName] = { category: categoryName, pages: [] };
+            const [pagesResponse, rolePermsResponse] = await Promise.all([
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/pages`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/role-permissions/by-role/`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        role_id: parseInt(role.id, 10),
+                        company_id: company_id,
+                    })
+                })
+            ]);
+            
+            if (!pagesResponse.ok) throw new Error('Failed to fetch pages for permissions.');
+            const pagesResult = await pagesResponse.json();
+            const pages: Page[] = pagesResult.data || [];
+
+            const grouped = pages.reduce((acc: Record<string, PermissionCategory>, page) => {
+                const categoryName = page.category || 'Other';
+                if (!acc[categoryName]) {
+                    acc[categoryName] = { category: categoryName, pages: [] };
+                }
+                acc[categoryName].pages.push(page);
+                return acc;
+            }, {});
+            setPermissionCategories(Object.values(grouped));
+
+            if (!rolePermsResponse.ok) throw new Error('Failed to fetch permissions for this role.');
+            const rolePermsResult = await rolePermsResponse.json();
+            const rolePermissions: RolePermission[] = rolePermsResult.data || [];
+            
+            const initialPermissions: string[] = [];
+            rolePermissions.forEach(perm => {
+                const page = pages.find(p => p.id === perm.page_id);
+                if (page) {
+                    if (perm.right_access === '1') {
+                        initialPermissions.push(`${page.name}:read`);
                     }
-                    acc[categoryName].pages.push(page);
-                    return acc;
-                }, {});
-                setPermissionCategories(Object.values(grouped));
-            } else {
-                throw new Error(result.message || 'API did not return a success status.');
-            }
+                    if (perm.process_access === '1') {
+                        initialPermissions.push(`${page.name}:process`);
+                    }
+                }
+            });
+            setSelectedPermissions(initialPermissions);
+
         } catch (error) {
             toast({
                 variant: 'destructive',
-                title: 'Error Loading Pages',
+                title: 'Error Loading Data',
                 description: error instanceof Error ? error.message : "An unknown error occurred",
             });
         } finally {
             setIsLoading(false);
         }
     }
-    fetchPages();
-  }, [isOpen, toast]);
+    fetchPermissionsData();
+  }, [isOpen, toast, role.id, company_id]);
 
   
   const isSuperAdmin = selectedPermissions.includes('admin-all:process');
