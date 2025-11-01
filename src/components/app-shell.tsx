@@ -104,6 +104,8 @@ import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import Image from 'next/image';
+import type { Role } from '@/lib/types';
+import { fetcher } from '@/lib/api';
 
 const navItems = [
   {
@@ -554,16 +556,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { setOpenMobile } = useSidebar();
   const [user, setUser] = useState({ name: '', email: '', role: '', avatar: '' });
   const [companyName, setCompanyName] = useState('Payshia ERP');
+  const [roles, setRoles] = useState<Role[]>([]);
+  const { company_id } = useLocation();
 
   useEffect(() => {
     const userName = localStorage.getItem('userName');
     const userEmail = localStorage.getItem('userEmail');
-    const userRole = localStorage.getItem('userRole'); // Fetch the role
+    const userRole = localStorage.getItem('userRole');
     if (userName) {
       setUser({
         name: userName,
-        email: userEmail || userName, // Use userName as fallback for email
-        role: userRole || 'User', // Use the fetched role
+        email: userEmail || userName,
+        role: userRole || '', // Will be updated by role name fetch
         avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`
       });
     }
@@ -572,6 +576,33 @@ export function AppShell({ children }: { children: ReactNode }) {
       setCompanyName(name);
     }
   }, []);
+
+  useEffect(() => {
+    async function fetchRoles() {
+      if (company_id && roles.length === 0) {
+        try {
+          const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/roles?company_id=${company_id}`);
+          if (response.ok) {
+            const data = await response.json();
+            setRoles(data.data || []);
+          }
+        } catch (error) {
+          console.error("Failed to fetch roles:", error);
+        }
+      }
+    }
+    fetchRoles();
+  }, [company_id, roles.length]);
+
+  useEffect(() => {
+    if (user.role && roles.length > 0) {
+      const roleId = user.role;
+      const roleDetails = roles.find(r => r.id === roleId);
+      if (roleDetails) {
+        setUser(u => ({ ...u, role: roleDetails.name }));
+      }
+    }
+  }, [user.role, roles]);
 
   const handleLinkClick = (isExternal: boolean | undefined, e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     if (!isExternal) {
