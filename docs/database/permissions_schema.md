@@ -16,57 +16,6 @@ CREATE TABLE pages (
     description TEXT
 );
 ```
-
-**Example Data:**
-```sql
-INSERT INTO pages (name, display_name, description) VALUES
-('dashboard', 'Dashboard', 'The main application dashboard.'),
-('sales-dashboard', 'Sales Dashboard', 'Dashboard for the sales module.'),
-('orders', 'Orders', 'Page for managing customer sales orders.'),
-('invoices', 'Invoices', 'Page for managing sales invoices.'),
-('receipts', 'Receipts', 'Page for managing payment receipts.'),
-('service-center-dashboard', 'Service Center Dashboard', 'Dashboard for the service center.'),
-('service-jobs', 'Service Jobs', 'Page for managing service and repair jobs.'),
-('warranty-management', 'Warranty Management', 'Page for managing product warranties.'),
-('crm-dashboard', 'CRM Dashboard', 'Dashboard for Customer Relationship Management.'),
-('customers', 'Customers', 'Page for managing customer profiles.'),
-('inventory-dashboard', 'Inventory Dashboard', 'Dashboard for inventory management.'),
-('products', 'Products', 'Page for managing all products and variants.'),
-('product-categories', 'Product Categories', 'Page for managing product categories.'),
-('product-collections', 'Product Collections', 'Page for managing product collections.'),
-('product-brands', 'Product Brands', 'Page for managing product brands.'),
-('product-models', 'Product Models', 'Page for managing product models.'),
-('product-colors', 'Product Colors', 'Page for managing product colors.'),
-('product-sizes', 'Product Sizes', 'Page for managing product sizes.'),
-('product-custom-fields', 'Product Custom Fields', 'Page for managing custom product fields.'),
-('stock-transfers', 'Stock Transfers', 'Page for managing stock movements between locations.'),
-('stock-adjustment', 'Stock Adjustment', 'Page for manual stock adjustments.'),
-('opening-stock', 'Opening Stock', 'Page for setting initial stock levels.'),
-('ai-inventory-forecast', 'AI Inventory Forecast', 'AI tool for forecasting inventory needs.'),
-('production-bom', 'Production BOM', 'Page for managing Bill of Materials (recipes).'),
-('production-notes', 'Production Notes', 'Page for recording production runs.'),
-('suppliers-dashboard', 'Suppliers Dashboard', 'Dashboard for supplier management.'),
-('suppliers', 'Suppliers', 'Page for managing all suppliers.'),
-('supplier-payments', 'Supplier Payments', 'Page for recording payments to suppliers.'),
-('supplier-returns', 'Supplier Returns', 'Page for managing returns to suppliers.'),
-('purchase-orders', 'Purchase Orders', 'Page for managing purchase orders.'),
-('grn', 'GRN', 'Page for managing Goods Received Notes.'),
-('accounting-dashboard', 'Accounting Dashboard', 'Dashboard for the accounting module.'),
-('chart-of-accounts', 'Chart of Accounts', 'Page for managing the chart of accounts.'),
-('journal-entries', 'Journal Entries', 'Page for manual accounting entries.'),
-('expenses', 'Expenses', 'Page for managing business expenses.'),
-('fixed-assets', 'Fixed Assets', 'Page for managing fixed assets.'),
-('transaction-setup', 'Transaction Setup', 'Page for configuring automated accounting entries.'),
-('reports-center', 'Reports Center', 'Hub for all business reports.'),
-('settings-profile', 'Profile Settings', 'Page for managing user profile settings.'),
-('settings-users', 'User Settings', 'Page for managing users in the company.'),
-('settings-roles', 'Roles & Permissions', 'Page for managing user roles and permissions.'),
-('settings-locations', 'Location Settings', 'Page for managing business locations.'),
-('settings-tables', 'Table Settings', 'Page for managing dine-in tables for POS.'),
-('settings-payment-methods', 'Payment Method Settings', 'Page for managing payment methods.'),
-('settings-integrations', 'Integration Settings', 'Page for managing third-party integrations.'),
-('settings-billing', 'Billing Settings', 'Page for managing subscription and billing.');
-```
 ---
 
 ### 2. `actions`
@@ -164,3 +113,4 @@ CREATE TABLE user_roles (
 2.  **Generate Permissions**: Create all possible combinations of pages and actions in the `permissions` table.
 3.  **Assign to Roles**: Link permissions to roles in the `role_permissions` table.
 4.  **Check Access**: When a user tries to access a page, your backend would check if their assigned role(s) have the necessary permission (e.g., access to 'products' page with 'read' action).
+
