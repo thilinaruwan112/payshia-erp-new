@@ -71,6 +71,7 @@ export default function LoginPage() {
         const token = userData?.token;
         const userId = userData?.data?.id;
         const userName = userData?.data?.user_name;
+        const userRole = userData?.data?.role_id;
 
         if (!token || !userId || !userName) {
              throw new Error('Login successful, but required session data was not returned.');
@@ -80,6 +81,9 @@ export default function LoginPage() {
         localStorage.setItem('token', token);
         localStorage.setItem('userId', userId);
         localStorage.setItem('userName', userName);
+        if (userRole) {
+            localStorage.setItem('userRole', userRole);
+        }
         
         // Check for company association
         const companyCheckResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users/filter/by-user?user_id=${userId}`);
