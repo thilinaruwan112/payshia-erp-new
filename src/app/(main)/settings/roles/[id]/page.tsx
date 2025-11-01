@@ -137,6 +137,17 @@ export default function EditRolePermissionsPage() {
     });
   };
 
+  const handleCheckAll = () => {
+    const allPerms = pages
+        .filter(p => p.name !== 'admin-all')
+        .flatMap(p => [`${p.name}:read`, `${p.name}:process`]);
+    setSelectedPermissions(allPerms);
+  }
+
+  const handleUncheckAll = () => {
+    setSelectedPermissions([]);
+  }
+
   const handleSaveChanges = async () => {
     if (!company_id || !role) {
         toast({ variant: 'destructive', title: 'Error', description: 'Company ID or Role is missing.' });
@@ -224,10 +235,18 @@ export default function EditRolePermissionsPage() {
         </div>
         <Card>
             <CardHeader>
-                <CardTitle>Page Access</CardTitle>
-                 <CardDescription>
-                    Select the pages and actions this role can access. "Read" allows viewing data, while "Process" allows creating, editing, and deleting.
-                 </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Page Access</CardTitle>
+                    <CardDescription>
+                        Select the pages and actions this role can access. "Read" allows viewing data, while "Process" allows creating, editing, and deleting.
+                    </CardDescription>
+                  </div>
+                   <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={handleCheckAll}>Check All</Button>
+                        <Button variant="outline" size="sm" onClick={handleUncheckAll}>Uncheck All</Button>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
                  <Accordion type="multiple" defaultValue={permissionCategories.map(p => p.category)}>
