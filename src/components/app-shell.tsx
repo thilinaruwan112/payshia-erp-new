@@ -448,6 +448,11 @@ function UserMenu({ user }: { user: any }) {
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
+            {user.role && (
+                <p className="text-xs font-semibold leading-none text-foreground/80 pt-1">
+                    {user.role}
+                </p>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -553,11 +558,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     const userName = localStorage.getItem('userName');
     const userEmail = localStorage.getItem('userEmail');
+    const userRole = localStorage.getItem('userRole'); // Fetch the role
     if (userName) {
       setUser({
         name: userName,
         email: userEmail || userName, // Use userName as fallback for email
-        role: 'User',
+        role: userRole || 'User', // Use the fetched role
         avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`
       });
     }
