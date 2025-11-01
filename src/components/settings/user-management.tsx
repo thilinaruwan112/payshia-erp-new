@@ -141,6 +141,13 @@ function EditUserRoleDialog({ user, onUpdate, roles }: { user: User, onUpdate: (
   const [selectedStatus, setSelectedStatus] = useState(user.user_status || '2');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    // Update state if the user prop changes (e.g., parent list refreshes)
+    const newCurrentRole = roles.find(r => r.name.toLowerCase() === user.acc_type?.toLowerCase());
+    setSelectedRoleId(newCurrentRole?.id || '');
+    setSelectedStatus(user.user_status || '2');
+  }, [user, roles]);
+
   const handleUpdate = async () => {
     if (!user.companyUserId || !selectedRoleId) return;
     setIsSubmitting(true);
@@ -243,14 +250,19 @@ export function UserManagement() {
         throw new Error('API returned an error status');
       }
 
-      setRoles(rolesData.data || []);
+      const companyRoles: Role[] = rolesData.data || [];
+      setRoles(companyRoles);
       const companyUserLinks: CompanyUser[] = companyUsersData.data || [];
       const allUsers: User[] = allUsersData.data || [];
 
       const usersInCompany = allUsers
         .map(user => {
           const link = companyUserLinks.find(l => l.user_id === user.id && l.company_id === String(company_id));
-          return link ? { ...user, companyUserId: link.id, acc_type: link.role, user_status: link.user_status } : null;
+          if (link) {
+            const roleName = companyRoles.find(r => r.id === link.role)?.name || 'Unknown Role';
+            return { ...user, companyUserId: link.id, acc_type: roleName, user_status: link.user_status };
+          }
+          return null;
         })
         .filter((user): user is User & { companyUserId: string } => user !== null);
       
@@ -485,5 +497,3 @@ export function UserManagement() {
     </>
   );
 }
-
-    
