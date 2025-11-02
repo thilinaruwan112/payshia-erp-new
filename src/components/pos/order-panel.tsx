@@ -1,5 +1,4 @@
-
-      'use client';
+'use client';
 
 import React from 'react';
 import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
@@ -538,17 +537,49 @@ export function OrderPanel({
           <span>Item Discounts</span>
           <span>-{currencySymbol}{orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between items-center text-sm">
-          <span className="flex items-center gap-2">
-            <Switch
-                id="service-charge-toggle"
-                checked={isServiceChargeActive}
-                onCheckedChange={setIsServiceChargeActive}
-            />
-            <Label htmlFor="service-charge-toggle">Service Charge (10%)</Label>
-          </span>
-          <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
-        </div>
+        
+        {isServiceChargeActive ? (
+            <>
+                <div className="flex justify-between text-sm items-center">
+                    <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
+                        <Switch
+                            id="service-charge-toggle"
+                            checked={isServiceChargeActive}
+                            onCheckedChange={setIsServiceChargeActive}
+                        />
+                        Service Charge (10%)
+                    </Label>
+                    <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
+                </div>
+                <div className="pl-8 text-xs text-muted-foreground space-y-1">
+                    <div className="flex justify-between">
+                        <span>TDL (1%)</span>
+                        <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span>SSCL (2.5%)</span>
+                        <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span>VAT (18%)</span>
+                        <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
+                    </div>
+                </div>
+            </>
+        ) : (
+             <div className="flex justify-between text-sm items-center">
+                <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
+                    <Switch
+                        id="service-charge-toggle"
+                        checked={isServiceChargeActive}
+                        onCheckedChange={setIsServiceChargeActive}
+                    />
+                    Taxes &amp; Charges
+                </Label>
+                <span>{currencySymbol}{(orderTotals.serviceCharge + orderTotals.tdl + orderTotals.sscl + orderTotals.vat).toFixed(2)}</span>
+            </div>
+        )}
+
          <div className="flex justify-between text-sm text-green-600">
           <span>Order Discount</span>
           <span>-{currencySymbol}{discount.toFixed(2)}</span>

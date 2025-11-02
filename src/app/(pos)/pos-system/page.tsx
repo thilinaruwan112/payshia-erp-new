@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -33,6 +32,9 @@ export type PosProduct = Product & {
 export type OrderInfo = {
   subtotal: number;
   serviceCharge: number;
+  tdl: number;
+  sscl: number;
+  vat: number;
   discount: number; // Order-level discount
   itemDiscounts: number; // Sum of all item-level discounts
   total: number;
@@ -687,18 +689,6 @@ export default function POSPage() {
     if (!currentOrderId) return;
      setActiveOrders((prevOrders) => prevOrders.map((order) => order.id === currentOrderId ? { ...order, discount: newDiscount } : order));
   }
-
-  const orderTotals = useMemo((): OrderInfo => {
-    if (!currentOrder) return { subtotal: 0, serviceCharge: 0, discount: 0, itemDiscounts: 0, total: 0 };
-
-    const subtotal = currentOrder.cart.reduce((acc, item) => acc + (item.product.price as number) * item.quantity, 0);
-    const itemDiscounts = currentOrder.cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
-    
-    const serviceCharge = isServiceChargeActive ? subtotal * 0.10 : 0;
-    
-    const total = subtotal - itemDiscounts + serviceCharge - currentOrder.discount;
-    return { subtotal, serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
-  }, [currentOrder, isServiceChargeActive]);
   
   const onUpdateDetails = (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => {
       setActiveOrders(prevOrders => prevOrders.map(order => {
@@ -728,6 +718,56 @@ export default function POSPage() {
   }, [searchTerm, activeFilter, posProducts, collectionProducts]);
   
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
+  
+  const orderTotals = useMemo((): OrderInfo => {
+    if (!currentOrder) {
+      return { subtotal: 0, serviceCharge: 0, tdl: 0, sscl: 0, vat: 0, discount: 0, itemDiscounts: 0, total: 0 };
+    }
+
+    let subtotal = 0;
+    let totalServiceCharge = 0;
+    let totalTdl = 0;
+    let totalSscl = 0;
+    let totalVat = 0;
+    let totalItemDiscounts = 0;
+
+    for (const item of currentOrder.cart) {
+      const basePrice = (item.product.price as number) * item.quantity;
+      subtotal += basePrice;
+      totalItemDiscounts += item.itemDiscount || 0;
+
+      const basePriceAfterItemDiscount = basePrice - (item.itemDiscount || 0);
+
+      const serviceCharge = currentOrder.orderType !== 'Take Away' && isServiceChargeActive
+        ? basePriceAfterItemDiscount * 0.10
+        : 0;
+      totalServiceCharge += serviceCharge;
+
+      const tdl = basePriceAfterItemDiscount * 0.01;
+      totalTdl += tdl;
+
+      const baseForSscl = basePriceAfterItemDiscount + serviceCharge;
+      const sscl = baseForSscl * 0.025;
+      totalSscl += sscl;
+
+      const baseForVat = basePriceAfterItemDiscount + serviceCharge + tdl + sscl;
+      const vat = baseForVat * 0.18;
+      totalVat += vat;
+    }
+
+    const total = subtotal - totalItemDiscounts + totalServiceCharge + totalTdl + totalSscl + totalVat - currentOrder.discount;
+    
+    return { 
+        subtotal, 
+        serviceCharge: totalServiceCharge,
+        tdl: totalTdl,
+        sscl: totalSscl,
+        vat: totalVat,
+        discount: currentOrder.discount, 
+        itemDiscounts: totalItemDiscounts, 
+        total 
+    };
+  }, [currentOrder, isServiceChargeActive]);
   
   const orderPanelComponent = currentOrder && currentCashier ? (
      <OrderPanel
@@ -875,3 +915,7 @@ export default function POSPage() {
     </>
   );
 }
+
+    
+
+    
