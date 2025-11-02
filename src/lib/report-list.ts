@@ -32,6 +32,7 @@ export const reportCategories = [
             { name: 'Day End Sale Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
             { name: 'Hourly Sales Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
             { name: 'Invoice Report', href: '/reports/invoice-report', filters: ['dateRange', 'customer', 'status'] },
+            { name: 'Invoice Wise Sales Report', href: '#', filters: ['dateRange', 'location', 'user'] },
             { name: 'Item Wise Sales', href: '#', filters: ['dateRange', 'item', 'category', 'brand', 'location'] },
             { name: 'Receipt Report', href: '/sales/receipts', filters: ['dateRange', 'customer'] },
             { name: 'Sales Summary Report', href: '/reports/sales-summary', filters: ['dateRange', 'location', 'user'] },

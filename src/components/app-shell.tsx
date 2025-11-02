@@ -239,6 +239,7 @@ const navItems = [
       { href: '/settings/roles', label: 'Roles & Permissions', icon: UserCog },
       { href: '/locations', label: 'Locations', icon: Warehouse },
       { href: '/settings/tables', label: 'Dine-in Tables', icon: Utensils },
+      { href: '/settings/payment-methods', label: 'Payment Methods', icon: CreditCard },
       { href: '/settings/payhere', label: 'PayHere Gateway', icon: CreditCard },
       { href: '/settings/analytics', label: 'Analytics', icon: AreaChart },
       { href: '/settings/cancellation', label: 'Cancellation', icon: Ban },
@@ -266,7 +267,7 @@ function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
         return <Skeleton className={cn("h-10", isMobile ? "w-full" : "w-48")} />
     }
 
-    if (!currentLocation) {
+    if (!currentLocation && availableLocations.length === 0) {
         return (
             <div className={cn("p-2", isMobile ? "" : "md:block hidden")}>
                 <Button variant="outline" disabled>No Locations Found</Button>
@@ -277,7 +278,7 @@ function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
     if (isMobile) {
         return (
             <div className="md:hidden p-2">
-                 <Select value={currentLocation.location_id} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.location_id === id)!)}>
+                 <Select value={currentLocation?.location_id || ''} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.location_id === id)!)}>
                     <SelectTrigger>
                         <SelectValue placeholder="Select location" />
                     </SelectTrigger>
@@ -298,14 +299,14 @@ function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
             <DropdownMenuTrigger asChild>
                  <Button variant="outline" className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
-                    <span>{currentLocation.location_name}</span>
+                    <span>{currentLocation?.location_name || 'Select Location'}</span>
                     <ChevronDown className="h-3 w-3" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
                 <DropdownMenuLabel>Change Location</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuRadioGroup value={currentLocation.location_id} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.location_id === id)!)}>
+                <DropdownMenuRadioGroup value={currentLocation?.location_id} onValueChange={(id) => setCurrentLocation(availableLocations.find(l => l.location_id === id)!)}>
                     {availableLocations.map(location => (
                          <DropdownMenuRadioItem key={location.location_id} value={location.location_id}>
                             {location.location_name}
