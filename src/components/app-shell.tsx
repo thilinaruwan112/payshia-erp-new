@@ -162,6 +162,7 @@ const navItems = [
       { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
       { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
       { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
+      { href: '/inventory/goods-requisition', label: 'Goods Requisition', icon: FileText },
       { href: '/inventory/stock-adjustment', label: 'Stock Adjustment', icon: ArrowRightLeft },
       { href: '/inventory/opening-stock', label: 'Opening Stock', icon: PackagePlus },
       { href: '/inventory/forecast', label: 'AI Forecast', icon: TrendingUp },
@@ -579,6 +580,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             const rolesData = await rolesResponse.json();
             const companyRoles: Role[] = rolesData.data || [];
             
+            setRoles(companyRoles);
             const roleId = userData.data.role_id;
             const roleName = companyRoles.find(r => r.id === roleId)?.name || 'User';
 
