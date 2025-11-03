@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import React, { useEffect, useState } from 'react';
@@ -28,6 +28,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
 import { cn } from '@/lib/utils';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 type RequisitionItem = {
     id: string;
@@ -139,6 +140,7 @@ export default function GoodsRequisitionPage() {
                             <TableHead>To</TableHead>
                             <TableHead>Date</TableHead>
                             <TableHead className="text-center">Status</TableHead>
+                            <TableHead><span className="sr-only">Actions</span></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -149,7 +151,8 @@ export default function GoodsRequisitionPage() {
                                 <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                                <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                                <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                                <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                             </TableRow>
                         ))
                     ) : notes.length > 0 ? (
@@ -164,11 +167,26 @@ export default function GoodsRequisitionPage() {
                                         {note.status}
                                     </Badge>
                                 </TableCell>
+                                <TableCell className="text-right">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button size="icon" variant="ghost">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                            <DropdownMenuItem asChild>
+                                                <Link href={`/inventory/goods-requisition/${note.id}`}>View Details</Link>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
                             </TableRow>
                         ))
                     ) : (
                          <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
+                            <TableCell colSpan={6} className="h-24 text-center">
                                 No requisition notes found.
                             </TableCell>
                         </TableRow>

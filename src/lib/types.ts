@@ -1,4 +1,5 @@
 
+
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -233,6 +234,37 @@ export type GoodsReceivedNote = {
     po_number: string;
     items?: GrnItem[];
 }
+
+export type RequisitionItem = {
+    id: string;
+    transaction_note_id: string;
+    product_id: string;
+    product_variant_id: string;
+    quantity: string;
+    patch_code: string;
+    expire_date: string;
+    company_id: string;
+    is_active: string;
+    updated_by: string | null;
+    updated_at: string;
+};
+
+export type RequisitionNote = {
+    id: string;
+    from_location: string;
+    to_location: string;
+    note_date: string;
+    status: string;
+    company_id: string;
+    created_by: string;
+    note_number: string;
+    is_active: string;
+    updated_by: string | null;
+    created_at: string;
+    updated_at: string;
+    items: RequisitionItem[];
+};
+
 
 export type StockTransferItem = {
     id: string;
