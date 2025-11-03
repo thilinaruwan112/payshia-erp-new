@@ -64,7 +64,7 @@ const invoiceItemSchema = z.object({
     productId: z.string().min(1),
     productVariantId: z.string().min(1),
     quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
-    unitPrice: z.coerce.number().min(0, "Unit price must be positive."),
+    unitPrice: z.coerce.number().min(0, "Unit price must be a positive number."),
     costPrice: z.coerce.number().min(0),
     discount: z.coerce.number().min(0, "Discount must be positive.").optional(),
     selectedBatch: z.string(), // Now optional based on refine
@@ -823,7 +823,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                     </div>
                      <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Grand Total</span>
-                        <span className="font-mono">${grandTotal.toFixed(2)}</span>
+                        <span className="font-mono">${Number(grandTotal).toFixed(2)}</span>
                     </div>
                 </div>
             </CardFooter>
@@ -832,3 +832,5 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     </Form>
   );
 }
+
+    
