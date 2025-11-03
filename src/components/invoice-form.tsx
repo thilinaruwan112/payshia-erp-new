@@ -254,16 +254,29 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     }
     
     const selectedCustomer = customers.find(c => c.customer_id === data.customerId);
+    
+    const baseForTaxes = subtotal - totalDiscountAmount;
+    let serviceChargeValue = 0;
+    if(data.invoiceType !== "Wholesale"){
+      serviceChargeValue = baseForTaxes * 0.10;
+    }
+    
+    const tdl = baseForTaxes * 0.01;
+    const baseForSscl = baseForTaxes + serviceChargeValue;
+    const sscl = baseForSscl * 0.025;
+    const baseForVat = baseForTaxes + serviceChargeValue + tdl + sscl;
+    const vat = baseForVat * 0.18;
+    const finalGrandTotal = baseForTaxes + serviceChargeValue + tdl + sscl + vat;
 
     const payload = {
         invoice_date: format(data.invoiceDate, 'yyyy-MM-dd'),
         inv_amount: subtotal,
-        grand_total: grandTotal,
+        grand_total: finalGrandTotal,
         discount_amount: totalDiscountAmount,
         discount_percentage: subtotal > 0 ? (totalDiscountAmount / subtotal) * 100 : 0,
         customer_code: data.customerId,
-        service_charge: data.serviceCharge || 0,
-        tendered_amount: data.status === '1' ? grandTotal : 0, // 1 is Paid
+        service_charge: serviceChargeValue,
+        tendered_amount: data.status === '1' ? finalGrandTotal : 0, // 1 is Paid
         close_type: "Cash",
         invoice_status: data.status,
         payment_status: "Pending",
@@ -278,8 +291,13 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         remark: data.remark || "",
         ref_hold: null,
         company_id: company_id,
+        ecommerce_payment_status: 1,
+        vat_amount: vat,
+        sscl_tax: sscl,
+        tdl: tdl,
+        chanel: "test", // Hardcoded as per sample
         billing_address: selectedCustomer ? {
-            user_id: selectedCustomer.customer_id, // Corrected from selectedCustomer.id
+            user_id: selectedCustomer.customer_id,
             address_type: "billing",
             first_name: selectedCustomer.customer_first_name,
             last_name: selectedCustomer.customer_last_name,
@@ -318,7 +336,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     try {
         const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices`, {
             method: 'POST',
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
@@ -375,6 +393,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
             <Card className="lg:col-span-2">
                 <CardHeader>
                     <CardTitle>Invoice Details</CardTitle>
+                    <CardDescription>The endpoint for this form is: POST /invoices</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
