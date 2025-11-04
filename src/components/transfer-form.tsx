@@ -46,6 +46,22 @@ import { useCurrency } from "./currency-provider";
 import { useLocation } from "./location-provider";
 import { fetcher } from "@/lib/api";
 
+interface StockInfo {
+    product_id: string;
+    product_variant_id: string;
+    patch_code: string;
+    expire_date: string;
+    total_in: string;
+    total_out: string;
+    stock_balance: string;
+    manufacture_date?: string; // Adding this for payload consistency
+}
+
+interface ProductWithApiResponse {
+  product: Product;
+  variants: { variant: ProductVariant }[];
+}
+
 const transferItemSchema = z.object({
   sku: z.string().min(1, "Product is required."),
   quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
@@ -68,21 +84,6 @@ const transferFormSchema = z.object({
 
 type TransferFormValues = z.infer<typeof transferFormSchema>;
 
-interface ProductWithApiResponse {
-  product: Product;
-  variants: { variant: ProductVariant }[];
-}
-
-interface StockInfo {
-    product_id: string;
-    product_variant_id: string;
-    patch_code: string;
-    expire_date: string;
-    total_in: string;
-    total_out: string;
-    stock_balance: string;
-    manufacture_date?: string; // Adding this for payload consistency
-}
 
 interface TransferFormProps {
     locations: Location[];
@@ -194,6 +195,22 @@ export function TransferForm({ locations }: TransferFormProps) {
             
             const requisitionData: RequisitionNote = await response.json();
             
+            const fromLocationId = requisitionData.from_location;
+            const toLocationId = requisitionData.to_location;
+
+            // Trim whitespace and convert to lowercase for comparison
+            const findLocationIdByName = (name: string) => {
+                const found = locations.find(loc => loc.location_name.trim().toLowerCase() === name.trim().toLowerCase());
+                return found ? found.location_id : null;
+            }
+
+            const sourceId = findLocationIdByName(fromLocationId);
+            const destId = findLocationIdByName(toLocationId);
+
+            if (!sourceId || !destId) {
+                throw new Error("Could not match locations from the requisition note.");
+            }
+
             const newItems = requisitionData.items.map(item => {
                 const skuDetails = allSkus.find(s => s.variantId === item.product_variant_id);
                 return {
@@ -205,17 +222,16 @@ export function TransferForm({ locations }: TransferFormProps) {
             
             reset({
               date: new Date(requisitionData.note_date),
-              fromLocationId: requisitionData.from_location,
-              toLocationId: requisitionData.to_location,
+              fromLocationId: sourceId,
+              toLocationId: destId,
               items: newItems,
             });
 
             // Trigger batch fetching for all loaded items
             newItems.forEach((item, index) => {
-                if (item.sku) handleProductSelect(item.sku, index, requisitionData.from_location);
+                if (item.sku) handleProductSelect(item.sku, index, sourceId);
             });
             
-            // Remove the query param from the URL
             router.replace('/transfers/new', undefined);
 
         } catch (error) {
@@ -229,7 +245,7 @@ export function TransferForm({ locations }: TransferFormProps) {
 
   const transferTotalValue = watchedItems.reduce((total, item) => {
     const skuDetails = allSkus.find(s => s.value === item.sku);
-    const costPrice = skuDetails?.costPrice || 0;
+    const costPrice = skuDetails?.costPrice;
     const quantity = Number(item.quantity) || 0;
     return total + (parseFloat(String(costPrice)) * quantity);
   }, 0);
@@ -248,6 +264,7 @@ export function TransferForm({ locations }: TransferFormProps) {
       status: 'pending',
       company_id: company_id,
       created_by: "admin", 
+      transfer_note_id: noteId || null,
       items: data.items.map(item => {
         const batchInfo: StockInfo = JSON.parse(item.selectedBatch);
         const skuDetails = allSkus.find(s => s.value === item.sku);
@@ -361,7 +378,7 @@ export function TransferForm({ locations }: TransferFormProps) {
                               <FormLabel>From (Source)</FormLabel>
                               <Select onValueChange={(value) => {
                                   field.onChange(value);
-                                  form.reset({ ...form.getValues(), items: [] });
+                                  reset({ ...form.getValues(), items: [] });
                                   append({ sku: '', quantity: 1, selectedBatch: '' });
                                   setAvailableBatches({});
                               }} value={field.value}>
@@ -425,7 +442,7 @@ export function TransferForm({ locations }: TransferFormProps) {
                            {fields.map((field, index) => {
                               const selectedSku = watchedItems[index]?.sku;
                               const skuDetails = allSkus.find(s => s.value === selectedSku);
-                              const costPrice = skuDetails?.costPrice || 0;
+                              const costPrice = skuDetails?.costPrice;
                               const quantity = watchedItems[index]?.quantity || 0;
                               const totalValue = parseFloat(String(costPrice)) * quantity;
 
