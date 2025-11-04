@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -89,6 +88,7 @@ interface StockInfo {
     total_in: string;
     total_out: string;
     stock_balance: string;
+    manufacture_date?: string; // Adding this for payload consistency
 }
 
 interface TransferFormProps {
@@ -109,6 +109,7 @@ export function TransferForm({ locations }: TransferFormProps) {
   React.useEffect(() => {
     async function fetchProducts() {
         try {
+            if (!company_id) return;
             const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch products');
@@ -119,9 +120,7 @@ export function TransferForm({ locations }: TransferFormProps) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch product data.' });
         }
     }
-    if (company_id) {
-        fetchProducts();
-    }
+    fetchProducts();
   }, [company_id, toast]);
 
   const allSkus = React.useMemo(() => {
@@ -161,6 +160,33 @@ export function TransferForm({ locations }: TransferFormProps) {
   const watchedItems = form.watch("items");
   const noteNumber = searchParams.get('note');
 
+  const handleProductSelect = useCallback(async (sku: string, index: number, locationForStock: string) => {
+    if (!locationForStock) {
+        toast({
+            variant: 'destructive',
+            title: 'No Source Location',
+            description: 'Please select a source location first.'
+        });
+        return;
+    }
+    const skuDetails = allSkus.find(s => s.value === sku);
+    if (!skuDetails || !company_id) return;
+
+    try {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${skuDetails.variantId}&location_id=${locationForStock}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch stock for this product.');
+        }
+        const data = await response.json();
+        const batches = data.grouped_by_expire_date.filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
+        setAvailableBatches(prev => ({ ...prev, [index]: batches }));
+        form.setValue(`items.${index}.selectedBatch`, '');
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Error fetching stock', description: errorMessage });
+    }
+  }, [company_id, allSkus, form, toast]);
+
   useEffect(() => {
     async function loadRequisitionData() {
         if (!noteNumber || !company_id || allSkus.length === 0 || locations.length === 0) return;
@@ -176,8 +202,8 @@ export function TransferForm({ locations }: TransferFormProps) {
 
             const requisitionData = notes[0];
             
-            const fromLocation = locations.find(loc => loc.location_name === requisitionData.from_location);
-            const toLocation = locations.find(loc => loc.location_name === requisitionData.to_location);
+            const fromLocation = locations.find(loc => loc.location_name.trim().toLowerCase() === requisitionData.from_location.trim().toLowerCase());
+            const toLocation = locations.find(loc => loc.location_name.trim().toLowerCase() === requisitionData.to_location.trim().toLowerCase());
 
             if (!fromLocation || !toLocation) {
                 throw new Error('Could not match locations from the requisition note.');
@@ -204,6 +230,7 @@ export function TransferForm({ locations }: TransferFormProps) {
                 if (item.sku) handleProductSelect(item.sku, index, fromLocation.location_id);
             });
             
+            // Remove the query param from the URL
             router.replace('/transfers/new', undefined);
 
         } catch (error) {
@@ -212,35 +239,8 @@ export function TransferForm({ locations }: TransferFormProps) {
         }
     }
     loadRequisitionData();
-  }, [noteNumber, company_id, allSkus, locations, reset, toast, router]);
+  }, [noteNumber, company_id, allSkus, locations, reset, toast, router, handleProductSelect]);
 
-
-  const handleProductSelect = async (sku: string, index: number, locationForStock: string) => {
-    if (!locationForStock) {
-        toast({
-            variant: 'destructive',
-            title: 'No Source Location',
-            description: 'Please select a source location first.'
-        });
-        return;
-    }
-    const skuDetails = allSkus.find(s => s.value === sku);
-    if (!skuDetails) return;
-
-    try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${skuDetails.variantId}&location_id=${locationForStock}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch stock for this product.');
-        }
-        const data = await response.json();
-        const batches = data.grouped_by_expire_date.filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
-        setAvailableBatches(prev => ({ ...prev, [index]: batches }));
-        form.setValue(`items.${index}.selectedBatch`, '');
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        toast({ variant: 'destructive', title: 'Error fetching stock', description: errorMessage });
-    }
-  }
 
   const transferTotalValue = watchedItems.reduce((total, item) => {
     const skuDetails = allSkus.find(s => s.value === item.sku);
