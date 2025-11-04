@@ -56,7 +56,7 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [availableProducts, setAvailableProducts] = useState<ProductWithApiResponse[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
-  const [stockLevels, setStockLevels] = useState<Record<string, number | '...'> >({});
+  const [stockLevels, setStockLevels] = useState<Record<string, number | '...'>>({});
 
   
   const form = useForm<RequisitionFormValues>({
@@ -95,15 +95,15 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
     fetchProducts();
   }, [company_id, toast]);
 
-  const fetchStock = useCallback(async (variantId: string) => {
-    if (!fromLocationId || !company_id) return;
+  const fetchStock = useCallback(async (variantId: string, locationId: string) => {
+    if (!locationId || !company_id) return;
     setStockLevels(prev => ({...prev, [variantId]: '...' }));
 
     const productInfo = availableProducts.find(p => p.variants.some(v => v.variant.id === variantId));
     if (!productInfo) return;
 
     try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${productInfo.product.id}&product_variant_id=${variantId}&location_id=${fromLocationId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${productInfo.product.id}&product_variant_id=${variantId}&location_id=${locationId}`);
         if (response.ok) {
             const data = await response.json();
             const totalStock = data.total_stock[0]?.stock_balance ? parseFloat(data.total_stock[0].stock_balance) : 0;
@@ -115,7 +115,7 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
         console.error("Failed to fetch stock for variant:", variantId, error);
         setStockLevels(prev => ({...prev, [variantId]: 0 }));
     }
-  }, [fromLocationId, company_id, availableProducts]);
+  }, [company_id, availableProducts]);
 
 
   const productOptions = useMemo(() => {
@@ -337,7 +337,9 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
                                                         value={field.value}
                                                         onChange={(value) => {
                                                             field.onChange(value);
-                                                            fetchStock(value);
+                                                            if (value && fromLocationId) {
+                                                                fetchStock(value, fromLocationId);
+                                                            }
                                                         }}
                                                         placeholder="Select a variant..."
                                                         notFoundText="No variant found."
