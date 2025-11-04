@@ -198,17 +198,8 @@ export function TransferForm({ locations }: TransferFormProps) {
             const fromLocationId = requisitionData.from_location;
             const toLocationId = requisitionData.to_location;
 
-            // Trim whitespace and convert to lowercase for comparison
-            const findLocationIdByName = (name: string) => {
-                const found = locations.find(loc => loc.location_name.trim().toLowerCase() === name.trim().toLowerCase());
-                return found ? found.location_id : null;
-            }
-
-            const sourceId = findLocationIdByName(fromLocationId);
-            const destId = findLocationIdByName(toLocationId);
-
-            if (!sourceId || !destId) {
-                throw new Error("Could not match locations from the requisition note.");
+            if (!fromLocationId || !toLocationId) {
+                throw new Error("Requisition note is missing location information.");
             }
 
             const newItems = requisitionData.items.map(item => {
@@ -222,14 +213,14 @@ export function TransferForm({ locations }: TransferFormProps) {
             
             reset({
               date: new Date(requisitionData.note_date),
-              fromLocationId: sourceId,
-              toLocationId: destId,
+              fromLocationId: fromLocationId,
+              toLocationId: toLocationId,
               items: newItems,
             });
 
             // Trigger batch fetching for all loaded items
             newItems.forEach((item, index) => {
-                if (item.sku) handleProductSelect(item.sku, index, sourceId);
+                if (item.sku) handleProductSelect(item.sku, index, fromLocationId);
             });
             
             router.replace('/transfers/new', undefined);
@@ -566,3 +557,5 @@ export function TransferForm({ locations }: TransferFormProps) {
     </>
   );
 }
+
+    

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -38,7 +37,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { Location, StockTransfer, RequisitionNote } from '@/lib/types';
+import type { Location, StockTransfer } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -48,6 +47,14 @@ import { fetcher } from '@/lib/api';
 import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 
+type RequisitionNote = {
+    id: string;
+    note_number: string;
+    from_location: string;
+    to_location: string;
+    note_date: string;
+    status: string;
+}
 
 const getStatusColor = (status: StockTransfer['status']) => {
   switch (status) {
@@ -347,3 +354,5 @@ export default function StockTransfersPage() {
     </div>
   );
 }
+
+    
