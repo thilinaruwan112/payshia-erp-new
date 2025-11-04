@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Location, Product, ProductVariant } from "@/lib/types";
 import { CalendarIcon, Loader2, Trash2 } from "lucide-react";
-import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
@@ -94,13 +94,14 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
     }
     fetchProducts();
   }, [company_id, toast]);
-  
+
   const fetchStock = useCallback(async (variantId: string) => {
     if (!fromLocationId || !company_id) return;
-    try {
-        const productInfo = availableProducts.find(p => p.variants.some(v => v.variant.id === variantId));
-        if (!productInfo) return;
 
+    const productInfo = availableProducts.find(p => p.variants.some(v => v.variant.id === variantId));
+    if (!productInfo) return;
+
+    try {
         const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${productInfo.product.id}&product_variant_id=${variantId}&location_id=${fromLocationId}`);
         if (response.ok) {
             const data = await response.json();
@@ -114,14 +115,6 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
         setStockLevels(prev => ({...prev, [variantId]: 0 }));
     }
   }, [fromLocationId, company_id, availableProducts]);
-
-  useEffect(() => {
-    form.watch('items').forEach(item => {
-        if (item.product_variant_id && fromLocationId) {
-            fetchStock(item.product_variant_id);
-        }
-    });
-  }, [fromLocationId, form, fetchStock]);
 
   const productOptions = useMemo(() => {
     return availableProducts.map(p => ({ value: p.product.id, label: p.product.name }));
