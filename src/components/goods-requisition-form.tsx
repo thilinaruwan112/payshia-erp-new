@@ -56,7 +56,7 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [availableProducts, setAvailableProducts] = useState<ProductWithApiResponse[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
-  const [stockLevels, setStockLevels] = useState<Record<string, number>>({});
+  const [stockLevels, setStockLevels] = useState<Record<string, number | '...'> >({});
 
   
   const form = useForm<RequisitionFormValues>({
@@ -97,6 +97,7 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
 
   const fetchStock = useCallback(async (variantId: string) => {
     if (!fromLocationId || !company_id) return;
+    setStockLevels(prev => ({...prev, [variantId]: '...' }));
 
     const productInfo = availableProducts.find(p => p.variants.some(v => v.variant.id === variantId));
     if (!productInfo) return;
@@ -115,6 +116,7 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
         setStockLevels(prev => ({...prev, [variantId]: 0 }));
     }
   }, [fromLocationId, company_id, availableProducts]);
+
 
   const productOptions = useMemo(() => {
     return availableProducts.map(p => ({ value: p.product.id, label: p.product.name }));
@@ -299,7 +301,7 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
                             const productData = availableProducts.find(p => p.product.id === selectedProductId);
                             const variantOptions = (productData?.variants || []).map(v => ({ value: v.variant.id, label: [v.variant.sku, v.variant.color, v.variant.size].filter(Boolean).join(' - ') }));
                              const selectedVariantId = form.watch(`items.${index}.product_variant_id`);
-                            const stock = stockLevels[selectedVariantId] ?? '...';
+                             const stock = stockLevels[selectedVariantId] ?? '...';
                             
                             return (
                                 <TableRow key={field.id}>
