@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -45,6 +46,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLocation } from '@/components/location-provider';
 import { fetcher } from '@/lib/api';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
 
 const getStatusColor = (status: StockTransfer['status']) => {
@@ -76,6 +78,7 @@ const getRequisitionStatusColor = (status: string) => {
 
 export default function StockTransfersPage() {
     const { toast } = useToast();
+    const router = useRouter();
     const [transfers, setTransfers] = useState<StockTransfer[]>([]);
     const [locations, setLocations] = useState<Location[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -102,6 +105,11 @@ export default function StockTransfersPage() {
         } finally {
             setIsLoadingRequisitions(false);
         }
+    };
+    
+    const handleLoadRequisition = (note: RequisitionNote) => {
+        sessionStorage.setItem('requisitionDataForTransfer', JSON.stringify(note));
+        router.push('/transfers/new');
     };
 
 
@@ -204,9 +212,12 @@ export default function StockTransfersPage() {
                                                 {note.status}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="text-right flex items-center gap-2">
                                             <Button variant="ghost" size="sm" asChild>
                                                 <Link href={`/inventory/goods-requisition/${note.id}`} target="_blank">View</Link>
+                                            </Button>
+                                            <Button variant="outline" size="sm" onClick={() => handleLoadRequisition(note)}>
+                                                Load
                                             </Button>
                                         </TableCell>
                                     </TableRow>

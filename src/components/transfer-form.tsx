@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,14 +32,14 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Location, Product, ProductVariant } from "@/lib/types";
+import type { Location, Product, ProductVariant, RequisitionNote } from "@/lib/types";
 import { CalendarIcon, Loader2, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import React, { useEffect, useState } from "react";
+import { format, parse } from "date-fns";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -124,7 +125,7 @@ export function TransferForm({ locations }: TransferFormProps) {
 
   const allSkus = React.useMemo(() => {
     return productsWithVariants.flatMap(p => 
-        p.variants.map(v => ({
+        (p.variants || []).map(v => ({
             label: `${p.product.name} (${v.variant.sku})`,
             value: v.variant.sku,
             productId: p.product.id,
@@ -149,20 +150,53 @@ export function TransferForm({ locations }: TransferFormProps) {
     defaultValues,
     mode: "onChange",
   });
-  
-  useEffect(() => {
-    if (locations.length === 1) {
-        form.setValue('fromLocationId', locations[0].location_id);
-    }
-  }, [locations, form]);
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, reset } = useFieldArray({
     control: form.control,
     name: "items",
   });
   
   const fromLocationId = form.watch("fromLocationId");
   const watchedItems = form.watch("items");
+
+  // Effect to load requisition data from sessionStorage
+  useEffect(() => {
+    const requisitionDataString = sessionStorage.getItem('requisitionDataForTransfer');
+    if (requisitionDataString) {
+      try {
+        const requisitionData: RequisitionNote = JSON.parse(requisitionDataString);
+        
+        const fromLocation = locations.find(loc => loc.location_name === requisitionData.from_location);
+        const toLocation = locations.find(loc => loc.location_name === requisitionData.to_location);
+
+        const newItems = requisitionData.items.map(item => {
+            const skuDetails = allSkus.find(s => s.variantId === item.product_variant_id);
+            return {
+                sku: skuDetails?.value || '',
+                quantity: parseFloat(item.quantity),
+                selectedBatch: '',
+            };
+        });
+
+        reset({
+          date: new Date(requisitionData.note_date),
+          fromLocationId: fromLocation?.location_id || '',
+          toLocationId: toLocation?.location_id || '',
+          items: newItems,
+        });
+
+        // Pre-fetch batches for all loaded items
+        newItems.forEach((item, index) => {
+            if (item.sku) handleProductSelect(item.sku, index);
+        });
+
+      } catch (error) {
+        toast({ title: "Error loading requisition", description: "Could not parse data.", variant: "destructive" });
+      } finally {
+        sessionStorage.removeItem('requisitionDataForTransfer');
+      }
+    }
+  }, [allSkus, locations, reset, toast]);
 
   const handleProductSelect = async (sku: string, index: number) => {
     if (!fromLocationId) {
