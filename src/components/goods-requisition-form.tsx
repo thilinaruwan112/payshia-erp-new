@@ -18,7 +18,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
 import { fetcher } from "@/lib/api";
@@ -56,6 +56,8 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [availableProducts, setAvailableProducts] = useState<ProductWithApiResponse[]>([]);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [stockLevels, setStockLevels] = useState<Record<string, number>>({});
+
   
   const form = useForm<RequisitionFormValues>({
     resolver: zodResolver(requisitionFormSchema),
@@ -92,6 +94,34 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
     }
     fetchProducts();
   }, [company_id, toast]);
+  
+  const fetchStock = useCallback(async (variantId: string) => {
+    if (!fromLocationId || !company_id) return;
+    try {
+        const productInfo = availableProducts.find(p => p.variants.some(v => v.variant.id === variantId));
+        if (!productInfo) return;
+
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${productInfo.product.id}&product_variant_id=${variantId}&location_id=${fromLocationId}`);
+        if (response.ok) {
+            const data = await response.json();
+            const totalStock = data.total_stock[0]?.stock_balance ? parseFloat(data.total_stock[0].stock_balance) : 0;
+            setStockLevels(prev => ({...prev, [variantId]: totalStock }));
+        } else {
+            setStockLevels(prev => ({...prev, [variantId]: 0 }));
+        }
+    } catch (error) {
+        console.error("Failed to fetch stock for variant:", variantId, error);
+        setStockLevels(prev => ({...prev, [variantId]: 0 }));
+    }
+  }, [fromLocationId, company_id, availableProducts]);
+
+  useEffect(() => {
+    form.watch('items').forEach(item => {
+        if (item.product_variant_id && fromLocationId) {
+            fetchStock(item.product_variant_id);
+        }
+    });
+  }, [fromLocationId, form, fetchStock]);
 
   const productOptions = useMemo(() => {
     return availableProducts.map(p => ({ value: p.product.id, label: p.product.name }));
@@ -140,7 +170,7 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
             description: `Note #${result.note_number} has been created successfully.`,
         });
         
-        router.push('/inventory/dashboard');
+        router.push('/inventory/goods-requisition');
         router.refresh();
 
     } catch (error) {
@@ -265,6 +295,7 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
                         <TableRow>
                             <TableHead className="w-[30%]">Product</TableHead>
                              <TableHead className="w-[30%]">Variant</TableHead>
+                             <TableHead className="w-[150px]">Stock Availability</TableHead>
                             <TableHead className="w-[150px]">Quantity</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
@@ -274,7 +305,9 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
                             const selectedProductId = form.watch(`items.${index}.product_id`);
                             const productData = availableProducts.find(p => p.product.id === selectedProductId);
                             const variantOptions = (productData?.variants || []).map(v => ({ value: v.variant.id, label: [v.variant.sku, v.variant.color, v.variant.size].filter(Boolean).join(' - ') }));
-
+                             const selectedVariantId = form.watch(`items.${index}.product_variant_id`);
+                            const stock = stockLevels[selectedVariantId] ?? '...';
+                            
                             return (
                                 <TableRow key={field.id}>
                                     <TableCell>
@@ -286,7 +319,10 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
                                                     <Combobox
                                                         options={productOptions}
                                                         value={field.value}
-                                                        onChange={field.onChange}
+                                                        onChange={(value) => {
+                                                            field.onChange(value);
+                                                            form.setValue(`items.${index}.product_variant_id`, ''); // Reset variant
+                                                        }}
                                                         placeholder="Select a product..."
                                                         notFoundText="No product found."
                                                     />
@@ -304,7 +340,10 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
                                                     <Combobox
                                                         options={variantOptions}
                                                         value={field.value}
-                                                        onChange={field.onChange}
+                                                        onChange={(value) => {
+                                                            field.onChange(value);
+                                                            fetchStock(value);
+                                                        }}
                                                         placeholder="Select a variant..."
                                                         notFoundText="No variant found."
                                                         disabled={!selectedProductId}
@@ -312,6 +351,14 @@ export function GoodsRequisitionForm({ locations }: GoodsRequisitionFormProps) {
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Input
+                                          readOnly
+                                          disabled
+                                          value={stock}
+                                          className="text-right bg-muted"
                                         />
                                     </TableCell>
                                     <TableCell>
