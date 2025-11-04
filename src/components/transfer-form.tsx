@@ -4,14 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
 import * as z from "zod";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -150,8 +143,10 @@ export function TransferForm({ locations }: TransferFormProps) {
     defaultValues,
     mode: "onChange",
   });
+  
+  const { reset } = form;
 
-  const { fields, append, remove, reset } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "items",
   });
@@ -366,7 +361,7 @@ export function TransferForm({ locations }: TransferFormProps) {
                               <FormLabel>From (Source)</FormLabel>
                               <Select onValueChange={(value) => {
                                   field.onChange(value);
-                                  remove();
+                                  form.reset({ ...form.getValues(), items: [] });
                                   append({ sku: '', quantity: 1, selectedBatch: '' });
                                   setAvailableBatches({});
                               }} value={field.value}>
