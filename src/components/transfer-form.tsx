@@ -37,7 +37,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
-import { format, parse } from "date-fns";
+import { addDays, format, parse } from "date-fns";
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   AlertDialog,
@@ -158,7 +158,7 @@ export function TransferForm({ locations }: TransferFormProps) {
   
   const fromLocationId = form.watch("fromLocationId");
   const watchedItems = form.watch("items");
-  const noteNumber = searchParams.get('note');
+  const noteId = searchParams.get('noteId');
 
   const handleProductSelect = useCallback(async (sku: string, index: number, locationForStock: string) => {
     if (!locationForStock) {
@@ -189,26 +189,16 @@ export function TransferForm({ locations }: TransferFormProps) {
 
   useEffect(() => {
     async function loadRequisitionData() {
-        if (!noteNumber || !company_id || allSkus.length === 0 || locations.length === 0) return;
+        if (!noteId || !company_id || allSkus.length === 0 || locations.length === 0) return;
         
-        toast({ title: 'Loading requisition data...', description: `Fetching details for ${noteNumber}`});
+        toast({ title: 'Loading requisition data...', description: `Fetching details for Note ID ${noteId}`});
 
         try {
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-notes/filter/by-company?company_id=${company_id}&note_number=${noteNumber}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-notes/${noteId}`);
             if (!response.ok) throw new Error('Could not find the requisition note.');
             
-            const notes: RequisitionNote[] = await response.json();
-            if (!notes || notes.length === 0) throw new Error('Requisition note not found.');
-
-            const requisitionData = notes[0];
+            const requisitionData: RequisitionNote = await response.json();
             
-            const fromLocation = locations.find(loc => loc.location_name.trim().toLowerCase() === requisitionData.from_location.trim().toLowerCase());
-            const toLocation = locations.find(loc => loc.location_name.trim().toLowerCase() === requisitionData.to_location.trim().toLowerCase());
-
-            if (!fromLocation || !toLocation) {
-                throw new Error('Could not match locations from the requisition note.');
-            }
-
             const newItems = requisitionData.items.map(item => {
                 const skuDetails = allSkus.find(s => s.variantId === item.product_variant_id);
                 return {
@@ -220,14 +210,14 @@ export function TransferForm({ locations }: TransferFormProps) {
             
             reset({
               date: new Date(requisitionData.note_date),
-              fromLocationId: fromLocation.location_id,
-              toLocationId: toLocation.location_id,
+              fromLocationId: requisitionData.from_location,
+              toLocationId: requisitionData.to_location,
               items: newItems,
             });
 
             // Trigger batch fetching for all loaded items
             newItems.forEach((item, index) => {
-                if (item.sku) handleProductSelect(item.sku, index, fromLocation.location_id);
+                if (item.sku) handleProductSelect(item.sku, index, requisitionData.from_location);
             });
             
             // Remove the query param from the URL
@@ -239,7 +229,7 @@ export function TransferForm({ locations }: TransferFormProps) {
         }
     }
     loadRequisitionData();
-  }, [noteNumber, company_id, allSkus, locations, reset, toast, router, handleProductSelect]);
+  }, [noteId, company_id, allSkus, locations, reset, toast, router, handleProductSelect]);
 
 
   const transferTotalValue = watchedItems.reduce((total, item) => {

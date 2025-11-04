@@ -108,7 +108,7 @@ export default function StockTransfersPage() {
     };
     
     const handleLoadRequisition = (note: RequisitionNote) => {
-        router.push(`/transfers/new?note=${note.note_number}`);
+        router.push(`/transfers/new?noteId=${note.id}`);
     };
 
 
