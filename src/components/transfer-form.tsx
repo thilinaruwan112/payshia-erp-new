@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { Location, Product, ProductVariant, RequisitionNote } from "@/lib/types";
 import { CalendarIcon, Loader2, Trash2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
@@ -39,7 +39,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format, parse } from "date-fns";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -97,6 +97,7 @@ interface TransferFormProps {
 
 export function TransferForm({ locations }: TransferFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { company_id } = useLocation();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -158,48 +159,64 @@ export function TransferForm({ locations }: TransferFormProps) {
   
   const fromLocationId = form.watch("fromLocationId");
   const watchedItems = form.watch("items");
+  const noteNumber = searchParams.get('note');
 
-  // Effect to load requisition data from sessionStorage
   useEffect(() => {
-    const requisitionDataString = sessionStorage.getItem('requisitionDataForTransfer');
-    if (requisitionDataString) {
-      try {
-        const requisitionData: RequisitionNote = JSON.parse(requisitionDataString);
+    async function loadRequisitionData() {
+        if (!noteNumber || !company_id || allSkus.length === 0 || locations.length === 0) return;
         
-        const fromLocation = locations.find(loc => loc.location_name === requisitionData.from_location);
-        const toLocation = locations.find(loc => loc.location_name === requisitionData.to_location);
+        toast({ title: 'Loading requisition data...', description: `Fetching details for ${noteNumber}`});
 
-        const newItems = requisitionData.items.map(item => {
-            const skuDetails = allSkus.find(s => s.variantId === item.product_variant_id);
-            return {
-                sku: skuDetails?.value || '',
-                quantity: parseFloat(item.quantity),
-                selectedBatch: '',
-            };
-        });
+        try {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-notes/filter/by-company?company_id=${company_id}&note_number=${noteNumber}`);
+            if (!response.ok) throw new Error('Could not find the requisition note.');
+            
+            const notes: RequisitionNote[] = await response.json();
+            if (!notes || notes.length === 0) throw new Error('Requisition note not found.');
 
-        reset({
-          date: new Date(requisitionData.note_date),
-          fromLocationId: fromLocation?.location_id || '',
-          toLocationId: toLocation?.location_id || '',
-          items: newItems,
-        });
+            const requisitionData = notes[0];
+            
+            const fromLocation = locations.find(loc => loc.location_name === requisitionData.from_location);
+            const toLocation = locations.find(loc => loc.location_name === requisitionData.to_location);
 
-        // Pre-fetch batches for all loaded items
-        newItems.forEach((item, index) => {
-            if (item.sku) handleProductSelect(item.sku, index);
-        });
+            if (!fromLocation || !toLocation) {
+                throw new Error('Could not match locations from the requisition note.');
+            }
 
-      } catch (error) {
-        toast({ title: "Error loading requisition", description: "Could not parse data.", variant: "destructive" });
-      } finally {
-        sessionStorage.removeItem('requisitionDataForTransfer');
-      }
+            const newItems = requisitionData.items.map(item => {
+                const skuDetails = allSkus.find(s => s.variantId === item.product_variant_id);
+                return {
+                    sku: skuDetails?.value || '',
+                    quantity: parseFloat(item.quantity),
+                    selectedBatch: '',
+                };
+            });
+            
+            reset({
+              date: new Date(requisitionData.note_date),
+              fromLocationId: fromLocation.location_id,
+              toLocationId: toLocation.location_id,
+              items: newItems,
+            });
+
+            // Trigger batch fetching for all loaded items
+            newItems.forEach((item, index) => {
+                if (item.sku) handleProductSelect(item.sku, index, fromLocation.location_id);
+            });
+            
+            router.replace('/transfers/new', undefined);
+
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            toast({ title: "Error loading requisition", description: errorMessage, variant: "destructive" });
+        }
     }
-  }, [allSkus, locations, reset, toast]);
+    loadRequisitionData();
+  }, [noteNumber, company_id, allSkus, locations, reset, toast, router]);
 
-  const handleProductSelect = async (sku: string, index: number) => {
-    if (!fromLocationId) {
+
+  const handleProductSelect = async (sku: string, index: number, locationForStock: string) => {
+    if (!locationForStock) {
         toast({
             variant: 'destructive',
             title: 'No Source Location',
@@ -211,7 +228,7 @@ export function TransferForm({ locations }: TransferFormProps) {
     if (!skuDetails) return;
 
     try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${skuDetails.variantId}&location_id=${fromLocationId}`);
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${skuDetails.variantId}&location_id=${locationForStock}`);
         if (!response.ok) {
             throw new Error('Failed to fetch stock for this product.');
         }
@@ -333,11 +350,7 @@ export function TransferForm({ locations }: TransferFormProps) {
                                       !field.value && "text-muted-foreground"
                                   )}
                                   >
-                                  {field.value ? (
-                                      format(field.value, "PPP")
-                                  ) : (
-                                      <span>Pick a date</span>
-                                  )}
+                                  {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                   </Button>
                               </FormControl>
@@ -347,9 +360,6 @@ export function TransferForm({ locations }: TransferFormProps) {
                                   mode="single"
                                   selected={field.value}
                                   onSelect={field.onChange}
-                                  disabled={(date) =>
-                                  date > new Date() || date < new Date("1900-01-01")
-                                  }
                                   initialFocus
                               />
                               </PopoverContent>
@@ -366,7 +376,6 @@ export function TransferForm({ locations }: TransferFormProps) {
                               <FormLabel>From (Source)</FormLabel>
                               <Select onValueChange={(value) => {
                                   field.onChange(value);
-                                  // Reset items when location changes
                                   remove();
                                   append({ sku: '', quantity: 1, selectedBatch: '' });
                                   setAvailableBatches({});
@@ -421,7 +430,7 @@ export function TransferForm({ locations }: TransferFormProps) {
                       <TableHeader>
                           <TableRow>
                               <TableHead className="w-[30%]">Product</TableHead>
-                              <TableHead className="w-[25%]">Stock Availability</TableHead>
+                              <TableHead className="w-[25%]">Batch / Expiry</TableHead>
                               <TableHead>Quantity</TableHead>
                               <TableHead className="text-right">Total Value</TableHead>
                               <TableHead className="w-[50px]"></TableHead>
@@ -445,7 +454,7 @@ export function TransferForm({ locations }: TransferFormProps) {
                                                   <FormItem>
                                                       <Select onValueChange={(value) => {
                                                           field.onChange(value);
-                                                          handleProductSelect(value, index);
+                                                          handleProductSelect(value, index, fromLocationId);
                                                       }} defaultValue={field.value}>
                                                           <FormControl>
                                                               <SelectTrigger>

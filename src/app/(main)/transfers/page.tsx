@@ -108,8 +108,7 @@ export default function StockTransfersPage() {
     };
     
     const handleLoadRequisition = (note: RequisitionNote) => {
-        sessionStorage.setItem('requisitionDataForTransfer', JSON.stringify(note));
-        router.push('/transfers/new');
+        router.push(`/transfers/new?note=${note.note_number}`);
     };
 
 

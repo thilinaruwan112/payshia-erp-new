@@ -1,15 +1,16 @@
 
+
 'use client'
 
 import { TransferForm } from '@/components/transfer-form';
 import type { Location } from '@/lib/types';
 import { useLocation } from '@/components/location-provider';
+import { Suspense, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { fetcher } from '@/lib/api';
 
-export default function NewTransferPage() {
+function NewTransferPageContent() {
   const { company_id } = useLocation();
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,4 +56,12 @@ export default function NewTransferPage() {
   }
 
   return <TransferForm locations={locations} />;
+}
+
+export default function NewTransferPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <NewTransferPageContent />
+        </Suspense>
+    )
 }
