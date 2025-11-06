@@ -20,6 +20,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
   Select,
@@ -34,9 +35,10 @@ import type { Product, ProductVariant } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useLocation } from "./location-provider";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
 import { Textarea } from "./ui/textarea";
 import { fetcher } from "@/lib/api";
+import { Combobox } from "./ui/combobox";
 
 interface ProductWithApiResponse {
     product: Product;
@@ -56,6 +58,7 @@ const ingredientSchema = z.object({
   plannedQty: z.number(),
   actualQty: z.coerce.number().min(0, "Actual quantity cannot be negative."),
   unit: z.string(),
+  costPrice: z.number().optional(),
 });
 
 const productionRunFormSchema = z.object({
@@ -98,7 +101,7 @@ export function ProductionRunForm() {
         if (!company_id) return;
         setIsLoading(true);
         try {
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/goods/filter/item-type?item_type=menu,both&company_id=${company_id}`);
             if (!response.ok) throw new Error("Failed to fetch products");
             const data = await response.json();
             setProducts(data.products || []);
@@ -113,7 +116,6 @@ export function ProductionRunForm() {
   
   const finishedGoodsOptions = React.useMemo(() => {
     return products
-        .filter(p => p.product.item_type !== 'raw')
         .flatMap(p => 
             (p.variants || []).map(v => ({ product: p.product, variant: v }))
         )
@@ -146,6 +148,7 @@ export function ProductionRunForm() {
                     id: v.id,
                     name: `${p.product.name} (${v.sku})`,
                     unit: p.product.stock_unit || 'Nos',
+                    costPrice: v.cost_price ? parseFloat(String(v.cost_price)) : 0,
                 }))
             );
             
@@ -158,6 +161,7 @@ export function ProductionRunForm() {
                     plannedQty: plannedQty,
                     actualQty: plannedQty,
                     unit: ingredientInfo?.unit || 'Nos',
+                    costPrice: ingredientInfo?.costPrice || 0,
                 };
             });
             replace(newIngredients);
@@ -172,7 +176,6 @@ export function ProductionRunForm() {
   }, [finishedGoodId, plannedQuantity, company_id, products, toast, replace, form]);
 
   async function onSubmit(data: ProductionRunFormValues) {
-    // This is where you would send the data to your backend API
     setIsSubmitting(true);
     console.log("Submitting production run data:", data);
     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -182,6 +185,15 @@ export function ProductionRunForm() {
     });
     setIsSubmitting(false);
   }
+
+  const watchedIngredients = form.watch('ingredients');
+  const grandTotalCost = React.useMemo(() => {
+    return watchedIngredients.reduce((acc, item) => {
+        const actualQty = item?.actualQty || 0;
+        const costPrice = item?.costPrice || 0;
+        return acc + (actualQty * costPrice);
+    }, 0);
+  }, [watchedIngredients]);
 
   return (
     <Form {...form}>
@@ -224,18 +236,13 @@ export function ProductionRunForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Finished Good</FormLabel>
-                   <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select an item with a recipe" />
-                            </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                            {finishedGoodsOptions.map(item => (
-                                <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                   <Combobox
+                        options={finishedGoodsOptions}
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select an item with a recipe"
+                        notFoundText="No item found."
+                    />
                   <FormMessage />
                 </FormItem>
               )}
@@ -271,6 +278,8 @@ export function ProductionRunForm() {
                   <TableHead className="text-right">Planned Qty</TableHead>
                   <TableHead className="w-48 text-right">Actual Qty</TableHead>
                   <TableHead className="text-right">Wastage</TableHead>
+                  <TableHead className="text-right">Cost Price</TableHead>
+                  <TableHead className="text-right">Line Value</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -278,6 +287,8 @@ export function ProductionRunForm() {
                   const planned = form.watch(`ingredients.${index}.plannedQty`);
                   const actual = form.watch(`ingredients.${index}.actualQty`);
                   const wastage = planned - actual;
+                  const costPrice = form.watch(`ingredients.${index}.costPrice`) || 0;
+                  const lineValue = actual * costPrice;
                   return (
                     <TableRow key={field.id}>
                       <TableCell>{form.getValues(`ingredients.${index}.ingredientName`)}</TableCell>
@@ -296,14 +307,28 @@ export function ProductionRunForm() {
                         />
                       </TableCell>
                        <TableCell className={`text-right font-medium ${wastage > 0 ? 'text-destructive' : 'text-green-600'}`}>{wastage.toFixed(2)} {form.getValues(`ingredients.${index}.unit`)}</TableCell>
+                       <TableCell className="text-right font-mono">
+                           {costPrice.toFixed(2)}
+                       </TableCell>
+                       <TableCell className="text-right font-mono">
+                           {lineValue.toFixed(2)}
+                       </TableCell>
                     </TableRow>
                   );
                 }) : (
                     <TableRow>
-                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">Select a finished good with a recipe to see ingredients.</TableCell>
+                        <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">Select a finished good with a recipe to see ingredients.</TableCell>
                     </TableRow>
                 )}
               </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={5} className="text-right font-bold">Total Cost</TableCell>
+                  <TableCell className="text-right font-mono font-bold">
+                    {grandTotalCost.toFixed(2)}
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
             </Table>
           </CardContent>
         </Card>
