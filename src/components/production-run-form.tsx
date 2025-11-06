@@ -149,78 +149,6 @@ export function ProductionRunForm() {
         );
   }, [products]);
 
-
-  useEffect(() => {
-    async function fetchAndSetRecipe() {
-        if (!finishedGoodId || !company_id || allIngredientsOptions.length === 0 || !currentLocation) {
-            replace([]);
-            return;
-        }
-
-        const selectedProductInfo = products.flatMap(p => p.variants.map(v => ({...v.variant, productId: p.product.id, costPrice: v.variant.cost_price }))).find(v => v.id === finishedGoodId);
-        
-        if (!selectedProductInfo) return;
-
-        setFinishedGoodCost(selectedProductInfo.costPrice ? parseFloat(String(selectedProductInfo.costPrice)) : 0);
-
-        // Fetch stock for finished good
-        setIsLoading(true);
-        setFinishedGoodStock(null);
-        try {
-            const stockResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${selectedProductInfo.productId}&product_variant_id=${finishedGoodId}&location_id=${currentLocation.location_id}`);
-            if (stockResponse.ok) {
-                const stockData = await stockResponse.json();
-                const totalStock = stockData.total_stock[0]?.stock_balance ? parseFloat(stockData.total_stock[0].stock_balance) : 0;
-                setFinishedGoodStock(totalStock);
-            } else {
-                setFinishedGoodStock(0);
-            }
-        } catch (error) {
-             console.error("Failed to fetch finished good stock:", error);
-             setFinishedGoodStock(0);
-        }
-
-        try {
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes/get/filter?company_id=${company_id}&main_product=${selectedProductInfo.productId}&product_variant_id=${finishedGoodId}`);
-            if (!response.ok) throw new Error('Failed to fetch recipe.');
-            const data = await response.json();
-            const recipeItems: RecipeItem[] = data.data || [];
-            
-            const newIngredients = recipeItems.map(item => {
-                const ingredientInfo = allIngredientsOptions.find(ing => ing.id === item.recipe_product);
-                const plannedQty = parseFloat(item.qty) * (plannedQuantity || 1);
-                return {
-                    ingredientId: item.recipe_product,
-                    productId: ingredientInfo?.productId || '0',
-                    ingredientName: ingredientInfo?.name || `ID: ${item.recipe_product}`,
-                    plannedQty: plannedQty,
-                    actualQty: plannedQty,
-                    unit: ingredientInfo?.unit || 'Nos',
-                    costPrice: ingredientInfo?.costPrice || 0,
-                    selectedBatch: '',
-                };
-            });
-            replace(newIngredients);
-            form.setValue('actualYield', plannedQuantity);
-
-            // Fetch stock for all new ingredients
-            newIngredients.forEach((ing, index) => {
-                if (currentLocation) {
-                    handleProductSelect(ing.ingredientId, index, currentLocation.location_id);
-                }
-            });
-
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch recipe ingredients.' });
-            replace([]);
-        } finally {
-            setIsLoading(false);
-        }
-    }
-    fetchAndSetRecipe();
-  }, [finishedGoodId, plannedQuantity, company_id, products, toast, replace, form, allIngredientsOptions, currentLocation, handleProductSelect]);
-
-
   const handleProductSelect = useCallback(async (variantId: string, index: number, locationForStock: string) => {
     if (!locationForStock) {
         toast({ variant: 'destructive', title: 'Location not set', description: 'Please select a location first.' });
@@ -258,6 +186,75 @@ export function ProductionRunForm() {
     }
   }, [company_id, allIngredientsOptions, form, toast]);
 
+  useEffect(() => {
+    async function fetchAndSetRecipe() {
+        if (!finishedGoodId || !company_id || allIngredientsOptions.length === 0 || !currentLocation) {
+            replace([]);
+            return;
+        }
+
+        const selectedProductInfo = products.flatMap(p => p.variants.map(v => ({...v.variant, productId: p.product.id, costPrice: v.variant.cost_price }))).find(v => v.id === finishedGoodId);
+        
+        if (!selectedProductInfo) return;
+
+        setFinishedGoodCost(selectedProductInfo.costPrice ? parseFloat(String(selectedProductInfo.costPrice)) : 0);
+
+        // Fetch stock for finished good
+        setIsLoading(true);
+        setFinishedGoodStock(null);
+        try {
+            const stockResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${selectedProductInfo.productId}&product_variant_id=${finishedGoodId}&location_id=${currentLocation.location_id}`);
+            if (stockResponse.ok) {
+                const stockData = await stockResponse.json();
+                const totalStock = stockData.total_stock[0]?.stock_balance ? parseFloat(stockData.total_stock[0].stock_balance) : 0;
+                setFinishedGoodStock(totalStock);
+            } else {
+                setFinishedGoodStock(0);
+            }
+        } catch (error) {
+             console.error("Failed to fetch finished good stock:", error);
+             setFinishedGoodStock(0);
+        }
+
+        try {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes/get/filter?company_id=${company_id}&main_product=${selectedProductInfo.productId}&product_variant_id=${finishedGoodId}`);
+            if (!response.ok) throw new Error('Failed to fetch recipe for the selected product.');
+            const data = await response.json();
+            const recipeItems: RecipeItem[] = data.data || [];
+            
+            const newIngredients = recipeItems.map(item => {
+                const ingredientInfo = allIngredientsOptions.find(ing => ing.id === item.recipe_product);
+                const plannedQty = parseFloat(item.qty) * (plannedQuantity || 1);
+                return {
+                    ingredientId: item.recipe_product,
+                    productId: ingredientInfo?.productId || '0',
+                    ingredientName: ingredientInfo?.name || `ID: ${item.recipe_product}`,
+                    plannedQty: plannedQty,
+                    actualQty: plannedQty,
+                    unit: ingredientInfo?.unit || 'Nos',
+                    costPrice: ingredientInfo?.costPrice || 0,
+                    selectedBatch: '',
+                };
+            });
+            replace(newIngredients);
+            form.setValue('actualYield', plannedQuantity);
+
+            // Fetch stock for all new ingredients
+            newIngredients.forEach((ing, index) => {
+                if (currentLocation) {
+                    handleProductSelect(ing.ingredientId, index, currentLocation.location_id);
+                }
+            });
+
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch recipe ingredients.' });
+            replace([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchAndSetRecipe();
+  }, [finishedGoodId, plannedQuantity, company_id, products, toast, replace, form, allIngredientsOptions, currentLocation, handleProductSelect]);
 
   const grandTotalCost = watchedIngredients.reduce((acc, item) => {
     const actualQty = item?.actualQty || 0;
