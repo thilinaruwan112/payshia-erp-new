@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -41,7 +42,12 @@ interface ProductionRunItem {
 interface ProductionRun {
     id: string;
     location_id: string;
+    company_id: string;
     cost_value: string;
+    plan_qty: string;
+    yield_qty: string;
+    product_id: string | null;
+    product_variant_id: string | null;
     created_at: string;
     items: ProductionRunItem[];
 }
@@ -94,14 +100,17 @@ export default function ProductionRunHistoryPage() {
         fetchData();
     }, [company_id, toast]);
 
-    const getProductInfo = (variantId: string) => {
+    const getProductInfo = (productId: string | null, variantId: string | null) => {
+        if (!productId || !variantId) return 'N/A';
         for (const p of products) {
-            const variant = p.variants.find(v => v.variant.id === variantId);
-            if (variant) {
-                return `${p.product.name} (${variant.variant.sku})`;
+            if (p.product.id === productId) {
+                const variant = p.variants.find(v => v.variant.id === variantId);
+                if (variant) {
+                    return `${p.product.name} (${variant.variant.sku})`;
+                }
             }
         }
-        return `Variant ID: ${variantId}`;
+        return `Product ID: ${productId}`;
     };
 
 
@@ -134,10 +143,10 @@ export default function ProductionRunHistoryPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Run ID</TableHead>
-                            <TableHead>Products</TableHead>
+                            <TableHead>Finished Product</TableHead>
                             <TableHead>Date</TableHead>
-                            <TableHead className="text-right">Total Planned Qty</TableHead>
-                            <TableHead className="text-right">Total Actual Yield</TableHead>
+                            <TableHead className="text-right">Planned Qty</TableHead>
+                            <TableHead className="text-right">Actual Yield</TableHead>
                             <TableHead className="text-right">Total Cost</TableHead>
                              <TableHead><span className="sr-only">Actions</span></TableHead>
                         </TableRow>
@@ -157,16 +166,14 @@ export default function ProductionRunHistoryPage() {
                         ))
                     ) : runs.length > 0 ? (
                          runs.map((run) => {
-                            const totalPlannedQty = run.items.reduce((sum, item) => sum + parseFloat(item.target_qty), 0);
-                            const totalActualQty = run.items.reduce((sum, item) => sum + parseFloat(item.actual_qty), 0);
-                            const productNames = run.items.map(item => getProductInfo(item.product_variant_id));
+                            const totalPlannedQty = run.plan_qty ? parseFloat(run.plan_qty) : run.items.reduce((sum, item) => sum + parseFloat(item.target_qty), 0);
+                            const totalActualQty = run.yield_qty ? parseFloat(run.yield_qty) : run.items.reduce((sum, item) => sum + parseFloat(item.actual_qty), 0);
                             
                             return (
                                 <TableRow key={run.id}>
                                     <TableCell className="font-mono">MP-{run.id}</TableCell>
                                     <TableCell>
-                                        {productNames.slice(0, 2).join(', ')}
-                                        {productNames.length > 2 && ', ...'}
+                                        {getProductInfo(run.product_id, run.product_variant_id)}
                                     </TableCell>
                                     <TableCell>{format(new Date(run.created_at), 'dd MMM, yyyy')}</TableCell>
                                     <TableCell className="text-right font-mono">{totalPlannedQty.toFixed(2)}</TableCell>
