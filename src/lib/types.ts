@@ -567,10 +567,13 @@ export type Recipe = {
 
 export type ProductionNote = {
     id: string;
-    finished_good_id: string;
-    quantity_produced: number;
+    product_id: string;
+    pn_number: string;
+    product_variant_id: string;
+    quantity: string;
     notes?: string;
-    production_date: string;
+    created_at: string;
+    is_active: string;
 };
 
 
