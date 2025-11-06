@@ -25,19 +25,26 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
+import { useCurrency } from '@/components/currency-provider';
+
+type ProductionRunItem = {
+    id: string;
+    target_qty: string;
+    actual_qty: string;
+}
 
 type ProductionRun = {
     id: string;
     location_id: string;
     cost_value: string;
-    plan_qty: string;
-    yield_qty: string;
     created_at: string;
+    items: ProductionRunItem[];
 }
 
 export default function ProductionRunHistoryPage() {
     const { company_id } = useLocation();
     const { toast } = useToast();
+    const { currencySymbol } = useCurrency();
     const [runs, setRuns] = useState<ProductionRun[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -50,11 +57,10 @@ export default function ProductionRunHistoryPage() {
         async function fetchData() {
             setIsLoading(true);
             try {
-                // Assuming this endpoint exists to fetch the history
-                const response = await fetcher(`https://qa-server-erp.payshia.com/mission-plus?company_id=${company_id}`);
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/mission-plus/company/${company_id}`);
                 if (!response.ok) throw new Error('Failed to fetch production run history');
                 const data = await response.json();
-                setRuns(data.data || []);
+                setRuns(data || []);
             } catch (error) {
                 toast({
                     variant: 'destructive',
@@ -99,9 +105,9 @@ export default function ProductionRunHistoryPage() {
                         <TableRow>
                             <TableHead>Run ID</TableHead>
                             <TableHead>Date</TableHead>
-                            <TableHead className="text-right">Planned Qty</TableHead>
-                            <TableHead className="text-right">Actual Yield</TableHead>
-                            <TableHead className="text-right">Cost Value</TableHead>
+                            <TableHead className="text-right">Total Planned Qty</TableHead>
+                            <TableHead className="text-right">Total Actual Yield</TableHead>
+                            <TableHead className="text-right">Total Cost</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -116,15 +122,20 @@ export default function ProductionRunHistoryPage() {
                             </TableRow>
                         ))
                     ) : runs.length > 0 ? (
-                         runs.map((run) => (
-                            <TableRow key={run.id}>
-                                <TableCell className="font-mono">MP-{run.id}</TableCell>
-                                <TableCell>{format(new Date(run.created_at), 'dd MMM, yyyy')}</TableCell>
-                                <TableCell className="text-right font-mono">{parseFloat(run.plan_qty).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono">{parseFloat(run.yield_qty).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono">Rs {parseFloat(run.cost_value).toFixed(2)}</TableCell>
-                            </TableRow>
-                        ))
+                         runs.map((run) => {
+                            const totalPlannedQty = run.items.reduce((sum, item) => sum + parseFloat(item.target_qty), 0);
+                            const totalActualQty = run.items.reduce((sum, item) => sum + parseFloat(item.actual_qty), 0);
+                            
+                            return (
+                                <TableRow key={run.id}>
+                                    <TableCell className="font-mono">MP-{run.id}</TableCell>
+                                    <TableCell>{format(new Date(run.created_at), 'dd MMM, yyyy')}</TableCell>
+                                    <TableCell className="text-right font-mono">{totalPlannedQty.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-mono">{totalActualQty.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(run.cost_value).toFixed(2)}</TableCell>
+                                </TableRow>
+                            );
+                         })
                     ) : (
                          <TableRow>
                             <TableCell colSpan={5} className="h-24 text-center">
