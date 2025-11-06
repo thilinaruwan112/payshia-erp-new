@@ -24,9 +24,9 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, ProductVariant } from "@/lib/types";
-import { Loader2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import type { Product, ProductVariant, StockInfo } from "@/lib/types";
+import { Loader2, CalendarIcon } from "lucide-react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { useLocation } from "./location-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
 import { Textarea } from "./ui/textarea";
@@ -34,6 +34,11 @@ import { fetcher } from "@/lib/api";
 import { Combobox } from "./ui/combobox";
 import { cn } from "@/lib/utils";
 import { useCurrency } from "./currency-provider";
+import { format } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Calendar } from "./ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+
 
 interface ProductWithApiResponse {
     product: Product;
@@ -54,12 +59,15 @@ const ingredientSchema = z.object({
   actualQty: z.coerce.number().min(0, "Actual quantity cannot be negative."),
   unit: z.string(),
   costPrice: z.number().optional(),
+  selectedBatch: z.string().min(1, "A batch must be selected."),
 });
 
 const productionRunFormSchema = z.object({
   finishedGoodId: z.string().min(1, "Finished good is required."),
   plannedQuantity: z.coerce.number().min(1, "Planned quantity must be at least 1."),
   actualYield: z.coerce.number().min(0, "Actual yield cannot be negative."),
+  batchCode: z.string().min(1, "Batch code for the finished good is required."),
+  expiryDate: z.date().optional(),
   notes: z.string().optional(),
   ingredients: z.array(ingredientSchema).min(1, "At least one ingredient is required."),
 });
@@ -75,6 +83,7 @@ export function ProductionRunForm() {
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id, currentLocation } = useLocation();
   const [finishedGoodCost, setFinishedGoodCost] = useState(0);
+  const [availableBatches, setAvailableBatches] = useState<Record<number, StockInfo[]>>({});
 
   const form = useForm<ProductionRunFormValues>({
     resolver: zodResolver(productionRunFormSchema),
@@ -125,9 +134,24 @@ export function ProductionRunForm() {
         }));
   }, [products]);
 
+  const allIngredientsOptions = React.useMemo(() => {
+      return products
+        .filter(p => ['raw', 'both'].includes(p.product.item_type || ''))
+        .flatMap(p => 
+            (p.variants || []).map(v => ({
+                id: v.variant.id,
+                productId: p.product.id,
+                name: `${p.product.name} (${v.variant.sku})`,
+                unit: p.product.stock_unit || 'Nos',
+                costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
+            }))
+        );
+  }, [products]);
+
+
   useEffect(() => {
     async function fetchAndSetRecipe() {
-        if (!finishedGoodId || !company_id) {
+        if (!finishedGoodId || !company_id || allIngredientsOptions.length === 0) {
             replace([]);
             return;
         }
@@ -143,32 +167,30 @@ export function ProductionRunForm() {
             if (!response.ok) throw new Error('Failed to fetch recipe.');
             const data = await response.json();
             const recipeItems: RecipeItem[] = data.data || [];
-
-            const allIngredientsInfo = products.flatMap(p => 
-                (p.variants || []).map(v => ({
-                    id: v.variant.id,
-                    productId: p.product.id,
-                    name: `${p.product.name} (${v.variant.sku})`,
-                    unit: p.product.stock_unit || 'Nos',
-                    costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
-                }))
-            );
             
             const newIngredients = recipeItems.map(item => {
-                const ingredientInfo = allIngredientsInfo.find(ing => ing.id === item.recipe_product);
+                const ingredientInfo = allIngredientsOptions.find(ing => ing.id === item.recipe_product);
                 const plannedQty = parseFloat(item.qty) * (plannedQuantity || 1);
                 return {
                     ingredientId: item.recipe_product,
-                    productId: ingredientInfo?.productId || '0', // Need product ID for payload
+                    productId: ingredientInfo?.productId || '0',
                     ingredientName: ingredientInfo?.name || `ID: ${item.recipe_product}`,
                     plannedQty: plannedQty,
                     actualQty: plannedQty,
                     unit: ingredientInfo?.unit || 'Nos',
                     costPrice: ingredientInfo?.costPrice || 0,
+                    selectedBatch: '',
                 };
             });
             replace(newIngredients);
             form.setValue('actualYield', plannedQuantity);
+
+            // Fetch stock for all new ingredients
+            newIngredients.forEach((ing, index) => {
+                if (currentLocation) {
+                    handleProductSelect(ing.ingredientId, index, currentLocation.location_id);
+                }
+            });
 
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch recipe ingredients.' });
@@ -176,7 +198,40 @@ export function ProductionRunForm() {
         }
     }
     fetchAndSetRecipe();
-  }, [finishedGoodId, plannedQuantity, company_id, products, toast, replace, form]);
+  }, [finishedGoodId, plannedQuantity, company_id, products, toast, replace, form, allIngredientsOptions, currentLocation]);
+
+
+  const handleProductSelect = useCallback(async (variantId: string, index: number, locationForStock: string) => {
+    if (!locationForStock) {
+        toast({ variant: 'destructive', title: 'Location not set', description: 'Please select a location first.' });
+        return;
+    }
+    const skuDetails = allIngredientsOptions.find(s => s.id === variantId);
+    if (!skuDetails || !company_id) return;
+
+    try {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${variantId}&location_id=${locationForStock}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch stock for this product.');
+        }
+        const data = await response.json();
+        const batches = (data.grouped_by_expire_date || []).filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
+        
+        setAvailableBatches(prev => ({ ...prev, [index]: batches }));
+        
+        if (batches.length > 0) {
+            const firstBatch = batches[0];
+            form.setValue(`ingredients.${index}.selectedBatch`, JSON.stringify(firstBatch));
+        } else {
+             form.setValue(`ingredients.${index}.selectedBatch`, '');
+        }
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Error fetching stock', description: errorMessage });
+    }
+  }, [company_id, allIngredientsOptions, form, toast]);
+
 
   const grandTotalCost = watchedIngredients.reduce((acc, item) => {
     const actualQty = item?.actualQty || 0;
@@ -208,8 +263,12 @@ export function ProductionRunForm() {
         yield_qty: data.actualYield,
         product_id: parseInt(finishedGoodProductInfo.productId),
         product_variant_id: parseInt(data.finishedGoodId),
+        created_by: 'yomal',
+        expire_date: data.expiryDate ? format(data.expiryDate, 'yyyy-MM-dd') : undefined,
+        patch_code: data.batchCode,
         items: data.ingredients.map(ing => {
-            const ingredientProductInfo = products.flatMap(p => p.variants.map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === ing.ingredientId);
+            const ingredientProductInfo = allIngredientsOptions.find(opt => opt.id === ing.ingredientId);
+            const batchInfo: StockInfo = JSON.parse(ing.selectedBatch);
             return {
                 product_id: parseInt(ingredientProductInfo?.productId || '0'),
                 product_variant_id: parseInt(ing.ingredientId),
@@ -217,6 +276,8 @@ export function ProductionRunForm() {
                 actual_qty: ing.actualQty,
                 variance: ing.plannedQty - ing.actualQty,
                 cost_value: (ing.costPrice || 0) * ing.actualQty,
+                expire_date: batchInfo.expire_date,
+                patch_code: batchInfo.patch_code,
             }
         })
     };
@@ -283,12 +344,12 @@ export function ProductionRunForm() {
             <CardTitle>Production Plan</CardTitle>
             <CardDescription>Select the product and the quantity you plan to produce.</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             <FormField
               control={form.control}
               name="finishedGoodId"
               render={({ field }) => (
-                <FormItem>
+                <FormItem className="lg:col-span-2">
                   <FormLabel>Finished Good</FormLabel>
                    <Combobox
                         options={finishedGoodsOptions}
@@ -318,6 +379,17 @@ export function ProductionRunForm() {
                 <FormLabel>Current Cost Price</FormLabel>
                 <Input value={finishedGoodCost.toFixed(2)} readOnly disabled startIcon={currencySymbol} />
             </div>
+             <FormField
+                control={form.control}
+                name="batchCode"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>New Batch Code</FormLabel>
+                    <FormControl><Input placeholder="e.g. BATCH-001" {...field} /></FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
           </CardContent>
         </Card>
 
@@ -333,6 +405,7 @@ export function ProductionRunForm() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Ingredient</TableHead>
+                  <TableHead className="w-[20%]">Batch</TableHead>
                   <TableHead className="text-right">Planned Qty</TableHead>
                   <TableHead className="w-48 text-right">Actual Qty</TableHead>
                   <TableHead className="text-right">Variance</TableHead>
@@ -350,6 +423,32 @@ export function ProductionRunForm() {
                   return (
                     <TableRow key={field.id}>
                       <TableCell>{watchedIngredients[index]?.ingredientName}</TableCell>
+                      <TableCell>
+                          <FormField
+                              control={form.control}
+                              name={`ingredients.${index}.selectedBatch`}
+                              render={({ field }) => (
+                                  <FormItem>
+                                      <Select onValueChange={field.onChange} value={field.value} disabled={!availableBatches[index]}>
+                                          <FormControl>
+                                              <SelectTrigger>
+                                                  <SelectValue placeholder="Select batch" />
+                                              </SelectTrigger>
+                                          </FormControl>
+                                          <SelectContent>
+                                              {(availableBatches[index] || []).map(batch => (
+                                                  <SelectItem key={`${batch.patch_code}-${batch.expire_date}`} value={JSON.stringify(batch)}>
+                                                      {batch.patch_code} ({parseFloat(batch.stock_balance)})
+                                                      {batch.expire_date !== '0000-00-00' && ` - ${format(new Date(batch.expire_date), 'dd/MM/yy')}`}
+                                                  </SelectItem>
+                                              ))}
+                                          </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}
+                          />
+                      </TableCell>
                       <TableCell className="text-right">{planned.toFixed(2)} {watchedIngredients[index]?.unit}</TableCell>
                       <TableCell>
                         <FormField
@@ -377,13 +476,13 @@ export function ProductionRunForm() {
                   );
                 }) : (
                     <TableRow>
-                        <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">Select a finished good with a recipe to see ingredients.</TableCell>
+                        <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">Select a finished good with a recipe to see ingredients.</TableCell>
                     </TableRow>
                 )}
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-right font-bold">Total Cost</TableCell>
+                  <TableCell colSpan={6} className="text-right font-bold">Total Cost</TableCell>
                   <TableCell className="text-right font-mono font-bold">
                     {grandTotalCost.toFixed(2)}
                   </TableCell>
@@ -398,13 +497,13 @@ export function ProductionRunForm() {
                 <CardTitle>Production Yield</CardTitle>
                  <CardDescription>Record the final output of the production run.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <FormField
                     control={form.control}
                     name="actualYield"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Actual Yield (Finished Goods Quantity)</FormLabel>
+                        <FormLabel>Actual Yield (Finished Goods Qty)</FormLabel>
                         <FormControl>
                             <Input type="number" {...field} />
                         </FormControl>
@@ -414,17 +513,53 @@ export function ProductionRunForm() {
                 />
                  <FormField
                     control={form.control}
-                    name="notes"
+                    name="expiryDate"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Notes (Optional)</FormLabel>
-                        <FormControl>
-                            <Textarea placeholder="Add any notes about this production run..." {...field} />
-                        </FormControl>
+                        <FormLabel>Finished Good Expiry Date</FormLabel>
+                         <Popover>
+                            <PopoverTrigger asChild>
+                            <FormControl>
+                                <Button
+                                variant={"outline"}
+                                className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
+                                >
+                                {field.value ? (
+                                    format(field.value, "PPP")
+                                ) : (
+                                    <span>Pick expiry date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                            </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                            />
+                            </PopoverContent>
+                        </Popover>
                         <FormMessage />
                         </FormItem>
                     )}
                 />
+                 <div className="md:col-span-2 lg:col-span-3">
+                     <FormField
+                        control={form.control}
+                        name="notes"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Notes (Optional)</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="Add any notes about this production run..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                 </div>
             </CardContent>
         </Card>
       </form>
