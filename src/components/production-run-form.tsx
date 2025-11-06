@@ -38,7 +38,7 @@ import { cn } from "@/lib/utils";
 import { Combobox } from "./ui/combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useCurrency } from "./currency-provider";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./ui/tooltip";
 
 
 interface ProductWithApiResponse {
@@ -590,13 +590,15 @@ export function ProductionRunForm() {
                  <div className="space-y-2">
                     <div className="flex items-center gap-2">
                         <FormLabel>After Cost</FormLabel>
-                        <Tooltip>
-                            <TooltipTrigger type="button"><Info className="h-4 w-4 text-muted-foreground cursor-help" /></TooltipTrigger>
-                            <TooltipContent>
-                                <p className="text-sm">((Current Stock * Current Cost) + Total Ingredient Cost) / (Current Stock + Actual Yield)</p>
-                                <p className="text-xs font-mono">(({currentStock.toFixed(2)} * {currentCost.toFixed(2)}) + {grandTotalCost.toFixed(2)}) / ({currentStock.toFixed(2)} + {newYield.toFixed(2)})</p>
-                            </TooltipContent>
-                        </Tooltip>
+                         <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger type="button"><Info className="h-4 w-4 text-muted-foreground cursor-help" /></TooltipTrigger>
+                                <TooltipContent>
+                                    <p className="text-sm">((Current Stock * Current Cost) + Total Ingredient Cost) / (Current Stock + Actual Yield)</p>
+                                    <p className="text-xs font-mono">(({currentStock.toFixed(2)} * {currentCost.toFixed(2)}) + {grandTotalCost.toFixed(2)}) / ({currentStock.toFixed(2)} + {newYield.toFixed(2)})</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
                     <Input value={afterCost.toFixed(2)} readOnly disabled startIcon={currencySymbol} />
                 </div>
