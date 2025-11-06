@@ -89,6 +89,7 @@ export function ProductionRunForm() {
 
   const finishedGoodId = form.watch("finishedGoodId");
   const plannedQuantity = form.watch("plannedQuantity");
+  const watchedIngredients = form.watch('ingredients');
 
   useEffect(() => {
     async function fetchProducts() {
@@ -172,6 +173,13 @@ export function ProductionRunForm() {
     fetchAndSetRecipe();
   }, [finishedGoodId, plannedQuantity, company_id, products, toast, replace, form]);
 
+  const grandTotalCost = watchedIngredients.reduce((acc, item) => {
+    const actualQty = item?.actualQty || 0;
+    const costPrice = item?.costPrice || 0;
+    return acc + (actualQty * costPrice);
+  }, 0);
+
+
   async function onSubmit(data: ProductionRunFormValues) {
     if (!company_id || !currentLocation) {
         toast({ variant: 'destructive', title: 'Error', description: 'No company or location selected.' });
@@ -235,15 +243,6 @@ export function ProductionRunForm() {
         setIsSubmitting(false);
     }
   }
-
-  const watchedIngredients = form.watch('ingredients');
-  const grandTotalCost = React.useMemo(() => {
-    return watchedIngredients.reduce((acc, item) => {
-        const actualQty = item?.actualQty || 0;
-        const costPrice = item?.costPrice || 0;
-        return acc + (actualQty * costPrice);
-    }, 0);
-  }, [watchedIngredients]);
 
   return (
     <Form {...form}>
@@ -334,15 +333,15 @@ export function ProductionRunForm() {
               </TableHeader>
               <TableBody>
                 {fields.length > 0 ? fields.map((field, index) => {
-                  const planned = form.watch(`ingredients.${index}.plannedQty`);
-                  const actual = form.watch(`ingredients.${index}.actualQty`);
+                  const planned = watchedIngredients[index]?.plannedQty || 0;
+                  const actual = watchedIngredients[index]?.actualQty || 0;
                   const variance = planned - actual;
-                  const costPrice = form.watch(`ingredients.${index}.costPrice`) || 0;
+                  const costPrice = watchedIngredients[index]?.costPrice || 0;
                   const lineValue = actual * costPrice;
                   return (
                     <TableRow key={field.id}>
-                      <TableCell>{form.getValues(`ingredients.${index}.ingredientName`)}</TableCell>
-                      <TableCell className="text-right">{planned.toFixed(2)} {form.getValues(`ingredients.${index}.unit`)}</TableCell>
+                      <TableCell>{watchedIngredients[index]?.ingredientName}</TableCell>
+                      <TableCell className="text-right">{planned.toFixed(2)} {watchedIngredients[index]?.unit}</TableCell>
                       <TableCell>
                         <FormField
                             control={form.control}
@@ -357,7 +356,7 @@ export function ProductionRunForm() {
                         />
                       </TableCell>
                        <TableCell className={cn("text-right font-medium", variance > 0 ? 'text-green-600' : variance < 0 ? 'text-destructive' : '')}>
-                        {variance.toFixed(2)} {form.getValues(`ingredients.${index}.unit`)}
+                        {variance.toFixed(2)} {watchedIngredients[index]?.unit}
                        </TableCell>
                        <TableCell className="text-right font-mono">
                            {costPrice.toFixed(2)}
