@@ -33,6 +33,7 @@ import { Textarea } from "./ui/textarea";
 import { fetcher } from "@/lib/api";
 import { Combobox } from "./ui/combobox";
 import { cn } from "@/lib/utils";
+import { useCurrency } from "./currency-provider";
 
 interface ProductWithApiResponse {
     product: Product;
@@ -68,10 +69,12 @@ type ProductionRunFormValues = z.infer<typeof productionRunFormSchema>;
 export function ProductionRunForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id, currentLocation } = useLocation();
+  const [finishedGoodCost, setFinishedGoodCost] = useState(0);
 
   const form = useForm<ProductionRunFormValues>({
     resolver: zodResolver(productionRunFormSchema),
@@ -129,9 +132,11 @@ export function ProductionRunForm() {
             return;
         }
 
-        const selectedProductInfo = products.flatMap(p => p.variants.map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === finishedGoodId);
+        const selectedProductInfo = products.flatMap(p => p.variants.map(v => ({...v.variant, productId: p.product.id, costPrice: v.variant.cost_price }))).find(v => v.id === finishedGoodId);
         
         if (!selectedProductInfo) return;
+
+        setFinishedGoodCost(selectedProductInfo.costPrice ? parseFloat(String(selectedProductInfo.costPrice)) : 0);
 
         try {
             const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes/get/filter?company_id=${company_id}&main_product=${selectedProductInfo.productId}&product_variant_id=${finishedGoodId}`);
@@ -278,7 +283,7 @@ export function ProductionRunForm() {
             <CardTitle>Production Plan</CardTitle>
             <CardDescription>Select the product and the quantity you plan to produce.</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <FormField
               control={form.control}
               name="finishedGoodId"
@@ -309,6 +314,10 @@ export function ProductionRunForm() {
                 </FormItem>
               )}
             />
+             <div className="space-y-2">
+                <FormLabel>Current Cost Price</FormLabel>
+                <Input value={finishedGoodCost.toFixed(2)} readOnly disabled startIcon={currencySymbol} />
+            </div>
           </CardContent>
         </Card>
 
