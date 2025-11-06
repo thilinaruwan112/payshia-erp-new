@@ -31,13 +31,13 @@ import { useLocation } from "./location-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
 import { Textarea } from "./ui/textarea";
 import { fetcher } from "@/lib/api";
-import { Combobox } from "./ui/combobox";
-import { cn } from "@/lib/utils";
-import { useCurrency } from "./currency-provider";
 import { format } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
+import { cn } from "@/lib/utils";
+import { Combobox } from "./ui/combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useCurrency } from "./currency-provider";
 
 
 interface ProductWithApiResponse {
@@ -104,38 +104,7 @@ export function ProductionRunForm() {
   const plannedQuantity = form.watch("plannedQuantity");
   const watchedIngredients = form.watch('ingredients');
   const actualYield = form.watch('actualYield');
-
-  useEffect(() => {
-    async function fetchProducts() {
-        if (!company_id) return;
-        setIsLoading(true);
-        try {
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
-            if (!response.ok) throw new Error("Failed to fetch products");
-            const data = await response.json();
-            setProducts(data.products || []);
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products.' });
-        } finally {
-            setIsLoading(false);
-        }
-    }
-    fetchProducts();
-  }, [company_id, toast]);
   
-  const finishedGoodsOptions = React.useMemo(() => {
-    return products
-        .filter(p => p.product.item_type !== 'raw')
-        .flatMap(p => 
-            (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
-        )
-        .filter((pv): pv is { product: Product, variant: ProductVariant } => !!pv.variant?.id && !!pv.variant.sku)
-        .map(pv => ({
-            label: `${pv.product.name} (${pv.variant.sku})`,
-            value: pv.variant.id,
-        }));
-  }, [products]);
-
   const allIngredientsOptions = React.useMemo(() => {
       return products
         .filter(p => ['raw', 'both'].includes(p.product.item_type || ''))
@@ -186,6 +155,39 @@ export function ProductionRunForm() {
         toast({ variant: 'destructive', title: 'Error fetching stock', description: errorMessage });
     }
   }, [company_id, allIngredientsOptions, form, toast]);
+
+
+  useEffect(() => {
+    async function fetchProducts() {
+        if (!company_id) return;
+        setIsLoading(true);
+        try {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
+            if (!response.ok) throw new Error("Failed to fetch products");
+            const data = await response.json();
+            setProducts(data.products || []);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch products.' });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+    fetchProducts();
+  }, [company_id, toast]);
+  
+
+  const finishedGoodsOptions = React.useMemo(() => {
+    return products
+        .filter(p => p.product.item_type !== 'raw')
+        .flatMap(p => 
+            (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
+        )
+        .filter((pv): pv is { product: Product, variant: ProductVariant } => !!pv.variant?.id && !!pv.variant.sku)
+        .map(pv => ({
+            label: `${pv.product.name} (${pv.variant.sku})`,
+            value: pv.variant.id,
+        }));
+  }, [products]);
 
 
   useEffect(() => {
@@ -420,58 +422,6 @@ export function ProductionRunForm() {
                 <FormLabel>Current Stock</FormLabel>
                 <Input value={finishedGoodStock !== null ? finishedGoodStock.toFixed(2) : '...'} readOnly disabled />
             </div>
-             <div className="space-y-2">
-                <FormLabel>After Cost</FormLabel>
-                <Input value={afterCost.toFixed(2)} readOnly disabled startIcon={currencySymbol} />
-            </div>
-             <FormField
-                control={form.control}
-                name="batchCode"
-                render={({ field }) => (
-                    <FormItem>
-                    <FormLabel>New Batch Code</FormLabel>
-                    <FormControl><Input placeholder="e.g. BATCH-001" {...field} /></FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-            />
-             <FormField
-              control={form.control}
-              name="expiryDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col justify-end">
-                  <FormLabel>Expiry Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP")
-                          ) : (
-                            <span>Pick an expiry date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </CardContent>
         </Card>
 
@@ -593,6 +543,58 @@ export function ProductionRunForm() {
                         </FormItem>
                     )}
                 />
+                <FormField
+                    control={form.control}
+                    name="batchCode"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>New Batch Code</FormLabel>
+                        <FormControl><Input placeholder="e.g. BATCH-001" {...field} /></FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                control={form.control}
+                name="expiryDate"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col justify-end">
+                    <FormLabel>Expiry Date</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={"outline"}
+                            className={cn(
+                                "w-full pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                            )}
+                            >
+                            {field.value ? (
+                                format(field.value, "PPP")
+                            ) : (
+                                <span>Pick an expiry date</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                        />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <div className="space-y-2">
+                    <FormLabel>After Cost</FormLabel>
+                    <Input value={afterCost.toFixed(2)} readOnly disabled startIcon={currencySymbol} />
+                </div>
                  <div className="md:col-span-2 lg:col-span-3">
                      <FormField
                         control={form.control}
