@@ -28,7 +28,15 @@ interface ProductionRun {
     location_id: string;
     company_id: string;
     cost_value: string;
+    plan_qty: string;
+    yield_qty: string;
+    product_id: string | null;
+    product_variant_id: string | null;
     created_at: string;
+    created_by: string;
+    updated_at: string;
+    updated_by: string;
+    is_active: string;
     items: ProductionRunItem[];
 }
 
@@ -112,7 +120,8 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
     }
   }, [isLoading, run]);
   
-  const getProductName = (variantId: string) => {
+  const getProductName = (variantId: string | null) => {
+    if (!variantId) return 'N/A';
     for (const p of products) {
         const variant = p.variants.find(v => v.variant.id === variantId);
         if (variant) {
@@ -133,6 +142,7 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   const totalPlanned = run.items.reduce((sum, item) => sum + parseFloat(item.target_qty), 0);
   const totalActual = run.items.reduce((sum, item) => sum + parseFloat(item.actual_qty), 0);
+  const finishedGoodName = getProductName(run.product_variant_id);
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
@@ -165,7 +175,19 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
         </div>
       </section>
       
+       <section className="mt-8 p-4 bg-gray-50 rounded-lg border">
+          <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Finished Product</h3>
+          <div className="flex justify-between items-center">
+            <p className="font-bold text-gray-800 text-lg">{finishedGoodName}</p>
+            <div>
+              <span className="text-gray-600">Yield: </span>
+              <span className="font-bold text-lg text-gray-800">{parseFloat(run.yield_qty).toFixed(2)}</span>
+            </div>
+          </div>
+        </section>
+
       <section className="mt-8 flex-grow">
+        <h3 className="text-md font-semibold uppercase text-gray-600 mb-2">Consumed Ingredients</h3>
         <table className="w-full text-left">
           <thead>
             <tr className="bg-gray-100 text-gray-600 uppercase text-xs">
