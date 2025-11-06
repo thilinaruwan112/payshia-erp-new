@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 
 interface ProductWithApiResponse {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
 }
 
 interface RecipeItem {
@@ -118,7 +118,7 @@ export function ProductionRunForm() {
   const finishedGoodsOptions = React.useMemo(() => {
     return products
         .flatMap(p => 
-            (p.variants || []).map(v => ({ product: p.product, variant: v }))
+            (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
         )
         .filter((pv): pv is { product: Product, variant: ProductVariant } => !!pv.variant?.id && !!pv.variant.sku)
         .map(pv => ({
@@ -134,7 +134,7 @@ export function ProductionRunForm() {
             return;
         }
 
-        const selectedProductInfo = products.flatMap(p => p.variants.map(v => ({...v, productId: p.product.id}))).find(v => v.id === finishedGoodId);
+        const selectedProductInfo = products.flatMap(p => p.variants.map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === finishedGoodId);
         
         if (!selectedProductInfo) return;
 
@@ -146,10 +146,11 @@ export function ProductionRunForm() {
 
             const allIngredientsInfo = products.flatMap(p => 
                 (p.variants || []).map(v => ({
-                    id: v.id,
-                    name: `${p.product.name} (${v.sku})`,
+                    id: v.variant.id,
+                    productId: p.product.id,
+                    name: `${p.product.name} (${v.variant.sku})`,
                     unit: p.product.stock_unit || 'Nos',
-                    costPrice: v.cost_price ? parseFloat(String(v.cost_price)) : 0,
+                    costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
                 }))
             );
             
@@ -158,6 +159,7 @@ export function ProductionRunForm() {
                 const plannedQty = parseFloat(item.qty) * (plannedQuantity || 1);
                 return {
                     ingredientId: item.recipe_product,
+                    productId: ingredientInfo?.productId || '0', // Need product ID for payload
                     ingredientName: ingredientInfo?.name || `ID: ${item.recipe_product}`,
                     plannedQty: plannedQty,
                     actualQty: plannedQty,
@@ -177,14 +179,67 @@ export function ProductionRunForm() {
   }, [finishedGoodId, plannedQuantity, company_id, products, toast, replace, form]);
 
   async function onSubmit(data: ProductionRunFormValues) {
+    if (!company_id || !currentLocation) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No company or location selected.' });
+        return;
+    }
     setIsSubmitting(true);
-    console.log("Submitting production run data:", data);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    toast({
-      title: "Production Run Recorded (Simulated)",
-      description: "Yield, consumption, and wastage have been recorded.",
-    });
-    setIsSubmitting(false);
+    
+    const finishedGoodProductInfo = products.flatMap(p => p.variants.map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === data.finishedGoodId);
+
+    if (!finishedGoodProductInfo) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not find finished good product details.' });
+        setIsSubmitting(false);
+        return;
+    }
+
+    const payload = {
+        location_id: parseInt(currentLocation.location_id, 10),
+        company_id: company_id,
+        cost_value: grandTotalCost,
+        plan_qty: data.plannedQuantity,
+        yield_qty: data.actualYield,
+        product_id: parseInt(finishedGoodProductInfo.productId),
+        product_variant_id: parseInt(data.finishedGoodId),
+        items: data.ingredients.map(ing => {
+            const ingredientProductInfo = products.flatMap(p => p.variants.map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === ing.ingredientId);
+            return {
+                product_id: parseInt(ingredientProductInfo?.productId || '0'),
+                product_variant_id: parseInt(ing.ingredientId),
+                target_qty: ing.plannedQty,
+                actual_qty: ing.actualQty,
+                variance: ing.plannedQty - ing.actualQty,
+                cost_value: (ing.costPrice || 0) * ing.actualQty,
+            }
+        })
+    };
+
+    try {
+        const response = await fetcher('https://qa-server-erp.payshia.com/mission-plus', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to complete production run.');
+        }
+
+        const result = await response.json();
+
+        toast({
+            title: "Production Run Recorded",
+            description: result.message || "Yield, consumption, and wastage have been recorded.",
+        });
+        router.push('/production/production-note');
+        router.refresh();
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Submission Failed', description: errorMessage });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
   const watchedIngredients = form.watch('ingredients');
@@ -374,3 +429,5 @@ export function ProductionRunForm() {
     </Form>
   );
 }
+
+    
