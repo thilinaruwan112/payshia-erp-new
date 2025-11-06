@@ -156,7 +156,6 @@ export function ProductionRunForm() {
     }
   }, [company_id, allIngredientsOptions, form, toast]);
 
-
   useEffect(() => {
     async function fetchProducts() {
         if (!company_id) return;
@@ -266,18 +265,12 @@ export function ProductionRunForm() {
     return acc + (actualQty * costPrice);
   }, 0);
   
-  const afterCost = useMemo(() => {
-    const currentStock = finishedGoodStock || 0;
-    const currentCost = finishedGoodCost || 0;
-    const newStock = actualYield || 0;
-    
-    if (currentStock + newStock === 0) return 0;
-    
-    const totalCurrentValue = currentStock * currentCost;
-    const totalNewValue = grandTotalCost;
-    
-    return (totalCurrentValue + totalNewValue) / (currentStock + newStock);
-  }, [finishedGoodStock, finishedGoodCost, grandTotalCost, actualYield]);
+  const currentStock = finishedGoodStock || 0;
+  const currentCost = finishedGoodCost || 0;
+  const newStock = actualYield || 0;
+  const totalCurrentValue = currentStock * currentCost;
+  const totalNewValue = grandTotalCost;
+  const afterCost = (currentStock + newStock > 0) ? (totalCurrentValue + totalNewValue) / (currentStock + newStock) : 0;
 
   async function onSubmit(data: ProductionRunFormValues) {
     if (!company_id || !currentLocation) {
@@ -591,7 +584,7 @@ export function ProductionRunForm() {
                     </FormItem>
                 )}
                 />
-                <div className="space-y-2">
+                 <div className="space-y-2">
                     <FormLabel>After Cost</FormLabel>
                     <Input value={afterCost.toFixed(2)} readOnly disabled startIcon={currencySymbol} />
                 </div>
@@ -616,3 +609,5 @@ export function ProductionRunForm() {
     </Form>
   );
 }
+
+    
