@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -39,6 +38,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Textarea } from "./ui/textarea";
 import { fetcher } from "@/lib/api";
 import { Combobox } from "./ui/combobox";
+import { cn } from "@/lib/utils";
 
 interface ProductWithApiResponse {
     product: Product;
@@ -277,7 +277,7 @@ export function ProductionRunForm() {
                   <TableHead>Ingredient</TableHead>
                   <TableHead className="text-right">Planned Qty</TableHead>
                   <TableHead className="w-48 text-right">Actual Qty</TableHead>
-                  <TableHead className="text-right">Wastage</TableHead>
+                  <TableHead className="text-right">Variance</TableHead>
                   <TableHead className="text-right">Cost Price</TableHead>
                   <TableHead className="text-right">Line Value</TableHead>
                 </TableRow>
@@ -286,7 +286,7 @@ export function ProductionRunForm() {
                 {fields.length > 0 ? fields.map((field, index) => {
                   const planned = form.watch(`ingredients.${index}.plannedQty`);
                   const actual = form.watch(`ingredients.${index}.actualQty`);
-                  const wastage = planned - actual;
+                  const variance = planned - actual;
                   const costPrice = form.watch(`ingredients.${index}.costPrice`) || 0;
                   const lineValue = actual * costPrice;
                   return (
@@ -306,7 +306,9 @@ export function ProductionRunForm() {
                             )}
                         />
                       </TableCell>
-                       <TableCell className={`text-right font-medium ${wastage > 0 ? 'text-destructive' : 'text-green-600'}`}>{wastage.toFixed(2)} {form.getValues(`ingredients.${index}.unit`)}</TableCell>
+                       <TableCell className={cn("text-right font-medium", variance > 0 ? 'text-green-600' : variance < 0 ? 'text-destructive' : '')}>
+                        {variance.toFixed(2)} {form.getValues(`ingredients.${index}.unit`)}
+                       </TableCell>
                        <TableCell className="text-right font-mono">
                            {costPrice.toFixed(2)}
                        </TableCell>
