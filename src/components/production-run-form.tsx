@@ -225,7 +225,7 @@ export function ProductionRunForm() {
             title: "Production Run Recorded",
             description: result.message || "Yield, consumption, and wastage have been recorded.",
         });
-        router.push('/production/production-note');
+        router.push('/production/run');
         router.refresh();
 
     } catch (error) {
@@ -423,3 +423,5 @@ export function ProductionRunForm() {
     </Form>
   );
 }
+
+    
