@@ -62,6 +62,7 @@ import {
   Search,
   ShieldCheck,
   Ban,
+  Percent,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -174,6 +175,7 @@ const navItems = [
     subItems: [
         { href: '/production/bom', label: 'Bill of Materials', icon: FileText },
         { href: '/production/production-note', label: 'Production Note', icon: History },
+        { href: '/production/run', label: 'Production Run', icon: Percent },
     ]
   },
    {
