@@ -101,11 +101,6 @@ export function ProductionRunForm() {
     name: "ingredients",
   });
 
-  const finishedGoodId = form.watch("finishedGoodId");
-  const plannedQuantity = form.watch("plannedQuantity");
-  const watchedIngredients = form.watch('ingredients');
-  const actualYield = form.watch('actualYield');
-  
   const allIngredientsOptions = React.useMemo(() => {
       return products
         .filter(p => ['raw', 'both'].includes(p.product.item_type || ''))
@@ -156,6 +151,26 @@ export function ProductionRunForm() {
         toast({ variant: 'destructive', title: 'Error fetching stock', description: errorMessage });
     }
   }, [company_id, allIngredientsOptions, form, toast]);
+
+
+  const finishedGoodId = form.watch("finishedGoodId");
+  const plannedQuantity = form.watch("plannedQuantity");
+  const watchedIngredients = form.watch('ingredients');
+  const actualYield = Number(form.watch('actualYield')) || 0;
+  
+  const grandTotalCost = watchedIngredients.reduce((acc, item) => {
+    const qty = item?.actualQty || 0;
+    const cost = item?.costPrice || 0;
+    return acc + (qty * cost);
+  }, 0);
+  
+  const currentStock = finishedGoodStock || 0;
+  const currentCost = finishedGoodCost || 0;
+  const newYield = actualYield;
+  const totalCurrentValue = currentStock * currentCost;
+  const totalNewValue = grandTotalCost;
+  const totalStockAfterRun = currentStock + newYield;
+  const afterCost = totalStockAfterRun > 0 ? (totalCurrentValue + totalNewValue) / totalStockAfterRun : 0;
 
 
   useEffect(() => {
@@ -261,19 +276,7 @@ export function ProductionRunForm() {
     fetchAndSetRecipe();
   }, [finishedGoodId, plannedQuantity, company_id, products, toast, replace, form, allIngredientsOptions, currentLocation, handleProductSelect]);
   
-  const grandTotalCost = watchedIngredients.reduce((acc, item) => {
-    const actualQty = item?.actualQty || 0;
-    const costPrice = item?.costPrice || 0;
-    return acc + (actualQty * costPrice);
-  }, 0);
-  
-  const currentStock = finishedGoodStock || 0;
-  const currentCost = finishedGoodCost || 0;
-  const newYield = Number(actualYield) || 0;
-  const totalCurrentValue = currentStock * currentCost;
-  const totalNewValue = grandTotalCost;
-  const totalStockAfterRun = currentStock + newYield;
-  const afterCost = totalStockAfterRun > 0 ? (totalCurrentValue + totalNewValue) / totalStockAfterRun : 0;
+
 
   async function onSubmit(data: ProductionRunFormValues) {
     if (!company_id || !currentLocation) {
@@ -301,6 +304,7 @@ export function ProductionRunForm() {
         created_by: 'yomal',
         expire_date: data.expiryDate ? format(data.expiryDate, 'yyyy-MM-dd') : undefined,
         patch_code: data.batchCode,
+        notes: data.notes || '',
         items: data.ingredients.map(ing => {
             const ingredientProductInfo = allIngredientsOptions.find(opt => opt.id === ing.ingredientId);
             const batchInfo: StockInfo = JSON.parse(ing.selectedBatch);
