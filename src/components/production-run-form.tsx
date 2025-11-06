@@ -83,6 +83,7 @@ export function ProductionRunForm() {
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id, currentLocation } = useLocation();
   const [finishedGoodCost, setFinishedGoodCost] = useState(0);
+  const [finishedGoodStock, setFinishedGoodStock] = useState<number | null>(null);
   const [availableBatches, setAvailableBatches] = useState<Record<number, StockInfo[]>>({});
 
   const form = useForm<ProductionRunFormValues>({
@@ -151,7 +152,7 @@ export function ProductionRunForm() {
 
   useEffect(() => {
     async function fetchAndSetRecipe() {
-        if (!finishedGoodId || !company_id || allIngredientsOptions.length === 0) {
+        if (!finishedGoodId || !company_id || allIngredientsOptions.length === 0 || !currentLocation) {
             replace([]);
             return;
         }
@@ -161,6 +162,23 @@ export function ProductionRunForm() {
         if (!selectedProductInfo) return;
 
         setFinishedGoodCost(selectedProductInfo.costPrice ? parseFloat(String(selectedProductInfo.costPrice)) : 0);
+
+        // Fetch stock for finished good
+        setIsLoading(true);
+        setFinishedGoodStock(null);
+        try {
+            const stockResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${selectedProductInfo.productId}&product_variant_id=${finishedGoodId}&location_id=${currentLocation.location_id}`);
+            if (stockResponse.ok) {
+                const stockData = await stockResponse.json();
+                const totalStock = stockData.total_stock[0]?.stock_balance ? parseFloat(stockData.total_stock[0].stock_balance) : 0;
+                setFinishedGoodStock(totalStock);
+            } else {
+                setFinishedGoodStock(0);
+            }
+        } catch (error) {
+             console.error("Failed to fetch finished good stock:", error);
+             setFinishedGoodStock(0);
+        }
 
         try {
             const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes/get/filter?company_id=${company_id}&main_product=${selectedProductInfo.productId}&product_variant_id=${finishedGoodId}`);
@@ -195,10 +213,12 @@ export function ProductionRunForm() {
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch recipe ingredients.' });
             replace([]);
+        } finally {
+            setIsLoading(false);
         }
     }
     fetchAndSetRecipe();
-  }, [finishedGoodId, plannedQuantity, company_id, products, toast, replace, form, allIngredientsOptions, currentLocation]);
+  }, [finishedGoodId, plannedQuantity, company_id, products, toast, replace, form, allIngredientsOptions, currentLocation, handleProductSelect]);
 
 
   const handleProductSelect = useCallback(async (variantId: string, index: number, locationForStock: string) => {
@@ -217,6 +237,12 @@ export function ProductionRunForm() {
         const data = await response.json();
         const batches = (data.grouped_by_expire_date || []).filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
         
+        batches.sort((a: StockInfo, b: StockInfo) => {
+            if (a.expire_date === '0000-00-00') return 1;
+            if (b.expire_date === '0000-00-00') return -1;
+            return new Date(a.expire_date).getTime() - new Date(b.expire_date).getTime();
+        });
+
         setAvailableBatches(prev => ({ ...prev, [index]: batches }));
         
         if (batches.length > 0) {
@@ -344,7 +370,7 @@ export function ProductionRunForm() {
             <CardTitle>Production Plan</CardTitle>
             <CardDescription>Select the product and the quantity you plan to produce.</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
             <FormField
               control={form.control}
               name="finishedGoodId"
@@ -375,9 +401,13 @@ export function ProductionRunForm() {
                 </FormItem>
               )}
             />
-             <div className="space-y-2">
+            <div className="space-y-2">
                 <FormLabel>Current Cost Price</FormLabel>
                 <Input value={finishedGoodCost.toFixed(2)} readOnly disabled startIcon={currencySymbol} />
+            </div>
+             <div className="space-y-2">
+                <FormLabel>Current Stock</FormLabel>
+                <Input value={finishedGoodStock !== null ? finishedGoodStock.toFixed(2) : '...'} readOnly disabled />
             </div>
              <FormField
                 control={form.control}
@@ -389,6 +419,43 @@ export function ProductionRunForm() {
                     <FormMessage />
                     </FormItem>
                 )}
+            />
+             <FormField
+              control={form.control}
+              name="expiryDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col justify-end">
+                  <FormLabel>Expiry Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "w-full pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick an expiry date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
           </CardContent>
         </Card>
@@ -507,40 +574,6 @@ export function ProductionRunForm() {
                         <FormControl>
                             <Input type="number" {...field} />
                         </FormControl>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="expiryDate"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Finished Good Expiry Date</FormLabel>
-                         <Popover>
-                            <PopoverTrigger asChild>
-                            <FormControl>
-                                <Button
-                                variant={"outline"}
-                                className={cn("w-full pl-3 text-left font-normal", !field.value && "text-muted-foreground")}
-                                >
-                                {field.value ? (
-                                    format(field.value, "PPP")
-                                ) : (
-                                    <span>Pick expiry date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                            </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                            />
-                            </PopoverContent>
-                        </Popover>
                         <FormMessage />
                         </FormItem>
                     )}
