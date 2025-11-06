@@ -17,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation } from '@/components/location-provider';
@@ -27,6 +27,7 @@ import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
 import { useCurrency } from '@/components/currency-provider';
 import type { Product, ProductVariant } from '@/lib/types';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
 interface ProductionRunItem {
@@ -68,7 +69,7 @@ export default function ProductionRunHistoryPage() {
             setIsLoading(true);
             try {
                 const [runsResponse, productsResponse] = await Promise.all([
-                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/mission-plus/company/${company_id}`),
+                    fetcher(`https://qa-server-erp.payshia.com/mission-plus/company/${company_id}`),
                     fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`)
                 ]);
                 
@@ -138,6 +139,7 @@ export default function ProductionRunHistoryPage() {
                             <TableHead className="text-right">Total Planned Qty</TableHead>
                             <TableHead className="text-right">Total Actual Yield</TableHead>
                             <TableHead className="text-right">Total Cost</TableHead>
+                             <TableHead><span className="sr-only">Actions</span></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -150,6 +152,7 @@ export default function ProductionRunHistoryPage() {
                                 <TableCell className="text-right"><Skeleton className="h-4 w-20" /></TableCell>
                                 <TableCell className="text-right"><Skeleton className="h-4 w-20" /></TableCell>
                                 <TableCell className="text-right"><Skeleton className="h-4 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                             </TableRow>
                         ))
                     ) : runs.length > 0 ? (
@@ -169,12 +172,27 @@ export default function ProductionRunHistoryPage() {
                                     <TableCell className="text-right font-mono">{totalPlannedQty.toFixed(2)}</TableCell>
                                     <TableCell className="text-right font-mono">{totalActualQty.toFixed(2)}</TableCell>
                                     <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(run.cost_value).toFixed(2)}</TableCell>
+                                     <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button size="icon" variant="ghost">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem asChild>
+                                                    <Link href={`/production-print/run/${run.id}`} target="_blank">Print</Link>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
                                 </TableRow>
                             );
                          })
                     ) : (
                          <TableRow>
-                            <TableCell colSpan={6} className="h-24 text-center">
+                            <TableCell colSpan={7} className="h-24 text-center">
                                 No production runs found.
                             </TableCell>
                         </TableRow>
