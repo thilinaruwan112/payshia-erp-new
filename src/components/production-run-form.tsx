@@ -103,6 +103,46 @@ export function ProductionRunForm() {
   const finishedGoodId = form.watch("finishedGoodId");
   const plannedQuantity = form.watch("plannedQuantity");
   const watchedIngredients = form.watch('ingredients');
+  const actualYield = form.watch('actualYield');
+
+
+  const handleProductSelect = useCallback(async (variantId: string, index: number, locationForStock: string) => {
+    if (!locationForStock) {
+        toast({ variant: 'destructive', title: 'Location not set', description: 'Please select a location first.' });
+        return;
+    }
+    const skuDetails = allIngredientsOptions.find(s => s.id === variantId);
+    if (!skuDetails || !company_id) return;
+
+    try {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${variantId}&location_id=${locationForStock}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch stock for this product.');
+        }
+        const data = await response.json();
+        const batches = (data.grouped_by_expire_date || []).filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
+        
+        batches.sort((a: StockInfo, b: StockInfo) => {
+            if (a.expire_date === '0000-00-00') return 1;
+            if (b.expire_date === '0000-00-00') return -1;
+            return new Date(a.expire_date).getTime() - new Date(b.expire_date).getTime();
+        });
+
+        setAvailableBatches(prev => ({ ...prev, [index]: batches }));
+        
+        if (batches.length > 0) {
+            const firstBatch = batches[0];
+            form.setValue(`ingredients.${index}.selectedBatch`, JSON.stringify(firstBatch));
+        } else {
+             form.setValue(`ingredients.${index}.selectedBatch`, '');
+        }
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Error fetching stock', description: errorMessage });
+    }
+  }, [company_id, allIngredientsOptions, form, toast]);
+
 
   useEffect(() => {
     async function fetchProducts() {
@@ -148,43 +188,6 @@ export function ProductionRunForm() {
             }))
         );
   }, [products]);
-
-  const handleProductSelect = useCallback(async (variantId: string, index: number, locationForStock: string) => {
-    if (!locationForStock) {
-        toast({ variant: 'destructive', title: 'Location not set', description: 'Please select a location first.' });
-        return;
-    }
-    const skuDetails = allIngredientsOptions.find(s => s.id === variantId);
-    if (!skuDetails || !company_id) return;
-
-    try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${skuDetails.productId}&product_variant_id=${variantId}&location_id=${locationForStock}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch stock for this product.');
-        }
-        const data = await response.json();
-        const batches = (data.grouped_by_expire_date || []).filter((b: StockInfo) => parseFloat(b.stock_balance) > 0);
-        
-        batches.sort((a: StockInfo, b: StockInfo) => {
-            if (a.expire_date === '0000-00-00') return 1;
-            if (b.expire_date === '0000-00-00') return -1;
-            return new Date(a.expire_date).getTime() - new Date(b.expire_date).getTime();
-        });
-
-        setAvailableBatches(prev => ({ ...prev, [index]: batches }));
-        
-        if (batches.length > 0) {
-            const firstBatch = batches[0];
-            form.setValue(`ingredients.${index}.selectedBatch`, JSON.stringify(firstBatch));
-        } else {
-             form.setValue(`ingredients.${index}.selectedBatch`, '');
-        }
-
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-        toast({ variant: 'destructive', title: 'Error fetching stock', description: errorMessage });
-    }
-  }, [company_id, allIngredientsOptions, form, toast]);
 
   useEffect(() => {
     async function fetchAndSetRecipe() {
@@ -261,7 +264,19 @@ export function ProductionRunForm() {
     const costPrice = item?.costPrice || 0;
     return acc + (actualQty * costPrice);
   }, 0);
-
+  
+  const afterCost = useMemo(() => {
+    const currentStock = finishedGoodStock || 0;
+    const currentCost = finishedGoodCost || 0;
+    const newStock = actualYield || 0;
+    
+    if (currentStock + newStock === 0) return 0;
+    
+    const totalCurrentValue = currentStock * currentCost;
+    const totalNewValue = grandTotalCost;
+    
+    return (totalCurrentValue + totalNewValue) / (currentStock + newStock);
+  }, [finishedGoodStock, finishedGoodCost, grandTotalCost, actualYield]);
 
   async function onSubmit(data: ProductionRunFormValues) {
     if (!company_id || !currentLocation) {
@@ -405,6 +420,10 @@ export function ProductionRunForm() {
              <div className="space-y-2">
                 <FormLabel>Current Stock</FormLabel>
                 <Input value={finishedGoodStock !== null ? finishedGoodStock.toFixed(2) : '...'} readOnly disabled />
+            </div>
+            <div className="space-y-2">
+                <FormLabel>After Cost</FormLabel>
+                <Input value={afterCost.toFixed(2)} readOnly disabled startIcon={currencySymbol} />
             </div>
              <FormField
                 control={form.control}
