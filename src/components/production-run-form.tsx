@@ -57,7 +57,7 @@ const ingredientSchema = z.object({
   ingredientId: z.string(),
   ingredientName: z.string(),
   plannedQty: z.number(),
-  actualQty: z.coerce.number().min(0, "Actual quantity cannot be negative."),
+  actualQty: z.coerce.number().min(0, "Actual quantity cannot be negative.").default(0),
   unit: z.string(),
   costPrice: z.number().optional(),
   selectedBatch: z.string().min(1, "A batch must be selected."),
@@ -269,7 +269,7 @@ export function ProductionRunForm() {
   
   const currentStock = finishedGoodStock || 0;
   const currentCost = finishedGoodCost || 0;
-  const newYield = actualYield || 0;
+  const newYield = Number(actualYield) || 0;
   const totalCurrentValue = currentStock * currentCost;
   const totalNewValue = grandTotalCost;
   const totalStockAfterRun = currentStock + newYield;
@@ -623,5 +623,3 @@ export function ProductionRunForm() {
     </Form>
   );
 }
-
-    
