@@ -83,9 +83,9 @@ export default function ProductionHistoryPage() {
 
     const getProductDetails = (variantId: string) => {
         for (const p of products) {
-            const variant = p.variants.find(v => v.variant.id === variantId);
-            if (variant) {
-                return `${p.product.name} (${variant.variant.sku})`;
+            const variantInfo = p.variants.find(v => v.variant && v.variant.id === variantId);
+            if (variantInfo) {
+                return `${p.product.name} (${variantInfo.variant.sku})`;
             }
         }
         return `Variant ID: ${variantId}`;
