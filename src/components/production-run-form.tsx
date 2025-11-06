@@ -105,7 +105,7 @@ export function ProductionRunForm() {
   const watchedIngredients = form.watch('ingredients');
   const actualYield = form.watch('actualYield');
   
-  const allIngredientsOptions = React.useMemo(() => {
+    const allIngredientsOptions = React.useMemo(() => {
       return products
         .filter(p => ['raw', 'both'].includes(p.product.item_type || ''))
         .flatMap(p => 
@@ -156,6 +156,7 @@ export function ProductionRunForm() {
     }
   }, [company_id, allIngredientsOptions, form, toast]);
 
+
   useEffect(() => {
     async function fetchProducts() {
         if (!company_id) return;
@@ -196,7 +197,7 @@ export function ProductionRunForm() {
             return;
         }
 
-        const selectedProductInfo = products.flatMap(p => p.variants.map(v => ({...v.variant, productId: p.product.id, costPrice: v.variant.cost_price }))).find(v => v.id === finishedGoodId);
+        const selectedProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v.variant, productId: p.product.id, costPrice: v.variant.cost_price }))).find(v => v.id === finishedGoodId);
         
         if (!selectedProductInfo) return;
 
@@ -267,10 +268,11 @@ export function ProductionRunForm() {
   
   const currentStock = finishedGoodStock || 0;
   const currentCost = finishedGoodCost || 0;
-  const newStock = actualYield || 0;
+  const newYield = actualYield || 0;
   const totalCurrentValue = currentStock * currentCost;
   const totalNewValue = grandTotalCost;
-  const afterCost = (currentStock + newStock > 0) ? (totalCurrentValue + totalNewValue) / (currentStock + newStock) : 0;
+  const totalStockAfterRun = currentStock + newYield;
+  const afterCost = totalStockAfterRun > 0 ? (totalCurrentValue + totalNewValue) / totalStockAfterRun : 0;
 
   async function onSubmit(data: ProductionRunFormValues) {
     if (!company_id || !currentLocation) {
@@ -609,5 +611,3 @@ export function ProductionRunForm() {
     </Form>
   );
 }
-
-    
