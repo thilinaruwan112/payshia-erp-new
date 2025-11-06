@@ -22,13 +22,6 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Product, ProductVariant } from "@/lib/types";
@@ -102,7 +95,7 @@ export function ProductionRunForm() {
         if (!company_id) return;
         setIsLoading(true);
         try {
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/goods/filter/item-type?item_type=menu,both&company_id=${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
             if (!response.ok) throw new Error("Failed to fetch products");
             const data = await response.json();
             setProducts(data.products || []);
@@ -117,6 +110,7 @@ export function ProductionRunForm() {
   
   const finishedGoodsOptions = React.useMemo(() => {
     return products
+        .filter(p => p.product.item_type !== 'raw')
         .flatMap(p => 
             (p.variants || []).map(v => ({ product: p.product, variant: v.variant }))
         )
@@ -429,5 +423,3 @@ export function ProductionRunForm() {
     </Form>
   );
 }
-
-    
