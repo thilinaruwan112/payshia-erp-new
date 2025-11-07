@@ -161,6 +161,17 @@ function GuestReceiptContent() {
   const totalDiscount = parseFloat(invoice.discount_amount);
   const subtotal = parseFloat(invoice.inv_amount);
   const total = parseFloat(invoice.grand_total);
+
+  const calculateInclusivePrice = (basePrice: number) => {
+    const isDineIn = invoice.remark?.includes('Dine-In');
+    let serviceCharge = isDineIn ? basePrice * 0.10 : 0;
+    const tdl = basePrice * 0.01;
+    const baseForSscl = basePrice + serviceCharge;
+    const sscl = baseForSscl * 0.025;
+    const baseForVat = basePrice + serviceCharge + tdl + sscl;
+    const vat = baseForVat * 0.18;
+    return basePrice + serviceCharge + tdl + sscl + vat;
+  };
   
   return (
     <div className="flex flex-col items-center">
@@ -195,14 +206,17 @@ function GuestReceiptContent() {
               </tr>
           </thead>
           <tbody>
-            {(invoice.items || []).map((item, index) => (
+            {(invoice.items || []).map((item, index) => {
+              const inclusivePrice = calculateInclusivePrice(parseFloat(String(item.item_price)));
+              const inclusiveTotal = inclusivePrice * parseFloat(String(item.quantity));
+              return (
               <tr key={index}>
                 <td className="py-1 align-top w-[50%]">{item.product_print_name}</td>
                 <td className="py-1 align-top text-center">{parseFloat(String(item.quantity))}</td>
-                <td className="py-1 align-top text-right">{parseFloat(String(item.item_price)).toFixed(2)}</td>
-                <td className="py-1 align-top text-right">{(parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))).toFixed(2)}</td>
+                <td className="py-1 align-top text-right">{inclusivePrice.toFixed(2)}</td>
+                <td className="py-1 align-top text-right">{inclusiveTotal.toFixed(2)}</td>
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
 
