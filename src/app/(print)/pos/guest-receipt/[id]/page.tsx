@@ -1,5 +1,4 @@
 
-
 'use client';
 
 // Import the external CSS file
@@ -13,7 +12,6 @@ import type { Invoice, User, Location } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import Image from 'next/image';
 import { fetcher } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 
@@ -63,7 +61,10 @@ function GuestReceiptContent() {
             
             if (data.customer_code) {
                 const customerRes = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`);
-                if (customerRes.ok) setCustomer(await customerRes.json());
+                if (customerRes.ok){
+                    const customerData = await customerRes.json();
+                    setCustomer(customerData.data);
+                }
             }
 
             if (data.company_id && data.location_id) {
@@ -189,7 +190,7 @@ function GuestReceiptContent() {
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
-          {logoUrl && <Image src={logoUrl} alt="logo" width={60} height={60} className="mx-auto my-1" />}
+          
           <p>{location?.location_name}</p>
           <p>{location?.address_line1}, {location?.city}</p>
           <p>Tel: {location?.phone_1}</p>
@@ -225,7 +226,7 @@ function GuestReceiptContent() {
               return (
                 <React.Fragment key={index}>
                   <tr>
-                    <td colSpan={4} className="pt-1">{item.product_print_name} - {inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td colSpan={4} className="pt-1">{item.product_print_name}</td>
                   </tr>
                   <tr className="align-top">
                     <td>{parseFloat(String(item.quantity)).toFixed(3)}</td>
