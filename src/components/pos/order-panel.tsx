@@ -323,6 +323,8 @@ export function OrderPanel({
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
     const costValue = cart.reduce((acc, item) => acc + ((item.product.cost_price as number || 0) * item.quantity), 0);
     const refHoldValue = order.originalInvoiceNumber ? order.originalInvoiceNumber : "direct";
+    const tableId = availableTables.find(t => t.table_name === order.tableName)?.id;
+
 
     const payload = {
         invoice_date: format(new Date(), 'yyyy-MM-dd'),
@@ -341,7 +343,7 @@ export function OrderPanel({
         payment_status: "Paid",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
-        table_id: 0,
+        table_id: tableId ? parseInt(tableId, 10) : 0,
         order_ready_status: 1,
         created_by: cashierName,
         is_active: 1,
@@ -358,7 +360,7 @@ export function OrderPanel({
             item_discount: item.itemDiscount || 0,
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
-            table_id: 0,
+            table_id: tableId ? parseInt(tableId, 10) : 0,
             cost_price: item.product.cost_price || 0,
             is_active: 1,
             hold_status: 0,
