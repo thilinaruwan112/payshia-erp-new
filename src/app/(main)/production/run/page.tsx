@@ -8,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Table,
@@ -18,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import React, { useEffect, useState, useMemo } from 'react';
 import { useLocation } from '@/components/location-provider';
@@ -64,6 +65,8 @@ export default function ProductionRunHistoryPage() {
     const [runs, setRuns] = useState<ProductionRun[]>([]);
     const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 15;
 
     useEffect(() => {
         if (!company_id) {
@@ -112,6 +115,14 @@ export default function ProductionRunHistoryPage() {
         }
         return `Product ID: ${productId}`;
     };
+
+    const paginatedRuns = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return runs.slice(startIndex, endIndex);
+    }, [runs, currentPage, itemsPerPage]);
+
+    const totalPages = Math.ceil(runs.length / itemsPerPage);
 
 
     return (
@@ -164,8 +175,8 @@ export default function ProductionRunHistoryPage() {
                                 <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                             </TableRow>
                         ))
-                    ) : runs.length > 0 ? (
-                         runs.map((run) => {
+                    ) : paginatedRuns.length > 0 ? (
+                         paginatedRuns.map((run) => {
                             const totalPlannedQty = run.plan_qty ? parseFloat(run.plan_qty) : run.items.reduce((sum, item) => sum + parseFloat(item.target_qty), 0);
                             const totalActualQty = run.yield_qty ? parseFloat(run.yield_qty) : run.items.reduce((sum, item) => sum + parseFloat(item.actual_qty), 0);
                             
@@ -207,6 +218,31 @@ export default function ProductionRunHistoryPage() {
                     </TableBody>
                 </Table>
                 </CardContent>
+                <CardFooter className="flex justify-end items-center gap-4">
+                    <span className="text-sm text-muted-foreground">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                        <span className="sr-only">Previous Page</span>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                        <span className="sr-only">Next Page</span>
+                    </Button>
+                    </div>
+                </CardFooter>
             </Card>
         </div>
     );
