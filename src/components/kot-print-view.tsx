@@ -10,6 +10,7 @@ import html2canvas from 'html2canvas';
 import Image from 'next/image';
 import { fetcher } from '@/lib/api';
 import { useSearchParams } from 'next/navigation';
+import '../app/(print)/pos/print-receipt.css';
 
 interface KotPrintViewProps {
   invoiceId: string;
@@ -309,52 +310,54 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
 
   return (
-    <div id="receipt-print-area" ref={kotRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
-      <div className="text-center mb-2">
-        {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
-        <h1 className="font-bold text-xl">K.O.T {printAll && '(Full)'}</h1>
-      </div>
+    <div className="flex flex-col items-center">
+        <div id="receipt-print-area" ref={kotRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
+        <div className="text-center mb-2">
+            {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
+            <h1 className="font-bold text-xl">K.O.T {printAll && '(Full)'}</h1>
+        </div>
 
-      <div className="flex justify-between text-xs">
-        <p>
-          Order:{' '}
-          {invoice.remark?.includes('Dine-In') && invoice.table_id !== '0'
-            ? `Table ${invoice.table_id}`
-            : invoice.remark || 'Take Away'}
-        </p>
-        <p>{format(new Date(), 'dd/MM/yy HH:mm')}</p>
-      </div>
-      <div className="flex justify-between text-xs">
-        <p>Cashier: {invoice.created_by}</p>
-        <p>Inv #: {invoice.invoice_number}</p>
-      </div>
+        <div className="flex justify-between text-xs">
+            <p>
+            Order:{' '}
+            {invoice.remark?.includes('Dine-In') && invoice.table_id !== '0'
+                ? `Table ${invoice.table_id}`
+                : invoice.remark || 'Take Away'}
+            </p>
+            <p>{format(new Date(), 'dd/MM/yy HH:mm')}</p>
+        </div>
+        <div className="flex justify-between text-xs">
+            <p>Cashier: {invoice.created_by}</p>
+            <p>Inv #: {invoice.invoice_number}</p>
+        </div>
 
-      <div className="my-2 border-t-2 border-dashed border-black"></div>
+        <div className="my-2 border-t-2 border-dashed border-black"></div>
 
-      <table className="w-full text-xs">
-        <thead>
-          <tr>
-            <th className="text-left w-[15%]">QTY</th>
-            <th className="text-left">ITEM</th>
-          </tr>
-        </thead>
-        <tbody>
-          {itemsToPrint.map((item, index) => (
-            <tr key={index}>
-              <td className="py-1 align-top font-bold text-base">
-                {parseFloat(String(item.quantity))}
-              </td>
-              <td className="py-1 align-top font-semibold">
-                {getProductName(item.product_id, item.product_variant_id)}
-              </td>
+        <table className="w-full text-xs">
+            <thead>
+            <tr>
+                <th className="text-left w-[15%]">QTY</th>
+                <th className="text-left">ITEM</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+            {itemsToPrint.map((item, index) => (
+                <tr key={index}>
+                <td className="py-1 align-top font-bold text-base">
+                    {parseFloat(String(item.quantity))}
+                </td>
+                <td className="py-1 align-top font-semibold">
+                    {getProductName(item.product_id, item.product_variant_id)}
+                </td>
+                </tr>
+            ))}
+            </tbody>
+        </table>
 
-      <div className="text-center mt-4 text-xs">
-        <p>-- End of Order --</p>
-      </div>
+        <div className="text-center mt-4 text-xs">
+            <p>-- End of Order --</p>
+        </div>
+        </div>
     </div>
   );
 }
