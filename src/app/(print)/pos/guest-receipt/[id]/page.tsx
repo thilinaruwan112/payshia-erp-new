@@ -86,7 +86,8 @@ function GuestReceiptContent() {
             if(data.created_by) {
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`).then(async res => {
                     if(res.ok) {
-                        const allUsers = (await res.json()).data;
+                        const allUsersRes = await res.json();
+                        const allUsers = allUsersRes.data;
                         return allUsers.find((u:User) => u.user_name === data.created_by) || null;
                     }
                     return null;
@@ -191,7 +192,14 @@ function GuestReceiptContent() {
   const subtotal = (invoice.items || []).reduce((acc, item) => acc + (parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))), 0);
   const totalItemCount = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
   const totalDiscount = parseFloat(invoice.discount_amount);
+  const grandTotal = parseFloat(invoice.grand_total);
   const serviceCharge = parseFloat(invoice.service_charge);
+
+  const tdl = parseFloat(invoice.tdl || "0");
+  const sscl = parseFloat(invoice.sscl_tax || "0");
+  const vat = parseFloat(invoice.vat_amount || "0");
+  
+  const totalTaxes = tdl + sscl + vat;
 
   const getOrderTypeOrTable = (tableId: string) => {
     if (tableId === '0') return 'Take Away';
@@ -204,6 +212,7 @@ function GuestReceiptContent() {
   const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
+
 
   return (
     <div className="flex flex-col items-center">
@@ -231,30 +240,18 @@ function GuestReceiptContent() {
         <table className="w-full text-xs">
           <thead>
             <tr>
-              <th className="text-left w-[25%]">QTY</th>
-              <th className="text-left w-[25%]">PRICE</th>
-              <th className="text-left w-[25%]">DISC</th>
+              <th className="text-left">ITEM</th>
+              <th className="text-center w-[20%]">QTY</th>
+              <th className="text-right w-[25%]">PRICE</th>
               <th className="text-right w-[25%]">TOTAL</th>
             </tr>
           </thead>
           <tbody>
             {(invoice.items || []).map((item, index) => {
               const basePrice = parseFloat(String(item.item_price));
-              const itemDiscount = parseFloat(String(item.item_discount));
               const quantity = parseFloat(String(item.quantity));
-              
-              // Calculate the item's share of overall taxes and service charge
-              const itemSubtotal = basePrice * quantity;
-              const subtotalWithoutItemDiscounts = subtotal - (totalDiscount - parseFloat(invoice.discount_amount));
-              const itemShareOfTotal = subtotalWithoutItemDiscounts > 0 ? (itemSubtotal - itemDiscount) / subtotalWithoutItemDiscounts : 0;
-              
-              const itemServiceCharge = itemShareOfTotal * serviceCharge;
-              const itemTdl = itemShareOfTotal * parseFloat(invoice.tdl || '0');
-              const itemSscl = itemShareOfTotal * parseFloat(invoice.sscl_tax || '0');
-              const itemVat = itemShareOfTotal * parseFloat(invoice.vat_amount || '0');
-
-              const inclusivePrice = basePrice + (itemServiceCharge + itemTdl + itemSscl + itemVat) / quantity;
-              const lineTotal = (inclusivePrice * quantity) - itemDiscount;
+              const itemDiscount = parseFloat(String(item.item_discount));
+              const lineTotal = basePrice * quantity - itemDiscount;
 
               return (
                 <React.Fragment key={index}>
@@ -262,11 +259,17 @@ function GuestReceiptContent() {
                     <td colSpan={4} className="pt-1">{item.product_print_name}</td>
                   </tr>
                   <tr className="align-top">
-                    <td>{quantity.toFixed(3)}</td>
-                    <td>{inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td>{itemDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td></td>
+                    <td className="text-center">{quantity.toFixed(3)}</td>
+                    <td className="text-right">{basePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td className="text-right">{lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
+                   {itemDiscount > 0 && (
+                     <tr>
+                        <td colSpan={3} className="text-right text-xs">Discount:</td>
+                        <td className="text-right text-xs">-{itemDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                  )}
                 </React.Fragment>
               )
             })}
@@ -279,7 +282,7 @@ function GuestReceiptContent() {
             <span>Subtotal:</span>
             <span>{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
-           <div className="flex justify-between">
+          <div className="flex justify-between">
             <span>Total Discount:</span>
             <span>-{totalDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
@@ -289,13 +292,31 @@ function GuestReceiptContent() {
               <span>{serviceCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
+          {tdl > 0 && (
+            <div className="flex justify-between">
+              <span>TDL (1%):</span>
+              <span>{tdl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {sscl > 0 && (
+            <div className="flex justify-between">
+              <span>SSCL (2.5%):</span>
+              <span>{sscl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {vat > 0 && (
+            <div className="flex justify-between">
+              <span>VAT (18%):</span>
+              <span>{vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span>No of Goods:</span>
             <span>{totalItemCount}</span>
           </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
-            <span>{parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>{grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
 
