@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
 import type { User, Table as TableType, Location, Invoice, Customer, PaymentMethod } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -117,7 +117,7 @@ const SuccessDialog = ({
 
   return (
     <Dialog open={!!successData} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-4xl p-0" hideCloseButton>
+      <DialogContent className="max-w-4xl p-0" hideCloseButton>
         <div className="grid md:grid-cols-2">
           {/* Left side */}
           <div className="p-8 flex flex-col">
@@ -126,8 +126,8 @@ const SuccessDialog = ({
             </div>
             
             <div className="text-center">
-                 <p className="text-muted-foreground">Change Amount</p>
-                 <p className="font-bold font-mono text-7xl">{currencySymbol}{successData.changeAmount.toFixed(2)}</p>
+                 <p className="text-muted-foreground text-sm sm:text-base">Change Amount</p>
+                 <p className="font-bold font-mono text-5xl sm:text-7xl">{currencySymbol}{successData.changeAmount.toFixed(2)}</p>
             </div>
 
             <Separator className="my-6" />
@@ -223,7 +223,7 @@ const PaymentDialog = ({
         <div className="space-y-6">
             <div className="bg-muted rounded-xl p-6 text-center">
                 <p className="text-lg text-muted-foreground">Total Due</p>
-                <p className="text-6xl font-bold font-mono">{currencySymbol}{orderTotals.total.toFixed(2)}</p>
+                <p className="font-bold font-mono text-5xl md:text-6xl">{currencySymbol}{orderTotals.total.toFixed(2)}</p>
             </div>
              <div className="grid grid-cols-2 gap-4">
                 {paymentMethods.map((method) => (
@@ -713,33 +713,29 @@ export function OrderPanel({
           <span>-{currencySymbol}{orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
         
-        {isServiceChargeActive ? (
-            <>
-                <div className="flex justify-between text-sm items-center">
-                    <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
-                        <Switch
-                            id="service-charge-toggle"
-                            checked={isServiceChargeActive}
-                            onCheckedChange={setIsServiceChargeActive}
-                        />
-                        Service Charge (10%)
-                    </Label>
-                    <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
-                </div>
-            </>
-        ) : (
-             <div className="flex justify-between text-sm items-center">
-                <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
-                    <Switch
-                        id="service-charge-toggle"
-                        checked={isServiceChargeActive}
-                        onCheckedChange={setIsServiceChargeActive}
-                    />
-                    Taxes &amp; Charges
-                </Label>
-                <span>{currencySymbol}{(orderTotals.serviceCharge).toFixed(2)}</span>
-            </div>
-        )}
+        <div className="flex justify-between text-sm items-center">
+            <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
+                <Switch
+                    id="service-charge-toggle"
+                    checked={isServiceChargeActive}
+                    onCheckedChange={setIsServiceChargeActive}
+                />
+                Service Charge (10%)
+            </Label>
+            <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+            <span>TDL (1%)</span>
+            <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
+        </div>
+            <div className="flex justify-between text-sm">
+            <span>SSCL (2.5%)</span>
+            <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
+        </div>
+            <div className="flex justify-between text-sm">
+            <span>VAT (18%)</span>
+            <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
+        </div>
 
          <div className="flex justify-between text-sm text-green-600">
           <span>Order Discount</span>
