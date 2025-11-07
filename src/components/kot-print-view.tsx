@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import type { Invoice, InvoiceItem, Product, Location, ProductVariant, User } from '@/lib/types';
+import type { Invoice, InvoiceItem, Product, Location, ProductVariant, User, Table } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -38,6 +38,8 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [location, setLocation] = useState<Location | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
   const [steward, setSteward] = useState<User | null>(null);
+  const [cashier, setCashier] = useState<User | null>(null);
+  const [tables, setTables] = useState<Table[]>([]);
   const [itemsToPrint, setItemsToPrint] = useState<InvoiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -92,25 +94,52 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             const unprintedItems = printAll ? items : items.filter(item => String(item.printed_status) !== '1');
             setItemsToPrint(unprintedItems);
             
+            const fetchPromises: Promise<any>[] = [];
+
             if (invoiceData.location_id) {
-                const locResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${invoiceData.location_id}`);
-                if (locResponse.ok) {
-                    setLocation(await locResponse.json());
-                }
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${invoiceData.location_id}`).then(res => res.ok ? res.json() : null));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
             }
 
             if (invoiceData.customer_code) {
-                const customerResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${invoiceData.customer_code}`);
-                if (customerResponse.ok) setCustomer(await customerResponse.json());
+                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${invoiceData.customer_code}`).then(res => res.ok ? res.json() : null));
+            } else {
+                 fetchPromises.push(Promise.resolve(null));
             }
 
             if (invoiceData.steward_id && invoiceData.steward_id !== 'N/A') {
-                const stewardResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${invoiceData.steward_id}`);
-                if (stewardResponse.ok) {
-                     const result = await stewardResponse.json();
-                     setSteward(result.data);
-                }
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${invoiceData.steward_id}`).then(res => res.ok ? res.json() : null));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
             }
+
+             if(invoiceData.created_by) {
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`).then(async res => {
+                    if(res.ok) {
+                        const allUsersRes = await res.json();
+                        const allUsers = allUsersRes.data;
+                        return allUsers.find((u:User) => u.user_name === invoiceData.created_by) || null;
+                    }
+                    return null;
+                }));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
+            }
+            
+            if (invoiceData.company_id) {
+                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${invoiceData.company_id}`).then(res => res.ok ? res.json() : []));
+            } else {
+                fetchPromises.push(Promise.resolve([]));
+            }
+            
+            const [locationData, customerData, stewardData, cashierData, tablesData] = await Promise.all(fetchPromises);
+            
+            setLocation(locationData);
+            setCustomer(customerData);
+            setSteward(stewardData?.data);
+            setCashier(cashierData);
+            setTables(tablesData || []);
 
 
         } catch (error) {
@@ -215,7 +244,6 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
 
         const cpj = new ClientPrintJob();
-        // This is the line you mentioned to remember.
         const myPrinter = new InstalledPrinter("KOT-Printer"); 
         
         cpj.clientPrinter = myPrinter;
@@ -244,11 +272,9 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   useEffect(() => {
     if (!isLoading && invoice && products.length > 0 && itemsToPrint.length > 0) {
       document.title = `KOT - ${invoice.invoice_number}`;
-       // Wait for JSPM to connect before printing
       if (isJspmConnected) {
         handlePrint();
       } else {
-        // Fallback or wait logic if JSPM is not yet connected
         const timeout = setTimeout(() => {
             if (isJspmConnected) {
                 handlePrint();
@@ -256,7 +282,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
                 console.warn("JSPM did not connect in time, falling back to browser print.");
                 updatePrintedStatus().then(() => window.print());
             }
-        }, 2000); // Wait 2 seconds for connection
+        }, 2000);
         return () => clearTimeout(timeout);
       }
     }
@@ -324,6 +350,21 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
+  const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
+  const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
+  const customerName = customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : `(ID: ${invoice.customer_code})`;
+
+  const getOrderTypeOrTable = (tableId: string) => {
+    const table = tables.find(t => t.id === tableId);
+    if (table) {
+        return `Dine-In (Table: ${table.table_name})`;
+    }
+    if (tableId === '0') return 'Take Away';
+    if (tableId === '-1') return 'Retail';
+    if (tableId === '-2') return 'Delivery';
+    return null;
+  }
+  const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
 
   return (
     <div className="flex flex-col items-center">
@@ -335,12 +376,11 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
 
         <div className="text-xs space-y-0.5">
             <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
-            <div className="flex justify-between"><p>Customer: {customer?.first_name || 'Walk-in'}</p></div>
+            <div className="flex justify-between"><p>Customer: {customerName}</p></div>
             <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
-            <div className="flex justify-between"><p>Cashier: {invoice.created_by}</p></div>
-            {steward && <div className="flex justify-between"><p>Steward: {steward.first_name}</p></div>}
-            {invoice.table_id !== '0' && <div className="flex justify-between"><p>Table: {invoice.table_id}</p></div>}
-            {invoice.remark && <div className="flex justify-between"><p>Order Type: {invoice.remark.split(' ')[0]}</p></div>}
+            <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
+            {stewardName && <div className="flex justify-between"><p>Steward: {stewardName}</p></div>}
+            {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable}</p></div>}
         </div>
 
 
