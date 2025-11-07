@@ -66,7 +66,7 @@ export default function ProductionRunHistoryPage() {
     const [runs, setRuns] = useState<ProductionRun[]>([]);
     const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [itemsPerPage, setItemsPerPage] = useState(15);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
 
     useEffect(() => {
@@ -232,7 +232,7 @@ export default function ProductionRunHistoryPage() {
                                  <SelectValue />
                              </SelectTrigger>
                              <SelectContent>
-                                 <SelectItem value="15">15</SelectItem>
+                                 <SelectItem value="10">10</SelectItem>
                                  <SelectItem value="25">25</SelectItem>
                                  <SelectItem value="50">50</SelectItem>
                                  <SelectItem value="100">100</SelectItem>
