@@ -407,7 +407,7 @@ export default function POSPage() {
       cart: [],
       discount: 0,
       serviceCharge: 0,
-      customer: customers[0], // Default to the first available customer
+      customer: customers[0] as User, // Default to the first available customer
       orderType,
       tableName,
       steward,
@@ -642,7 +642,7 @@ export default function POSPage() {
       cart: loadedCartItems,
       discount: parseFloat(invoice.discount_amount) - loadedCartItems.reduce((acc, item) => acc + (item.itemDiscount || 0), 0),
       serviceCharge: parseFloat(invoice.service_charge),
-      customer: customer,
+      customer: customer as User,
       orderType: (invoice.remark?.split(' ')[0] as any) || 'Retail', // Infer type from remark
       originalInvoiceNumber: invoice.invoice_number,
     };
@@ -703,8 +703,8 @@ export default function POSPage() {
       }));
   };
   
-  const updateCustomer = (orderId: string, customer: User) => {
-    setActiveOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, customer } : order));
+  const updateCustomer = (orderId: string, customer: Customer) => {
+    setActiveOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, customer: customer as User } : order));
   };
 
   const filteredProducts = useMemo(() => {

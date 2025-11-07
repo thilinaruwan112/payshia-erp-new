@@ -423,7 +423,7 @@ export function OrderPanel({
     }
   };
   
-  const handleCustomerCreated = (newCustomer: Customer) => {
+  const handleCustomerCreated = (newCustomer: User) => {
     onUpdateCustomer(orderId, newCustomer);
   }
 
@@ -462,7 +462,7 @@ export function OrderPanel({
            <div className='p-2 px-4 border-b border-border bg-muted/30'>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <UserCheck className="h-4 w-4" />
-                    <span>Steward: <span className="font-semibold text-foreground">{steward.name}</span></span>
+                    <span>Steward: <span className="font-semibold text-foreground">{steward.user_name}</span></span>
                 </div>
             </div>
       )}
@@ -476,7 +476,7 @@ export function OrderPanel({
                     const newCustomer = customers.find(
                       (c) => c.customer_id === customerId
                     );
-                    if (newCustomer) onUpdateCustomer(orderId, newCustomer);
+                    if (newCustomer) onUpdateCustomer(orderId, newCustomer as User);
                   }}
                 >
                     <SelectTrigger>
@@ -484,12 +484,12 @@ export function OrderPanel({
                     </SelectTrigger>
                     <SelectContent>
                         {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.first_name} {c.last_name}</SelectItem>
+                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
             </div>
-             <CustomerFormDialog onCustomerCreated={handleCustomerCreated}>
+             <CustomerFormDialog onCustomerCreated={(c) => onUpdateCustomer(orderId, c)}>
                  <Button variant="outline" size="icon">
                     <UserPlus className="h-5 w-5" />
                 </Button>
