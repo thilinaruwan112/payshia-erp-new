@@ -1,4 +1,5 @@
 
+
 'use client';
 
 // Import the external CSS file
@@ -161,19 +162,24 @@ function GuestReceiptContent() {
   
   const calculateInclusivePrice = (basePrice: number) => {
     const isDineIn = invoice.remark?.includes('Dine-In');
-    let serviceCharge = isDineIn ? basePrice * 0.10 : 0;
-    const tdl = basePrice * 0.01;
+    let serviceCharge = 0;
+    if(isDineIn) {
+      serviceCharge = basePrice * (parseFloat(invoice.service_charge_percentage || "10") / 100);
+    }
+    const tdl = basePrice * (parseFloat(invoice.tdl_percentage || "1") / 100);
     const baseForSscl = basePrice + serviceCharge;
-    const sscl = baseForSscl * 0.025;
+    const sscl = baseForSscl * (parseFloat(invoice.sscl_percentage || "2.5") / 100);
     const baseForVat = basePrice + serviceCharge + tdl + sscl;
-    const vat = baseForVat * 0.18;
+    const vat = baseForVat * (parseFloat(invoice.vat_percentage || "18") / 100);
     return basePrice + serviceCharge + tdl + sscl + vat;
   };
   
-  const subtotal = (invoice.items || []).reduce((acc, item) => {
+  const { subtotal, totalItemCount } = (invoice.items || []).reduce((acc, item) => {
     const inclusiveTotal = calculateInclusivePrice(parseFloat(String(item.item_price))) * parseFloat(String(item.quantity));
-    return acc + inclusiveTotal;
-  }, 0);
+    acc.subtotal += inclusiveTotal;
+    acc.totalItemCount += parseFloat(String(item.quantity));
+    return acc;
+  }, { subtotal: 0, totalItemCount: 0 });
 
   const totalDiscount = parseFloat(invoice.discount_amount);
   const total = subtotal - totalDiscount;
@@ -230,6 +236,10 @@ function GuestReceiptContent() {
           <div className="flex justify-between">
             <span>Subtotal:</span>
             <span>{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Total Item Count:</span>
+            <span>{totalItemCount}</span>
           </div>
           <div className="flex justify-between">
             <span>Discount:</span>
