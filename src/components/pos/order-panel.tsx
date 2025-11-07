@@ -115,12 +115,13 @@ const SuccessDialog = ({
 
   return (
     <Dialog open={!!successData} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md p-8 text-center" hideCloseButton>
+      <DialogContent className="sm:max-w-lg p-8 text-center" hideCloseButton>
         <PayshiaPosLogo />
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mt-4">
           <CheckCircle className="h-10 w-10 text-green-600" />
         </div>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm text-left my-4">
+        
+        <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-left my-4 text-sm">
           <div>
             <p className="text-muted-foreground">INV # / INT #</p>
             <p className="font-bold">{successData.invoiceNumber}</p>
@@ -135,23 +136,28 @@ const SuccessDialog = ({
             <p className="font-bold font-mono">{currencySymbol} {successData.invoiceAmount.toFixed(2)}</p>
           </div>
         </div>
-        <div className="my-2">
+
+        <div className="my-4">
             <p className="text-muted-foreground">Change Amount</p>
-            <p className="font-bold font-mono text-5xl">{currencySymbol} {successData.changeAmount.toFixed(2)}</p>
-        </div>
-        <div className="my-2">
-            <p className="text-muted-foreground">Customer</p>
-            <p className="font-bold text-xl">{successData.customerName}</p>
+            <p className="font-bold font-mono text-6xl">{currencySymbol} {successData.changeAmount.toFixed(2)}</p>
         </div>
 
-        <Button variant="secondary" className="w-full" onClick={handleReprint}>
-            <Printer className="mr-2 h-4 w-4" />
-            Reprint Invoice
-        </Button>
-        <Button size="lg" className="w-full h-14 text-lg mt-4" onClick={onClose}>
-            Next Customer <ArrowRight className="ml-2 h-5 w-5" />
-        </Button>
-        <p className="text-xl font-bold mt-4">Thank You!</p>
+        <div className="my-4">
+            <p className="text-muted-foreground">Customer</p>
+            <p className="font-bold text-2xl">{successData.customerName}</p>
+        </div>
+
+        <div className="space-y-3 mt-6">
+          <Button variant="secondary" className="w-full h-12" onClick={handleReprint}>
+              <Printer className="mr-2 h-4 w-4" />
+              Reprint Invoice
+          </Button>
+          <Button size="lg" className="w-full h-14 text-lg" onClick={onClose}>
+              Next Customer <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+          <p className="text-xl font-bold pt-4">Thank You!</p>
+        </div>
+
       </DialogContent>
     </Dialog>
   );
@@ -790,3 +796,5 @@ export function OrderPanel({
     </div>
   );
 }
+
+    
