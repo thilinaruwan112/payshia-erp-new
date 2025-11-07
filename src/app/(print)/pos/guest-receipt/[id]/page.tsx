@@ -209,10 +209,11 @@ function GuestReceiptContent() {
   
 
   const getOrderTypeOrTable = (tableId: string) => {
-    if (tableId === '0') return 'Take Away';
-    if (tableId === '-1') return 'Retail';
-    if (tableId === '-2') return 'Delivery';
-    if (parseInt(tableId, 10) > 0) return `Table: ${tableId}`;
+    const tableIdNum = parseInt(tableId, 10);
+    if (tableIdNum === 0) return 'Take Away';
+    if (tableIdNum === -1) return 'Retail';
+    if (tableIdNum === -2) return 'Delivery';
+    if (tableIdNum > 0) return 'Dine-In';
     return null;
   }
 
