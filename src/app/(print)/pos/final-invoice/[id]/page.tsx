@@ -1,6 +1,7 @@
 
 'use client';
 
+import '@/app/(print)/pos/print-receipt.css';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import type { Invoice, User, Location } from '@/lib/types';
