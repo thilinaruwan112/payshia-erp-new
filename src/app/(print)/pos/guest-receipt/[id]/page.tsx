@@ -1,4 +1,5 @@
 
+
 'use client';
 
 // Import the external CSS file
@@ -174,7 +175,8 @@ function GuestReceiptContent() {
   };
   
   const { subtotal, totalItemCount } = (invoice.items || []).reduce((acc, item) => {
-    const inclusiveTotal = calculateInclusivePrice(parseFloat(String(item.item_price))) * parseFloat(String(item.quantity));
+    const inclusivePrice = calculateInclusivePrice(parseFloat(String(item.item_price)));
+    const inclusiveTotal = inclusivePrice * parseFloat(String(item.quantity));
     acc.subtotal += inclusiveTotal;
     acc.totalItemCount += parseFloat(String(item.quantity));
     return acc;
@@ -208,25 +210,32 @@ function GuestReceiptContent() {
 
         <table className="w-full text-xs">
           <thead>
-              <tr>
-                  <th className='text-left'>ITEM</th>
-                  <th className='text-center'>QTY</th>
-                  <th className='text-right'>PRICE</th>
-                  <th className='text-right'>TOTAL</th>
-              </tr>
+            <tr>
+              <th className='text-left'>ITEM</th>
+              <th className='text-center'>QTY</th>
+              <th className='text-right'>PRICE</th>
+              <th className='text-right'>TOTAL</th>
+            </tr>
           </thead>
           <tbody>
             {(invoice.items || []).map((item, index) => {
               const inclusivePrice = calculateInclusivePrice(parseFloat(String(item.item_price)));
+              const discountedPrice = inclusivePrice - (parseFloat(String(item.item_discount)) / parseFloat(String(item.quantity)));
               const inclusiveTotal = inclusivePrice * parseFloat(String(item.quantity));
               return (
-              <tr key={index}>
-                <td className="py-1 align-top w-[50%]">{item.product_print_name}</td>
-                <td className="py-1 align-top text-center">{parseFloat(String(item.quantity))}</td>
-                <td className="py-1 align-top text-right">{inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="py-1 align-top text-right">{inclusiveTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              </tr>
-            )})}
+                <React.Fragment key={index}>
+                  <tr>
+                    <td colSpan={4} className="pt-1">{item.product_print_name}</td>
+                  </tr>
+                  <tr className="align-top">
+                    <td></td>
+                    <td className="text-center">{parseFloat(String(item.quantity))}</td>
+                    <td className="text-right">{discountedPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="text-right">{inclusiveTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  </tr>
+                </React.Fragment>
+              )
+            })}
           </tbody>
         </table>
 
