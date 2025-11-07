@@ -166,10 +166,9 @@ export function ProductionRunForm() {
   
   const currentStock = finishedGoodStock || 0;
   const currentCost = finishedGoodCost || 0;
-  const newYield = actualYield;
   const totalCurrentValue = currentStock * currentCost;
   const totalNewValue = grandTotalCost;
-  const totalStockAfterRun = currentStock + newYield;
+  const totalStockAfterRun = currentStock + actualYield;
   const afterCost = totalStockAfterRun > 0 ? (totalCurrentValue + totalNewValue) / totalStockAfterRun : 0;
 
 
@@ -292,6 +291,8 @@ export function ProductionRunForm() {
         setIsSubmitting(false);
         return;
     }
+    
+    const username = localStorage.getItem('userName') || 'admin';
 
     const payload = {
         location_id: parseInt(currentLocation.location_id, 10),
@@ -301,7 +302,7 @@ export function ProductionRunForm() {
         yield_qty: data.actualYield,
         product_id: parseInt(finishedGoodProductInfo.productId),
         product_variant_id: parseInt(data.finishedGoodId),
-        created_by: 'yomal',
+        created_by: username,
         expire_date: data.expiryDate ? format(data.expiryDate, 'yyyy-MM-dd') : undefined,
         patch_code: data.batchCode,
         notes: data.notes || '',
@@ -599,7 +600,7 @@ export function ProductionRunForm() {
                                 <TooltipTrigger type="button"><Info className="h-4 w-4 text-muted-foreground cursor-help" /></TooltipTrigger>
                                 <TooltipContent>
                                     <p className="text-sm">((Current Stock * Current Cost) + Total Ingredient Cost) / (Current Stock + Actual Yield)</p>
-                                    <p className="text-xs font-mono">(({currentStock.toFixed(2)} * {currentCost.toFixed(2)}) + {grandTotalCost.toFixed(2)}) / ({currentStock.toFixed(2)} + {newYield.toFixed(2)})</p>
+                                    <p className="text-xs font-mono">(({currentStock.toFixed(2)} * {currentCost.toFixed(2)}) + {grandTotalCost.toFixed(2)}) / ({currentStock.toFixed(2)} + {actualYield.toFixed(2)})</p>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
