@@ -351,12 +351,12 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
-  const customerName = customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : `(ID: ${invoice.customer_code})`;
+  const customerName = customer ? `${customer.first_name} ${customer.last_name}` : `(ID: ${invoice.customer_code})`;
 
   const getOrderTypeOrTable = (tableId: string) => {
-    const table = tables.find(t => t.id === tableId);
-    if (table) {
-        return `Dine-In (Table: ${table.table_name})`;
+    if (parseInt(tableId, 10) > 0) {
+        const tableName = tables.find(t => t.id === tableId)?.table_name;
+        return `Dine-In (Table: ${tableName || tableId})`;
     }
     if (tableId === '0') return 'Take Away';
     if (tableId === '-1') return 'Retail';
@@ -370,6 +370,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         <div id="receipt-print-area" ref={kotRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
             {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
+            {location && <p className="font-semibold">{location.location_name}</p>}
             <h1 className="font-bold text-xl">K.O.T {printAll && '(Full)'}</h1>
         </div>
 
@@ -414,4 +415,3 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   );
 }
 
-    
