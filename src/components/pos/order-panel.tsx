@@ -22,6 +22,7 @@ import {
   UserCheck,
   Settings,
   Receipt,
+  Delete,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -112,46 +113,87 @@ const PaymentDialog = ({
     setAmountTendered(orderTotals.total.toFixed(2));
   }, [orderTotals.total]);
 
+  const handleNumpadClick = (value: string) => {
+    if (value === 'C') {
+      setAmountTendered('');
+    } else if (value === '<-') {
+      setAmountTendered((prev) => prev.slice(0, -1));
+    } else {
+      setAmountTendered((prev) => prev + value);
+    }
+  };
+
+  const getNextDenomination = (amount: number) => {
+      if (amount <= 100) return 100;
+      if (amount <= 500) return 500;
+      if (amount <= 1000) return 1000;
+      if (amount <= 5000) return 5000;
+      const roundedUp = Math.ceil(amount / 1000) * 1000;
+      return roundedUp > amount ? roundedUp : roundedUp + 1000;
+  }
+  const quickCashAmount = getNextDenomination(orderTotals.total);
+
   return (
-    <DialogContent>
+    <DialogContent className="max-w-2xl">
       <DialogHeader>
         <DialogTitle>Complete Payment</DialogTitle>
       </DialogHeader>
-      <div className="space-y-4">
-        <div className="bg-muted/50 rounded-lg p-4 text-center">
-          <p className="text-sm text-muted-foreground">Total Due</p>
-          <p className="text-4xl font-bold">{currencySymbol}{orderTotals.total.toFixed(2)}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-4 text-center">
+                <p className="text-sm text-muted-foreground">Total Due</p>
+                <p className="text-4xl font-bold">{currencySymbol}{orderTotals.total.toFixed(2)}</p>
+            </div>
+             <div className="grid grid-cols-2 gap-4">
+                {paymentMethods.map((method) => (
+                    <Button
+                    key={method.id}
+                    variant={selectedMethodId === method.id ? 'default' : 'outline'}
+                    className="h-20 text-lg"
+                    onClick={() => setSelectedMethodId(method.id)}
+                    >
+                    {method.method}
+                    </Button>
+                ))}
+            </div>
+             <div className="grid grid-cols-2 gap-4">
+                <Button variant="secondary" className="h-16" onClick={() => setAmountTendered(orderTotals.total.toFixed(2))}>
+                    Exact Amount
+                </Button>
+                <Button variant="secondary" className="h-16" onClick={() => setAmountTendered(String(quickCashAmount))}>
+                    {currencySymbol}{quickCashAmount}
+                </Button>
+            </div>
+             {Number(amountTendered) > 0 && (
+                <div className="text-center font-medium text-lg pt-2">
+                    <p className="text-muted-foreground">Change Due</p>
+                    <p className="text-2xl font-bold">{currencySymbol}{change > 0 ? change.toFixed(2) : '0.00'}</p>
+                </div>
+            )}
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          {paymentMethods.map((method) => (
-            <Button
-              key={method.id}
-              variant={selectedMethodId === method.id ? 'default' : 'outline'}
-              className="h-20 text-lg"
-              onClick={() => setSelectedMethodId(method.id)}
-            >
-              {method.method}
-            </Button>
-          ))}
+        <div className="space-y-4">
+             <div>
+                <Label htmlFor="amount-tendered">Amount Tendered</Label>
+                <Input
+                    id="amount-tendered"
+                    type="number"
+                    placeholder="0.00"
+                    value={amountTendered}
+                    onChange={(e) => setAmountTendered(e.target.value)}
+                    className="h-16 text-3xl text-right"
+                />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+                {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map(val => (
+                    <Button key={val} variant="outline" className="h-16 text-2xl" onClick={() => handleNumpadClick(val)}>{val}</Button>
+                ))}
+                <Button variant="outline" className="h-16 text-2xl" onClick={() => handleNumpadClick('.')}>.</Button>
+                <Button variant="outline" className="h-16 text-2xl" onClick={() => handleNumpadClick('0')}>0</Button>
+                <Button variant="outline" className="h-16 text-2xl" onClick={() => handleNumpadClick('<-')}><Delete /></Button>
+            </div>
         </div>
-        <div>
-          <Label htmlFor="amount-tendered">Amount Tendered</Label>
-          <Input
-            id="amount-tendered"
-            type="number"
-            placeholder="0.00"
-            value={amountTendered}
-            onChange={(e) => setAmountTendered(e.target.value)}
-            className="h-14 text-2xl text-right"
-          />
-        </div>
-        {Number(amountTendered) > 0 && (
-          <div className="text-center font-medium text-lg">
-            <p>Change: {currencySymbol}{change > 0 ? change.toFixed(2) : '0.00'}</p>
-          </div>
-        )}
       </div>
-      <DialogFooter>
+      <DialogFooter className="mt-4">
         <Button variant="outline" size="lg" onClick={() => {
             const dialog = document.querySelector('[role="dialog"]');
             if (dialog) {
@@ -165,6 +207,7 @@ const PaymentDialog = ({
           size="lg"
           onClick={handleConfirm}
           disabled={!selectedMethodId || !amountTendered || change < 0}
+          className="h-16 text-lg"
         >
           Confirm Payment
         </Button>
