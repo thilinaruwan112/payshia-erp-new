@@ -11,7 +11,6 @@ import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { openCenteredPopup } from '@/lib/utils';
 
 interface Company {
     id: string;
@@ -79,7 +78,8 @@ function FinalInvoiceContent() {
             if(data.created_by) {
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`).then(async res => {
                     if(res.ok) {
-                        const allUsers = (await res.json()).data;
+                        const allUsersRes = await res.json();
+                        const allUsers: User[] = allUsersRes.data;
                         return allUsers.find((u:User) => u.user_name === data.created_by) || null;
                     }
                     return null;
@@ -91,12 +91,12 @@ function FinalInvoiceContent() {
 
             const [customerData, companyData, locationData, tablesData, stewardData, cashierData] = await Promise.all(fetchPromises);
             
-            setCustomer(customerData);
-            setCompany(companyData);
-            setLocation(locationData);
-            setTables(tablesData || []);
-            setSteward(stewardData?.data);
-            setCashier(cashierData);
+            if (customerData) setCustomer(customerData);
+            if (companyData) setCompany(companyData);
+            if (locationData) setLocation(locationData);
+            if (tablesData) setTables(tablesData);
+            if (stewardData) setSteward(stewardData.data);
+            if (cashierData) setCashier(cashierData);
 
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load invoice data.' });
@@ -110,10 +110,12 @@ function FinalInvoiceContent() {
   useEffect(() => {
     if (!isLoading && invoice) {
         document.title = `Invoice - ${invoice.invoice_number}`;
-        setTimeout(() => {
+        const handlePrint = () => {
             window.print();
-            window.onafterprint = () => window.close();
-        }, 500);
+            window.close();
+        };
+        // Delay print to allow content to render
+        setTimeout(handlePrint, 500);
     }
   }, [isLoading, invoice]);
 
@@ -154,9 +156,9 @@ function FinalInvoiceContent() {
         const tableName = tables.find(t => t.id === tableId)?.table_name;
         return `Dine-In (Table: ${tableName || tableId})`;
     }
-    if (parseInt(tableId, 10) === 0) return 'Take Away';
-    if (parseInt(tableId, 10) === -1) return 'Retail';
-    if (parseInt(tableId, 10) === -2) return 'Delivery';
+    if (tableId === '0') return 'Take Away';
+    if (tableId === '-1') return 'Retail';
+    if (tableId === '-2') return 'Delivery';
     return null;
   }
 

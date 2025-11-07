@@ -15,7 +15,6 @@ import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { openCenteredPopup } from '@/lib/utils';
 
 interface Company {
     id: string;
@@ -90,7 +89,7 @@ function GuestReceiptContent() {
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`).then(async res => {
                     if(res.ok) {
                         const allUsersRes = await res.json();
-                        const allUsers = allUsersRes.data;
+                        const allUsers: User[] = allUsersRes.data;
                         return allUsers.find((u:User) => u.user_name === data.created_by) || null;
                     }
                     return null;
@@ -101,12 +100,12 @@ function GuestReceiptContent() {
 
             const [customerData, companyData, locationData, tablesData, stewardData, cashierData] = await Promise.all(fetchPromises);
 
-            setCustomer(customerData);
-            setCompany(companyData);
-            setLocation(locationData);
-            setTables(tablesData || []);
-            setSteward(stewardData?.data);
-            setCashier(cashierData);
+            if (customerData) setCustomer(customerData);
+            if (companyData) setCompany(companyData);
+            if (locationData) setLocation(locationData);
+            if (tablesData) setTables(tablesData);
+            if (stewardData) setSteward(stewardData.data);
+            if (cashierData) setCashier(cashierData);
 
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load invoice data.' });
@@ -144,10 +143,49 @@ function GuestReceiptContent() {
   const handlePrint = async () => {
     if (!receiptRef.current) return;
     
-    setTimeout(() => {
-        window.print();
-        window.onafterprint = () => window.close();
-    }, 500);
+    if (!window.JSPM || !isJspmConnected) {
+        console.warn("JSPM not ready or not connected. Falling back to browser print.");
+        const handlePrint = () => {
+            window.print();
+            window.close();
+        };
+        setTimeout(handlePrint, 500);
+        return;
+    }
+
+    try {
+        const element = receiptRef.current;
+        const canvas = await html2canvas(element, { scale: 2, backgroundColor: null });
+
+        const b64Prefix = "data:image/png;base64,";
+        const imgBase64DataUri = canvas.toDataURL("image/png");
+        const imgBase64Content = imgBase64DataUri.substring(b64Prefix.length);
+
+        const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
+
+        const cpj = new ClientPrintJob();
+        const myPrinter = new InstalledPrinter("KOT-Printer"); 
+        
+        cpj.clientPrinter = myPrinter;
+
+        const myImageFile = new PrintFile(
+            imgBase64Content,
+            FileSourceType.Base64,
+            `GR-${invoice?.invoice_number}.png`,
+            1
+        );
+        cpj.files.push(myImageFile);
+
+        cpj.sendToClient();
+
+        setTimeout(() => {
+            window.close();
+        }, 3000);
+
+    } catch (error) {
+        console.error("Printing error:", error);
+        alert("An error occurred while printing. Please try again.");
+    }
   };
 
   useEffect(() => {
@@ -192,7 +230,8 @@ function GuestReceiptContent() {
     const basePrice = parseFloat(String(item.item_price));
     const inclusivePrice = calculateInclusivePrice(basePrice);
     const quantity = parseFloat(String(item.quantity));
-    return acc + (inclusivePrice * quantity);
+    const itemDiscount = parseFloat(String(item.item_discount));
+    return acc + ((inclusivePrice * quantity) - itemDiscount);
   }, 0);
 
   const totalDiscount = parseFloat(invoice.discount_amount);
@@ -204,9 +243,9 @@ function GuestReceiptContent() {
       const tableName = tables.find(t => t.id === tableId)?.table_name;
       return `Dine-In (Table: ${tableName || tableId})`;
     }
-    if (parseInt(tableId, 10) === 0) return 'Take Away';
-    if (parseInt(tableId, 10) === -1) return 'Retail';
-    if (parseInt(tableId, 10) === -2) return 'Delivery';
+    if (tableId === '0') return 'Take Away';
+    if (tableId === '-1') return 'Retail';
+    if (tableId === '-2') return 'Delivery';
     return null;
   }
 
