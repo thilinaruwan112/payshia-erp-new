@@ -98,7 +98,7 @@ const PaymentDialog = ({
 }) => {
   const { currencySymbol } = useCurrency();
   const [amountTendered, setAmountTendered] = React.useState('');
-  const [selectedMethodId, setSelectedMethodId] = React.useState<string | null>(null);
+  const [selectedMethodId, setSelectedMethodId] = React.useState<string | null>(paymentMethods.length > 0 ? paymentMethods[0].id : null);
   const change = Number(amountTendered) - orderTotals.total;
 
   const handleConfirm = () => {
@@ -332,6 +332,9 @@ export function OrderPanel({
         discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
         customer_code: customer.customer_id,
         service_charge: orderTotals.serviceCharge,
+        tdl: orderTotals.tdl,
+        sscl_tax: orderTotals.sscl,
+        vat_amount: orderTotals.vat,
         tendered_amount: tenderedAmount,
         close_type: paymentMethodId,
         invoice_status: '1', // Paid
@@ -347,6 +350,7 @@ export function OrderPanel({
         remark: `${orderType} order`,
         ref_hold: refHoldValue,
         company_id: company_id,
+        chanel: "POS",
         items: cart.map(item => ({
             user_id: parseInt(steward?.id || '1', 10), // Default user_id as per example
             product_id: parseInt(item.product.id, 10),

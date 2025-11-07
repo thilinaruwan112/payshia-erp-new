@@ -108,11 +108,9 @@ function FinalInvoiceContent() {
   const grandTotal = parseFloat(invoice.grand_total);
   const serviceCharge = parseFloat(invoice.service_charge);
 
-  const tdl = subtotal * (parseFloat(invoice.tdl || "0") / 100);
-  const baseForSscl = subtotal + serviceCharge;
-  const sscl = baseForSscl * (parseFloat(invoice.sscl_tax || "0") / 100);
-  const baseForVat = baseForSscl + tdl;
-  const vat = baseForVat * (parseFloat(invoice.vat_amount || "0") / 100);
+  const tdl = parseFloat(invoice.tdl || "0");
+  const sscl = parseFloat(invoice.sscl_tax || "0");
+  const vat = parseFloat(invoice.vat_amount || "0");
   
   const totalTaxes = tdl + sscl + vat;
 
@@ -142,9 +140,9 @@ function FinalInvoiceContent() {
         <table className="w-full text-xs">
           <thead>
             <tr>
-              <th className="text-left w-[25%]">QTY</th>
-              <th className="text-left w-[25%]">PRICE</th>
-              <th className="text-left w-[25%]">DISC</th>
+              <th className="text-left">ITEM</th>
+              <th className="text-center w-[20%]">QTY</th>
+              <th className="text-right w-[25%]">PRICE</th>
               <th className="text-right w-[25%]">TOTAL</th>
             </tr>
           </thead>
@@ -152,18 +150,23 @@ function FinalInvoiceContent() {
             {(invoice.items || []).map((item, index) => {
               const basePrice = parseFloat(String(item.item_price));
               const lineTotal = basePrice * parseFloat(String(item.quantity));
-              const itemDiscount = parseFloat(String(item.item_discount));
               return (
                 <React.Fragment key={index}>
                   <tr>
                     <td colSpan={4} className="pt-1">{item.product_print_name}</td>
                   </tr>
                   <tr className="align-top">
-                    <td>{parseFloat(String(item.quantity)).toFixed(3)}</td>
-                    <td>{basePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td>{itemDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td className="text-right">{(lineTotal - itemDiscount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td></td>
+                    <td className="text-center">{parseFloat(String(item.quantity)).toFixed(3)}</td>
+                    <td className="text-right">{basePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="text-right">{lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
+                   {parseFloat(String(item.item_discount)) > 0 && (
+                     <tr>
+                        <td colSpan={3} className="text-right text-xs">Discount:</td>
+                        <td className="text-right text-xs">-{parseFloat(String(item.item_discount)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                  )}
                 </React.Fragment>
               )
             })}
@@ -177,16 +180,12 @@ function FinalInvoiceContent() {
             <span>{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between">
-            <span>No of Goods:</span>
-            <span>{totalItemCount}</span>
-          </div>
-          <div className="flex justify-between">
             <span>Total Discount:</span>
             <span>-{totalDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           {serviceCharge > 0 && (
             <div className="flex justify-between">
-              <span>Service Charge (10%):</span>
+              <span>Service Charge:</span>
               <span>{serviceCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
