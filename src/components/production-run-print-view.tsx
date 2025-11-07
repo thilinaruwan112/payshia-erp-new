@@ -150,7 +150,7 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
     return <div>Production run not found or failed to load.</div>;
   }
   
-  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${location.logo_path}` : null;
+  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   const totalPlanned = run.items.reduce((sum, item) => sum + parseFloat(item.target_qty), 0);
   const totalActual = run.items.reduce((sum, item) => sum + parseFloat(item.actual_qty), 0);
   const finishedGoodName = getProductName(run.product_variant_id);
@@ -167,7 +167,7 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
             </div>
         </div>
         <div className="text-right">
-          <h2 className="text-2xl font-bold uppercase text-gray-700">Production Report</h2>
+          <h2 className="text-xl font-bold uppercase text-gray-700">Production Report</h2>
         </div>
       </header>
 
