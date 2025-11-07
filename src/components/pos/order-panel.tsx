@@ -470,9 +470,6 @@ export function OrderPanel({
         discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
         customer_code: customer.customer_id,
         service_charge: orderTotals.serviceCharge,
-        tdl: orderTotals.tdl,
-        sscl_tax: orderTotals.sscl,
-        vat_amount: orderTotals.vat,
         tendered_amount: tenderedAmount,
         close_type: paymentMethodId,
         invoice_status: '1', // Paid
