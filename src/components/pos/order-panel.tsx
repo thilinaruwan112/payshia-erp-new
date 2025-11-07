@@ -260,7 +260,7 @@ const EditOrderDialog = ({ order, onUpdateDetails, availableTables, availableSte
                             <SelectTrigger><SelectValue placeholder="Select a steward" /></SelectTrigger>
                             <SelectContent>
                                 {availableStewards.map(s => (
-                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                    <SelectItem key={s.id} value={s.id}>{s.user_name}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
