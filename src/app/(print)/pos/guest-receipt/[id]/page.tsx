@@ -60,12 +60,8 @@ function GuestReceiptContent() {
             const data: Invoice = await response.json();
             setInvoice(data);
             
-            if (data.customer_code) {
-                const customerRes = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`);
-                if (customerRes.ok){
-                    const customerData = await customerRes.json();
-                    setCustomer(customerData.data);
-                }
+            if (data.customer) {
+                setCustomer(data.customer);
             }
 
             if (data.company_id && data.location_id) {
@@ -171,7 +167,7 @@ function GuestReceiptContent() {
     const tdl = basePrice * (parseFloat(invoice.tdl_percentage || "1") / 100);
     const baseForSscl = basePrice + serviceCharge;
     const sscl = baseForSscl * (parseFloat(invoice.sscl_percentage || "2.5") / 100);
-    const baseForVat = basePrice + serviceCharge + tdl + sscl;
+    const baseForVat = baseForSscl + tdl;
     const vat = baseForVat * (parseFloat(invoice.vat_percentage || "18") / 100);
     return basePrice + serviceCharge + tdl + sscl + vat;
   };
@@ -279,5 +275,3 @@ export default function GuestReceiptPage() {
         </Suspense>
     )
 }
-
-    
