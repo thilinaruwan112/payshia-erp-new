@@ -156,10 +156,6 @@ function GuestReceiptContent() {
     document.head.appendChild(style);
 
     window.print();
-
-    // Optional: Clean up the style element after printing
-    // The timeout is to ensure the print dialog has had time to process the styles
-    
   };
 
   useEffect(() => {
@@ -190,16 +186,21 @@ function GuestReceiptContent() {
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
   const subtotal = (invoice.items || []).reduce((acc, item) => acc + (parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))), 0);
-  const totalItemCount = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
+  const totalItemDiscounts = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.item_discount)), 0);
   const totalDiscount = parseFloat(invoice.discount_amount);
   const grandTotal = parseFloat(invoice.grand_total);
   const serviceCharge = parseFloat(invoice.service_charge);
 
-  const tdl = parseFloat(invoice.tdl || "0");
-  const sscl = parseFloat(invoice.sscl_tax || "0");
-  const vat = parseFloat(invoice.vat_amount || "0");
-  
-  const totalTaxes = tdl + sscl + vat;
+  const calculateInclusivePrice = (basePrice: number) => {
+    const isDineIn = invoice.remark?.toLowerCase().includes('dine-in');
+    const serviceChargeForItem = isDineIn ? basePrice * 0.10 : 0;
+    const tdl = basePrice * 0.01;
+    const baseForSscl = basePrice + serviceChargeForItem;
+    const sscl = baseForSscl * 0.025;
+    const baseForVat = basePrice + serviceChargeForItem + tdl + sscl;
+    const vat = baseForVat * 0.18;
+    return basePrice + serviceChargeForItem + tdl + sscl + vat;
+  }
 
   const getOrderTypeOrTable = (tableId: string) => {
     if (tableId === '0') return 'Take Away';
@@ -249,9 +250,10 @@ function GuestReceiptContent() {
           <tbody>
             {(invoice.items || []).map((item, index) => {
               const basePrice = parseFloat(String(item.item_price));
+              const inclusivePrice = calculateInclusivePrice(basePrice);
               const quantity = parseFloat(String(item.quantity));
               const itemDiscount = parseFloat(String(item.item_discount));
-              const lineTotal = basePrice * quantity - itemDiscount;
+              const lineTotal = (inclusivePrice * quantity) - itemDiscount;
 
               return (
                 <React.Fragment key={index}>
@@ -261,7 +263,7 @@ function GuestReceiptContent() {
                   <tr className="align-top">
                     <td></td>
                     <td className="text-center">{quantity.toFixed(3)}</td>
-                    <td className="text-right">{basePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="text-right">{inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td className="text-right">{lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
                    {itemDiscount > 0 && (
@@ -292,28 +294,6 @@ function GuestReceiptContent() {
               <span>{serviceCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
-          {tdl > 0 && (
-            <div className="flex justify-between">
-              <span>TDL (1%):</span>
-              <span>{tdl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-          )}
-          {sscl > 0 && (
-            <div className="flex justify-between">
-              <span>SSCL (2.5%):</span>
-              <span>{sscl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-          )}
-          {vat > 0 && (
-            <div className="flex justify-between">
-              <span>VAT (18%):</span>
-              <span>{vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <span>No of Goods:</span>
-            <span>{totalItemCount}</span>
-          </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
             <span>{grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -334,7 +314,8 @@ export default function GuestReceiptPage() {
     return (
         <Suspense fallback={<div>Loading...</div>}>
             <GuestReceiptContent />
-           
         </Suspense>
     )
 }
+
+    
