@@ -414,4 +414,3 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     </div>
   );
 }
-
