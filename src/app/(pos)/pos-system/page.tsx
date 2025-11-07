@@ -206,7 +206,13 @@ export default function POSPage() {
                 last_name: s.last_name
              })));
             
-            setCustomers(customersData);
+            const formattedCustomers = customersData.map(c => ({
+                ...c,
+                id: c.customer_id,
+                name: `${c.customer_first_name} ${c.customer_last_name}`,
+                role: 'Customer',
+            }));
+            setCustomers(formattedCustomers);
 
             setCollections(collectionsData || []);
             setBrands(brandsData || []);
@@ -635,16 +641,21 @@ export default function POSPage() {
         toast({variant: 'destructive', title: 'Customer not found', description: 'The customer for this held order could not be found.'});
         return;
     }
+    
+    const tableName = tables.find(t => t.id === invoice.table_id)?.table_name;
+    const steward = stewards.find(s => s.id === invoice.steward_id);
 
     const newActiveOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
-      name: `Loaded ${invoice.invoice_number}`,
+      name: tableName || `Loaded ${invoice.invoice_number}`,
       cart: loadedCartItems,
       discount: parseFloat(invoice.discount_amount) - loadedCartItems.reduce((acc, item) => acc + (item.itemDiscount || 0), 0),
       serviceCharge: parseFloat(invoice.service_charge),
       customer: customer as User,
       orderType: (invoice.remark?.split(' ')[0] as any) || 'Retail', // Infer type from remark
       originalInvoiceNumber: invoice.invoice_number,
+      tableName: tableName,
+      steward: steward,
     };
     
     setActiveOrders(prev => [...prev, newActiveOrder]);
