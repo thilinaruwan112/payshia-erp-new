@@ -323,7 +323,25 @@ export function OrderPanel({
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
     const costValue = cart.reduce((acc, item) => acc + ((item.product.cost_price as number || 0) * item.quantity), 0);
     const refHoldValue = order.originalInvoiceNumber ? order.originalInvoiceNumber : "direct";
-    const tableId = availableTables.find(t => t.table_name === order.tableName)?.id;
+    
+    let tableIdValue: number;
+    switch (order.orderType) {
+        case 'Take Away':
+            tableIdValue = 0;
+            break;
+        case 'Retail':
+            tableIdValue = -1;
+            break;
+        case 'Delivery':
+            tableIdValue = -2;
+            break;
+        case 'Dine-In':
+            const table = availableTables.find(t => t.table_name === order.tableName);
+            tableIdValue = table ? parseInt(table.id, 10) : 0;
+            break;
+        default:
+            tableIdValue = 0;
+    }
 
 
     const payload = {
@@ -343,7 +361,7 @@ export function OrderPanel({
         payment_status: "Paid",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
-        table_id: tableId ? parseInt(tableId, 10) : 0,
+        table_id: tableIdValue,
         order_ready_status: 1,
         created_by: cashierName,
         is_active: 1,
@@ -360,7 +378,7 @@ export function OrderPanel({
             item_discount: item.itemDiscount || 0,
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
-            table_id: tableId ? parseInt(tableId, 10) : 0,
+            table_id: tableIdValue,
             cost_price: item.product.cost_price || 0,
             is_active: 1,
             hold_status: 0,
