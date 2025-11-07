@@ -114,6 +114,16 @@ function FinalInvoiceContent() {
   
   const totalTaxes = tdl + sscl + vat;
 
+  const getOrderTypeOrTable = (tableId: string) => {
+    if (tableId === '0') return 'Take Away';
+    if (tableId === '-1') return 'Retail';
+    if (tableId === '-2') return 'Delivery';
+    if (parseInt(tableId, 10) > 0) return `Table: ${tableId}`;
+    return null;
+  }
+
+  const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
+
   return (
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
@@ -131,8 +141,8 @@ function FinalInvoiceContent() {
           <div className="flex justify-between"><p>Customer: {customer?.customer_first_name} {customer?.customer_last_name || ''} ({invoice.customer_code})</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
           <div className="flex justify-between"><p>Cashier: {invoice.created_by}</p></div>
+          {orderTypeOrTable && <div className="flex justify-between font-semibold"><p>{orderTypeOrTable}</p></div>}
           {invoice.steward_id !== "N/A" && <div className="flex justify-between"><p>Steward: {invoice.steward_id}</p></div>}
-          {invoice.table_id !== '0' && <div className="flex justify-between"><p>Table: {invoice.table_id}</p></div>}
         </div>
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>

@@ -162,33 +162,29 @@ function GuestReceiptContent() {
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-  const calculateInclusivePrice = (basePrice: number) => {
-    const isDineIn = invoice.remark?.includes('Dine-In');
-    let serviceCharge = 0;
-    if(isDineIn) {
-      serviceCharge = basePrice * (parseFloat(invoice.service_charge_percentage || "10") / 100);
-    }
-    const tdl = basePrice * (parseFloat(invoice.tdl_percentage || "1") / 100);
-    const baseForSscl = basePrice + serviceCharge;
-    const sscl = baseForSscl * (parseFloat(invoice.sscl_percentage || "2.5") / 100);
-    const baseForVat = baseForSscl + tdl;
-    const vat = baseForVat * (parseFloat(invoice.vat_percentage || "18") / 100);
-    return basePrice + serviceCharge + tdl + sscl + vat;
-  };
-  
-  const { subtotal, totalItemCount } = (invoice.items || []).reduce((acc, item) => {
-    const inclusivePrice = calculateInclusivePrice(parseFloat(String(item.item_price)));
-    const inclusiveTotal = inclusivePrice * parseFloat(String(item.quantity));
-    acc.subtotal += inclusiveTotal;
-    acc.totalItemCount += parseFloat(String(item.quantity));
-    return acc;
-  }, { subtotal: 0, totalItemCount: 0 });
-
+  const subtotal = (invoice.items || []).reduce((acc, item) => acc + (parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))), 0);
+  const totalItemCount = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
   const totalDiscount = parseFloat(invoice.discount_amount);
-  const total = subtotal - totalDiscount;
+  const serviceCharge = parseFloat(invoice.service_charge);
+
+  const tdl = parseFloat(invoice.tdl || "0");
+  const sscl = parseFloat(invoice.sscl_tax || "0");
+  const vat = parseFloat(invoice.vat_amount || "0");
+
+  const total = subtotal - totalDiscount + serviceCharge + tdl + sscl + vat;
   
   const customerName = customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : 'Walk-in';
   
+  const getOrderTypeOrTable = (tableId: string) => {
+    if (tableId === '0') return 'Take Away';
+    if (tableId === '-1') return 'Retail';
+    if (tableId === '-2') return 'Delivery';
+    if (parseInt(tableId, 10) > 0) return `Table: ${tableId}`;
+    return null;
+  }
+
+  const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
+
   return (
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
@@ -206,8 +202,8 @@ function GuestReceiptContent() {
           <div className="flex justify-between"><p>Customer: {customerName} ({invoice.customer_code})</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
           <div className="flex justify-between"><p>Cashier: {invoice.created_by}</p></div>
+          {orderTypeOrTable && <div className="flex justify-between font-semibold"><p>{orderTypeOrTable}</p></div>}
           {invoice.steward_id !== "N/A" && <div className="flex justify-between"><p>Steward: {invoice.steward_id}</p></div>}
-          {invoice.table_id !== '0' && <div className="flex justify-between"><p>Table: {invoice.table_id}</p></div>}
         </div>
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>
@@ -223,8 +219,8 @@ function GuestReceiptContent() {
           </thead>
           <tbody>
             {(invoice.items || []).map((item, index) => {
-              const inclusivePrice = calculateInclusivePrice(parseFloat(String(item.item_price)));
-              const lineTotal = inclusivePrice * parseFloat(String(item.quantity));
+              const basePrice = parseFloat(String(item.item_price));
+              const lineTotal = basePrice * parseFloat(String(item.quantity));
               const itemDiscount = parseFloat(String(item.item_discount));
               return (
                 <React.Fragment key={index}>
@@ -233,7 +229,7 @@ function GuestReceiptContent() {
                   </tr>
                   <tr className="align-top">
                     <td>{parseFloat(String(item.quantity)).toFixed(3)}</td>
-                    <td>{inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>{basePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td>{itemDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td className="text-right">{(lineTotal - itemDiscount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
@@ -249,13 +245,37 @@ function GuestReceiptContent() {
             <span>Subtotal:</span>
             <span>{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
+           <div className="flex justify-between">
+            <span>Total Discount:</span>
+            <span>-{totalDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          {serviceCharge > 0 && (
+            <div className="flex justify-between">
+              <span>Service Charge:</span>
+              <span>{serviceCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {tdl > 0 && (
+            <div className="flex justify-between">
+              <span>TDL (1%):</span>
+              <span>{tdl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {sscl > 0 && (
+            <div className="flex justify-between">
+              <span>SSCL (2.5%):</span>
+              <span>{sscl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {vat > 0 && (
+            <div className="flex justify-between">
+              <span>VAT (18%):</span>
+              <span>{vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span>No of Goods:</span>
             <span>{totalItemCount}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Discount:</span>
-            <span>-{totalDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
