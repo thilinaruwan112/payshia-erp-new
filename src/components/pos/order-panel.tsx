@@ -22,6 +22,10 @@ import {
   UserCheck,
   Settings,
   Receipt,
+  Delete,
+  Printer,
+  CheckCircle,
+  ArrowRight,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +52,7 @@ import { Badge } from '../ui/badge';
 import { useCurrency } from '../currency-provider';
 import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
+import { PayshiaPosLogo } from './payshia-pos-logo';
 
 interface OrderPanelProps {
   order: ActiveOrder;
@@ -87,6 +92,86 @@ type Receipt = {
     now_time: string;
 };
 
+type SuccessData = {
+    invoiceNumber: string;
+    invoiceAmount: number;
+    tenderAmount: number;
+    changeAmount: number;
+    customerName: string;
+    companyId: string;
+}
+
+const SuccessDialog = ({
+  successData,
+  onClose,
+}: {
+  successData: SuccessData | null;
+  onClose: () => void;
+}) => {
+  const { currencySymbol } = useCurrency();
+  if (!successData) return null;
+
+  const handleReprint = () => {
+    openCenteredPopup(`/pos/final-invoice/${successData.invoiceNumber}?company_id=${successData.companyId}`, 'Final Invoice', 400, 800);
+  };
+
+  return (
+    <Dialog open={!!successData} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-4xl p-0" hideCloseButton>
+        <div className="grid md:grid-cols-2">
+          {/* Left side */}
+          <div className="p-8 flex flex-col">
+            <div className="mx-auto mb-6">
+                <CheckCircle className="h-20 w-20 text-green-500" />
+            </div>
+            
+            <div className="text-center">
+                 <p className="text-muted-foreground">Change Amount</p>
+                 <p className="font-bold font-mono text-7xl">{currencySymbol}{successData.changeAmount.toFixed(2)}</p>
+            </div>
+
+            <Separator className="my-6" />
+
+            <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">INV # / INT #</p>
+                <p className="font-bold">{successData.invoiceNumber}</p>
+              </div>
+               <div>
+                <p className="text-muted-foreground">Customer</p>
+                <p className="font-bold">{successData.customerName}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Tender Amount</p>
+                <p className="font-bold font-mono">{currencySymbol} {successData.tenderAmount.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Invoice Amount</p>
+                <p className="font-bold font-mono">{currencySymbol} {successData.invoiceAmount.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right side */}
+          <div className="bg-muted/30 p-8 flex flex-col justify-center items-center text-center">
+            <div className="space-y-4 w-full max-w-xs">
+              <Button variant="secondary" className="w-full h-14 text-lg" onClick={handleReprint}>
+                  <Printer className="mr-2 h-5 w-5" />
+                  Reprint Invoice
+              </Button>
+              <Button size="lg" className="w-full h-16 text-lg" onClick={onClose}>
+                  Next Customer <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+             <p className="text-xl font-bold pt-8 mt-auto">Thank You!</p>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+
 
 const PaymentDialog = ({
   orderTotals,
@@ -112,51 +197,92 @@ const PaymentDialog = ({
     setAmountTendered(orderTotals.total.toFixed(2));
   }, [orderTotals.total]);
 
+  const handleNumpadClick = (value: string) => {
+    if (value === 'C') {
+      setAmountTendered('');
+    } else if (value === '<-') {
+      setAmountTendered((prev) => prev.slice(0, -1));
+    } else {
+      setAmountTendered((prev) => prev + value);
+    }
+  };
+
+  const getNextDenomination = (amount: number) => {
+      if (amount <= 100) return 100;
+      if (amount <= 500) return 500;
+      if (amount <= 1000) return 1000;
+      if (amount <= 5000) return 5000;
+      const roundedUp = Math.ceil(amount / 1000) * 1000;
+      return roundedUp > amount ? roundedUp : roundedUp + 1000;
+  }
+  const quickCashAmount = getNextDenomination(orderTotals.total);
+
   return (
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Complete Payment</DialogTitle>
-      </DialogHeader>
-      <div className="space-y-4">
-        <div className="bg-muted/50 rounded-lg p-4 text-center">
-          <p className="text-sm text-muted-foreground">Total Due</p>
-          <p className="text-4xl font-bold">{currencySymbol}{orderTotals.total.toFixed(2)}</p>
+    <DialogContent className="max-w-4xl p-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-6">
+            <div className="bg-muted rounded-xl p-6 text-center">
+                <p className="text-lg text-muted-foreground">Total Due</p>
+                <p className="text-6xl font-bold font-mono">{currencySymbol}{orderTotals.total.toFixed(2)}</p>
+            </div>
+             <div className="grid grid-cols-2 gap-4">
+                {paymentMethods.map((method) => (
+                    <Button
+                    key={method.id}
+                    variant={selectedMethodId === method.id ? 'default' : 'outline'}
+                    className="h-24 text-xl"
+                    onClick={() => setSelectedMethodId(method.id)}
+                    >
+                    {method.method}
+                    </Button>
+                ))}
+            </div>
+             <div className="grid grid-cols-2 gap-4">
+                <Button variant="secondary" className="h-20 text-lg" onClick={() => setAmountTendered(orderTotals.total.toFixed(2))}>
+                    Exact Amount
+                </Button>
+                <Button variant="secondary" className="h-20 text-lg" onClick={() => setAmountTendered(String(quickCashAmount))}>
+                    {currencySymbol}{quickCashAmount}
+                </Button>
+            </div>
+             {Number(amountTendered) > 0 && (
+                <div className="text-center font-medium text-lg pt-2">
+                    <p className="text-muted-foreground">Change Due</p>
+                    <p className="text-3xl font-bold font-mono">{currencySymbol}{change > 0 ? change.toFixed(2) : '0.00'}</p>
+                </div>
+            )}
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          {paymentMethods.map((method) => (
-            <Button
-              key={method.id}
-              variant={selectedMethodId === method.id ? 'default' : 'outline'}
-              className="h-20 text-lg"
-              onClick={() => setSelectedMethodId(method.id)}
-            >
-              {method.method}
-            </Button>
-          ))}
+        <div className="space-y-4">
+             <div>
+                <Label htmlFor="amount-tendered" className="text-lg">Amount Tendered</Label>
+                <Input
+                    id="amount-tendered"
+                    type="number"
+                    placeholder="0.00"
+                    value={amountTendered}
+                    onChange={(e) => setAmountTendered(e.target.value)}
+                    className="h-24 text-5xl text-right font-mono mt-2"
+                />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+                {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map(val => (
+                    <Button key={val} variant="outline" className="h-20 text-3xl" onClick={() => handleNumpadClick(val)}>{val}</Button>
+                ))}
+                <Button variant="outline" className="h-20 text-3xl" onClick={() => handleNumpadClick('.')}>.</Button>
+                <Button variant="outline" className="h-20 text-3xl" onClick={() => handleNumpadClick('0')}>0</Button>
+                <Button variant="outline" className="h-20 text-3xl" onClick={() => handleNumpadClick('<-')}><Delete /></Button>
+            </div>
         </div>
-        <div>
-          <Label htmlFor="amount-tendered">Amount Tendered</Label>
-          <Input
-            id="amount-tendered"
-            type="number"
-            placeholder="0.00"
-            value={amountTendered}
-            onChange={(e) => setAmountTendered(e.target.value)}
-          />
-        </div>
-        {Number(amountTendered) > 0 && (
-          <div className="text-center font-medium">
-            <p>Change: {currencySymbol}{change > 0 ? change.toFixed(2) : '0.00'}</p>
-          </div>
-        )}
       </div>
-      <DialogFooter>
-        <DialogClose asChild>
-          <Button variant="outline">Cancel</Button>
-        </DialogClose>
+       <DialogFooter className="mt-6 sm:justify-between">
+         <DialogClose asChild>
+            <Button variant="outline" size="lg" className="h-16 text-lg">Cancel</Button>
+         </DialogClose>
         <Button
+          size="lg"
           onClick={handleConfirm}
           disabled={!selectedMethodId || !amountTendered || change < 0}
+          className="h-16 text-lg"
         >
           Confirm Payment
         </Button>
@@ -304,15 +430,12 @@ export function OrderPanel({
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
   const [isEditOrderOpen, setEditOrderOpen] = React.useState(false);
+  const [successData, setSuccessData] = useState<SuccessData | null>(null);
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType, tableName } = order;
 
   const handleSuccessfulPayment = async (paymentMethodId: string, tenderedAmount: number) => {
-    toast({
-      title: 'Payment Processing...',
-      description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)}.`,
-    });
-
+    
     if (!currentLocation || !company_id || !customer) {
         toast({
             variant: "destructive",
@@ -321,6 +444,13 @@ export function OrderPanel({
         });
         return;
     }
+    
+    toast({
+      title: 'Payment Processing...',
+      description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)}.`,
+    });
+
+
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
     const costValue = cart.reduce((acc, item) => acc + ((item.product.cost_price as number || 0) * item.quantity), 0);
     const refHoldValue = order.originalInvoiceNumber ? order.originalInvoiceNumber : "direct";
@@ -353,9 +483,6 @@ export function OrderPanel({
         discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
         customer_code: customer.customer_id,
         service_charge: orderTotals.serviceCharge,
-        tdl: orderTotals.tdl,
-        sscl_tax: orderTotals.sscl,
-        vat_amount: orderTotals.vat,
         tendered_amount: tenderedAmount,
         close_type: paymentMethodId,
         invoice_status: '1', // Paid
@@ -412,8 +539,15 @@ export function OrderPanel({
         openCenteredPopup(`/pos/final-invoice/${result.invoice_number}?company_id=${company_id}`, 'Final Invoice', 400, 800);
         
         setPaymentOpen(false);
-        onClearCart(orderId);
-
+        setSuccessData({
+            invoiceNumber: result.invoice_number,
+            invoiceAmount: orderTotals.total,
+            tenderAmount: tenderedAmount,
+            changeAmount: tenderedAmount - orderTotals.total,
+            customerName: customer.first_name ? `${customer.first_name} ${customer.last_name}` : customer.name,
+            companyId: String(company_id),
+        });
+        
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         toast({
@@ -439,9 +573,15 @@ export function OrderPanel({
     }
     openCenteredPopup(`/pos/guest-receipt/${order.originalInvoiceNumber}?company_id=${company_id}`, 'Guest Receipt', 400, 800);
   };
+  
+  const handleCloseSuccess = () => {
+    onClearCart(orderId);
+    setSuccessData(null);
+  };
 
   return (
     <div className="flex flex-col h-full bg-card">
+      <SuccessDialog successData={successData} onClose={handleCloseSuccess} />
       <Dialog open={isEditOrderOpen} onOpenChange={setEditOrderOpen}>
         <header className="p-4 border-b border-border flex items-center justify-between">
             <h2 className="text-xl font-bold">{orderName}</h2>
@@ -485,7 +625,7 @@ export function OrderPanel({
                     </SelectTrigger>
                     <SelectContent>
                         {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
+                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.first_name} {c.last_name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
@@ -586,20 +726,6 @@ export function OrderPanel({
                     </Label>
                     <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
                 </div>
-                <div className="pl-8 text-xs text-muted-foreground space-y-1">
-                    <div className="flex justify-between">
-                        <span>TDL (1%)</span>
-                        <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>SSCL (2.5%)</span>
-                        <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span>VAT (18%)</span>
-                        <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
-                    </div>
-                </div>
             </>
         ) : (
              <div className="flex justify-between text-sm items-center">
@@ -611,7 +737,7 @@ export function OrderPanel({
                     />
                     Taxes &amp; Charges
                 </Label>
-                <span>{currencySymbol}{(orderTotals.serviceCharge + orderTotals.tdl + orderTotals.sscl + orderTotals.vat).toFixed(2)}</span>
+                <span>{currencySymbol}{(orderTotals.serviceCharge).toFixed(2)}</span>
             </div>
         )}
 
@@ -663,3 +789,7 @@ export function OrderPanel({
     </div>
   );
 }
+
+    
+
+    
