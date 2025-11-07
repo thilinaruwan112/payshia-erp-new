@@ -243,13 +243,6 @@ function GuestReceiptContent() {
 
         <div className="text-center mt-4 text-xs space-y-1 border-t pt-2">
             <p>Software by Payshia</p>
-            <Image 
-                src="https://content-provider.payshia.com/payshia-erp/branding/payshia-erp-logo-01.webp" 
-                alt="Payshia Logo" 
-                width={24} 
-                height={24} 
-                className="mx-auto" 
-            />
             <p>0770481363 | www.payshia.com</p>
         </div>
       </div>
