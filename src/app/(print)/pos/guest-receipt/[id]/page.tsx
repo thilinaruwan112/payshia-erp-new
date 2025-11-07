@@ -193,11 +193,7 @@ function GuestReceiptContent() {
   const totalDiscount = parseFloat(invoice.discount_amount);
   const serviceCharge = parseFloat(invoice.service_charge);
 
-  const tdl = parseFloat(invoice.tdl || "0");
-  const sscl = parseFloat(invoice.sscl_tax || "0");
-  const vat = parseFloat(invoice.vat_amount || "0");
-
-  const total = subtotal - totalDiscount + serviceCharge + tdl + sscl + vat;
+  const total = subtotal - totalDiscount + serviceCharge;
   
   const customerName = customer ? `${customer.first_name} ${customer.last_name}` : 'Walk-in';
   
@@ -281,24 +277,6 @@ function GuestReceiptContent() {
             <div className="flex justify-between">
               <span>Service Charge:</span>
               <span>{serviceCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-          )}
-          {tdl > 0 && (
-            <div className="flex justify-between">
-              <span>TDL (1%):</span>
-              <span>{tdl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-          )}
-          {sscl > 0 && (
-            <div className="flex justify-between">
-              <span>SSCL (2.5%):</span>
-              <span>{sscl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-          )}
-          {vat > 0 && (
-            <div className="flex justify-between">
-              <span>VAT (18%):</span>
-              <span>{vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
           <div className="flex justify-between">
