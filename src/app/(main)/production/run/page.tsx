@@ -30,6 +30,7 @@ import { fetcher } from '@/lib/api';
 import { useCurrency } from '@/components/currency-provider';
 import type { Product, ProductVariant } from '@/lib/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 interface ProductionRunItem {
@@ -65,8 +66,8 @@ export default function ProductionRunHistoryPage() {
     const [runs, setRuns] = useState<ProductionRun[]>([]);
     const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [itemsPerPage, setItemsPerPage] = useState(15);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 15;
 
     useEffect(() => {
         if (!company_id) {
@@ -123,6 +124,11 @@ export default function ProductionRunHistoryPage() {
     }, [runs, currentPage, itemsPerPage]);
 
     const totalPages = Math.ceil(runs.length / itemsPerPage);
+
+    const handleItemsPerPageChange = (value: string) => {
+        setItemsPerPage(Number(value));
+        setCurrentPage(1);
+    };
 
 
     return (
@@ -218,7 +224,21 @@ export default function ProductionRunHistoryPage() {
                     </TableBody>
                 </Table>
                 </CardContent>
-                <CardFooter className="flex justify-end items-center gap-4">
+                <CardFooter className="flex flex-col sm:flex-row justify-end items-center gap-4">
+                     <div className="flex items-center gap-2 text-sm">
+                        <p className="text-muted-foreground">Rows per page</p>
+                         <Select value={String(itemsPerPage)} onValueChange={handleItemsPerPageChange}>
+                             <SelectTrigger className="w-20">
+                                 <SelectValue />
+                             </SelectTrigger>
+                             <SelectContent>
+                                 <SelectItem value="15">15</SelectItem>
+                                 <SelectItem value="25">25</SelectItem>
+                                 <SelectItem value="50">50</SelectItem>
+                                 <SelectItem value="100">100</SelectItem>
+                             </SelectContent>
+                         </Select>
+                    </div>
                     <span className="text-sm text-muted-foreground">
                         Page {currentPage} of {totalPages}
                     </span>
