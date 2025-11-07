@@ -167,7 +167,7 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
             </div>
         </div>
         <div className="text-right">
-          <h2 className="text-4xl font-bold uppercase text-gray-700">Production Report</h2>
+          <h2 className="text-2xl font-bold uppercase text-gray-700">Production Report</h2>
         </div>
       </header>
 
@@ -182,6 +182,8 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
             <span>MP-{run.id}</span>
             <span className="font-semibold text-gray-600">Date:</span>
             <span>{format(new Date(run.created_at), "dd MMM, yyyy")}</span>
+             <span className="font-semibold text-gray-600">Created By:</span>
+            <span>{run.created_by}</span>
           </div>
         </div>
       </section>
