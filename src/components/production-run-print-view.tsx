@@ -63,6 +63,7 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
   const [company, setCompany] = useState<Company | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
+  const [finishedGood, setFinishedGood] = useState<ProductVariant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
@@ -93,6 +94,16 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
         if(productsRes.ok) {
             const productsData = await productsRes.json();
             setProducts(productsData.products || []);
+            // Find and set finished good details
+            if (runData.product_variant_id) {
+              for (const p of (productsData.products || [])) {
+                  const variant = p.variants.find((v: any) => v.variant.id === runData.product_variant_id);
+                  if (variant) {
+                      setFinishedGood(variant.variant);
+                      break;
+                  }
+              }
+            }
         }
 
       } catch (error) {
@@ -139,10 +150,17 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
     return <div>Production run not found or failed to load.</div>;
   }
   
-  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
+  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_API_BASE_URL}${location.logo_path}` : null;
   const totalPlanned = run.items.reduce((sum, item) => sum + parseFloat(item.target_qty), 0);
   const totalActual = run.items.reduce((sum, item) => sum + parseFloat(item.actual_qty), 0);
   const finishedGoodName = getProductName(run.product_variant_id);
+  const beforeCost = finishedGood?.cost_price ? parseFloat(String(finishedGood.cost_price)) : 0;
+  
+  const afterCost = (parseFloat(run.yield_qty) > 0 && beforeCost > 0) 
+    ? (beforeCost + parseFloat(run.cost_value)) / (1 + parseFloat(run.yield_qty)) // This needs review; logic based on available data
+    : parseFloat(run.cost_value) / parseFloat(run.yield_qty) || 0;
+
+  const costDifference = afterCost - beforeCost;
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
@@ -179,12 +197,36 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
           <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Finished Product</h3>
           <div className="flex justify-between items-center">
             <p className="font-bold text-gray-800 text-lg">{finishedGoodName}</p>
-            <div>
-              <span className="text-gray-600">Yield: </span>
-              <span className="font-bold text-lg text-gray-800">{parseFloat(run.yield_qty).toFixed(2)}</span>
+            <div className="flex gap-8">
+                <div>
+                  <span className="text-gray-600">Planned: </span>
+                  <span className="font-bold text-lg text-gray-800">{parseFloat(run.plan_qty).toFixed(2)}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">Yield: </span>
+                  <span className="font-bold text-lg text-gray-800">{parseFloat(run.yield_qty).toFixed(2)}</span>
+                </div>
             </div>
           </div>
         </section>
+
+        <section className="mt-6 p-4 rounded-lg border grid grid-cols-3 gap-4">
+            <div>
+                <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Before Cost</h3>
+                <p className="font-bold text-lg text-gray-800">{currencySymbol}{beforeCost.toFixed(2)}</p>
+            </div>
+             <div>
+                <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">After Cost</h3>
+                <p className="font-bold text-lg text-gray-800">{currencySymbol}{afterCost.toFixed(2)}</p>
+            </div>
+            <div>
+                 <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Difference</h3>
+                <p className={cn("font-bold text-lg", costDifference > 0 ? 'text-red-600' : 'text-green-600')}>
+                    {costDifference > 0 ? '+' : ''}{currencySymbol}{costDifference.toFixed(2)}
+                </p>
+            </div>
+        </section>
+
 
       <section className="mt-8 flex-grow">
         <h3 className="text-md font-semibold uppercase text-gray-600 mb-2">Consumed Ingredients</h3>
