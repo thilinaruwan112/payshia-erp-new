@@ -171,13 +171,13 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
         </div>
       </header>
 
-      <section className="grid grid-cols-2 gap-4 mt-6">
+      <section className="flex justify-between items-start mt-6">
         <div>
             <span className="font-semibold text-gray-600">Location: </span>
             <span>{location?.location_name || 'N/A'}</span>
         </div>
         <div className="text-right">
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1">
             <span className="font-semibold text-gray-600">Run ID:</span>
             <span>MP-{run.id}</span>
             <span className="font-semibold text-gray-600">Date:</span>
@@ -258,3 +258,4 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
     </div>
   );
 }
+
