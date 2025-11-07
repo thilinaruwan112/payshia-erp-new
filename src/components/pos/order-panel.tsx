@@ -142,19 +142,27 @@ const PaymentDialog = ({
             placeholder="0.00"
             value={amountTendered}
             onChange={(e) => setAmountTendered(e.target.value)}
+            className="h-14 text-2xl text-right"
           />
         </div>
         {Number(amountTendered) > 0 && (
-          <div className="text-center font-medium">
+          <div className="text-center font-medium text-lg">
             <p>Change: {currencySymbol}{change > 0 ? change.toFixed(2) : '0.00'}</p>
           </div>
         )}
       </div>
       <DialogFooter>
-        <DialogClose asChild>
-          <Button variant="outline">Cancel</Button>
-        </DialogClose>
+        <Button variant="outline" size="lg" onClick={() => {
+            const dialog = document.querySelector('[role="dialog"]');
+            if (dialog) {
+                const closeButton = dialog.querySelector('button[aria-label="Close"]');
+                if (closeButton instanceof HTMLElement) {
+                    closeButton.click();
+                }
+            }
+        }}>Cancel</Button>
         <Button
+          size="lg"
           onClick={handleConfirm}
           disabled={!selectedMethodId || !amountTendered || change < 0}
         >
@@ -475,7 +483,7 @@ export function OrderPanel({
                   value={customer?.customer_id || ''}
                   onValueChange={(customerId) => {
                     const newCustomer = customers.find(
-                      (c) => c.customer_id === customerId
+                      (c) => c.id === customerId
                     );
                     if (newCustomer) onUpdateCustomer(orderId, newCustomer);
                   }}
@@ -485,7 +493,7 @@ export function OrderPanel({
                     </SelectTrigger>
                     <SelectContent>
                         {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
