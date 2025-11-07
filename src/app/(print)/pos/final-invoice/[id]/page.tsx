@@ -28,6 +28,8 @@ function FinalInvoiceContent() {
   const [customer, setCustomer] = useState<User | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
+  const [steward, setSteward] = useState<User | null>(null);
+  const [cashier, setCashier] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -49,22 +51,48 @@ function FinalInvoiceContent() {
             const data: Invoice = await response.json();
             setInvoice(data);
             
+            const fetchPromises: Promise<any>[] = [];
+
             if (data.customer_code) {
-                const customerResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`);
-                if (customerResponse.ok) {
-                    const customerData = await customerResponse.json();
-                    setCustomer(customerData);
-                }
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`).then(res => res.ok ? res.json() : null));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
             }
 
             if (data.company_id && data.location_id) {
-                const [companyRes, locationRes] = await Promise.all([
-                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${data.company_id}`),
-                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${data.location_id}`),
-                ]);
-                if (companyRes.ok) setCompany(await companyRes.json());
-                if (locationRes.ok) setLocation(await locationRes.json());
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${data.company_id}`).then(res => res.ok ? res.json() : null));
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${data.location_id}`).then(res => res.ok ? res.json() : null));
+            } else {
+                fetchPromises.push(Promise.resolve(null), Promise.resolve(null));
             }
+
+            if (data.steward_id && data.steward_id !== "N/A") {
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${data.steward_id}`).then(res => res.ok ? res.json() : null));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
+            }
+
+            // The 'created_by' field seems to hold the cashier's user_name. We need to find the user by that.
+            if(data.created_by) {
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`).then(async res => {
+                    if(res.ok) {
+                        const allUsers = (await res.json()).data;
+                        return allUsers.find((u:User) => u.user_name === data.created_by) || null;
+                    }
+                    return null;
+                }));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
+            }
+
+
+            const [customerData, companyData, locationData, stewardData, cashierData] = await Promise.all(fetchPromises);
+            
+            setCustomer(customerData);
+            setCompany(companyData);
+            setLocation(locationData);
+            setSteward(stewardData?.data);
+            setCashier(cashierData);
 
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load invoice data.' });
@@ -123,6 +151,9 @@ function FinalInvoiceContent() {
   }
 
   const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
+  const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
+  const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
+
 
   return (
     <div className="flex flex-col items-center">
@@ -140,9 +171,9 @@ function FinalInvoiceContent() {
           <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
           <div className="flex justify-between"><p>Customer: {customer?.customer_first_name} {customer?.customer_last_name || ''} ({invoice.customer_code})</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
-          <div className="flex justify-between"><p>Cashier: {invoice.created_by}</p></div>
-          {orderTypeOrTable && <div className="flex justify-between font-semibold"><p>Bill Type:</p><p>{orderTypeOrTable}</p></div>}
-          {invoice.steward_id !== "N/A" && <div className="flex justify-between"><p>Steward: {invoice.steward_id}</p></div>}
+          <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
+          {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable}</p></div>}
+          {stewardName && <div className="flex justify-between"><p>Steward: {stewardName}</p></div>}
         </div>
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>
