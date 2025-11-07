@@ -288,12 +288,6 @@ function GuestReceiptContent() {
             <span>Total Discount:</span>
             <span>-{totalDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
-          {serviceCharge > 0 && (
-            <div className="flex justify-between">
-              <span>Service Charge:</span>
-              <span>{serviceCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            </div>
-          )}
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
             <span>{grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -317,5 +311,3 @@ export default function GuestReceiptPage() {
         </Suspense>
     )
 }
-
-    
