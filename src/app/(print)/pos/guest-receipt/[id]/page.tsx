@@ -185,22 +185,28 @@ function GuestReceiptContent() {
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-  const subtotal = (invoice.items || []).reduce((acc, item) => acc + (parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))), 0);
-  const totalItemDiscounts = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.item_discount)), 0);
-  const totalDiscount = parseFloat(invoice.discount_amount);
-  const grandTotal = parseFloat(invoice.grand_total);
-  const serviceCharge = parseFloat(invoice.service_charge);
-
   const calculateInclusivePrice = (basePrice: number) => {
     const isDineIn = invoice.remark?.toLowerCase().includes('dine-in');
     const serviceChargeForItem = isDineIn ? basePrice * 0.10 : 0;
     const tdl = basePrice * 0.01;
     const baseForSscl = basePrice + serviceChargeForItem;
     const sscl = baseForSscl * 0.025;
-    const baseForVat = basePrice + serviceChargeForItem + tdl + sscl;
+    const baseForVat = baseForSscl + tdl + sscl;
     const vat = baseForVat * 0.18;
     return basePrice + serviceChargeForItem + tdl + sscl + vat;
   }
+  
+  const subtotal = (invoice.items || []).reduce((acc, item) => {
+    const basePrice = parseFloat(String(item.item_price));
+    const inclusivePrice = calculateInclusivePrice(basePrice);
+    const quantity = parseFloat(String(item.quantity));
+    const itemDiscount = parseFloat(String(item.item_discount));
+    return acc + (inclusivePrice * quantity) - itemDiscount;
+  }, 0);
+
+  const totalDiscount = parseFloat(invoice.discount_amount);
+  const grandTotal = parseFloat(invoice.grand_total);
+  
 
   const getOrderTypeOrTable = (tableId: string) => {
     if (tableId === '0') return 'Take Away';
