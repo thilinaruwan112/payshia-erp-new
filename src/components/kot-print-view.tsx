@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import Image from 'next/image';
 import { fetcher } from '@/lib/api';
+import { useSearchParams } from 'next/navigation';
 
 interface KotPrintViewProps {
   invoiceId: string;
@@ -29,6 +30,8 @@ declare global {
 
 
 export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
+  const searchParams = useSearchParams();
+  const printAll = searchParams.get('print') === 'all';
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const [location, setLocation] = useState<Location | null>(null);
@@ -81,8 +84,9 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             const invoiceData: Invoice = await response.json();
             setInvoice(invoiceData);
             
-            // Filter items to only include those not yet printed
-            const unprintedItems = (invoiceData.items || []).filter(item => String(item.printed_status) !== '1');
+            // Filter items to only include those not yet printed, unless we want to print all
+            const items = invoiceData.items || [];
+            const unprintedItems = printAll ? items : items.filter(item => String(item.printed_status) !== '1');
             setItemsToPrint(unprintedItems);
             
             if (invoiceData.location_id) {
@@ -109,7 +113,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     if (products.length > 0) {
       fetchInvoiceData();
     }
-  }, [invoiceId, companyId, toast, products]);
+  }, [invoiceId, companyId, toast, products, printAll]);
 
    useEffect(() => {
     if (typeof window !== "undefined") {
@@ -144,7 +148,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }, []);
   
   const updatePrintedStatus = async () => {
-    if (itemsToPrint.length === 0 || !companyId) return;
+    if (itemsToPrint.length === 0 || !companyId || printAll) return;
 
     const itemIdsToUpdate = itemsToPrint.map(item => item.id).join(',');
     const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-invoice-items/printed?ids=${itemIdsToUpdate}&company_id=${companyId}`;
@@ -241,16 +245,16 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     }
   }, [isLoading, invoice, products, itemsToPrint, isJspmConnected]);
 
-  const getProductName = (productId: number) => {
+  const getProductName = (productId: number, variantId?: string) => {
     const productData = products.find(p => p.product.id === String(productId));
     if (!productData) return `Product ID: ${productId}`;
 
-    const item = itemsToPrint.find(i => i.product_id === productId);
-    const variant = productData.variants.find(v => v.variant.id === item?.product_variant_id)?.variant;
-
-    if (variant) {
-      const variantAttributes = [variant.color, variant.size].filter(Boolean).join(' - ');
-      return variantAttributes ? `${productData.product.name} - ${variantAttributes}` : `${productData.product.name} (${variant.sku})`;
+    if (variantId) {
+        const variant = productData.variants.find(v => v.variant.id === variantId)?.variant;
+        if (variant) {
+            const variantAttributes = [variant.color, variant.size].filter(Boolean).join(' - ');
+            return variantAttributes ? `${productData.product.name} - ${variantAttributes}` : `${productData.product.name} (${variant.sku})`;
+        }
     }
 
     return productData.product.name;
@@ -308,7 +312,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     <div id="receipt-print-area" ref={kotRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
       <div className="text-center mb-2">
         {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
-        <h1 className="font-bold text-xl">K.O.T</h1>
+        <h1 className="font-bold text-xl">K.O.T {printAll && '(Full)'}</h1>
       </div>
 
       <div className="flex justify-between text-xs">
@@ -341,7 +345,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
                 {parseFloat(String(item.quantity))}
               </td>
               <td className="py-1 align-top font-semibold">
-                {getProductName(item.product_id)}
+                {getProductName(item.product_id, item.product_variant_id)}
               </td>
             </tr>
           ))}
