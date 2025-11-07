@@ -1,16 +1,16 @@
 
 
-'use client'
+'use client';
 
-import { TransferForm } from '@/components/transfer-form';
+import { GoodsRequisitionForm } from '@/components/goods-requisition-form';
 import type { Location } from '@/lib/types';
 import { useLocation } from '@/components/location-provider';
-import { Suspense, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { fetcher } from '@/lib/api';
 
-function NewTransferPageContent() {
+export default function NewGoodsRequisitionPage() {
   const { company_id } = useLocation();
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,13 +55,5 @@ function NewTransferPageContent() {
     )
   }
 
-  return <TransferForm locations={locations} />;
-}
-
-export default function NewTransferPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <NewTransferPageContent />
-        </Suspense>
-    )
+  return <GoodsRequisitionForm locations={locations} />;
 }

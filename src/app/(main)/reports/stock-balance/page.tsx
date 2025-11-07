@@ -1,26 +1,32 @@
 
+'use client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
-export default function StockBalancePage() {
+// This page is deprecated and functionality has been moved to the main reports page.
+// This component will now just redirect.
+export default function DeprecatedStockBalanceReportPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/reports?report=Stock%20Balance%20Report');
+  }, [router]);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Stock Balance Report</h1>
         <p className="text-muted-foreground">
-          View current stock levels for all products.
+          Redirecting...
         </p>
       </div>
        <Card>
         <CardHeader>
-            <CardTitle>Report Under Development</CardTitle>
-            <CardDescription>This report is currently being built. Please check back later.</CardDescription>
+            <CardTitle>Redirecting</CardTitle>
+            <CardDescription>This report has been moved to the main reports center.</CardDescription>
         </CardHeader>
         <CardContent>
-            <ul className="list-disc pl-5 space-y-2 text-muted-foreground">
-                <li>See current stock levels for each product variant.</li>
-                <li>Filter by location, category, or supplier.</li>
-                <li>Export stock data to CSV.</li>
-            </ul>
+            <p>Please wait while you are redirected.</p>
         </CardContent>
        </Card>
     </div>

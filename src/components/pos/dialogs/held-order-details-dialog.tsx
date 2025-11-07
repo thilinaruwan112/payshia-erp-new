@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -110,9 +110,19 @@ export function HeldOrderDetailsDialog({
                             ${parseFloat(order.grand_total).toFixed(2)}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button size="sm" onClick={() => onLoadOrder(order)}>
-                              Load
-                            </Button>
+                             <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(`/pos/kot/${order.invoice_number}?company_id=${company_id}&print=all`, '_blank')}
+                                >
+                                  <Printer className="h-4 w-4 mr-2" />
+                                  Reprint KOT
+                                </Button>
+                                <Button size="sm" onClick={() => onLoadOrder(order)}>
+                                  Load
+                                </Button>
+                              </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -140,11 +150,20 @@ export function HeldOrderDetailsDialog({
                                 <span className="font-mono">${parseFloat(order.grand_total).toFixed(2)}</span>
                               </div>
                           </CardContent>
-                          <CardFooter>
-                            <Button className="w-full" size="sm" onClick={() => onLoadOrder(order)}>
-                                Load Order
-                              </Button>
-                          </CardFooter>
+                           <CardFooter className="flex flex-col sm:flex-row gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full"
+                                  onClick={() => window.open(`/pos/kot/${order.invoice_number}?company_id=${company_id}&print=all`, '_blank')}
+                                >
+                                  <Printer className="h-4 w-4 mr-2" />
+                                  Reprint KOT
+                                </Button>
+                                <Button className="w-full" size="sm" onClick={() => onLoadOrder(order)}>
+                                  Load Order
+                                </Button>
+                            </CardFooter>
                         </Card>
                     ))}
                   </div>

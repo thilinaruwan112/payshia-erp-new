@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { notFound, useSearchParams } from 'next/navigation';
@@ -10,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { fetcher } from '@/lib/api';
+import { openCenteredPopup } from '@/lib/utils';
 
 type Receipt = {
     id: string;

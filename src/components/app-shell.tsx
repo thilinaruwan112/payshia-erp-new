@@ -62,6 +62,7 @@ import {
   Search,
   ShieldCheck,
   Ban,
+  Percent,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -104,6 +105,8 @@ import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import Image from 'next/image';
+import type { Role, User } from '@/lib/types';
+import { fetcher } from '@/lib/api';
 
 const navItems = [
   {
@@ -160,6 +163,7 @@ const navItems = [
       { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
       { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
       { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
+      { href: '/inventory/goods-requisition', label: 'Goods Requisition', icon: FileText },
       { href: '/inventory/stock-adjustment', label: 'Stock Adjustment', icon: ArrowRightLeft },
       { href: '/inventory/opening-stock', label: 'Opening Stock', icon: PackagePlus },
       { href: '/inventory/forecast', label: 'AI Forecast', icon: TrendingUp },
@@ -171,6 +175,7 @@ const navItems = [
     subItems: [
         { href: '/production/bom', label: 'Bill of Materials', icon: FileText },
         { href: '/production/production-note', label: 'Production Note', icon: History },
+        { href: '/production/run', label: 'Production Run', icon: Percent },
     ]
   },
    {
@@ -448,6 +453,11 @@ function UserMenu({ user }: { user: any }) {
             <p className="text-xs leading-none text-muted-foreground">
               {user.email}
             </p>
+            {user.role && (
+                <p className="text-xs font-semibold leading-none text-foreground/80 pt-1">
+                    {user.role}
+                </p>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -549,23 +559,51 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { setOpenMobile } = useSidebar();
   const [user, setUser] = useState({ name: '', email: '', role: '', avatar: '' });
   const [companyName, setCompanyName] = useState('Payshia ERP');
+  const [roles, setRoles] = useState<Role[]>([]);
+  const { company_id } = useLocation();
 
   useEffect(() => {
-    const userName = localStorage.getItem('userName');
-    const userEmail = localStorage.getItem('userEmail');
-    if (userName) {
-      setUser({
-        name: userName,
-        email: userEmail || userName, // Use userName as fallback for email
-        role: 'User',
-        avatar: `https://placehold.co/100x100.png?text=${userName.charAt(0)}`
-      });
-    }
+    const fetchUserData = async () => {
+        const userId = localStorage.getItem('userId');
+        const companyId = localStorage.getItem('companyId');
+        
+        if (!userId || !companyId) return;
+
+        try {
+            const [userResponse, rolesResponse] = await Promise.all([
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${userId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/roles?company_id=${companyId}`)
+            ]);
+
+            if (!userResponse.ok) throw new Error('Failed to fetch user data');
+            const userData = await userResponse.json();
+            
+            if (!rolesResponse.ok) throw new Error('Failed to fetch roles');
+            const rolesData = await rolesResponse.json();
+            const companyRoles: Role[] = rolesData.data || [];
+            
+            setRoles(companyRoles);
+            const roleId = userData.data.role_id;
+            const roleName = companyRoles.find(r => r.id === roleId)?.name || 'User';
+
+            setUser({
+                name: `${userData.data.first_name} ${userData.data.last_name}`,
+                email: userData.data.email,
+                role: roleName,
+                avatar: userData.data.img_path || `https://placehold.co/100x100.png?text=${userData.data.first_name.charAt(0)}`
+            });
+
+        } catch (error) {
+            console.error("Failed to fetch user session details:", error);
+        }
+    };
+
+    fetchUserData();
     const name = localStorage.getItem('companyName');
     if (name) {
       setCompanyName(name);
     }
-  }, []);
+  }, [company_id]);
 
   const handleLinkClick = (isExternal: boolean | undefined, e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     if (!isExternal) {

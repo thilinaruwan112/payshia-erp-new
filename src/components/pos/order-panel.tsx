@@ -1,9 +1,9 @@
 
-      'use client';
+'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
-import type { User, Table as TableType, Location, Invoice, Customer } from '@/lib/types';
+import type { User, Table as TableType, Location, Invoice, Customer, PaymentMethod } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -47,12 +47,14 @@ import { useLocation } from '../location-provider';
 import { Badge } from '../ui/badge';
 import { useCurrency } from '../currency-provider';
 import { fetcher } from '@/lib/api';
+import { openCenteredPopup } from '@/lib/utils';
 
 interface OrderPanelProps {
   order: ActiveOrder;
   orderTotals: OrderInfo;
   cashierName: string;
   currentLocation: Location | null;
+  paymentMethods: PaymentMethod[];
   onUpdateQuantity: (variantId: string, batchCode: string, newQuantity: number) => void;
   onRemoveItem: (uniqueId: string) => void;
   onClearCart: (invoiceId: string) => void;
@@ -89,13 +91,26 @@ type Receipt = {
 const PaymentDialog = ({
   orderTotals,
   onSuccessfulPayment,
+  paymentMethods,
 }: {
   orderTotals: OrderInfo;
   onSuccessfulPayment: (paymentMethod: string, tenderedAmount: number) => void;
+  paymentMethods: PaymentMethod[];
 }) => {
   const { currencySymbol } = useCurrency();
   const [amountTendered, setAmountTendered] = React.useState('');
+  const [selectedMethodId, setSelectedMethodId] = React.useState<string | null>(paymentMethods.length > 0 ? paymentMethods[0].id : null);
   const change = Number(amountTendered) - orderTotals.total;
+
+  const handleConfirm = () => {
+    if (selectedMethodId) {
+      onSuccessfulPayment(selectedMethodId, Number(amountTendered) || orderTotals.total);
+    }
+  };
+
+  React.useEffect(() => {
+    setAmountTendered(orderTotals.total.toFixed(2));
+  }, [orderTotals.total]);
 
   return (
     <DialogContent>
@@ -108,20 +123,16 @@ const PaymentDialog = ({
           <p className="text-4xl font-bold">{currencySymbol}{orderTotals.total.toFixed(2)}</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
-          <Button
-            variant="outline"
-            className="h-20 text-lg"
-            onClick={() => onSuccessfulPayment('Cash', orderTotals.total)}
-          >
-            Cash
-          </Button>
-          <Button
-            variant="outline"
-            className="h-20 text-lg"
-            onClick={() => onSuccessfulPayment('Card', orderTotals.total)}
-          >
-            <CreditCard className="mr-2" /> Card
-          </Button>
+          {paymentMethods.map((method) => (
+            <Button
+              key={method.id}
+              variant={selectedMethodId === method.id ? 'default' : 'outline'}
+              className="h-20 text-lg"
+              onClick={() => setSelectedMethodId(method.id)}
+            >
+              {method.method}
+            </Button>
+          ))}
         </div>
         <div>
           <Label htmlFor="amount-tendered">Amount Tendered</Label>
@@ -144,8 +155,8 @@ const PaymentDialog = ({
           <Button variant="outline">Cancel</Button>
         </DialogClose>
         <Button
-          onClick={() => onSuccessfulPayment('Cash', Number(amountTendered))}
-          disabled={!amountTendered || change < 0}
+          onClick={handleConfirm}
+          disabled={!selectedMethodId || !amountTendered || change < 0}
         >
           Confirm Payment
         </Button>
@@ -250,7 +261,7 @@ const EditOrderDialog = ({ order, onUpdateDetails, availableTables, availableSte
                             <SelectTrigger><SelectValue placeholder="Select a steward" /></SelectTrigger>
                             <SelectContent>
                                 {availableStewards.map(s => (
-                                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                                    <SelectItem key={s.id} value={s.id}>{s.user_name}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -271,6 +282,7 @@ export function OrderPanel({
   orderTotals,
   cashierName,
   currentLocation,
+  paymentMethods,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -293,12 +305,12 @@ export function OrderPanel({
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
   const [isEditOrderOpen, setEditOrderOpen] = React.useState(false);
 
-  const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
+  const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType, tableName } = order;
 
-  const handleSuccessfulPayment = async (paymentMethod: string, tenderedAmount: number) => {
+  const handleSuccessfulPayment = async (paymentMethodId: string, tenderedAmount: number) => {
     toast({
       title: 'Payment Processing...',
-      description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)} via ${paymentMethod}.`,
+      description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)}.`,
     });
 
     if (!currentLocation || !company_id || !customer) {
@@ -312,6 +324,26 @@ export function OrderPanel({
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
     const costValue = cart.reduce((acc, item) => acc + ((item.product.cost_price as number || 0) * item.quantity), 0);
     const refHoldValue = order.originalInvoiceNumber ? order.originalInvoiceNumber : "direct";
+    
+    let tableIdValue: number;
+    switch (order.orderType) {
+        case 'Take Away':
+            tableIdValue = 0;
+            break;
+        case 'Retail':
+            tableIdValue = -1;
+            break;
+        case 'Delivery':
+            tableIdValue = -2;
+            break;
+        case 'Dine-In':
+            const table = availableTables.find(t => t.table_name === tableName);
+            tableIdValue = table ? parseInt(table.id, 10) : 0;
+            break;
+        default:
+            tableIdValue = 0;
+    }
+
 
     const payload = {
         invoice_date: format(new Date(), 'yyyy-MM-dd'),
@@ -321,13 +353,16 @@ export function OrderPanel({
         discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
         customer_code: customer.customer_id,
         service_charge: orderTotals.serviceCharge,
+        tdl: orderTotals.tdl,
+        sscl_tax: orderTotals.sscl,
+        vat_amount: orderTotals.vat,
         tendered_amount: tenderedAmount,
-        close_type: paymentMethod,
+        close_type: paymentMethodId,
         invoice_status: '1', // Paid
         payment_status: "Paid",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
-        table_id: 0,
+        table_id: tableIdValue,
         order_ready_status: 1,
         created_by: cashierName,
         is_active: 1,
@@ -336,6 +371,7 @@ export function OrderPanel({
         remark: `${orderType} order`,
         ref_hold: refHoldValue,
         company_id: company_id,
+        chanel: "POS",
         items: cart.map(item => ({
             user_id: parseInt(steward?.id || '1', 10), // Default user_id as per example
             product_id: parseInt(item.product.id, 10),
@@ -343,7 +379,7 @@ export function OrderPanel({
             item_discount: item.itemDiscount || 0,
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
-            table_id: 0,
+            table_id: tableIdValue,
             cost_price: item.product.cost_price || 0,
             is_active: 1,
             hold_status: 0,
@@ -373,9 +409,7 @@ export function OrderPanel({
             description: `Invoice #${result.invoice_number} created.`
         });
         
-        if (result.receipt_id) {
-          window.open(`/pos/receipt/print/${result.receipt_id}?company_id=${company_id}`, '_blank');
-        }
+        openCenteredPopup(`/pos/final-invoice/${result.invoice_number}?company_id=${company_id}`, 'Final Invoice', 400, 800);
         
         setPaymentOpen(false);
         onClearCart(orderId);
@@ -390,7 +424,7 @@ export function OrderPanel({
     }
   };
   
-  const handleCustomerCreated = (newCustomer: Customer) => {
+  const handleCustomerCreated = (newCustomer: User) => {
     onUpdateCustomer(orderId, newCustomer);
   }
 
@@ -403,7 +437,7 @@ export function OrderPanel({
       });
       return;
     }
-    window.open(`/pos/guest-receipt/${order.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
+    openCenteredPopup(`/pos/guest-receipt/${order.originalInvoiceNumber}?company_id=${company_id}`, 'Guest Receipt', 400, 800);
   };
 
   return (
@@ -429,7 +463,7 @@ export function OrderPanel({
            <div className='p-2 px-4 border-b border-border bg-muted/30'>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <UserCheck className="h-4 w-4" />
-                    <span>Steward: <span className="font-semibold text-foreground">{steward.name}</span></span>
+                    <span>Steward: <span className="font-semibold text-foreground">{steward.user_name}</span></span>
                 </div>
             </div>
       )}
@@ -456,7 +490,7 @@ export function OrderPanel({
                     </SelectContent>
                 </Select>
             </div>
-             <CustomerFormDialog onCustomerCreated={handleCustomerCreated}>
+             <CustomerFormDialog onCustomerCreated={(c) => onUpdateCustomer(orderId, c)}>
                  <Button variant="outline" size="icon">
                     <UserPlus className="h-5 w-5" />
                 </Button>
@@ -538,17 +572,49 @@ export function OrderPanel({
           <span>Item Discounts</span>
           <span>-{currencySymbol}{orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
-        <div className="flex justify-between items-center text-sm">
-          <span className="flex items-center gap-2">
-            <Switch
-                id="service-charge-toggle"
-                checked={isServiceChargeActive}
-                onCheckedChange={setIsServiceChargeActive}
-            />
-            <Label htmlFor="service-charge-toggle">Service Charge (10%)</Label>
-          </span>
-          <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
-        </div>
+        
+        {isServiceChargeActive ? (
+            <>
+                <div className="flex justify-between text-sm items-center">
+                    <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
+                        <Switch
+                            id="service-charge-toggle"
+                            checked={isServiceChargeActive}
+                            onCheckedChange={setIsServiceChargeActive}
+                        />
+                        Service Charge (10%)
+                    </Label>
+                    <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
+                </div>
+                <div className="pl-8 text-xs text-muted-foreground space-y-1">
+                    <div className="flex justify-between">
+                        <span>TDL (1%)</span>
+                        <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span>SSCL (2.5%)</span>
+                        <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span>VAT (18%)</span>
+                        <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
+                    </div>
+                </div>
+            </>
+        ) : (
+             <div className="flex justify-between text-sm items-center">
+                <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
+                    <Switch
+                        id="service-charge-toggle"
+                        checked={isServiceChargeActive}
+                        onCheckedChange={setIsServiceChargeActive}
+                    />
+                    Taxes &amp; Charges
+                </Label>
+                <span>{currencySymbol}{(orderTotals.serviceCharge + orderTotals.tdl + orderTotals.sscl + orderTotals.vat).toFixed(2)}</span>
+            </div>
+        )}
+
          <div className="flex justify-between text-sm text-green-600">
           <span>Order Discount</span>
           <span>-{currencySymbol}{discount.toFixed(2)}</span>
@@ -590,6 +656,7 @@ export function OrderPanel({
         <PaymentDialog
             orderTotals={orderTotals}
             onSuccessfulPayment={handleSuccessfulPayment}
+            paymentMethods={paymentMethods}
         />
         </Dialog>
       </footer>

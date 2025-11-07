@@ -1,11 +1,7 @@
 
 'use client';
 
-// Import the external CSS file
 import '@/app/(print)/pos/print-receipt.css';
-
-
-
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import type { Invoice, User, Location, Table } from '@/lib/types';
@@ -13,8 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
-import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 
 interface Company {
     id: string;
@@ -25,13 +21,7 @@ interface Company {
     company_telephone: string;
 }
 
-declare global {
-  interface Window {
-      JSPM: any;
-  }
-}
-
-function GuestReceiptContent() {
+function FinalInvoiceContent() {
   const { id } = useParams() as { id: string };
   const searchParams = useSearchParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -44,7 +34,6 @@ function GuestReceiptContent() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [isJspmConnected, setIsJspmConnected] = useState(false);
   const companyId = searchParams.get('company_id');
 
    useEffect(() => {
@@ -78,13 +67,14 @@ function GuestReceiptContent() {
             } else {
                 fetchPromises.push(Promise.resolve(null), Promise.resolve(null), Promise.resolve(null));
             }
-            
+
             if (data.steward_id && data.steward_id !== "N/A") {
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${data.steward_id}`).then(res => res.ok ? res.json() : null));
             } else {
                 fetchPromises.push(Promise.resolve(null));
             }
 
+            // The 'created_by' field seems to hold the cashier's user_name. We need to find the user by that.
             if(data.created_by) {
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`).then(async res => {
                     if(res.ok) {
@@ -98,8 +88,9 @@ function GuestReceiptContent() {
                 fetchPromises.push(Promise.resolve(null));
             }
 
-            const [customerData, companyData, locationData, tablesData, stewardData, cashierData] = await Promise.all(fetchPromises);
 
+            const [customerData, companyData, locationData, tablesData, stewardData, cashierData] = await Promise.all(fetchPromises);
+            
             if (customerData) setCustomer(customerData);
             if (companyData) setCompany(companyData);
             if (locationData) setLocation(locationData);
@@ -116,84 +107,17 @@ function GuestReceiptContent() {
     fetchInvoiceData();
   }, [id, companyId, toast]);
 
-
   useEffect(() => {
-    if (typeof window !== "undefined" && !window.JSPM) {
-      const script = document.createElement('script');
-      script.src = "https://unpkg.com/jsprintmanager/JSPrintManager.js";
-      script.async = true;
-      document.body.appendChild(script);
-    }
-
-    const initJSPM = () => {
-        if(window.JSPM) {
-            try {
-                window.JSPM.JSPrintManager.auto_reconnect = true;
-                window.JSPM.JSPrintManager.start();
-                window.JSPM.JSPrintManager.WS.onOpen = () => setIsJspmConnected(true);
-                window.JSPM.JSPrintManager.WS.onClose = () => setIsJspmConnected(false);
-            } catch (error) {
-                console.error("Failed to start JSPM:", error);
-            }
-        }
-    }
-    setTimeout(initJSPM, 500);
-  }, []);
-
-  const handlePrint = async () => {
-    if (!receiptRef.current) return;
-    
-    if (!window.JSPM || !isJspmConnected) {
-        console.warn("JSPM not ready or not connected. Falling back to browser print.");
+    if (!isLoading && invoice) {
+        document.title = `Invoice - ${invoice.invoice_number}`;
         const handlePrint = () => {
             window.print();
             window.close();
         };
+        // Delay print to allow content to render
         setTimeout(handlePrint, 500);
-        return;
     }
-
-    try {
-        const element = receiptRef.current;
-        const canvas = await html2canvas(element, { scale: 2, backgroundColor: null });
-
-        const b64Prefix = "data:image/png;base64,";
-        const imgBase64DataUri = canvas.toDataURL("image/png");
-        const imgBase64Content = imgBase64DataUri.substring(b64Prefix.length);
-
-        const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
-
-        const cpj = new ClientPrintJob();
-        const myPrinter = new InstalledPrinter("KOT-Printer"); 
-        
-        cpj.clientPrinter = myPrinter;
-
-        const myImageFile = new PrintFile(
-            imgBase64Content,
-            FileSourceType.Base64,
-            `GR-${invoice?.invoice_number}.png`,
-            1
-        );
-        cpj.files.push(myImageFile);
-
-        cpj.sendToClient();
-
-        setTimeout(() => {
-            window.close();
-        }, 3000);
-
-    } catch (error) {
-        console.error("Printing error:", error);
-        alert("An error occurred while printing. Please try again.");
-    }
-  };
-
-  useEffect(() => {
-    if (!isLoading && invoice) {
-        document.title = `Guest Receipt - ${invoice.invoice_number}`;
-        handlePrint();
-    }
-  }, [isLoading, invoice, isJspmConnected, id, companyId]);
+  }, [isLoading, invoice]);
 
   if (isLoading || !invoice) {
     return (
@@ -215,33 +139,22 @@ function GuestReceiptContent() {
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-  const calculateInclusivePrice = (basePrice: number) => {
-    const isDineIn = invoice.remark?.toLowerCase().includes('dine-in');
-    const serviceCharge = isDineIn ? basePrice * 0.10 : 0;
-    const tdl = basePrice * 0.01;
-    const baseForSscl = basePrice + serviceCharge;
-    const sscl = baseForSscl * 0.025;
-    const baseForVat = baseForSscl + tdl + sscl;
-    const vat = baseForVat * 0.18;
-    return basePrice + serviceCharge + tdl + sscl + vat;
-  }
-  
-  const subtotal = (invoice.items || []).reduce((acc, item) => {
-    const basePrice = parseFloat(String(item.item_price));
-    const inclusivePrice = calculateInclusivePrice(basePrice);
-    const quantity = parseFloat(String(item.quantity));
-    const itemDiscount = parseFloat(String(item.item_discount));
-    return acc + ((inclusivePrice * quantity) - itemDiscount);
-  }, 0);
-
+  const subtotal = (invoice.items || []).reduce((acc, item) => acc + (parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))), 0);
+  const totalItemCount = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
   const totalDiscount = parseFloat(invoice.discount_amount);
   const grandTotal = parseFloat(invoice.grand_total);
+  const serviceCharge = parseFloat(invoice.service_charge);
+
+  const tdl = parseFloat(invoice.tdl || "0");
+  const sscl = parseFloat(invoice.sscl_tax || "0");
+  const vat = parseFloat(invoice.vat_amount || "0");
   
+  const totalTaxes = tdl + sscl + vat;
 
   const getOrderTypeOrTable = (tableId: string) => {
     if (parseInt(tableId, 10) > 0) {
-      const tableName = tables.find(t => t.id === tableId)?.table_name;
-      return `Dine-In (Table: ${tableName || tableId})`;
+        const tableName = tables.find(t => t.id === tableId)?.table_name;
+        return `Dine-In (Table: ${tableName || tableId})`;
     }
     if (tableId === '0') return 'Take Away';
     if (tableId === '-1') return 'Retail';
@@ -263,7 +176,7 @@ function GuestReceiptContent() {
           <p>{location?.address_line1}, {location?.city}</p>
           <p>Tel: {location?.phone_1}</p>
           <div className="my-2 border-t-2 border-dashed border-black"></div>
-          <h1 className="font-bold text-lg">GUEST RECEIPT</h1>
+          <h1 className="font-bold text-lg">FINAL INVOICE</h1>
         </div>
         
         <div className="text-xs space-y-0.5">
@@ -289,11 +202,7 @@ function GuestReceiptContent() {
           <tbody>
             {(invoice.items || []).map((item, index) => {
               const basePrice = parseFloat(String(item.item_price));
-              const inclusivePrice = calculateInclusivePrice(basePrice);
-              const quantity = parseFloat(String(item.quantity));
-              const itemDiscount = parseFloat(String(item.item_discount));
-              const lineTotal = (inclusivePrice * quantity) - itemDiscount;
-
+              const lineTotal = basePrice * parseFloat(String(item.quantity));
               return (
                 <React.Fragment key={index}>
                   <tr>
@@ -301,14 +210,14 @@ function GuestReceiptContent() {
                   </tr>
                   <tr className="align-top">
                     <td></td>
-                    <td className="text-center">{quantity.toFixed(3)}</td>
-                    <td className="text-right">{inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="text-center">{parseFloat(String(item.quantity)).toFixed(3)}</td>
+                    <td className="text-right">{basePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td className="text-right">{lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
-                   {itemDiscount > 0 && (
+                   {parseFloat(String(item.item_discount)) > 0 && (
                      <tr>
                         <td colSpan={3} className="text-right text-xs">Discount:</td>
-                        <td className="text-right text-xs">-{itemDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right text-xs">-{parseFloat(String(item.item_discount)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                   )}
                 </React.Fragment>
@@ -327,6 +236,30 @@ function GuestReceiptContent() {
             <span>Total Discount:</span>
             <span>-{totalDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
+          {serviceCharge > 0 && (
+            <div className="flex justify-between">
+              <span>Service Charge:</span>
+              <span>{serviceCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {tdl > 0 && (
+            <div className="flex justify-between">
+              <span>TDL (1%):</span>
+              <span>{tdl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {sscl > 0 && (
+            <div className="flex justify-between">
+              <span>SSCL (2.5%):</span>
+              <span>{sscl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {vat > 0 && (
+            <div className="flex justify-between">
+              <span>VAT (18%):</span>
+              <span>{vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
             <span>{grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
@@ -343,10 +276,10 @@ function GuestReceiptContent() {
   );
 }
 
-export default function GuestReceiptPage() {
+export default function FinalInvoicePage() {
     return (
         <Suspense fallback={<div>Loading...</div>}>
-            <GuestReceiptContent />
+            <FinalInvoiceContent />
         </Suspense>
     )
 }

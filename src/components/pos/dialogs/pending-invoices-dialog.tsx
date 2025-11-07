@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { Invoice, User } from '@/lib/types';
+import type { Invoice, User, PaymentMethod } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ interface PendingInvoicesDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   customers: User[];
+  paymentMethods: PaymentMethod[];
 }
 
 type Receipt = {
@@ -53,7 +54,7 @@ type Receipt = {
     now_time: string;
 };
 
-export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: PendingInvoicesDialogProps) {
+export function PendingInvoicesDialog({ isOpen, onOpenChange, customers, paymentMethods }: PendingInvoicesDialogProps) {
   const { toast } = useToast();
   const { company_id, currentLocation } = useLocation();
   const { currencySymbol } = useCurrency();
@@ -65,7 +66,7 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [balanceDetails, setBalanceDetails] = useState<BalanceDetails | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('Card');
+  const [paymentMethodId, setPaymentMethodId] = useState<string | undefined>(paymentMethods[0]?.id);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
   
@@ -129,13 +130,13 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
   };
 
   const handleCreateReceipt = async () => {
-    if (!selectedInvoice || !currentLocation || !company_id || !currentCashier) {
+    if (!selectedInvoice || !currentLocation || !company_id || !currentCashier || !paymentMethodId) {
       toast({ variant: 'destructive', title: 'Missing Information' });
       return;
     }
     setIsSubmittingPayment(true);
     const payload = {
-        type: paymentMethod === 'Cash' ? '0' : paymentMethod === 'Card' ? '1' : '2',
+        type: paymentMethodId,
         is_active: 1, date: format(new Date(), 'yyyy-MM-dd'),
         amount: parseFloat(paymentAmount), created_by: parseInt(currentCashier.id, 10),
         ref_id: selectedInvoice.invoice_number, location_id: parseInt(currentLocation.location_id, 10),
@@ -206,9 +207,13 @@ export function PendingInvoicesDialog({ isOpen, onOpenChange, customers }: Pendi
                         )}
                         <div className="space-y-2">
                           <Label htmlFor='payment-method'>Payment Method</Label>
-                          <Select onValueChange={setPaymentMethod} defaultValue={paymentMethod}>
+                          <Select onValueChange={setPaymentMethodId} defaultValue={paymentMethodId}>
                             <SelectTrigger id='payment-method'><SelectValue placeholder="Payment Method" /></SelectTrigger>
-                            <SelectContent><SelectItem value="Cash">Cash</SelectItem><SelectItem value="Card">Card</SelectItem></SelectContent>
+                            <SelectContent>
+                              {paymentMethods.map(method => (
+                                <SelectItem key={method.id} value={method.id}>{method.method}</SelectItem>
+                              ))}
+                            </SelectContent>
                           </Select>
                         </div>
                          <div className="space-y-2">

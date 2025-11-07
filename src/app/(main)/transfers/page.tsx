@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -27,6 +27,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Location, StockTransfer } from '@/lib/types';
@@ -36,7 +44,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLocation } from '@/components/location-provider';
 import { fetcher } from '@/lib/api';
+import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
+type RequisitionNote = {
+    id: string;
+    note_number: string;
+    from_location: string;
+    to_location: string;
+    note_date: string;
+    status: string;
+}
 
 const getStatusColor = (status: StockTransfer['status']) => {
   switch (status) {
@@ -51,14 +69,55 @@ const getStatusColor = (status: StockTransfer['status']) => {
   }
 };
 
+const getRequisitionStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    case 'approved':
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+    case 'rejected':
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+  }
+};
+
+
 export default function StockTransfersPage() {
     const { toast } = useToast();
+    const router = useRouter();
     const [transfers, setTransfers] = useState<StockTransfer[]>([]);
     const [locations, setLocations] = useState<Location[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const { company_id } = useLocation();
     const itemsPerPage = 15;
+    const [requisitionNotes, setRequisitionNotes] = useState<RequisitionNote[]>([]);
+    const [isLoadingRequisitions, setIsLoadingRequisitions] = useState(false);
+
+    const fetchRequisitions = async () => {
+        if (!company_id) return;
+        setIsLoadingRequisitions(true);
+        try {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-notes/filter/by-company?company_id=${company_id}`);
+            if (!response.ok) throw new Error('Failed to fetch requisition notes');
+            const data = await response.json();
+            setRequisitionNotes(data || []);
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not fetch requisition notes.'
+            })
+        } finally {
+            setIsLoadingRequisitions(false);
+        }
+    };
+    
+    const handleLoadRequisition = (note: RequisitionNote) => {
+        router.push(`/transfers/new?noteId=${note.id}`);
+    };
+
 
     useEffect(() => {
         async function fetchData() {
@@ -113,12 +172,81 @@ export default function StockTransfersPage() {
             Move inventory between your locations.
           </p>
         </div>
-        <Button asChild className="w-full sm:w-auto">
-          <Link href="/transfers/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            New Transfer
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Dialog onOpenChange={(open) => open && fetchRequisitions()}>
+                 <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full sm:w-auto">
+                        <FileText className="mr-2 h-4 w-4" />
+                        Goods Requisition
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl">
+                     <DialogHeader>
+                        <DialogTitle>Goods Requisition Notes</DialogTitle>
+                        <DialogDescription>
+                            A log of all past stock requisition notes.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-[60vh] overflow-y-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Note Number</TableHead>
+                                    <TableHead>From</TableHead>
+                                    <TableHead>To</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead className="text-center">Status</TableHead>
+                                    <TableHead><span className="sr-only">Actions</span></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                            {isLoadingRequisitions ? (
+                                Array.from({length: 3}).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell colSpan={6}><Skeleton className="h-4 w-full" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : requisitionNotes.length > 0 ? (
+                                requisitionNotes.map((note) => (
+                                    <TableRow key={note.id}>
+                                        <TableCell className="font-medium">{note.note_number || `TN-${note.id}`}</TableCell>
+                                        <TableCell>{note.from_location}</TableCell>
+                                        <TableCell>{note.to_location}</TableCell>
+                                        <TableCell>{format(new Date(note.note_date), 'dd MMM, yyyy')}</TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge variant="secondary" className={cn("capitalize", getRequisitionStatusColor(note.status))}>
+                                                {note.status}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right flex items-center gap-2">
+                                            <Button variant="ghost" size="sm" asChild>
+                                                <Link href={`/inventory/goods-requisition/${note.id}`} target="_blank">View</Link>
+                                            </Button>
+                                            <Button variant="outline" size="sm" onClick={() => handleLoadRequisition(note)}>
+                                                Load
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="h-24 text-center">
+                                        No requisition notes found.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </DialogContent>
+            </Dialog>
+            <Button asChild className="w-full sm:w-auto">
+            <Link href="/transfers/new">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                New Transfer
+            </Link>
+            </Button>
+        </div>
       </div>
 
       <Card>
@@ -226,3 +354,5 @@ export default function StockTransfersPage() {
     </div>
   );
 }
+
+    

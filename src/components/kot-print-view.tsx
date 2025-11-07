@@ -2,13 +2,15 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import type { Invoice, InvoiceItem, Product, Location, ProductVariant } from '@/lib/types';
+import type { Invoice, InvoiceItem, Product, Location, ProductVariant, User, Table } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import html2canvas from 'html2canvas';
 import Image from 'next/image';
 import { fetcher } from '@/lib/api';
+import { useSearchParams } from 'next/navigation';
+import '../app/(print)/pos/print-receipt.css';
 
 interface KotPrintViewProps {
   invoiceId: string;
@@ -29,9 +31,14 @@ declare global {
 
 
 export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
+  const searchParams = useSearchParams();
+  const printAll = searchParams.get('print') === 'all';
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const [location, setLocation] = useState<Location | null>(null);
+  const [steward, setSteward] = useState<User | null>(null);
+  const [cashier, setCashier] = useState<User | null>(null);
+  const [tables, setTables] = useState<Table[]>([]);
   const [itemsToPrint, setItemsToPrint] = useState<InvoiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -81,16 +88,50 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             const invoiceData: Invoice = await response.json();
             setInvoice(invoiceData);
             
-            // Filter items to only include those not yet printed
-            const unprintedItems = (invoiceData.items || []).filter(item => String(item.printed_status) !== '1');
+            const items = invoiceData.items || [];
+            const unprintedItems = printAll ? items : items.filter(item => String(item.printed_status) !== '1');
             setItemsToPrint(unprintedItems);
             
+            const fetchPromises: Promise<any>[] = [];
+
             if (invoiceData.location_id) {
-                const locResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${invoiceData.location_id}`);
-                if (locResponse.ok) {
-                    setLocation(await locResponse.json());
-                }
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${invoiceData.location_id}`).then(res => res.ok ? res.json() : null));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
             }
+
+            if (invoiceData.steward_id && invoiceData.steward_id !== "N/A") {
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${invoiceData.steward_id}`).then(res => res.ok ? res.json() : null));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
+            }
+
+             if(invoiceData.created_by) {
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`).then(async res => {
+                    if(res.ok) {
+                        const allUsersRes = await res.json();
+                        const allUsers = allUsersRes.data;
+                        return allUsers.find((u:User) => u.user_name === invoiceData.created_by) || null;
+                    }
+                    return null;
+                }));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
+            }
+            
+            if (invoiceData.company_id) {
+                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${invoiceData.company_id}`).then(res => res.ok ? res.json() : []));
+            } else {
+                fetchPromises.push(Promise.resolve([]));
+            }
+            
+            const [locationData, stewardData, cashierData, tablesData] = await Promise.all(fetchPromises);
+            
+            setLocation(locationData);
+            setSteward(stewardData?.data);
+            setCashier(cashierData);
+            setTables(tablesData || []);
+
 
         } catch (error) {
             toast({
@@ -109,7 +150,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     if (products.length > 0) {
       fetchInvoiceData();
     }
-  }, [invoiceId, companyId, toast, products]);
+  }, [invoiceId, companyId, toast, products, printAll]);
 
    useEffect(() => {
     if (typeof window !== "undefined") {
@@ -144,7 +185,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }, []);
   
   const updatePrintedStatus = async () => {
-    if (itemsToPrint.length === 0 || !companyId) return;
+    if (itemsToPrint.length === 0 || !companyId || printAll) return;
 
     const itemIdsToUpdate = itemsToPrint.map(item => item.id).join(',');
     const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-invoice-items/printed?ids=${itemIdsToUpdate}&company_id=${companyId}`;
@@ -194,8 +235,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
 
         const cpj = new ClientPrintJob();
-        // IMPORTANT: Change "Microsoft Print to PDF" to the actual name of your kitchen printer.
-        const myPrinter = new InstalledPrinter("Microsoft Print to PDF"); 
+        const myPrinter = new InstalledPrinter("KOT-Printer"); 
         
         cpj.clientPrinter = myPrinter;
 
@@ -223,11 +263,9 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   useEffect(() => {
     if (!isLoading && invoice && products.length > 0 && itemsToPrint.length > 0) {
       document.title = `KOT - ${invoice.invoice_number}`;
-       // Wait for JSPM to connect before printing
       if (isJspmConnected) {
         handlePrint();
       } else {
-        // Fallback or wait logic if JSPM is not yet connected
         const timeout = setTimeout(() => {
             if (isJspmConnected) {
                 handlePrint();
@@ -235,22 +273,22 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
                 console.warn("JSPM did not connect in time, falling back to browser print.");
                 updatePrintedStatus().then(() => window.print());
             }
-        }, 2000); // Wait 2 seconds for connection
+        }, 2000);
         return () => clearTimeout(timeout);
       }
     }
   }, [isLoading, invoice, products, itemsToPrint, isJspmConnected]);
 
-  const getProductName = (productId: number) => {
+  const getProductName = (productId: number, variantId?: string) => {
     const productData = products.find(p => p.product.id === String(productId));
     if (!productData) return `Product ID: ${productId}`;
 
-    const item = itemsToPrint.find(i => i.product_id === productId);
-    const variant = productData.variants.find(v => v.variant.id === item?.product_variant_id)?.variant;
-
-    if (variant) {
-      const variantAttributes = [variant.color, variant.size].filter(Boolean).join(' - ');
-      return variantAttributes ? `${productData.product.name} - ${variantAttributes}` : `${productData.product.name} (${variant.sku})`;
+    if (variantId) {
+        const variant = productData.variants.find(v => v.variant.id === variantId)?.variant;
+        if (variant) {
+            const variantAttributes = [variant.color, variant.size].filter(Boolean).join(' - ');
+            return variantAttributes ? `${productData.product.name} - ${variantAttributes}` : `${productData.product.name} (${variant.sku})`;
+        }
     }
 
     return productData.product.name;
@@ -295,7 +333,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   if (itemsToPrint.length === 0) {
       return (
          <div className="w-[80mm] bg-white text-black p-4 font-mono text-lg text-center">
-            <h1 className="text-xl font-bold mb-4">KOT</h1>
+            <h1 className="text-xl font-bold mb-4">K.O.T</h1>
             <p>No new items to print for order #{invoice.invoice_number}.</p>
             <p className="mt-4 text-sm">You can close this window.</p>
         </div>
@@ -303,54 +341,66 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   }
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
+  const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
+  const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
+
+  const getOrderTypeOrTable = (tableId: string) => {
+    if (parseInt(tableId, 10) > 0) {
+        const tableName = tables.find(t => t.id === tableId)?.table_name;
+        return `Dine-In (Table: ${tableName || tableId})`;
+    }
+    if (tableId === '0') return 'Take Away';
+    if (tableId === '-1') return 'Retail';
+    if (tableId === '-2') return 'Delivery';
+    return null;
+  }
+  const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
 
   return (
-    <div ref={kotRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
-      <div className="text-center mb-2">
-        {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
-        <h1 className="font-bold text-xl">K.O.T</h1>
-      </div>
+    <div className="flex flex-col items-center">
+        <div id="receipt-print-area" ref={kotRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
+        <div className="text-center mb-2">
+            {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
+            {location && <p className="font-semibold">{location.location_name}</p>}
+            <h1 className="font-bold text-xl">K.O.T {printAll && '(Full)'}</h1>
+        </div>
 
-      <div className="flex justify-between text-xs">
-        <p>
-          Order:{' '}
-          {invoice.remark?.includes('Dine-In') && invoice.table_id !== '0'
-            ? `Table ${invoice.table_id}`
-            : invoice.remark || 'Take Away'}
-        </p>
-        <p>{format(new Date(), 'dd/MM/yy HH:mm')}</p>
-      </div>
-      <div className="flex justify-between text-xs">
-        <p>Cashier: {invoice.created_by}</p>
-        <p>Inv #: {invoice.invoice_number}</p>
-      </div>
+        <div className="text-xs space-y-0.5">
+            <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
+            <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
+            <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
+            {stewardName && <div className="flex justify-between"><p>Steward: {stewardName}</p></div>}
+            {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable}</p></div>}
+        </div>
 
-      <div className="my-2 border-t-2 border-dashed border-black"></div>
 
-      <table className="w-full text-xs">
-        <thead>
-          <tr>
-            <th className="text-left w-[15%]">QTY</th>
-            <th className="text-left">ITEM</th>
-          </tr>
-        </thead>
-        <tbody>
-          {itemsToPrint.map((item, index) => (
-            <tr key={index}>
-              <td className="py-1 align-top font-bold text-base">
-                {parseFloat(String(item.quantity))}
-              </td>
-              <td className="py-1 align-top font-semibold">
-                {getProductName(item.product_id)}
-              </td>
+        <div className="my-2 border-t-2 border-dashed border-black"></div>
+
+        <table className="w-full text-xs">
+            <thead>
+            <tr>
+                <th className="text-left w-[15%]">QTY</th>
+                <th className="text-left">ITEM</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+            </thead>
+            <tbody>
+            {itemsToPrint.map((item, index) => (
+                <tr key={index}>
+                <td className="py-1 align-top font-bold text-base">
+                    {parseFloat(String(item.quantity))}
+                </td>
+                <td className="py-1 align-top font-semibold">
+                    {getProductName(item.product_id, item.product_variant_id)}
+                </td>
+                </tr>
+            ))}
+            </tbody>
+        </table>
 
-      <div className="text-center mt-4 text-xs">
-        <p>-- End of Order --</p>
-      </div>
+        <div className="text-center mt-4 text-xs">
+            <p>-- End of Order --</p>
+        </div>
+        </div>
     </div>
   );
 }

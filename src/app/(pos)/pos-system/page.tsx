@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import type { Product, Customer, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem, User } from '@/lib/types';
+import type { Product, Customer, ProductVariant, Collection, Brand, Table as TableType, Location, ActiveOrder, CartItem, StockInfo, Invoice, TransactionReturn, InvoiceItem, User, PaymentMethod } from '@/lib/types';
 import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
@@ -23,6 +23,7 @@ import { RefundDialog } from '@/components/pos/dialogs/refund-dialog';
 import { TodaySalesDialog } from '@/components/pos/dialogs/today-sales-dialog';
 import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
+import { openCenteredPopup } from '@/lib/utils';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -33,6 +34,9 @@ export type PosProduct = Product & {
 export type OrderInfo = {
   subtotal: number;
   serviceCharge: number;
+  tdl: number;
+  sscl: number;
+  vat: number;
   discount: number; // Order-level discount
   itemDiscounts: number; // Sum of all item-level discounts
   total: number;
@@ -63,6 +67,7 @@ export default function POSPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [tables, setTables] = useState<TableType[]>([]);
   const [stewards, setStewards] = useState<User[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
@@ -165,14 +170,15 @@ export default function POSPage() {
         }
         setIsLoading(true);
         try {
-            const [productsResponse, collectionsResponse, brandsResponse, categoriesResponse, customersResponse, tablesResponse, stewardsResponse] = await Promise.all([
+            const [productsResponse, collectionsResponse, brandsResponse, categoriesResponse, customersResponse, tablesResponse, stewardsResponse, paymentMethodsResponse] = await Promise.all([
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`)
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment-method/filter/by-company?company_id=${company_id}`),
             ]);
 
             if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !categoriesResponse.ok || !customersResponse.ok) {
@@ -185,6 +191,9 @@ export default function POSPage() {
             const customersData: Customer[] = await customersResponse.json();
             const tablesData: TableType[] = await tablesResponse.json();
             const stewardsResult = await stewardsResponse.json();
+            const paymentMethodsData = await paymentMethodsResponse.json();
+
+            setPaymentMethods(paymentMethodsData || []);
             const stewardsData = stewardsResult.data || [];
             
             setTables(tablesData || []);
@@ -198,7 +207,13 @@ export default function POSPage() {
                 last_name: s.last_name
              })));
             
-            setCustomers(customersData);
+            const formattedCustomers = customersData.map(c => ({
+                ...c,
+                id: c.customer_id,
+                name: `${c.customer_first_name} ${c.customer_last_name}`,
+                role: 'Customer',
+            }));
+            setCustomers(formattedCustomers);
 
             setCollections(collectionsData || []);
             setBrands(brandsData || []);
@@ -399,7 +414,7 @@ export default function POSPage() {
       cart: [],
       discount: 0,
       serviceCharge: 0,
-      customer: customers[0], // Default to the first available customer
+      customer: customers[0] as User, // Default to the first available customer
       orderType,
       tableName,
       steward,
@@ -473,7 +488,7 @@ export default function POSPage() {
     
             toast({ title: 'Order Updated!', description: `Held order ${currentOrder.originalInvoiceNumber} has been updated.` });
             if(itemsToUpdatePayload.length > 0) {
-                window.open(`/pos/kot/${currentOrder.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
+                openCenteredPopup(`/pos/kot/${currentOrder.originalInvoiceNumber}?company_id=${company_id}`, 'KOT', 400, 600);
             }
             onClearCart(currentOrderId!);
         } catch (error) {
@@ -533,7 +548,7 @@ export default function POSPage() {
       
       toast({ title: 'KOT Sent!', description: 'Order sent to the kitchen.', icon: <ChefHat className="h-6 w-6 text-green-500" /> });
       
-      window.open(`/pos/kot/${result.invoice_number}?company_id=${company_id}`, '_blank');
+      openCenteredPopup(`/pos/kot/${result.invoice_number}?company_id=${company_id}`, 'KOT', 400, 600);
       
       onClearCart(currentOrderId!);
     } catch (error) {
@@ -627,16 +642,21 @@ export default function POSPage() {
         toast({variant: 'destructive', title: 'Customer not found', description: 'The customer for this held order could not be found.'});
         return;
     }
+    
+    const tableName = tables.find(t => t.id === invoice.table_id)?.table_name;
+    const steward = stewards.find(s => s.id === invoice.steward_id);
 
     const newActiveOrder: ActiveOrder = {
       id: `order-${Date.now()}`,
-      name: `Loaded ${invoice.invoice_number}`,
+      name: tableName || `Loaded ${invoice.invoice_number}`,
       cart: loadedCartItems,
       discount: parseFloat(invoice.discount_amount) - loadedCartItems.reduce((acc, item) => acc + (item.itemDiscount || 0), 0),
       serviceCharge: parseFloat(invoice.service_charge),
-      customer: customer,
+      customer: customer as User,
       orderType: (invoice.remark?.split(' ')[0] as any) || 'Retail', // Infer type from remark
       originalInvoiceNumber: invoice.invoice_number,
+      tableName: tableName,
+      steward: steward,
     };
     
     setActiveOrders(prev => [...prev, newActiveOrder]);
@@ -682,18 +702,6 @@ export default function POSPage() {
     if (!currentOrderId) return;
      setActiveOrders((prevOrders) => prevOrders.map((order) => order.id === currentOrderId ? { ...order, discount: newDiscount } : order));
   }
-
-  const orderTotals = useMemo((): OrderInfo => {
-    if (!currentOrder) return { subtotal: 0, serviceCharge: 0, discount: 0, itemDiscounts: 0, total: 0 };
-
-    const subtotal = currentOrder.cart.reduce((acc, item) => acc + (item.product.price as number) * item.quantity, 0);
-    const itemDiscounts = currentOrder.cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
-    
-    const serviceCharge = isServiceChargeActive ? subtotal * 0.10 : 0;
-    
-    const total = subtotal - itemDiscounts + serviceCharge - currentOrder.discount;
-    return { subtotal, serviceCharge, discount: currentOrder.discount, itemDiscounts, total };
-  }, [currentOrder, isServiceChargeActive]);
   
   const onUpdateDetails = (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => {
       setActiveOrders(prevOrders => prevOrders.map(order => {
@@ -707,8 +715,8 @@ export default function POSPage() {
       }));
   };
   
-  const updateCustomer = (orderId: string, customer: User) => {
-    setActiveOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, customer } : order));
+  const updateCustomer = (orderId: string, customer: Customer) => {
+    setActiveOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, customer: customer as User } : order));
   };
 
   const filteredProducts = useMemo(() => {
@@ -724,10 +732,61 @@ export default function POSPage() {
   
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
   
+  const orderTotals = useMemo((): OrderInfo => {
+    if (!currentOrder) {
+      return { subtotal: 0, serviceCharge: 0, tdl: 0, sscl: 0, vat: 0, discount: 0, itemDiscounts: 0, total: 0 };
+    }
+
+    let subtotal = 0;
+    let totalServiceCharge = 0;
+    let totalTdl = 0;
+    let totalSscl = 0;
+    let totalVat = 0;
+    let totalItemDiscounts = 0;
+
+    for (const item of currentOrder.cart) {
+      const basePrice = (item.product.price as number) * item.quantity;
+      subtotal += basePrice;
+      totalItemDiscounts += item.itemDiscount || 0;
+
+      const basePriceAfterItemDiscount = basePrice - (item.itemDiscount || 0);
+
+      const serviceCharge = currentOrder.orderType === 'Dine-In' && isServiceChargeActive
+        ? basePriceAfterItemDiscount * 0.10
+        : 0;
+      totalServiceCharge += serviceCharge;
+
+      const tdl = basePriceAfterItemDiscount * 0.01;
+      totalTdl += tdl;
+
+      const baseForSscl = basePriceAfterItemDiscount + serviceCharge;
+      const sscl = baseForSscl * 0.025;
+      totalSscl += sscl;
+
+      const baseForVat = basePriceAfterItemDiscount + serviceCharge + tdl + sscl;
+      const vat = baseForVat * 0.18;
+      totalVat += vat;
+    }
+
+    const total = subtotal - totalItemDiscounts + totalServiceCharge + totalTdl + totalSscl + totalVat - currentOrder.discount;
+    
+    return { 
+        subtotal, 
+        serviceCharge: totalServiceCharge,
+        tdl: totalTdl,
+        sscl: totalSscl,
+        vat: totalVat,
+        discount: currentOrder.discount, 
+        itemDiscounts: totalItemDiscounts, 
+        total 
+    };
+  }, [currentOrder, isServiceChargeActive]);
+  
   const orderPanelComponent = currentOrder && currentCashier ? (
      <OrderPanel
         key={currentOrder.id} order={currentOrder} orderTotals={orderTotals}
         cashierName={currentCashier.user_name} currentLocation={currentLocation}
+        paymentMethods={paymentMethods}
         onUpdateQuantity={updateQuantity} onRemoveItem={removeFromCart} onClearCart={onClearCart}
         onHoldAndKitchen={handleHoldAndKitchen}
         isDrawer={isDrawerOpen} onClose={() => setDrawerOpen(false)}
@@ -756,7 +815,7 @@ export default function POSPage() {
         customers={customers} 
         onLoadOrder={handleLoadOrder} 
       />
-      <PendingInvoicesDialog isOpen={isPendingInvoicesDialogOpen} onOpenChange={setPendingInvoicesDialogOpen} customers={customers} />
+      <PendingInvoicesDialog isOpen={isPendingInvoicesDialogOpen} onOpenChange={setPendingInvoicesDialogOpen} customers={customers} paymentMethods={paymentMethods} />
       <ReturnDialog 
           isOpen={isReturnDialogOpen} 
           onOpenChange={setReturnDialogOpen} 
@@ -820,7 +879,7 @@ export default function POSPage() {
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[calc(100vh-250px)]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
                     ) : (
-                        <ProductGrid products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} />
+                        <ProductGrid products={filteredProducts} orderType={currentOrder?.orderType} onProductSelect={(p) => setSelectedProduct(p)} />
                     )}
                     </div>
                     
@@ -869,3 +928,8 @@ export default function POSPage() {
     </>
   );
 }
+
+    
+
+    
+

@@ -1,4 +1,5 @@
 
+
 export type GrnBatch = {
     batchNumber: string;
     mfgDate?: Date;
@@ -234,6 +235,37 @@ export type GoodsReceivedNote = {
     items?: GrnItem[];
 }
 
+export type RequisitionItem = {
+    id: string;
+    transaction_note_id: string;
+    product_id: string;
+    product_variant_id: string;
+    quantity: string;
+    patch_code: string;
+    expire_date: string;
+    company_id: string;
+    is_active: string;
+    updated_by: string | null;
+    updated_at: string;
+};
+
+export type RequisitionNote = {
+    id: string;
+    from_location: string;
+    to_location: string;
+    note_date: string;
+    status: string;
+    company_id: string;
+    created_by: string;
+    note_number: string;
+    is_active: string;
+    updated_by: string | null;
+    created_at: string;
+    updated_at: string;
+    items: RequisitionItem[];
+};
+
+
 export type StockTransferItem = {
     id: string;
     stock_transfer_id: string;
@@ -392,6 +424,7 @@ export type InvoiceItem = {
     // Client-side only
     productName?: string;
     product_variant_id?: string;
+    product_print_name?: string;
 };
 
 export type Invoice = {
@@ -422,6 +455,9 @@ export type Invoice = {
     company_id: string;
     items?: InvoiceItem[];
     customer?: User; // Can be added if the new endpoint returns it
+    tdl?: string;
+    sscl_tax?: string;
+    vat_amount?: string;
 };
 
 export type PaymentReceipt = {
@@ -508,6 +544,7 @@ export type StockInfo = {
     total_in: string;
     total_out: string;
     stock_balance: string;
+    manufacture_date?: string;
 }
 
 
@@ -535,10 +572,13 @@ export type Recipe = {
 
 export type ProductionNote = {
     id: string;
-    finished_good_id: string;
-    quantity_produced: number;
+    product_id: string;
+    pn_number: string;
+    product_variant_id: string;
+    quantity: string;
     notes?: string;
-    production_date: string;
+    created_at: string;
+    is_active: string;
 };
 
 
@@ -608,4 +648,15 @@ export type KeySetting = {
   value: string;
   locationName?: string; // For client-side display
   originalSetting?: KeySetting; // For forms
+};
+
+export type PaymentMethod = {
+  id: string;
+  method: string;
+  company_id: string;
+  created_by: string;
+  created_at: string;
+  updated_by: string | null;
+  updated_at: string | null;
+  is_active: string;
 };
