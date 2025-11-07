@@ -1,5 +1,4 @@
 
-
 'use client';
 
 // Import the external CSS file
@@ -238,7 +237,7 @@ function GuestReceiptContent() {
             <span>{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between">
-            <span>Total Item Count:</span>
+            <span>No of Goods:</span>
             <span>{totalItemCount}</span>
           </div>
           <div className="flex justify-between">
