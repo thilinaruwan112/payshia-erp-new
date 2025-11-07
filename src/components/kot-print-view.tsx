@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import type { Invoice, InvoiceItem, Product, Location, ProductVariant } from '@/lib/types';
+import type { Invoice, InvoiceItem, Product, Location, ProductVariant, User } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -36,6 +36,8 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const [location, setLocation] = useState<Location | null>(null);
+  const [customer, setCustomer] = useState<User | null>(null);
+  const [steward, setSteward] = useState<User | null>(null);
   const [itemsToPrint, setItemsToPrint] = useState<InvoiceItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -96,6 +98,20 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
                     setLocation(await locResponse.json());
                 }
             }
+
+            if (invoiceData.customer_code) {
+                const customerResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${invoiceData.customer_code}`);
+                if (customerResponse.ok) setCustomer(await customerResponse.json());
+            }
+
+            if (invoiceData.steward_id && invoiceData.steward_id !== 'N/A') {
+                const stewardResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${invoiceData.steward_id}`);
+                if (stewardResponse.ok) {
+                     const result = await stewardResponse.json();
+                     setSteward(result.data);
+                }
+            }
+
 
         } catch (error) {
             toast({
@@ -300,7 +316,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   if (itemsToPrint.length === 0) {
       return (
          <div className="w-[80mm] bg-white text-black p-4 font-mono text-lg text-center">
-            <h1 className="text-xl font-bold mb-4">KOT</h1>
+            <h1 className="text-xl font-bold mb-4">K.O.T</h1>
             <p>No new items to print for order #{invoice.invoice_number}.</p>
             <p className="mt-4 text-sm">You can close this window.</p>
         </div>
@@ -317,19 +333,16 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             <h1 className="font-bold text-xl">K.O.T {printAll && '(Full)'}</h1>
         </div>
 
-        <div className="flex justify-between text-xs">
-            <p>
-            Order:{' '}
-            {invoice.remark?.includes('Dine-In') && invoice.table_id !== '0'
-                ? `Table ${invoice.table_id}`
-                : invoice.remark || 'Take Away'}
-            </p>
-            <p>{format(new Date(), 'dd/MM/yy HH:mm')}</p>
+        <div className="text-xs space-y-0.5">
+            <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
+            <div className="flex justify-between"><p>Customer: {customer?.first_name || 'Walk-in'}</p></div>
+            <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
+            <div className="flex justify-between"><p>Cashier: {invoice.created_by}</p></div>
+            {steward && <div className="flex justify-between"><p>Steward: {steward.first_name}</p></div>}
+            {invoice.table_id !== '0' && <div className="flex justify-between"><p>Table: {invoice.table_id}</p></div>}
+            {invoice.remark && <div className="flex justify-between"><p>Order Type: {invoice.remark.split(' ')[0]}</p></div>}
         </div>
-        <div className="flex justify-between text-xs">
-            <p>Cashier: {invoice.created_by}</p>
-            <p>Inv #: {invoice.invoice_number}</p>
-        </div>
+
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>
 
