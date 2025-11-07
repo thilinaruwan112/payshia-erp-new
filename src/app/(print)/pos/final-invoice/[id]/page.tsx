@@ -169,7 +169,7 @@ function FinalInvoiceContent() {
         
         <div className="text-xs space-y-0.5">
           <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
-          <div className="flex justify-between"><p>Customer: {customer?.customer_first_name} {customer?.customer_last_name || ''} ({invoice.customer_code})</p></div>
+          <div className="flex justify-between"><p>Customer: {customer?.first_name} {customer?.last_name || ''} ({invoice.customer_code})</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
           <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
           {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable}</p></div>}

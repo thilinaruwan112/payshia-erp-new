@@ -47,6 +47,7 @@ import { useLocation } from '../location-provider';
 import { Badge } from '../ui/badge';
 import { useCurrency } from '../currency-provider';
 import { fetcher } from '@/lib/api';
+import { openCenteredPopup } from '@/lib/utils';
 
 interface OrderPanelProps {
   order: ActiveOrder;
@@ -408,7 +409,7 @@ export function OrderPanel({
             description: `Invoice #${result.invoice_number} created.`
         });
         
-        window.open(`/pos/final-invoice/${result.invoice_number}?company_id=${company_id}`, '_blank');
+        openCenteredPopup(`/pos/final-invoice/${result.invoice_number}?company_id=${company_id}`, 'Final Invoice', 400, 800);
         
         setPaymentOpen(false);
         onClearCart(orderId);
@@ -436,7 +437,7 @@ export function OrderPanel({
       });
       return;
     }
-    window.open(`/pos/guest-receipt/${order.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
+    openCenteredPopup(`/pos/guest-receipt/${order.originalInvoiceNumber}?company_id=${company_id}`, 'Guest Receipt', 400, 800);
   };
 
   return (

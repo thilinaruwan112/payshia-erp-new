@@ -199,7 +199,7 @@ function GuestReceiptContent() {
 
   const total = subtotal - totalDiscount + serviceCharge + tdl + sscl + vat;
   
-  const customerName = customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : 'Walk-in';
+  const customerName = customer ? `${customer.first_name} ${customer.last_name}` : 'Walk-in';
   
   const getOrderTypeOrTable = (tableId: string) => {
     if (tableId === '0') return 'Take Away';

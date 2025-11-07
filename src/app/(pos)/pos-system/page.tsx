@@ -23,6 +23,7 @@ import { RefundDialog } from '@/components/pos/dialogs/refund-dialog';
 import { TodaySalesDialog } from '@/components/pos/dialogs/today-sales-dialog';
 import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
+import { openCenteredPopup } from '@/lib/utils';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -487,7 +488,7 @@ export default function POSPage() {
     
             toast({ title: 'Order Updated!', description: `Held order ${currentOrder.originalInvoiceNumber} has been updated.` });
             if(itemsToUpdatePayload.length > 0) {
-                window.open(`/pos/kot/${currentOrder.originalInvoiceNumber}?company_id=${company_id}`, '_blank');
+                openCenteredPopup(`/pos/kot/${currentOrder.originalInvoiceNumber}?company_id=${company_id}`, 'KOT', 400, 600);
             }
             onClearCart(currentOrderId!);
         } catch (error) {
@@ -547,7 +548,7 @@ export default function POSPage() {
       
       toast({ title: 'KOT Sent!', description: 'Order sent to the kitchen.', icon: <ChefHat className="h-6 w-6 text-green-500" /> });
       
-      window.open(`/pos/kot/${result.invoice_number}?company_id=${company_id}`, '_blank');
+      openCenteredPopup(`/pos/kot/${result.invoice_number}?company_id=${company_id}`, 'KOT', 400, 600);
       
       onClearCart(currentOrderId!);
     } catch (error) {
@@ -931,3 +932,4 @@ export default function POSPage() {
     
 
     
+

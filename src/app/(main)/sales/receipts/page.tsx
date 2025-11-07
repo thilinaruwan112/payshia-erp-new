@@ -36,6 +36,7 @@ import { format } from 'date-fns';
 import { useLocation } from '@/components/location-provider';
 import { Separator } from '@/components/ui/separator';
 import { fetcher } from '@/lib/api';
+import { openCenteredPopup } from '@/lib/utils';
 
 type Receipt = {
     id: string;
@@ -187,11 +188,11 @@ export default function ReceiptsPage() {
                             <DropdownMenuItem asChild>
                               <Link href={`/sales/receipts/${receipt.id}`}>View Details</Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/sales-print/receipts/${receipt.id}`} target="_blank">Print A4 Receipt</Link>
+                            <DropdownMenuItem onClick={() => openCenteredPopup(`/sales-print/receipts/${receipt.id}`, 'Print Receipt', 800, 800)}>
+                                Print A4 Receipt
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link href={`/pos-print/receipts/${receipt.id}`} target="_blank">Print POS Receipt</Link>
+                            <DropdownMenuItem onClick={() => openCenteredPopup(`/pos/receipt/${receipt.id}/print`, 'Print POS Receipt', 400, 600)}>
+                                Print POS Receipt
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -233,11 +234,11 @@ export default function ReceiptsPage() {
                             <DropdownMenuItem asChild>
                               <Link href={`/sales/receipts/${receipt.id}`}>View Details</Link>
                             </DropdownMenuItem>
-                           <DropdownMenuItem asChild>
-                            <Link href={`/sales-print/receipts/${receipt.id}`} target="_blank">Print A4 Receipt</Link>
+                           <DropdownMenuItem onClick={() => openCenteredPopup(`/sales-print/receipts/${receipt.id}`, 'Print Receipt', 800, 800)}>
+                            Print A4 Receipt
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/pos-print/receipts/${receipt.id}`} target="_blank">Print POS Receipt</Link>
+                          <DropdownMenuItem onClick={() => openCenteredPopup(`/pos/receipt/${receipt.id}/print`, 'Print POS Receipt', 400, 600)}>
+                            Print POS Receipt
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
