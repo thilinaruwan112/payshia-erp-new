@@ -304,7 +304,7 @@ export function OrderPanel({
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
   const [isEditOrderOpen, setEditOrderOpen] = React.useState(false);
 
-  const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType } = order;
+  const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType, tableName } = order;
 
   const handleSuccessfulPayment = async (paymentMethodId: string, tenderedAmount: number) => {
     toast({
@@ -336,7 +336,7 @@ export function OrderPanel({
             tableIdValue = -2;
             break;
         case 'Dine-In':
-            const table = availableTables.find(t => t.table_name === order.tableName);
+            const table = availableTables.find(t => t.table_name === tableName);
             tableIdValue = table ? parseInt(table.id, 10) : 0;
             break;
         default:
@@ -476,7 +476,7 @@ export function OrderPanel({
                     const newCustomer = customers.find(
                       (c) => c.customer_id === customerId
                     );
-                    if (newCustomer) onUpdateCustomer(orderId, newCustomer as User);
+                    if (newCustomer) onUpdateCustomer(orderId, newCustomer);
                   }}
                 >
                     <SelectTrigger>
