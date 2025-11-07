@@ -739,7 +739,7 @@ export default function POSPage() {
 
       const basePriceAfterItemDiscount = basePrice - (item.itemDiscount || 0);
 
-      const serviceCharge = currentOrder.orderType !== 'Take Away' && isServiceChargeActive
+      const serviceCharge = currentOrder.orderType === 'Dine-In' && isServiceChargeActive
         ? basePriceAfterItemDiscount * 0.10
         : 0;
       totalServiceCharge += serviceCharge;
@@ -867,7 +867,7 @@ export default function POSPage() {
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[calc(100vh-250px)]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
                     ) : (
-                        <ProductGrid products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} />
+                        <ProductGrid products={filteredProducts} orderType={currentOrder?.orderType} onProductSelect={(p) => setSelectedProduct(p)} />
                     )}
                     </div>
                     
@@ -916,3 +916,7 @@ export default function POSPage() {
     </>
   );
 }
+
+    
+
+    

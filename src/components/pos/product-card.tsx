@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -10,16 +9,34 @@ import {
 } from '@/components/ui/card';
 import Image from 'next/image';
 import { useCurrency } from '../currency-provider';
+import type { ActiveOrder } from '@/lib/types';
 
 interface ProductCardProps {
   product: PosProduct;
+  orderType: ActiveOrder['orderType'] | undefined;
   onSelect: (product: PosProduct) => void;
 }
 
-export function ProductCard({ product, onSelect }: ProductCardProps) {
+export function ProductCard({ product, orderType, onSelect }: ProductCardProps) {
   const { currencySymbol } = useCurrency();
   
   const imageUrl = product.imageUrl || 'https://placehold.co/300x200.png';
+
+  const calculateInclusivePrice = (basePrice: number) => {
+    let serviceCharge = 0;
+    if (orderType === 'Dine-In') {
+        serviceCharge = basePrice * 0.10;
+    }
+    const tdl = basePrice * 0.01;
+    const baseForSscl = basePrice + serviceCharge;
+    const sscl = baseForSscl * 0.025;
+    const baseForVat = basePrice + serviceCharge + tdl + sscl;
+    const vat = baseForVat * 0.18;
+    return basePrice + serviceCharge + tdl + sscl + vat;
+  }
+
+  const showInclusivePrice = orderType === 'Dine-In' || orderType === 'Take Away';
+  const inclusivePrice = showInclusivePrice ? calculateInclusivePrice(product.price as number) : 0;
 
   return (
     <Card
@@ -38,7 +55,14 @@ export function ProductCard({ product, onSelect }: ProductCardProps) {
         <div className='p-4'>
             <h3 className="font-semibold text-base truncate group-hover:text-primary leading-tight">{product.variantName}</h3>
             <p className="text-sm text-muted-foreground">{product.category}</p>
-            <p className="font-bold text-xl mt-2">{currencySymbol}{(product.price as number).toFixed(2)}</p>
+            <div className="mt-2">
+                <p className="font-bold text-xl">{currencySymbol}{(product.price as number).toFixed(2)}</p>
+                {showInclusivePrice && (
+                    <p className="text-xs text-muted-foreground font-semibold">
+                        (Incl. Tax: {currencySymbol}{inclusivePrice.toFixed(2)})
+                    </p>
+                )}
+            </div>
         </div>
       </CardContent>
     </Card>
