@@ -424,6 +424,7 @@ export type InvoiceItem = {
     // Client-side only
     productName?: string;
     product_variant_id?: string;
+    product_print_name?: string;
 };
 
 export type Invoice = {
@@ -454,6 +455,9 @@ export type Invoice = {
     company_id: string;
     items?: InvoiceItem[];
     customer?: User; // Can be added if the new endpoint returns it
+    tdl?: string;
+    sscl_tax?: string;
+    vat_amount?: string;
 };
 
 export type PaymentReceipt = {
@@ -540,6 +544,7 @@ export type StockInfo = {
     total_in: string;
     total_out: string;
     stock_balance: string;
+    manufacture_date?: string;
 }
 
 

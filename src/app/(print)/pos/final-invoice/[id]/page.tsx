@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import '@/app/(print)/pos/print-receipt.css';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
-import type { Invoice, User, Location } from '@/lib/types';
+import type { Invoice, User, Location, Table } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -30,6 +31,7 @@ function FinalInvoiceContent() {
   const [location, setLocation] = useState<Location | null>(null);
   const [steward, setSteward] = useState<User | null>(null);
   const [cashier, setCashier] = useState<User | null>(null);
+  const [tables, setTables] = useState<Table[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -62,8 +64,9 @@ function FinalInvoiceContent() {
             if (data.company_id && data.location_id) {
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${data.company_id}`).then(res => res.ok ? res.json() : null));
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${data.location_id}`).then(res => res.ok ? res.json() : null));
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${data.company_id}`).then(res => res.ok ? res.json() : null));
             } else {
-                fetchPromises.push(Promise.resolve(null), Promise.resolve(null));
+                fetchPromises.push(Promise.resolve(null), Promise.resolve(null), Promise.resolve(null));
             }
 
             if (data.steward_id && data.steward_id !== "N/A") {
@@ -86,11 +89,12 @@ function FinalInvoiceContent() {
             }
 
 
-            const [customerData, companyData, locationData, stewardData, cashierData] = await Promise.all(fetchPromises);
+            const [customerData, companyData, locationData, tablesData, stewardData, cashierData] = await Promise.all(fetchPromises);
             
             setCustomer(customerData);
             setCompany(companyData);
             setLocation(locationData);
+            setTables(tablesData || []);
             setSteward(stewardData?.data);
             setCashier(cashierData);
 
@@ -144,7 +148,10 @@ function FinalInvoiceContent() {
 
   const getOrderTypeOrTable = (tableId: string) => {
     const tableIdNum = parseInt(tableId, 10);
-    if (tableIdNum > 0) return 'Dine-In';
+    if (tableIdNum > 0) {
+        const tableName = tables.find(t => t.id === tableId)?.table_name;
+        return `Dine-In (Table: ${tableName || tableId})`;
+    }
     if (tableIdNum === 0) return 'Take Away';
     if (tableIdNum === -1) return 'Retail';
     if (tableIdNum === -2) return 'Delivery';
@@ -173,7 +180,7 @@ function FinalInvoiceContent() {
           <div className="flex justify-between"><p>Customer: {customer?.first_name} {customer?.last_name || ''} ({invoice.customer_code})</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
           <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
-          {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable} {parseInt(invoice.table_id) > 0 ? `(Table: ${invoice.table_id})` : ''}</p></div>}
+          {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable}</p></div>}
           {stewardName && <div className="flex justify-between"><p>Steward: {stewardName}</p></div>}
         </div>
 
