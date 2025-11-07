@@ -106,9 +106,9 @@ function FinalInvoiceContent() {
   useEffect(() => {
     if (!isLoading && invoice) {
         document.title = `Invoice - ${invoice.invoice_number}`;
-        setTimeout(() => window.print(), 500);
+        setTimeout(() => openCenteredPopup(`/pos/final-invoice/${invoice.invoice_number}?company_id=${companyId}`, 'Final Invoice', 400, 800), 500);
     }
-  }, [isLoading, invoice]);
+  }, [isLoading, invoice, id, companyId]);
 
   if (isLoading || !invoice) {
     return (
@@ -144,10 +144,10 @@ function FinalInvoiceContent() {
 
   const getOrderTypeOrTable = (tableId: string) => {
     const tableIdNum = parseInt(tableId, 10);
+    if (tableIdNum > 0) return 'Dine-In';
     if (tableIdNum === 0) return 'Take Away';
     if (tableIdNum === -1) return 'Retail';
     if (tableIdNum === -2) return 'Delivery';
-    if (tableIdNum > 0) return 'Dine-In';
     return null;
   }
 
@@ -173,7 +173,7 @@ function FinalInvoiceContent() {
           <div className="flex justify-between"><p>Customer: {customer?.first_name} {customer?.last_name || ''} ({invoice.customer_code})</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
           <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
-          {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable}</p></div>}
+          {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable} {parseInt(invoice.table_id) > 0 ? `(Table: ${invoice.table_id})` : ''}</p></div>}
           {stewardName && <div className="flex justify-between"><p>Steward: {stewardName}</p></div>}
         </div>
 

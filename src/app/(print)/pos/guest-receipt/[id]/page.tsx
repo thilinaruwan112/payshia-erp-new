@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { openCenteredPopup } from '@/lib/utils';
 
 interface Company {
     id: string;
@@ -122,7 +123,7 @@ function GuestReceiptContent() {
       document.body.appendChild(script);
     }
 
-    const initJspm = () => {
+    const initJSPM = () => {
         if(window.JSPM) {
             try {
                 window.JSPM.JSPrintManager.auto_reconnect = true;
@@ -134,28 +135,15 @@ function GuestReceiptContent() {
             }
         }
     }
-    setTimeout(initJspm, 500);
+    setTimeout(initJSPM, 500);
   }, []);
 
   const handlePrint = async () => {
     if (!receiptRef.current) return;
     
-    // Calculate height and set print styles
-    const heightInPixels = receiptRef.current.offsetHeight;
-    const heightInMm = (heightInPixels * 25.4) / 96; // Assuming 96 DPI
-    
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @media print {
-            @page {
-                size: 80mm ${heightInMm + 5}mm; /* Add some buffer */
-                margin: 0;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-
-    window.print();
+    setTimeout(() => {
+        openCenteredPopup(`/pos/guest-receipt/${id}?company_id=${companyId}`, 'Guest Receipt', 400, 800);
+    }, 500);
   };
 
   useEffect(() => {
@@ -163,7 +151,7 @@ function GuestReceiptContent() {
         document.title = `Guest Receipt - ${invoice.invoice_number}`;
         handlePrint();
     }
-  }, [isLoading, invoice, isJspmConnected]);
+  }, [isLoading, invoice, isJspmConnected, id, companyId]);
 
   if (isLoading || !invoice) {
     return (
@@ -210,10 +198,10 @@ function GuestReceiptContent() {
 
   const getOrderTypeOrTable = (tableId: string) => {
     const tableIdNum = parseInt(tableId, 10);
+    if (tableIdNum > 0) return 'Dine-In';
     if (tableIdNum === 0) return 'Take Away';
     if (tableIdNum === -1) return 'Retail';
     if (tableIdNum === -2) return 'Delivery';
-    if (tableIdNum > 0) return 'Dine-In';
     return null;
   }
 
@@ -239,7 +227,7 @@ function GuestReceiptContent() {
           <div className="flex justify-between"><p>Customer: {customer?.first_name} {customer?.last_name || ''} ({invoice.customer_code})</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
           <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
-          {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable}</p></div>}
+          {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable} {parseInt(invoice.table_id) > 0 ? `(Table: ${invoice.table_id})` : ''}</p></div>}
           {stewardName && <div className="flex justify-between"><p>Steward: {stewardName}</p></div>}
         </div>
 
@@ -270,7 +258,7 @@ function GuestReceiptContent() {
                   <tr className="align-top">
                     <td></td>
                     <td className="text-center">{quantity.toFixed(3)}</td>
-                    <td className="text-right">{inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="text-right">{basePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td className="text-right">{lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
                    {itemDiscount > 0 && (
