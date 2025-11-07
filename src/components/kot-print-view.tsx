@@ -36,7 +36,6 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const [location, setLocation] = useState<Location | null>(null);
-  const [customer, setCustomer] = useState<User | null>(null);
   const [steward, setSteward] = useState<User | null>(null);
   const [cashier, setCashier] = useState<User | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
@@ -101,12 +100,6 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
                 fetchPromises.push(Promise.resolve(null));
             }
 
-            if (invoiceData.customer_code) {
-                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${invoiceData.customer_code}`).then(res => res.ok ? res.json() : null));
-            } else {
-                 fetchPromises.push(Promise.resolve(null));
-            }
-
             if (invoiceData.steward_id && invoiceData.steward_id !== "N/A") {
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${invoiceData.steward_id}`).then(res => res.ok ? res.json() : null));
             } else {
@@ -132,10 +125,9 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
                 fetchPromises.push(Promise.resolve([]));
             }
             
-            const [locationData, customerData, stewardData, cashierData, tablesData] = await Promise.all(fetchPromises);
+            const [locationData, stewardData, cashierData, tablesData] = await Promise.all(fetchPromises);
             
             setLocation(locationData);
-            setCustomer(customerData);
             setSteward(stewardData?.data);
             setCashier(cashierData);
             setTables(tablesData || []);
@@ -351,7 +343,6 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
-  const customerName = customer ? `${customer.first_name} ${customer.last_name}` : `(ID: ${invoice.customer_code})`;
 
   const getOrderTypeOrTable = (tableId: string) => {
     if (parseInt(tableId, 10) > 0) {
@@ -376,7 +367,6 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
 
         <div className="text-xs space-y-0.5">
             <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
-            <div className="flex justify-between"><p>Customer: {customerName}</p></div>
             <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
             <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
             {stewardName && <div className="flex justify-between"><p>Steward: {stewardName}</p></div>}
