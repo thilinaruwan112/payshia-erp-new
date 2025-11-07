@@ -89,7 +89,6 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
             const invoiceData: Invoice = await response.json();
             setInvoice(invoiceData);
             
-            // Filter items to only include those not yet printed, unless we want to print all
             const items = invoiceData.items || [];
             const unprintedItems = printAll ? items : items.filter(item => String(item.printed_status) !== '1');
             setItemsToPrint(unprintedItems);
@@ -108,7 +107,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
                  fetchPromises.push(Promise.resolve(null));
             }
 
-            if (invoiceData.steward_id && invoiceData.steward_id !== 'N/A') {
+            if (invoiceData.steward_id && invoiceData.steward_id !== "N/A") {
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${invoiceData.steward_id}`).then(res => res.ok ? res.json() : null));
             } else {
                 fetchPromises.push(Promise.resolve(null));
@@ -414,3 +413,5 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
     </div>
   );
 }
+
+    
