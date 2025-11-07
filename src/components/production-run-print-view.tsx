@@ -154,14 +154,7 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
   const totalPlanned = run.items.reduce((sum, item) => sum + parseFloat(item.target_qty), 0);
   const totalActual = run.items.reduce((sum, item) => sum + parseFloat(item.actual_qty), 0);
   const finishedGoodName = getProductName(run.product_variant_id);
-  const beforeCost = finishedGood?.cost_price ? parseFloat(String(finishedGood.cost_price)) : 0;
   
-  const afterCost = (parseFloat(run.yield_qty) > 0 && beforeCost > 0) 
-    ? (beforeCost + parseFloat(run.cost_value)) / (1 + parseFloat(run.yield_qty)) // This needs review; logic based on available data
-    : parseFloat(run.cost_value) / parseFloat(run.yield_qty) || 0;
-
-  const costDifference = afterCost - beforeCost;
-
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
        <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
@@ -209,24 +202,6 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
             </div>
           </div>
         </section>
-
-        <section className="mt-6 p-4 rounded-lg border grid grid-cols-3 gap-4">
-            <div>
-                <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Before Cost</h3>
-                <p className="font-bold text-lg text-gray-800">{currencySymbol}{beforeCost.toFixed(2)}</p>
-            </div>
-             <div>
-                <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">After Cost</h3>
-                <p className="font-bold text-lg text-gray-800">{currencySymbol}{afterCost.toFixed(2)}</p>
-            </div>
-            <div>
-                 <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Difference</h3>
-                <p className={cn("font-bold text-lg", costDifference > 0 ? 'text-red-600' : 'text-green-600')}>
-                    {costDifference > 0 ? '+' : ''}{currencySymbol}{costDifference.toFixed(2)}
-                </p>
-            </div>
-        </section>
-
 
       <section className="mt-8 flex-grow">
         <h3 className="text-md font-semibold uppercase text-gray-600 mb-2">Consumed Ingredients</h3>
