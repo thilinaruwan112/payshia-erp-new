@@ -158,7 +158,6 @@ function GuestReceiptContent() {
   }
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
-  const totalDiscount = parseFloat(invoice.discount_amount);
   
   const calculateInclusivePrice = (basePrice: number) => {
     const isDineIn = invoice.remark?.includes('Dine-In');
@@ -176,6 +175,7 @@ function GuestReceiptContent() {
     return acc + inclusiveTotal;
   }, 0);
 
+  const totalDiscount = parseFloat(invoice.discount_amount);
   const total = subtotal - totalDiscount;
   
   return (
@@ -218,8 +218,8 @@ function GuestReceiptContent() {
               <tr key={index}>
                 <td className="py-1 align-top w-[50%]">{item.product_print_name}</td>
                 <td className="py-1 align-top text-center">{parseFloat(String(item.quantity))}</td>
-                <td className="py-1 align-top text-right">{inclusivePrice.toFixed(2)}</td>
-                <td className="py-1 align-top text-right">{inclusiveTotal.toFixed(2)}</td>
+                <td className="py-1 align-top text-right">{inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="py-1 align-top text-right">{inclusiveTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             )})}
           </tbody>
@@ -229,15 +229,15 @@ function GuestReceiptContent() {
         <div className="space-y-1 text-xs">
           <div className="flex justify-between">
             <span>Subtotal:</span>
-            <span>{subtotal.toFixed(2)}</span>
+            <span>{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between">
             <span>Discount:</span>
-            <span>-{totalDiscount.toFixed(2)}</span>
+            <span>-{totalDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
-            <span>{total.toFixed(2)}</span>
+            <span>{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
 
