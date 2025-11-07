@@ -60,8 +60,12 @@ function GuestReceiptContent() {
             const data: Invoice = await response.json();
             setInvoice(data);
             
-            if (data.customer) {
-                setCustomer(data.customer);
+            if (data.customer_code) {
+                const customerResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`);
+                if (customerResponse.ok) {
+                    const customerData = await customerResponse.json();
+                    setCustomer(customerData);
+                }
             }
 
             if (data.company_id && data.location_id) {
@@ -183,6 +187,8 @@ function GuestReceiptContent() {
   const totalDiscount = parseFloat(invoice.discount_amount);
   const total = subtotal - totalDiscount;
   
+  const customerName = customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : 'Walk-in';
+  
   return (
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
@@ -197,7 +203,7 @@ function GuestReceiptContent() {
         
         <div className="text-xs space-y-0.5">
           <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
-          <div className="flex justify-between"><p>Customer: {customer?.customer_first_name && customer?.customer_last_name ? `${customer.customer_first_name} ${customer.customer_last_name}` : 'Walk-in'} ({customer?.customer_id || 'N/A'})</p></div>
+          <div className="flex justify-between"><p>Customer: {customerName} ({invoice.customer_code})</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
           <div className="flex justify-between"><p>Cashier: {invoice.created_by}</p></div>
           {invoice.steward_id !== "N/A" && <div className="flex justify-between"><p>Steward: {invoice.steward_id}</p></div>}
