@@ -23,6 +23,9 @@ import {
   Settings,
   Receipt,
   Delete,
+  Printer,
+  CheckCircle,
+  ArrowRight,
 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -49,6 +52,7 @@ import { Badge } from '../ui/badge';
 import { useCurrency } from '../currency-provider';
 import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
+import { PayshiaPosLogo } from './payshia-pos-logo';
 
 interface OrderPanelProps {
   order: ActiveOrder;
@@ -63,8 +67,6 @@ interface OrderPanelProps {
   isDrawer?: boolean;
   onClose?: () => void;
   setDiscount: (discount: number) => void;
-  isServiceChargeActive: boolean;
-  setIsServiceChargeActive: (isActive: boolean) => void;
   onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
   availableTables: TableType[];
   availableStewards: User[];
@@ -86,6 +88,73 @@ type Receipt = {
     today_invoice: string;
     company_id: string;
     now_time: string;
+};
+
+type SuccessData = {
+    invoiceNumber: string;
+    invoiceAmount: number;
+    tenderAmount: number;
+    changeAmount: number;
+    customerName: string;
+    companyId: string;
+}
+
+const SuccessDialog = ({
+  successData,
+  onClose,
+}: {
+  successData: SuccessData | null;
+  onClose: () => void;
+}) => {
+  const { currencySymbol } = useCurrency();
+  if (!successData) return null;
+
+  const handleReprint = () => {
+    openCenteredPopup(`/pos/final-invoice/${successData.invoiceNumber}?company_id=${successData.companyId}`, 'Final Invoice', 400, 800);
+  };
+
+  return (
+    <Dialog open={!!successData} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md p-8 text-center" hideCloseButton>
+        <PayshiaPosLogo />
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mt-4">
+          <CheckCircle className="h-10 w-10 text-green-600" />
+        </div>
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm text-left my-4">
+          <div>
+            <p className="text-muted-foreground">INV # / INT #</p>
+            <p className="font-bold">{successData.invoiceNumber}</p>
+          </div>
+          <div></div>
+          <div>
+            <p className="text-muted-foreground">Tender Amount</p>
+            <p className="font-bold font-mono">{currencySymbol} {successData.tenderAmount.toFixed(2)}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Invoice Amount</p>
+            <p className="font-bold font-mono">{currencySymbol} {successData.invoiceAmount.toFixed(2)}</p>
+          </div>
+        </div>
+        <div className="my-2">
+            <p className="text-muted-foreground">Change Amount</p>
+            <p className="font-bold font-mono text-5xl">{currencySymbol} {successData.changeAmount.toFixed(2)}</p>
+        </div>
+        <div className="my-2">
+            <p className="text-muted-foreground">Customer</p>
+            <p className="font-bold text-xl">{successData.customerName}</p>
+        </div>
+
+        <Button variant="secondary" className="w-full" onClick={handleReprint}>
+            <Printer className="mr-2 h-4 w-4" />
+            Reprint Invoice
+        </Button>
+        <Button size="lg" className="w-full h-14 text-lg mt-4" onClick={onClose}>
+            Next Customer <ArrowRight className="ml-2 h-5 w-5" />
+        </Button>
+        <p className="text-xl font-bold mt-4">Thank You!</p>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 
@@ -193,16 +262,10 @@ const PaymentDialog = ({
             </div>
         </div>
       </div>
-      <DialogFooter className="mt-4">
-        <Button variant="outline" size="lg" onClick={() => {
-            const dialog = document.querySelector('[role="dialog"]');
-            if (dialog) {
-                const closeButton = dialog.querySelector('button[aria-label="Close"]');
-                if (closeButton instanceof HTMLElement) {
-                    closeButton.click();
-                }
-            }
-        }}>Cancel</Button>
+       <DialogFooter className="mt-4 sm:justify-between">
+         <DialogClose asChild>
+            <Button variant="outline" size="lg">Cancel</Button>
+         </DialogClose>
         <Button
           size="lg"
           onClick={handleConfirm}
@@ -341,8 +404,6 @@ export function OrderPanel({
   isDrawer,
   onClose,
   setDiscount,
-  isServiceChargeActive,
-  setIsServiceChargeActive,
   onUpdateDetails,
   availableTables,
   availableStewards,
@@ -355,15 +416,13 @@ export function OrderPanel({
   const [isPaymentOpen, setPaymentOpen] = React.useState(false);
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
   const [isEditOrderOpen, setEditOrderOpen] = React.useState(false);
+  const [isServiceChargeActive, setIsServiceChargeActive] = useState(true);
+  const [successData, setSuccessData] = useState<SuccessData | null>(null);
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType, tableName } = order;
 
   const handleSuccessfulPayment = async (paymentMethodId: string, tenderedAmount: number) => {
-    toast({
-      title: 'Payment Processing...',
-      description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)}.`,
-    });
-
+    
     if (!currentLocation || !company_id || !customer) {
         toast({
             variant: "destructive",
@@ -372,6 +431,13 @@ export function OrderPanel({
         });
         return;
     }
+    
+    toast({
+      title: 'Payment Processing...',
+      description: `Processing ${currencySymbol}${orderTotals.total.toFixed(2)}.`,
+    });
+
+
     const totalDiscount = orderTotals.discount + orderTotals.itemDiscounts;
     const costValue = cart.reduce((acc, item) => acc + ((item.product.cost_price as number || 0) * item.quantity), 0);
     const refHoldValue = order.originalInvoiceNumber ? order.originalInvoiceNumber : "direct";
@@ -463,8 +529,15 @@ export function OrderPanel({
         openCenteredPopup(`/pos/final-invoice/${result.invoice_number}?company_id=${company_id}`, 'Final Invoice', 400, 800);
         
         setPaymentOpen(false);
-        onClearCart(orderId);
-
+        setSuccessData({
+            invoiceNumber: result.invoice_number,
+            invoiceAmount: orderTotals.total,
+            tenderAmount: tenderedAmount,
+            changeAmount: tenderedAmount - orderTotals.total,
+            customerName: customer.first_name ? `${customer.first_name} ${customer.last_name}` : customer.name,
+            companyId: String(company_id),
+        });
+        
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         toast({
@@ -490,9 +563,15 @@ export function OrderPanel({
     }
     openCenteredPopup(`/pos/guest-receipt/${order.originalInvoiceNumber}?company_id=${company_id}`, 'Guest Receipt', 400, 800);
   };
+  
+  const handleCloseSuccess = () => {
+    onClearCart(orderId);
+    setSuccessData(null);
+  };
 
   return (
     <div className="flex flex-col h-full bg-card">
+      <SuccessDialog successData={successData} onClose={handleCloseSuccess} />
       <Dialog open={isEditOrderOpen} onOpenChange={setEditOrderOpen}>
         <header className="p-4 border-b border-border flex items-center justify-between">
             <h2 className="text-xl font-bold">{orderName}</h2>
@@ -526,7 +605,7 @@ export function OrderPanel({
                   value={customer?.customer_id || ''}
                   onValueChange={(customerId) => {
                     const newCustomer = customers.find(
-                      (c) => c.id === customerId
+                      (c) => c.customer_id === customerId
                     );
                     if (newCustomer) onUpdateCustomer(orderId, newCustomer);
                   }}
@@ -536,7 +615,7 @@ export function OrderPanel({
                     </SelectTrigger>
                     <SelectContent>
                         {customers.map(c => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
