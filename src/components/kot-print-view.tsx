@@ -215,8 +215,8 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
         const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
 
         const cpj = new ClientPrintJob();
-        // IMPORTANT: Change "Microsoft Print to PDF" to the actual name of your kitchen printer.
-        const myPrinter = new InstalledPrinter("Microsoft Print to PDF"); 
+        // This is the line you mentioned to remember.
+        const myPrinter = new InstalledPrinter("KOT-Printer"); 
         
         cpj.clientPrinter = myPrinter;
 
