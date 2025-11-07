@@ -107,11 +107,11 @@ function FinalInvoiceContent() {
   const grandTotal = parseFloat(invoice.grand_total);
   const serviceCharge = parseFloat(invoice.service_charge);
 
-  const tdl = subtotal * parseFloat(invoice.tdl_percentage || "0") / 100;
+  const tdl = subtotal * (parseFloat(invoice.tdl_percentage || "0") / 100);
   const baseForSscl = subtotal + serviceCharge;
-  const sscl = baseForSscl * parseFloat(invoice.sscl_percentage || "0") / 100;
+  const sscl = baseForSscl * (parseFloat(invoice.sscl_percentage || "0") / 100);
   const baseForVat = baseForSscl + tdl;
-  const vat = baseForVat * parseFloat(invoice.vat_percentage || "0") / 100;
+  const vat = baseForVat * (parseFloat(invoice.vat_percentage || "0") / 100);
 
   const totalTaxes = tdl + sscl + vat;
 
