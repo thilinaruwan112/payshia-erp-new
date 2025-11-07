@@ -1,5 +1,4 @@
 
-
 'use client';
 
 // Import the external CSS file
@@ -76,7 +75,7 @@ function GuestReceiptContent() {
             if (data.company_id && data.location_id) {
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${data.company_id}`).then(res => res.ok ? res.json() : null));
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${data.location_id}`).then(res => res.ok ? res.json() : null));
-                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${data.company_id}`).then(res => res.ok ? res.json() : null));
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${data.company_id}`).then(res => res.ok ? res.json() : []));
             } else {
                 fetchPromises.push(Promise.resolve(null), Promise.resolve(null), Promise.resolve(null));
             }
@@ -146,7 +145,7 @@ function GuestReceiptContent() {
     if (!receiptRef.current) return;
     
     setTimeout(() => {
-        openCenteredPopup(`/pos/guest-receipt/${id}?company_id=${companyId}`, 'Guest Receipt', 400, 800);
+        window.print();
     }, 500);
   };
 
@@ -192,8 +191,7 @@ function GuestReceiptContent() {
     const basePrice = parseFloat(String(item.item_price));
     const inclusivePrice = calculateInclusivePrice(basePrice);
     const quantity = parseFloat(String(item.quantity));
-    const itemDiscount = parseFloat(String(item.item_discount));
-    return acc + (inclusivePrice * quantity) - itemDiscount;
+    return acc + (inclusivePrice * quantity);
   }, 0);
 
   const totalDiscount = parseFloat(invoice.discount_amount);
@@ -201,21 +199,20 @@ function GuestReceiptContent() {
   
 
   const getOrderTypeOrTable = (tableId: string) => {
-    const tableIdNum = parseInt(tableId, 10);
-    if (tableIdNum > 0) {
+    if (parseInt(tableId, 10) > 0) {
       const tableName = tables.find(t => t.id === tableId)?.table_name;
       return `Dine-In (Table: ${tableName || tableId})`;
     }
-    if (tableIdNum === 0) return 'Take Away';
-    if (tableIdNum === -1) return 'Retail';
-    if (tableIdNum === -2) return 'Delivery';
+    if (parseInt(tableId, 10) === 0) return 'Take Away';
+    if (parseInt(tableId, 10) === -1) return 'Retail';
+    if (parseInt(tableId, 10) === -2) return 'Delivery';
     return null;
   }
 
   const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
-
+  const customerName = customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : `(ID: ${invoice.customer_code})`;
 
   return (
     <div className="flex flex-col items-center">
@@ -231,7 +228,7 @@ function GuestReceiptContent() {
         
         <div className="text-xs space-y-0.5">
           <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
-          <div className="flex justify-between"><p>Customer: {customer?.first_name} {customer?.last_name || ''} ({invoice.customer_code})</p></div>
+          <div className="flex justify-between"><p>Customer: {customerName}</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
           <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
           {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable}</p></div>}
