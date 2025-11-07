@@ -107,12 +107,12 @@ function FinalInvoiceContent() {
   const grandTotal = parseFloat(invoice.grand_total);
   const serviceCharge = parseFloat(invoice.service_charge);
 
-  const tdl = subtotal * (parseFloat(invoice.tdl_percentage || "0") / 100);
+  const tdl = subtotal * (parseFloat(invoice.tdl || "0") / 100);
   const baseForSscl = subtotal + serviceCharge;
-  const sscl = baseForSscl * (parseFloat(invoice.sscl_percentage || "0") / 100);
+  const sscl = baseForSscl * (parseFloat(invoice.sscl_tax || "0") / 100);
   const baseForVat = baseForSscl + tdl;
-  const vat = baseForVat * (parseFloat(invoice.vat_percentage || "0") / 100);
-
+  const vat = baseForVat * (parseFloat(invoice.vat_amount || "0") / 100);
+  
   const totalTaxes = tdl + sscl + vat;
 
   return (
@@ -185,14 +185,26 @@ function FinalInvoiceContent() {
           </div>
           {serviceCharge > 0 && (
             <div className="flex justify-between">
-              <span>Service Charge:</span>
+              <span>Service Charge (10%):</span>
               <span>{serviceCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
-          {totalTaxes > 0 && (
+          {tdl > 0 && (
             <div className="flex justify-between">
-              <span>Taxes:</span>
-              <span>{totalTaxes.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span>TDL (1%):</span>
+              <span>{tdl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {sscl > 0 && (
+            <div className="flex justify-between">
+              <span>SSCL (2.5%):</span>
+              <span>{sscl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          )}
+          {vat > 0 && (
+            <div className="flex justify-between">
+              <span>VAT (18%):</span>
+              <span>{vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
