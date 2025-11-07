@@ -146,6 +146,7 @@ function GuestReceiptContent() {
     
     setTimeout(() => {
         window.print();
+        window.onafterprint = () => window.close();
     }, 500);
   };
 

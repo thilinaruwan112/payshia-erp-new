@@ -110,9 +110,12 @@ function FinalInvoiceContent() {
   useEffect(() => {
     if (!isLoading && invoice) {
         document.title = `Invoice - ${invoice.invoice_number}`;
-        setTimeout(() => window.print(), 500);
+        setTimeout(() => {
+            window.print();
+            window.onafterprint = () => window.close();
+        }, 500);
     }
-  }, [isLoading, invoice, id, companyId]);
+  }, [isLoading, invoice]);
 
   if (isLoading || !invoice) {
     return (
