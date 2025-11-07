@@ -305,7 +305,7 @@ export function KotPrintView({ invoiceId, companyId }: KotPrintViewProps) {
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
 
   return (
-    <div ref={kotRef} className="w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
+    <div id="receipt-print-area" ref={kotRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
       <div className="text-center mb-2">
         {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
         <h1 className="font-bold text-xl">K.O.T</h1>
