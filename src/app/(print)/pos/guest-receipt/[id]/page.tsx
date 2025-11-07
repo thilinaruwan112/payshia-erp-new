@@ -159,9 +159,7 @@ function GuestReceiptContent() {
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   const totalDiscount = parseFloat(invoice.discount_amount);
-  const subtotal = parseFloat(invoice.inv_amount);
-  const total = parseFloat(invoice.grand_total);
-
+  
   const calculateInclusivePrice = (basePrice: number) => {
     const isDineIn = invoice.remark?.includes('Dine-In');
     let serviceCharge = isDineIn ? basePrice * 0.10 : 0;
@@ -172,6 +170,13 @@ function GuestReceiptContent() {
     const vat = baseForVat * 0.18;
     return basePrice + serviceCharge + tdl + sscl + vat;
   };
+  
+  const subtotal = (invoice.items || []).reduce((acc, item) => {
+    const inclusiveTotal = calculateInclusivePrice(parseFloat(String(item.item_price))) * parseFloat(String(item.quantity));
+    return acc + inclusiveTotal;
+  }, 0);
+
+  const total = subtotal - totalDiscount;
   
   return (
     <div className="flex flex-col items-center">
@@ -230,10 +235,6 @@ function GuestReceiptContent() {
             <span>Discount:</span>
             <span>-{totalDiscount.toFixed(2)}</span>
           </div>
-         <div className="flex justify-between">
-          <span>Service Charge:</span>
-          <span>{parseFloat(invoice.service_charge).toFixed(2)}</span>
-        </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
             <span>{total.toFixed(2)}</span>
