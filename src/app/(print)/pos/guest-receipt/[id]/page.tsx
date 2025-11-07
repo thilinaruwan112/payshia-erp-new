@@ -193,10 +193,6 @@ function GuestReceiptContent() {
   const totalDiscount = parseFloat(invoice.discount_amount);
   const serviceCharge = parseFloat(invoice.service_charge);
 
-  const total = subtotal - totalDiscount + serviceCharge;
-  
-  const customerName = customer ? `${customer.first_name} ${customer.last_name}` : 'Walk-in';
-  
   const getOrderTypeOrTable = (tableId: string) => {
     if (tableId === '0') return 'Take Away';
     if (tableId === '-1') return 'Retail';
@@ -223,7 +219,7 @@ function GuestReceiptContent() {
         
         <div className="text-xs space-y-0.5">
           <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
-          <div className="flex justify-between"><p>Customer: {customerName} ({invoice.customer_code})</p></div>
+          <div className="flex justify-between"><p>Customer: {customer?.first_name} {customer?.last_name || ''} ({invoice.customer_code})</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
           <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
           {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable}</p></div>}
@@ -244,18 +240,32 @@ function GuestReceiptContent() {
           <tbody>
             {(invoice.items || []).map((item, index) => {
               const basePrice = parseFloat(String(item.item_price));
-              const lineTotal = basePrice * parseFloat(String(item.quantity));
               const itemDiscount = parseFloat(String(item.item_discount));
+              const quantity = parseFloat(String(item.quantity));
+              
+              // Calculate the item's share of overall taxes and service charge
+              const itemSubtotal = basePrice * quantity;
+              const subtotalWithoutItemDiscounts = subtotal - (totalDiscount - parseFloat(invoice.discount_amount));
+              const itemShareOfTotal = subtotalWithoutItemDiscounts > 0 ? (itemSubtotal - itemDiscount) / subtotalWithoutItemDiscounts : 0;
+              
+              const itemServiceCharge = itemShareOfTotal * serviceCharge;
+              const itemTdl = itemShareOfTotal * parseFloat(invoice.tdl || '0');
+              const itemSscl = itemShareOfTotal * parseFloat(invoice.sscl_tax || '0');
+              const itemVat = itemShareOfTotal * parseFloat(invoice.vat_amount || '0');
+
+              const inclusivePrice = basePrice + (itemServiceCharge + itemTdl + itemSscl + itemVat) / quantity;
+              const lineTotal = (inclusivePrice * quantity) - itemDiscount;
+
               return (
                 <React.Fragment key={index}>
                   <tr>
                     <td colSpan={4} className="pt-1">{item.product_print_name}</td>
                   </tr>
                   <tr className="align-top">
-                    <td>{parseFloat(String(item.quantity)).toFixed(3)}</td>
-                    <td>{basePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>{quantity.toFixed(3)}</td>
+                    <td>{inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td>{itemDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td className="text-right">{(lineTotal - itemDiscount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="text-right">{lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
                 </React.Fragment>
               )
@@ -285,7 +295,7 @@ function GuestReceiptContent() {
           </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
-            <span>{total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>{parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
 
