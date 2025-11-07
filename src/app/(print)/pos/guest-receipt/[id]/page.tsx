@@ -211,27 +211,27 @@ function GuestReceiptContent() {
         <table className="w-full text-xs">
           <thead>
             <tr>
-              <th className='text-left'>ITEM</th>
-              <th className='text-center'>QTY</th>
-              <th className='text-right'>PRICE</th>
-              <th className='text-right'>TOTAL</th>
+              <th className="text-left w-[25%]">QTY</th>
+              <th className="text-left w-[25%]">PRICE</th>
+              <th className="text-left w-[25%]">DISC</th>
+              <th className="text-right w-[25%]">TOTAL</th>
             </tr>
           </thead>
           <tbody>
             {(invoice.items || []).map((item, index) => {
               const inclusivePrice = calculateInclusivePrice(parseFloat(String(item.item_price)));
-              const discountedPrice = inclusivePrice - (parseFloat(String(item.item_discount)) / parseFloat(String(item.quantity)));
-              const inclusiveTotal = inclusivePrice * parseFloat(String(item.quantity));
+              const lineTotal = inclusivePrice * parseFloat(String(item.quantity));
+              const itemDiscount = parseFloat(String(item.item_discount));
               return (
                 <React.Fragment key={index}>
                   <tr>
-                    <td colSpan={4} className="pt-1">{item.product_print_name}</td>
+                    <td colSpan={4} className="pt-1">{item.product_print_name} - {inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
                   <tr className="align-top">
-                    <td></td>
-                    <td className="text-center">{parseFloat(String(item.quantity))}</td>
-                    <td className="text-right">{discountedPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td className="text-right">{inclusiveTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>{parseFloat(String(item.quantity)).toFixed(3)}</td>
+                    <td>{inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>{itemDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="text-right">{(lineTotal - itemDiscount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   </tr>
                 </React.Fragment>
               )
