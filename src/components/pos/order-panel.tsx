@@ -1,6 +1,7 @@
+
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
 import type { User, Table as TableType, Location, Invoice, Customer, PaymentMethod } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -97,7 +98,18 @@ const PaymentDialog = ({
 }) => {
   const { currencySymbol } = useCurrency();
   const [amountTendered, setAmountTendered] = React.useState('');
+  const [selectedMethodId, setSelectedMethodId] = React.useState<string | null>(null);
   const change = Number(amountTendered) - orderTotals.total;
+
+  const handleConfirm = () => {
+    if (selectedMethodId) {
+      onSuccessfulPayment(selectedMethodId, Number(amountTendered) || orderTotals.total);
+    }
+  };
+
+  React.useEffect(() => {
+    setAmountTendered(orderTotals.total.toFixed(2));
+  }, [orderTotals.total]);
 
   return (
     <DialogContent>
@@ -113,9 +125,9 @@ const PaymentDialog = ({
           {paymentMethods.map((method) => (
             <Button
               key={method.id}
-              variant="outline"
+              variant={selectedMethodId === method.id ? 'default' : 'outline'}
               className="h-20 text-lg"
-              onClick={() => onSuccessfulPayment(method.id, orderTotals.total)}
+              onClick={() => setSelectedMethodId(method.id)}
             >
               {method.method}
             </Button>
@@ -142,8 +154,8 @@ const PaymentDialog = ({
           <Button variant="outline">Cancel</Button>
         </DialogClose>
         <Button
-          onClick={() => onSuccessfulPayment('0', Number(amountTendered))}
-          disabled={!amountTendered || change < 0}
+          onClick={handleConfirm}
+          disabled={!selectedMethodId || !amountTendered || change < 0}
         >
           Confirm Payment
         </Button>
@@ -372,9 +384,7 @@ export function OrderPanel({
             description: `Invoice #${result.invoice_number} created.`
         });
         
-        if (result.receipt_id) {
-          window.open(`/pos/receipt/print/${result.receipt_id}?company_id=${company_id}`, '_blank');
-        }
+        window.open(`/pos/final-invoice/${result.invoice_number}?company_id=${company_id}`, '_blank');
         
         setPaymentOpen(false);
         onClearCart(orderId);
@@ -450,7 +460,7 @@ export function OrderPanel({
                     </SelectTrigger>
                     <SelectContent>
                         {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
+                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.first_name} {c.last_name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
