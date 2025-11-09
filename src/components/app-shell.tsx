@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { type ReactNode, useState, useEffect } from 'react';
+import React, { type ReactNode, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -182,6 +182,25 @@ interface NavItem {
   name: string;
   subItems?: NavItem[];
 }
+
+interface Page {
+    id: string;
+    name: string;
+    display_name: string;
+    description: string;
+    category: string;
+    page_url: string | null;
+}
+
+interface RolePermission {
+    id: string;
+    role_id: string;
+    page_id: string;
+    company_id: string;
+    right_access: string; // '1' or '0'
+    process_access: string; // '1' or '0'
+}
+
 
 function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
     const { currentLocation, setCurrentLocation, availableLocations, isLoading } = useLocation();
@@ -475,65 +494,13 @@ const NavMenu = ({ items, pathname, handleLinkClick }: { items: NavItem[], pathn
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
-  const [user, setUser] = useState({ name: '', email: '', role: '', avatar: '' });
+  const [user, setUser] = useState({ name: '', email: '', role: '', roleId: '', avatar: '' });
   const [companyName, setCompanyName] = useState('Payshia ERP');
   const [roles, setRoles] = useState<Role[]>([]);
   const { company_id } = useLocation();
   const [navItems, setNavItems] = useState<NavItem[]>([]);
   const [isLoadingNav, setIsLoadingNav] = useState(true);
-
-  useEffect(() => {
-    const fetchNavData = async () => {
-        setIsLoadingNav(true);
-        try {
-            const response = await fetcher('https://qa-server-erp.payshia.com/pages');
-            const result = await response.json();
-            if (result.status === 'success') {
-                const pageData = result.data;
-                const categoryMap: { [key: string]: NavItem } = {};
-                const topLevelItems: NavItem[] = [];
-
-                pageData.forEach((page: any) => {
-                    const icon = iconMap[page.name] || HelpCircle;
-                    const navItem: NavItem = {
-                        href: page.page_url,
-                        label: page.display_name,
-                        icon: icon,
-                        name: page.name,
-                    };
-                    
-                    if (page.name === 'dashboard' || page.name === 'pos-system' || page.name === 'how-to-use' || page.name === 'service-center-warranty') {
-                      topLevelItems.push(navItem);
-                    }
-                    else if (page.category) {
-                        if (!categoryMap[page.category]) {
-                            const parentName = page.category.toLowerCase().replace(' & ', '-').replace(/ /g, '-');
-                            categoryMap[page.category] = {
-                                label: page.category,
-                                icon: iconMap[parentName] || HelpCircle,
-                                name: parentName,
-                                subItems: [],
-                            };
-                        }
-                        // Don't add parent category as its own sub-item
-                        if (page.display_name !== page.category) {
-                            categoryMap[page.category].subItems!.push(navItem);
-                        }
-                    }
-                });
-
-                const finalNavItems = [...topLevelItems, ...Object.values(categoryMap)];
-                setNavItems(finalNavItems);
-            }
-        } catch (error) {
-            console.error("Failed to fetch nav items:", error);
-        } finally {
-            setIsLoadingNav(false);
-        }
-    };
-
-    fetchNavData();
-  }, []);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -563,6 +530,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 name: `${userData.data.first_name} ${userData.data.last_name}`,
                 email: userData.data.email,
                 role: roleName,
+                roleId: roleId,
                 avatar: userData.data.img_path || `https://placehold.co/100x100.png?text=${userData.data.first_name.charAt(0)}`
             });
 
@@ -577,6 +545,89 @@ export function AppShell({ children }: { children: ReactNode }) {
       setCompanyName(name);
     }
   }, [company_id]);
+  
+  useEffect(() => {
+    const fetchNavData = async () => {
+        if (!user.roleId || !company_id) return;
+        setIsLoadingNav(true);
+        try {
+            const [pagesResponse, permsResponse] = await Promise.all([
+                fetcher('https://qa-server-erp.payshia.com/pages'),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/role-permissions/by-role/`, {
+                    method: 'POST',
+                    body: JSON.stringify({ role_id: parseInt(user.roleId, 10), company_id: company_id })
+                })
+            ]);
+
+            if (!pagesResponse.ok) throw new Error('Failed to fetch pages.');
+            if (!permsResponse.ok) throw new Error('Failed to fetch role permissions.');
+
+            const pagesResult = await pagesResponse.json();
+            const permsResult = await permsResponse.json();
+
+            const allPages: Page[] = pagesResult.data || [];
+            const userPermissions: RolePermission[] = permsResult.data || [];
+
+            const accessiblePageIds = new Set(userPermissions.filter(p => p.right_access === '1').map(p => p.page_id));
+            const accessiblePages = allPages.filter(page => accessiblePageIds.has(page.id));
+
+            const categoryMap: { [key: string]: NavItem } = {};
+            const topLevelItems: NavItem[] = [];
+
+            accessiblePages.forEach((page) => {
+                if (!page.page_url) return;
+                
+                const icon = iconMap[page.name] || HelpCircle;
+                const navItem: NavItem = {
+                    href: page.page_url,
+                    label: page.display_name,
+                    icon: icon,
+                    name: page.name,
+                };
+                
+                if (page.category) {
+                    if (!categoryMap[page.category]) {
+                        const parentName = page.category.toLowerCase().replace(' & ', '-').replace(/ /g, '-');
+                        categoryMap[page.category] = {
+                            label: page.category,
+                            icon: iconMap[parentName] || HelpCircle,
+                            name: parentName,
+                            subItems: [],
+                        };
+                    }
+                    // Add item to its category
+                    categoryMap[page.category].subItems!.push(navItem);
+                } else {
+                    // This is a top-level item with no category
+                    topLevelItems.push(navItem);
+                }
+            });
+            
+            // Filter out categories that ended up with no accessible sub-items
+            for (const categoryName in categoryMap) {
+                if (categoryMap[categoryName].subItems!.length === 0) {
+                    delete categoryMap[categoryName];
+                }
+            }
+            
+            const finalNavItems = [...topLevelItems, ...Object.values(categoryMap)];
+            setNavItems(finalNavItems);
+            
+        } catch (error) {
+            toast({
+              variant: 'destructive',
+              title: 'Error Loading Navigation',
+              description: error instanceof Error ? error.message : "Could not build navigation menu.",
+            });
+            console.error("Failed to fetch nav items:", error);
+        } finally {
+            setIsLoadingNav(false);
+        }
+    };
+
+    fetchNavData();
+  }, [user.roleId, company_id, toast]);
+
 
   const handleLinkClick = (isExternal: boolean | undefined, e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     if (!isExternal) {
