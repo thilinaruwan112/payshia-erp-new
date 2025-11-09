@@ -22,7 +22,6 @@ import {
   CheckCircle,
   ArrowRight,
 } from 'lucide-react';
-import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -36,9 +35,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { CustomerFormDialog } from '../customer-form-dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Switch } from '../ui/switch';
 import { format } from 'date-fns';
@@ -497,7 +493,7 @@ export function OrderPanel({
         service_charge: orderTotals.serviceCharge,
         tendered_amount: tenderedAmount,
         close_type: paymentMethodId,
-        invoice_status: isCredit ? '1' : '1', // 1=Active/Paid
+        invoice_status: isCredit ? '1' : '1',
         payment_status: tenderedAmount > 0 ? (tenderedAmount >= orderTotals.total ? "Paid" : "Partial") : "Pending",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
@@ -519,7 +515,7 @@ export function OrderPanel({
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
             table_id: tableIdValue,
-            cost_price: item.product.cost_price || 0,
+            cost_price: item.product.costPrice || 0,
             is_active: 1,
             hold_status: 0,
             printed_status: 1,
@@ -610,7 +606,7 @@ export function OrderPanel({
       {steward && (
            <div className='p-2 px-4 border-b border-border bg-muted/30'>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <UserCheck className="h-4 w-4" />
+                    <UserIcon className="h-4 w-4" />
                     <span>Steward: <span className="font-semibold text-foreground">{steward.user_name}</span></span>
                 </div>
             </div>
@@ -684,7 +680,7 @@ export function OrderPanel({
           <span>Subtotal</span>
           <span>{currencySymbol}{orderTotals.subtotal.toFixed(2)}</span>
         </div>
-         <div className="flex justify-between text-sm text-green-600">
+         <div className="flex justify-between text-sm text-destructive">
           <span>Item Discounts</span>
           <span>-{currencySymbol}{orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
@@ -703,7 +699,7 @@ export function OrderPanel({
             </div>
         )}
 
-         <div className="flex justify-between text-sm text-green-600">
+         <div className="flex justify-between text-sm text-destructive">
           <span>Order Discount</span>
           <span>-{currencySymbol}{discount.toFixed(2)}</span>
         </div>
