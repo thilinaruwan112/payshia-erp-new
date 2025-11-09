@@ -4,8 +4,6 @@
 // Import the external CSS file
 import '@/app/(print)/pos/print-receipt.css';
 
-
-
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import type { Invoice, User, Location, Table, InvoiceItem } from '@/lib/types';
@@ -270,7 +268,6 @@ function GuestReceiptContent() {
         <table className="w-full text-xs">
           <thead>
             <tr className="font-semibold">
-              <td className="text-left w-[10%]">#</td>
               <td className="text-left">ITEM</td>
               <td className="text-right w-[20%]">PRICE</td>
               <td className="text-right w-[20%]">DISC PRICE</td>
@@ -289,10 +286,9 @@ function GuestReceiptContent() {
               return (
                 <React.Fragment key={index}>
                     <tr className="border-t border-dashed border-black">
-                        <td colSpan={6}>- {item.variant_sku} - {item.product_print_name}</td>
+                        <td colSpan={5}>{index + 1}. - {item.variant_sku} - {item.product_print_name}</td>
                     </tr>
                     <tr>
-                        <td>#{index + 1}</td>
                         <td></td>
                         <td className="text-right">{basePrice.toFixed(2)}</td>
                         <td className="text-right">{discountedPrice.toFixed(2)}</td>
@@ -301,7 +297,7 @@ function GuestReceiptContent() {
                     </tr>
                     {itemDiscount > 0 && (
                         <tr>
-                            <td colSpan={6} className="text-right text-xs italic">Special Discount: -{itemDiscount.toFixed(2)}</td>
+                            <td colSpan={5} className="text-right text-xs italic">Special Discount: -{itemDiscount.toFixed(2)}</td>
                         </tr>
                     )}
                 </React.Fragment>
@@ -343,5 +339,3 @@ export default function GuestReceiptPage() {
         </Suspense>
     )
 }
-
-    
