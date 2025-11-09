@@ -8,7 +8,7 @@ import '@/app/(print)/pos/print-receipt.css';
 
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
-import type { Invoice, User, Location, Table } from '@/lib/types';
+import type { Invoice, User, Location, Table, InvoiceItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -25,6 +25,7 @@ interface Company {
     company_telephone: string;
 }
 
+// Extend the Window interface for JSPrintManager
 declare global {
   interface Window {
       JSPM: any;
@@ -268,12 +269,16 @@ function GuestReceiptContent() {
 
         <table className="w-full text-xs">
            <thead>
-              <tr>
-                <th colSpan={5} className="text-left py-1"># ITEM</th>
+              <tr className="border-b border-dashed">
+                <th className="text-left w-[5%] pb-1">#</th>
+                <th className="text-left pb-1">ITEM</th>
+                <th className="text-right pb-1">PRICE</th>
+                <th className="text-center pb-1">QTY</th>
+                <th className="text-right pb-1">AMOUNT</th>
               </tr>
             </thead>
             <tbody>
-              {(invoice.items || []).map((item, index) => {
+              {(invoice.items || []).map((item: InvoiceItem, index: number) => {
                 const basePrice = parseFloat(String(item.item_price));
                 const quantity = parseFloat(String(item.quantity));
                 const itemDiscount = parseFloat(String(item.item_discount)) || 0;
@@ -288,11 +293,11 @@ function GuestReceiptContent() {
                       </td>
                     </tr>
                     <tr className="align-top">
-                      <td className="w-[5%] text-left">{index + 1}.</td>
-                      <td className="w-[25%] text-right">{basePrice.toFixed(2)}</td>
-                      <td className="w-[25%] text-right">{discountedPrice.toFixed(2)}</td>
-                      <td className="w-[20%] text-center">{quantity.toFixed(2)}</td>
-                      <td className="w-[25%] text-right">{lineTotal.toFixed(2)}</td>
+                      <td className="text-left">{index + 1}.</td>
+                      <td className="text-left"></td>
+                      <td className="text-right">{basePrice.toFixed(2)}</td>
+                      <td className="text-center">{quantity.toFixed(2)}</td>
+                      <td className="text-right">{lineTotal.toFixed(2)}</td>
                     </tr>
                     {itemDiscount > 0 && (
                       <tr className="text-xs">
