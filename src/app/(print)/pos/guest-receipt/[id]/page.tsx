@@ -268,6 +268,16 @@ function GuestReceiptContent() {
         <div className="my-2 border-t-2 border-dashed border-black"></div>
 
         <table className="w-full text-xs">
+          <thead>
+            <tr className="font-semibold">
+              <td className="text-left w-[10%]">#</td>
+              <td className="text-left">ITEM</td>
+              <td className="text-right w-[20%]">PRICE</td>
+              <td className="text-right w-[20%]">DISC PRICE</td>
+              <td className="text-right w-[15%]">QTY</td>
+              <td className="text-right w-[20%]">AMOUNT</td>
+            </tr>
+          </thead>
           <tbody>
             {(invoice.items || []).map((item: InvoiceItem, index: number) => {
               const basePrice = parseFloat(String(item.item_price));
@@ -278,19 +288,20 @@ function GuestReceiptContent() {
               
               return (
                 <React.Fragment key={index}>
-                    <tr>
-                        <td colSpan={5} className="pt-1 font-semibold">- {item.variant_sku} - {item.product_print_name}</td>
+                    <tr className="border-t border-dashed border-black">
+                        <td colSpan={6}>- {item.variant_sku} - {item.product_print_name}</td>
                     </tr>
                     <tr>
-                        <td className="text-left w-[10%]">#{index + 1}</td>
-                        <td className="text-right w-[25%]">{basePrice.toFixed(2)}</td>
-                        <td className="text-right w-[25%]">{discountedPrice.toFixed(2)}</td>
-                        <td className="text-right w-[15%]">{quantity.toFixed(2)}</td>
-                        <td className="text-right w-[25%] font-semibold">{lineTotal.toFixed(2)}</td>
+                        <td>#{index + 1}</td>
+                        <td></td>
+                        <td className="text-right">{basePrice.toFixed(2)}</td>
+                        <td className="text-right">{discountedPrice.toFixed(2)}</td>
+                        <td className="text-right">{quantity.toFixed(2)}</td>
+                        <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
                     </tr>
                     {itemDiscount > 0 && (
                         <tr>
-                            <td colSpan={5} className="text-right text-xs italic">Special Discount: -{itemDiscount.toFixed(2)}</td>
+                            <td colSpan={6} className="text-right text-xs italic">Special Discount: -{itemDiscount.toFixed(2)}</td>
                         </tr>
                     )}
                 </React.Fragment>
@@ -332,3 +343,5 @@ export default function GuestReceiptPage() {
         </Suspense>
     )
 }
+
+    
