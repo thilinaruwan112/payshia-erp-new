@@ -196,28 +196,19 @@ function GuestReceiptContent() {
     }
   }, [isLoading, invoice, isJspmConnected]);
 
-  if (isLoading || !invoice) {
-    return (
-      <div className="w-[80mm] bg-white text-black p-2 font-mono">
-        <Skeleton className="h-6 w-3/4 mx-auto" />
-        <Skeleton className="h-5 w-full mt-2" />
-        <div className="my-2 border-t border-dashed border-black"></div>
-        <div className="space-y-4">
-            {Array.from({length: 3}).map((_, i) => (
-                <div key={i} className="flex justify-between items-center">
-                    <Skeleton className="h-6 w-3/4" />
-                    <Skeleton className="h-8 w-1/4" />
-                </div>
-            ))}
-        </div>
-      </div>
-    );
+  const getOrderTypeOrTable = (tableId: string) => {
+    if (parseInt(tableId, 10) > 0) {
+      const tableName = tables.find(t => t.id === tableId)?.table_name;
+      return `Dine-In (Table: ${tableName || tableId})`;
+    }
+    if (tableId === '0') return 'Take Away';
+    if (tableId === '-1') return 'Retail';
+    if (tableId === '-2') return 'Delivery';
+    return null;
   }
-  
-  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
-  
+
   const calculateInclusivePrice = (basePrice: number) => {
-    if (!location) return basePrice;
+    if (!location || !invoice) return basePrice;
 
     const orderType = getOrderTypeOrTable(invoice.table_id);
 
@@ -246,6 +237,26 @@ function GuestReceiptContent() {
     return basePrice + serviceCharge + tdl + sscl + vat;
   }
 
+  if (isLoading || !invoice) {
+    return (
+      <div className="w-[80mm] bg-white text-black p-2 font-mono">
+        <Skeleton className="h-6 w-3/4 mx-auto" />
+        <Skeleton className="h-5 w-full mt-2" />
+        <div className="my-2 border-t border-dashed border-black"></div>
+        <div className="space-y-4">
+            {Array.from({length: 3}).map((_, i) => (
+                <div key={i} className="flex justify-between items-center">
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-8 w-1/4" />
+                </div>
+            ))}
+        </div>
+      </div>
+    );
+  }
+  
+  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
+  
   const subtotal = (invoice.items || []).reduce((acc, item) => {
     const itemPrice = parseFloat(String(item.item_price));
     const quantity = parseFloat(String(item.quantity));
@@ -260,17 +271,7 @@ function GuestReceiptContent() {
   const itemCount = invoice.items?.length || 0;
   const totalQuantity = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
 
-  const getOrderTypeOrTable = (tableId: string) => {
-    if (parseInt(tableId, 10) > 0) {
-      const tableName = tables.find(t => t.id === tableId)?.table_name;
-      return `Dine-In (Table: ${tableName || tableId})`;
-    }
-    if (tableId === '0') return 'Take Away';
-    if (tableId === '-1') return 'Retail';
-    if (tableId === '-2') return 'Delivery';
-    return null;
-  }
-
+  
   const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
