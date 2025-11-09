@@ -269,10 +269,10 @@ function GuestReceiptContent() {
           <thead>
             <tr className="font-semibold">
               <td className="text-left">ITEM</td>
-              <td className="text-right w-[20%]">PRICE</td>
-              <td className="text-right w-[20%]">DISC PRICE</td>
-              <td className="text-right w-[15%]">QTY</td>
-              <td className="text-right w-[20%]">AMOUNT</td>
+              <td className="text-right">SELLING PRICE</td>
+              <td className="text-right">DISC. PRICE</td>
+              <td className="text-right">QTY</td>
+              <td className="text-right">AMOUNT</td>
             </tr>
           </thead>
           <tbody>
