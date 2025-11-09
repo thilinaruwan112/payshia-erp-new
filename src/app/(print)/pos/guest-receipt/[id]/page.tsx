@@ -90,7 +90,7 @@ function GuestReceiptContent() {
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`).then(async res => {
                     if(res.ok) {
                         const allUsersRes = await res.json();
-                        const allUsers: User[] = allUsersRes.data;
+                        const allUsers = allUsersRes.data;
                         return allUsers.find((u:User) => u.user_name === data.created_by) || null;
                     }
                     return null;
@@ -268,47 +268,44 @@ function GuestReceiptContent() {
         <div className="my-2 border-t-2 border-dashed border-black"></div>
 
         <table className="w-full text-xs">
-           <thead>
-              <tr className="border-b border-dashed">
-                <th className="text-left w-[5%] pb-1">#</th>
-                <th className="text-left pb-1">ITEM</th>
+          <thead>
+            <tr className="border-b border-dashed">
+                <th className="text-left w-[50%] pb-1"># ITEM</th>
                 <th className="text-right pb-1">PRICE</th>
-                <th className="text-center pb-1">QTY</th>
+                <th className="text-right pb-1">QTY</th>
                 <th className="text-right pb-1">AMOUNT</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(invoice.items || []).map((item: InvoiceItem, index: number) => {
-                const basePrice = parseFloat(String(item.item_price));
-                const quantity = parseFloat(String(item.quantity));
-                const itemDiscount = parseFloat(String(item.item_discount)) || 0;
-                const discountedPrice = basePrice;
-                const lineTotal = discountedPrice * quantity;
-
-                return (
-                  <React.Fragment key={index}>
-                    <tr>
-                      <td colSpan={5} className="pt-1 font-semibold">
-                        - {item.variant_sku} - {item.product_print_name}
-                      </td>
-                    </tr>
-                    <tr className="align-top">
-                      <td className="text-left">{index + 1}.</td>
-                      <td className="text-left"></td>
-                      <td className="text-right">{basePrice.toFixed(2)}</td>
-                      <td className="text-center">{quantity.toFixed(2)}</td>
-                      <td className="text-right">{lineTotal.toFixed(2)}</td>
-                    </tr>
-                    {itemDiscount > 0 && (
+            </tr>
+          </thead>
+          <tbody>
+            {(invoice.items || []).map((item: InvoiceItem, index: number) => {
+              const basePrice = parseFloat(String(item.item_price));
+              const quantity = parseFloat(String(item.quantity));
+              const itemDiscount = parseFloat(String(item.item_discount)) || 0;
+              const lineTotal = (basePrice * quantity);
+              
+              return (
+                <React.Fragment key={index}>
+                  <tr>
+                    <td colSpan={4} className="pt-1 font-semibold">
+                      - {item.variant_sku} - {item.product_print_name}
+                    </td>
+                  </tr>
+                  <tr className="align-top">
+                    <td>{index + 1}.</td>
+                    <td className="text-right">{basePrice.toFixed(2)}</td>
+                    <td className="text-right">{quantity.toFixed(2)}</td>
+                    <td className="text-right">{lineTotal.toFixed(2)}</td>
+                  </tr>
+                  {itemDiscount > 0 && (
                       <tr className="text-xs">
-                          <td colSpan={4} className="text-right italic">Discount:</td>
+                          <td colSpan={3} className="text-right italic">Discount:</td>
                           <td className="text-right italic">-{itemDiscount.toFixed(2)}</td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                )
-              })}
-            </tbody>
+                  )}
+                </React.Fragment>
+              )
+            })}
+          </tbody>
         </table>
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>
