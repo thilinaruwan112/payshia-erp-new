@@ -239,6 +239,36 @@ function GuestReceiptContent() {
     return null;
   }
 
+  const calculateInclusivePrice = (basePrice: number) => {
+    if (!location) return basePrice;
+
+    const orderType = getOrderTypeOrTable(invoice.table_id);
+
+    let serviceCharge = 0;
+    if (orderType?.startsWith('Dine-In') && location.service_charge_status === 'Enabled') {
+        serviceCharge = basePrice * 0.10;
+    }
+    
+    let tdl = 0;
+    if (location.tdl_status === 'Enabled') {
+      tdl = (basePrice + serviceCharge) * 0.01;
+    }
+
+    const baseForSscl = basePrice + serviceCharge;
+    let sscl = 0;
+    if (location.sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+    
+    const baseForVat = baseForSscl + tdl + sscl;
+    let vat = 0;
+    if (location.vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
+    return basePrice + serviceCharge + tdl + sscl + vat;
+  }
+
   const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
@@ -284,6 +314,7 @@ function GuestReceiptContent() {
               const discountedPrice = basePrice - itemDiscount;
               const quantity = parseFloat(String(item.quantity));
               const lineTotal = discountedPrice * quantity;
+              const markedPrice = calculateInclusivePrice(basePrice);
               
               return (
                 <React.Fragment key={index}>
@@ -292,7 +323,7 @@ function GuestReceiptContent() {
                     </tr>
                     <tr>
                         <td></td>
-                        <td className="text-left">{basePrice.toFixed(2)}</td>
+                        <td className="text-left">{markedPrice.toFixed(2)}</td>
                         <td className="text-center">{discountedPrice.toFixed(2)}</td>
                         <td className="text-right">{quantity.toFixed(2)}</td>
                         <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
