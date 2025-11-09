@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -50,6 +51,7 @@ export default function EditRolePermissionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [touchedPages, setTouchedPages] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function fetchPermissionsData() {
@@ -89,14 +91,17 @@ export default function EditRolePermissionsPage() {
             const rolePermissions: RolePermission[] = rolePermsResult.data || [];
             
             const initialPermissions: string[] = [];
+            const initialTouched = new Set<string>();
             rolePermissions.forEach(perm => {
                 const page = allPages.find(p => p.id === perm.page_id);
                 if (page) {
                     if (perm.right_access === '1') initialPermissions.push(`${page.name}:read`);
                     if (perm.process_access === '1') initialPermissions.push(`${page.name}:process`);
+                    initialTouched.add(page.id);
                 }
             });
             setSelectedPermissions(initialPermissions);
+            setTouchedPages(initialTouched);
 
             if (!roleResponse.ok) throw new Error('Failed to fetch role details.');
             const rolesResult = await roleResponse.json();
@@ -120,7 +125,8 @@ export default function EditRolePermissionsPage() {
   
   const isSuperAdmin = selectedPermissions.includes('admin-all:process');
 
-  const handlePermissionChange = (permission: string, checked: boolean) => {
+  const handlePermissionChange = (pageId: string, permission: string, checked: boolean) => {
+    setTouchedPages(prev => new Set(prev).add(pageId));
     setSelectedPermissions((prev) => {
         if (permission === 'admin-all:process') {
             return checked ? ['admin-all:process'] : [];
@@ -150,10 +156,12 @@ export default function EditRolePermissionsPage() {
         .filter(p => p.name !== 'admin-all')
         .flatMap(p => [`${p.name}:read`, `${p.name}:process`]);
     setSelectedPermissions(allPerms);
+    setTouchedPages(new Set(pages.map(p => p.id)));
   }
 
   const handleUncheckAll = () => {
     setSelectedPermissions([]);
+    setTouchedPages(new Set(pages.map(p => p.id)));
   }
 
   const handleSaveChanges = async () => {
@@ -164,17 +172,17 @@ export default function EditRolePermissionsPage() {
     setIsSubmitting(true);
 
     const permissionsPayload: { [pageId: string]: { right_access: boolean; process_access: boolean } } = {};
-
-    pages.forEach(page => {
-        const hasRead = selectedPermissions.includes(`${page.name}:read`);
-        const hasProcess = selectedPermissions.includes(`${page.name}:process`);
-        
-        // Only include pages where at least one permission is explicitly set
-        if(hasRead || hasProcess) {
+    
+    // Process all pages that were either initially loaded or touched by the user
+    touchedPages.forEach(pageId => {
+        const page = pages.find(p => p.id === pageId);
+        if (page) {
+            const hasRead = selectedPermissions.includes(`${page.name}:read`);
+            const hasProcess = selectedPermissions.includes(`${page.name}:process`);
             permissionsPayload[page.id] = { right_access: hasRead, process_access: hasProcess };
         }
     });
-    
+
     if (isSuperAdmin) {
         const adminPage = pages.find(p => p.name === 'admin-all');
         if (adminPage) permissionsPayload[adminPage.id] = { right_access: true, process_access: true };
@@ -276,7 +284,7 @@ export default function EditRolePermissionsPage() {
                                                 <Checkbox
                                                     id={`${role.id}-${page.name}-process`}
                                                     checked={selectedPermissions.includes('admin-all:process')}
-                                                    onCheckedChange={(checked) => handlePermissionChange('admin-all:process', !!checked)}
+                                                    onCheckedChange={(checked) => handlePermissionChange(page.id, 'admin-all:process', !!checked)}
                                                 />
                                                 <Label htmlFor={`${role.id}-${page.name}-process`} className="font-normal cursor-pointer text-sm">
                                                     Enable Full Access
@@ -288,7 +296,7 @@ export default function EditRolePermissionsPage() {
                                                     <Checkbox
                                                         id={`${role.id}-${page.name}-read`}
                                                         checked={isSuperAdmin || selectedPermissions.includes(`${page.name}:read`)}
-                                                        onCheckedChange={(checked) => handlePermissionChange(`${page.name}:read`, !!checked)}
+                                                        onCheckedChange={(checked) => handlePermissionChange(page.id, `${page.name}:read`, !!checked)}
                                                         disabled={isSuperAdmin}
                                                     />
                                                     <Label htmlFor={`${role.id}-${page.name}-read`} className="font-normal cursor-pointer text-sm">
@@ -299,7 +307,7 @@ export default function EditRolePermissionsPage() {
                                                     <Checkbox
                                                         id={`${role.id}-${page.name}-process`}
                                                         checked={isSuperAdmin || selectedPermissions.includes(`${page.name}:process`)}
-                                                        onCheckedChange={(checked) => handlePermissionChange(`${page.name}:process`, !!checked)}
+                                                        onCheckedChange={(checked) => handlePermissionChange(page.id, `${page.name}:process`, !!checked)}
                                                         disabled={isSuperAdmin}
                                                     />
                                                     <Label htmlFor={`${role.id}-${page.name}-process`} className="font-normal cursor-pointer text-sm">
