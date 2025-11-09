@@ -192,8 +192,8 @@ function GuestReceiptContent() {
 
   useEffect(() => {
     if (!isLoading && invoice) {
-        document.title = `Guest Receipt - ${invoice.invoice_number}`;
-        handlePrint();
+      document.title = `Guest Receipt - ${invoice.invoice_number}`;
+      handlePrint();
     }
   }, [isLoading, invoice, isJspmConnected]);
 
@@ -284,7 +284,7 @@ function GuestReceiptContent() {
                   <React.Fragment key={index}>
                     <tr>
                       <td colSpan={5} className="pt-1 font-semibold">
-                        - {item.product_code} - {item.product_print_name}
+                        - {item.variant_sku} - {item.product_print_name}
                       </td>
                     </tr>
                     <tr className="align-top">
