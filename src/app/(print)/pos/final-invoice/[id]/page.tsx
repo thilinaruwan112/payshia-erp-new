@@ -149,40 +149,14 @@ function FinalInvoiceContent() {
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-  const subtotal = (invoice.items || []).reduce((acc, item) => {
-    const itemPrice = parseFloat(String(item.item_price));
-    const quantity = parseFloat(String(item.quantity));
-    return acc + (itemPrice * quantity);
-  }, 0);
-  
-  const totalItemDiscount = (invoice.items || []).reduce((acc, item) => acc + (parseFloat(String(item.item_discount)) || 0), 0);
-  const totalOrderDiscount = parseFloat(invoice.discount_amount) || 0;
-  const totalDiscount = totalItemDiscount + (totalOrderDiscount - totalItemDiscount);
-  
+  const subtotal = parseFloat(invoice.inv_amount);
+  const totalDiscount = parseFloat(invoice.discount_amount);
   const grandTotal = parseFloat(invoice.grand_total);
   
-  const orderType = getOrderTypeOrTable(invoice.table_id);
-  
-  const baseForTaxes = subtotal - totalItemDiscount;
-  let serviceCharge = 0;
-  if (orderType?.startsWith('Dine-In') && location?.service_charge_status === 'Enabled') {
-    serviceCharge = baseForTaxes * 0.10;
-  }
-  const baseForTdl = baseForTaxes + serviceCharge;
-  let tdl = 0;
-  if (location?.tdl_status === 'Enabled') {
-    tdl = baseForTdl * 0.01;
-  }
-  const baseForSscl = baseForTaxes + serviceCharge;
-  let sscl = 0;
-  if (location?.sscl_status === 'Enabled') {
-    sscl = baseForSscl * 0.025;
-  }
-  const baseForVat = baseForTaxes + serviceCharge + tdl + sscl;
-  let vat = 0;
-  if (location?.vat_status === 'Enabled') {
-    vat = baseForVat * 0.18;
-  }
+  const serviceCharge = parseFloat(invoice.service_charge || '0');
+  const tdl = parseFloat(invoice.tdl || '0');
+  const sscl = parseFloat(invoice.sscl_tax || '0');
+  const vat = parseFloat(invoice.vat_amount || '0');
 
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
@@ -258,25 +232,25 @@ function FinalInvoiceContent() {
             <span>Total Discount:</span>
             <span>-{totalDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
-          {serviceCharge > 0 && (
+          {location?.service_charge_status === 'Enabled' && (
             <div className="flex justify-between">
               <span>Service Charge (10%):</span>
               <span>{serviceCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
-          {tdl > 0 && (
+          {location?.tdl_status === 'Enabled' && (
             <div className="flex justify-between">
               <span>TDL (1%):</span>
               <span>{tdl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
-          {sscl > 0 && (
+          {location?.sscl_status === 'Enabled' && (
             <div className="flex justify-between">
               <span>SSCL (2.5%):</span>
               <span>{sscl.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
-          {vat > 0 && (
+          {location?.vat_status === 'Enabled' && (
             <div className="flex justify-between">
               <span>VAT (18%):</span>
               <span>{vat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
