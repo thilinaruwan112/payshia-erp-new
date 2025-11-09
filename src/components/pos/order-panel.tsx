@@ -46,6 +46,7 @@ import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
 import { PayshiaPosLogo } from './payshia-pos-logo';
 import { CustomerPanel } from './customer-panel';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface OrderPanelProps {
   order: ActiveOrder;
