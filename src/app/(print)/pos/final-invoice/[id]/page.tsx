@@ -4,7 +4,7 @@
 import '@/app/(print)/pos/print-receipt.css';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
-import type { Invoice, User, Location, Table } from '@/lib/types';
+import type { Invoice, User, Location, Table, InvoiceItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -117,6 +117,48 @@ function FinalInvoiceContent() {
         setTimeout(handlePrint, 500);
     }
   }, [isLoading, invoice]);
+  
+  const getOrderTypeOrTable = (tableId: string) => {
+    if (parseInt(tableId, 10) > 0) {
+        const tableName = tables.find(t => t.id === tableId)?.table_name;
+        return `Dine-In (Table: ${tableName || tableId})`;
+    }
+    if (tableId === '0') return 'Take Away';
+    if (tableId === '-1') return 'Retail';
+    if (tableId === '-2') return 'Delivery';
+    return null;
+  }
+
+  const calculateInclusivePrice = (basePrice: number) => {
+    if (!location || !invoice) return basePrice;
+
+    const orderType = getOrderTypeOrTable(invoice.table_id);
+
+    let serviceCharge = 0;
+    if (orderType?.startsWith('Dine-In') && location.service_charge_status === 'Enabled') {
+        serviceCharge = basePrice * 0.10;
+    }
+    
+    let tdl = 0;
+    if (location.tdl_status === 'Enabled') {
+      tdl = (basePrice + serviceCharge) * 0.01;
+    }
+
+    const baseForSscl = basePrice + serviceCharge;
+    let sscl = 0;
+    if (location.sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+    
+    const baseForVat = baseForSscl + tdl + sscl;
+    let vat = 0;
+    if (location.vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
+    return basePrice + serviceCharge + tdl + sscl + vat;
+  }
+
 
   if (isLoading || !invoice) {
     return (
@@ -138,10 +180,16 @@ function FinalInvoiceContent() {
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-  const subtotal = (invoice.items || []).reduce((acc, item) => acc + (parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))), 0);
-  const totalItemCount = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
+  const subtotal = (invoice.items || []).reduce((acc, item) => {
+    const itemPrice = parseFloat(String(item.item_price));
+    const quantity = parseFloat(String(item.quantity));
+    const inclusivePrice = calculateInclusivePrice(itemPrice);
+    return acc + (inclusivePrice * quantity);
+  }, 0);
+  
   const totalDiscount = parseFloat(invoice.discount_amount);
-  const grandTotal = parseFloat(invoice.grand_total);
+  const grandTotal = subtotal - totalDiscount;
+
   const serviceCharge = parseFloat(invoice.service_charge);
 
   const tdl = parseFloat(invoice.tdl || "0");
@@ -150,17 +198,7 @@ function FinalInvoiceContent() {
   
   const totalTaxes = tdl + sscl + vat;
 
-  const getOrderTypeOrTable = (tableId: string) => {
-    if (parseInt(tableId, 10) > 0) {
-        const tableName = tables.find(t => t.id === tableId)?.table_name;
-        return `Dine-In (Table: ${tableName || tableId})`;
-    }
-    if (tableId === '0') return 'Take Away';
-    if (tableId === '-1') return 'Retail';
-    if (tableId === '-2') return 'Delivery';
-    return null;
-  }
-
+  
   const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
@@ -191,34 +229,36 @@ function FinalInvoiceContent() {
 
         <table className="w-full text-xs">
           <thead>
-            <tr>
-              <th className="text-left">ITEM</th>
-              <th className="text-center w-[20%]">QTY</th>
-              <th className="text-right w-[25%]">PRICE</th>
-              <th className="text-right w-[25%]">TOTAL</th>
+            <tr className="font-semibold">
+              <td className="text-left w-[10%]">Item</td>
+              <td className="text-left w-[20%]">Marked Price</td>
+              <td className="text-center w-[20%]">Our Price</td>
+              <td className="text-right w-[10%]">Qty</td>
+              <td className="text-right w-[20%]">Amount</td>
             </tr>
           </thead>
           <tbody>
             {(invoice.items || []).map((item, index) => {
               const basePrice = parseFloat(String(item.item_price));
-              const lineTotal = basePrice * parseFloat(String(item.quantity));
+              const itemDiscount = parseFloat(String(item.item_discount)) || 0;
+              const quantity = parseFloat(String(item.quantity));
+              
+              const markedPrice = calculateInclusivePrice(basePrice);
+              const ourPrice = markedPrice - itemDiscount;
+              const lineTotal = ourPrice * quantity;
+              
               return (
                 <React.Fragment key={index}>
-                  <tr>
-                    <td colSpan={4} className="pt-1">{item.product_print_name}</td>
-                  </tr>
-                  <tr className="align-top">
-                    <td></td>
-                    <td className="text-center">{parseFloat(String(item.quantity)).toFixed(3)}</td>
-                    <td className="text-right">{basePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td className="text-right">{lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                  </tr>
-                   {parseFloat(String(item.item_discount)) > 0 && (
-                     <tr>
-                        <td colSpan={3} className="text-right text-xs">Discount:</td>
-                        <td className="text-right text-xs">-{parseFloat(String(item.item_discount)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <tr className="border-t border-dashed border-black">
+                        <td colSpan={5}>{index + 1}. {item.variant_sku} | {item.product_print_name}</td>
                     </tr>
-                  )}
+                    <tr>
+                        <td></td>
+                        <td className="text-left">{markedPrice.toFixed(2)}</td>
+                        <td className="text-center">{ourPrice.toFixed(2)}</td>
+                        <td className="text-right">{quantity.toFixed(2)}</td>
+                        <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
+                    </tr>
                 </React.Fragment>
               )
             })}
@@ -266,6 +306,7 @@ function FinalInvoiceContent() {
         </div>
 
         <div className="text-center mt-4 text-xs space-y-1 border-t pt-2">
+            <p className="font-bold">Thank You!</p>
             <p>Software by Payshia</p>
             <p>0770481363 | www.payshia.com</p>
         </div>
