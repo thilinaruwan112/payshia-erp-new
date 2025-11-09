@@ -657,14 +657,6 @@ export function OrderPanel({
             <div className="divide-y divide-border">
               {cart.map((item) => (
                 <div key={item.uniqueId} className="p-4 flex gap-4">
-                  <Image
-                    src={item.product.imageUrl || `https://placehold.co/64x64.png`}
-                    alt={item.product.name}
-                    width={64}
-                    height={64}
-                    className="rounded-md object-cover"
-                    data-ai-hint="product photo"
-                  />
                   <div className="flex-1 flex flex-col">
                     <span className="font-semibold">{item.product.variantName}</span>
                     <span className="text-muted-foreground text-sm">
@@ -678,25 +670,30 @@ export function OrderPanel({
                           Discount: -{currencySymbol}{item.itemDiscount.toFixed(2)}
                         </span>
                       ) : null}
-                    <div className="mt-auto">
-                        <span className="text-lg font-bold">{item.quantity}</span>
-                        <span className="text-sm text-muted-foreground ml-1">
-                            {item.product.stock_unit || 'Nos'}
-                        </span>
-                    </div>
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="font-bold">
                       {currencySymbol}{((item.product.price as number) * item.quantity).toFixed(2)}
                     </span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 mt-auto text-muted-foreground hover:text-destructive"
-                      onClick={() => onRemoveItem(item.uniqueId!)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                     <div className="flex items-center gap-2 mt-auto">
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:bg-muted"
+                            onClick={() => onUpdateQuantity(item.product.variant.id, item.batch.patch_code, item.quantity - 1)}
+                        >
+                            <MinusCircle className="h-4 w-4" />
+                        </Button>
+                        <span className="font-bold w-6 text-center">{item.quantity}</span>
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:bg-muted"
+                            onClick={() => onUpdateQuantity(item.product.variant.id, item.batch.patch_code, item.quantity + 1)}
+                        >
+                            <PlusCircle className="h-4 w-4" />
+                        </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -726,24 +723,6 @@ export function OrderPanel({
                     Service Charge (10%)
                 </Label>
                 <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
-            </div>
-        )}
-        {currentLocation?.tdl_status === 'Enabled' && (
-            <div className="flex justify-between text-sm">
-                <span>TDL (1%)</span>
-                <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
-            </div>
-        )}
-        {currentLocation?.sscl_status === 'Enabled' && (
-            <div className="flex justify-between text-sm">
-                <span>SSCL (2.5%)</span>
-                <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
-            </div>
-        )}
-        {currentLocation?.vat_status === 'Enabled' && (
-            <div className="flex justify-between text-sm">
-                <span>VAT (18%)</span>
-                <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
             </div>
         )}
 
