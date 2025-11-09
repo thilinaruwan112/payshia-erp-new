@@ -270,8 +270,9 @@ function GuestReceiptContent() {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-dashed">
-                <th className="text-left w-[50%] pb-1"># ITEM</th>
+                <th className="text-left w-[40%] pb-1">ITEM</th>
                 <th className="text-right pb-1">PRICE</th>
+                <th className="text-right pb-1">DISC. PRICE</th>
                 <th className="text-right pb-1">QTY</th>
                 <th className="text-right pb-1">AMOUNT</th>
             </tr>
@@ -279,30 +280,19 @@ function GuestReceiptContent() {
           <tbody>
             {(invoice.items || []).map((item: InvoiceItem, index: number) => {
               const basePrice = parseFloat(String(item.item_price));
-              const quantity = parseFloat(String(item.quantity));
               const itemDiscount = parseFloat(String(item.item_discount)) || 0;
-              const lineTotal = (basePrice * quantity);
+              const discountedPrice = basePrice - itemDiscount;
+              const quantity = parseFloat(String(item.quantity));
+              const lineTotal = discountedPrice * quantity;
               
               return (
-                <React.Fragment key={index}>
-                  <tr>
-                    <td colSpan={4} className="pt-1 font-semibold">
-                      - {item.variant_sku} - {item.product_print_name}
-                    </td>
-                  </tr>
-                  <tr className="align-top">
-                    <td>{index + 1}.</td>
-                    <td className="text-right">{basePrice.toFixed(2)}</td>
-                    <td className="text-right">{quantity.toFixed(2)}</td>
-                    <td className="text-right">{lineTotal.toFixed(2)}</td>
-                  </tr>
-                  {itemDiscount > 0 && (
-                      <tr className="text-xs">
-                          <td colSpan={3} className="text-right italic">Discount:</td>
-                          <td className="text-right italic">-{itemDiscount.toFixed(2)}</td>
-                      </tr>
-                  )}
-                </React.Fragment>
+                <tr key={index}>
+                    <td className="py-1">{item.variant_sku} - {item.product_print_name}</td>
+                    <td className="py-1 text-right">{basePrice.toFixed(2)}</td>
+                    <td className="py-1 text-right">{discountedPrice.toFixed(2)}</td>
+                    <td className="py-1 text-right">{quantity.toFixed(2)}</td>
+                    <td className="py-1 text-right font-semibold">{lineTotal.toFixed(2)}</td>
+                </tr>
               )
             })}
           </tbody>
