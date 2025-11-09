@@ -33,7 +33,7 @@ export function ProductCard({ product, orderType, onSelect, currentLocation }: P
     
     let tdl = 0;
     if (currentLocation.tdl_status === 'Enabled') {
-      tdl = basePrice * 0.01;
+      tdl = (basePrice + serviceCharge) * 0.01;
     }
 
     const baseForSscl = basePrice + serviceCharge;

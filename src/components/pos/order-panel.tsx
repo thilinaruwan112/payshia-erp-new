@@ -698,6 +698,24 @@ export function OrderPanel({
                 <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
             </div>
         )}
+        {orderTotals.tdl > 0 && (
+             <div className="flex justify-between text-sm">
+                <span>TDL (1%)</span>
+                <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
+            </div>
+        )}
+         {orderTotals.sscl > 0 && (
+             <div className="flex justify-between text-sm">
+                <span>SSCL (2.5%)</span>
+                <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
+            </div>
+        )}
+         {orderTotals.vat > 0 && (
+             <div className="flex justify-between text-sm">
+                <span>VAT (18%)</span>
+                <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
+            </div>
+        )}
 
          <div className="flex justify-between text-sm text-destructive">
           <span>Order Discount</span>

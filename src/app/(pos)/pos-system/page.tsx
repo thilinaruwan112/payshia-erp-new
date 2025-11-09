@@ -24,6 +24,7 @@ import { TodaySalesDialog } from '@/components/pos/dialogs/today-sales-dialog';
 import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
+import { CustomerPanel } from '@/components/pos/customer-panel';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -743,11 +744,7 @@ useEffect(() => {
 
     let subtotal = 0;
     let itemDiscounts = 0;
-    let serviceCharge = 0;
-    let tdl = 0;
-    let sscl = 0;
-    let vat = 0;
-
+    
     for (const item of cart) {
       const basePrice = (item.product.price as number) * item.quantity;
       const currentItemDiscount = item.itemDiscount || 0;
@@ -757,23 +754,26 @@ useEffect(() => {
     }
     
     const baseForTaxes = subtotal - itemDiscounts;
-
+    
+    let serviceCharge = 0;
     if (orderType === 'Dine-In' && service_charge_status === 'Enabled' && isServiceChargeActive) {
       serviceCharge = baseForTaxes * 0.10;
     }
 
     const baseForTdl = baseForTaxes + serviceCharge;
-
+    let tdl = 0;
     if (tdl_status === 'Enabled') {
       tdl = baseForTdl * 0.01;
     }
 
     const baseForSscl = baseForTaxes + serviceCharge;
+    let sscl = 0;
     if (sscl_status === 'Enabled') {
       sscl = baseForSscl * 0.025;
     }
 
     const baseForVat = baseForTaxes + serviceCharge + tdl + sscl;
+    let vat = 0;
     if (vat_status === 'Enabled') {
       vat = baseForVat * 0.18;
     }
