@@ -161,9 +161,10 @@ function FinalInvoiceContent() {
   
   const grandTotal = parseFloat(invoice.grand_total);
   
+  const orderType = getOrderTypeOrTable(invoice.table_id);
+  
   const baseForTaxes = subtotal - totalItemDiscount;
   let serviceCharge = 0;
-  const orderType = getOrderTypeOrTable(invoice.table_id);
   if (orderType?.startsWith('Dine-In') && location?.service_charge_status === 'Enabled') {
     serviceCharge = baseForTaxes * 0.10;
   }
@@ -186,6 +187,7 @@ function FinalInvoiceContent() {
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
   const customerName = customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : `(ID: ${invoice.customer_code})`;
+  const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
 
   return (
     <div className="flex flex-col items-center">
