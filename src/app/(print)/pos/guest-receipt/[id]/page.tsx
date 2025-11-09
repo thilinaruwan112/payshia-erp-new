@@ -266,7 +266,8 @@ function GuestReceiptContent() {
   const subtotal = (invoice.items || []).reduce((acc, item) => {
     const itemPrice = parseFloat(String(item.item_price));
     const quantity = parseFloat(String(item.quantity));
-    return acc + (itemPrice * quantity);
+    const inclusivePrice = calculateInclusivePrice(itemPrice);
+    return acc + (inclusivePrice * quantity);
   }, 0);
 
 
@@ -330,11 +331,6 @@ function GuestReceiptContent() {
                         <td className="text-right">{quantity.toFixed(2)}</td>
                         <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
                     </tr>
-                    {itemDiscount > 0 && (
-                        <tr>
-                            <td colSpan={5} className="text-right text-xs italic">Special Discount: -{itemDiscount.toFixed(2)}</td>
-                        </tr>
-                    )}
                 </React.Fragment>
               )
             })}
