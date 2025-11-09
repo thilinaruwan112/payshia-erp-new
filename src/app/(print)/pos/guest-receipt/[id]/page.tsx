@@ -145,11 +145,11 @@ function GuestReceiptContent() {
     
     if (!window.JSPM || !isJspmConnected) {
         console.warn("JSPM not ready or not connected. Falling back to browser print.");
-        const handlePrint = () => {
+        const handlePrintFallback = () => {
             window.print();
             window.close();
         };
-        setTimeout(handlePrint, 500);
+        setTimeout(handlePrintFallback, 500);
         return;
     }
 
@@ -191,6 +191,10 @@ function GuestReceiptContent() {
   useEffect(() => {
     if (!isLoading && invoice) {
         document.title = `Guest Receipt - ${invoice.invoice_number}`;
+        const handlePrint = () => {
+            window.print();
+            setTimeout(() => window.close(), 100); // Give browser time to process print
+        };
         handlePrint();
     }
   }, [isLoading, invoice, isJspmConnected, id, companyId]);
@@ -215,23 +219,10 @@ function GuestReceiptContent() {
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-  const calculateInclusivePrice = (basePrice: number) => {
-    const isDineIn = invoice.remark?.toLowerCase().includes('dine-in');
-    const serviceCharge = isDineIn ? basePrice * 0.10 : 0;
-    const tdl = basePrice * 0.01;
-    const baseForSscl = basePrice + serviceCharge;
-    const sscl = baseForSscl * 0.025;
-    const baseForVat = baseForSscl + tdl + sscl;
-    const vat = baseForVat * 0.18;
-    return basePrice + serviceCharge + tdl + sscl + vat;
-  }
-  
   const subtotal = (invoice.items || []).reduce((acc, item) => {
-    const basePrice = parseFloat(String(item.item_price));
-    const inclusivePrice = calculateInclusivePrice(basePrice);
+    const itemPrice = parseFloat(String(item.item_price));
     const quantity = parseFloat(String(item.quantity));
-    const itemDiscount = parseFloat(String(item.item_discount));
-    return acc + ((inclusivePrice * quantity) - itemDiscount);
+    return acc + (itemPrice * quantity);
   }, 0);
 
   const totalDiscount = parseFloat(invoice.discount_amount);
@@ -279,36 +270,38 @@ function GuestReceiptContent() {
 
         <table className="w-full text-xs">
           <thead>
-            <tr>
-              <th className="text-left">ITEM</th>
-              <th className="text-center w-[20%]">QTY</th>
-              <th className="text-right w-[25%]">PRICE</th>
-              <th className="text-right w-[25%]">TOTAL</th>
+            <tr className="border-b border-dashed">
+              <th className="text-left py-1 w-[40%]">Item</th>
+              <th className="text-right py-1 w-[20%]">Price</th>
+              <th className="text-right py-1 w-[20%]">Our Price</th>
+              <th className="text-center py-1 w-[10%]">Qty</th>
+              <th className="text-right py-1 w-[20%]">Amount</th>
             </tr>
           </thead>
           <tbody>
             {(invoice.items || []).map((item, index) => {
               const basePrice = parseFloat(String(item.item_price));
-              const inclusivePrice = calculateInclusivePrice(basePrice);
               const quantity = parseFloat(String(item.quantity));
-              const itemDiscount = parseFloat(String(item.item_discount));
-              const lineTotal = (inclusivePrice * quantity) - itemDiscount;
+              const itemDiscount = parseFloat(String(item.item_discount)) || 0;
+              const discountedPrice = basePrice;
+              const lineTotal = discountedPrice * quantity;
 
               return (
                 <React.Fragment key={index}>
                   <tr>
-                    <td colSpan={4} className="pt-1">{item.product_print_name}</td>
+                    <td colSpan={5} className="pt-1 font-semibold">{item.product_code} - {item.product_print_name}</td>
                   </tr>
                   <tr className="align-top">
                     <td></td>
-                    <td className="text-center">{quantity.toFixed(3)}</td>
-                    <td className="text-right">{inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td className="text-right">{lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td className="text-right">{basePrice.toFixed(2)}</td>
+                    <td className="text-right">{discountedPrice.toFixed(2)}</td>
+                    <td className="text-center">{quantity.toFixed(2)}</td>
+                    <td className="text-right">{lineTotal.toFixed(2)}</td>
                   </tr>
                    {itemDiscount > 0 && (
-                     <tr>
-                        <td colSpan={3} className="text-right text-xs">Discount:</td>
-                        <td className="text-right text-xs">-{itemDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                     <tr className="text-xs">
+                        <td colSpan={3} className="text-right italic">Special Discount:</td>
+                        <td colSpan={2} className="text-right italic">-{itemDiscount.toFixed(2)}</td>
                     </tr>
                   )}
                 </React.Fragment>
@@ -319,17 +312,17 @@ function GuestReceiptContent() {
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>
         <div className="space-y-1 text-xs">
-          <div className="flex justify-between">
+           <div className="flex justify-between">
             <span>Subtotal:</span>
-            <span>{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
             <span>Total Discount:</span>
-            <span>-{totalDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>-{totalDiscount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
-            <span>{grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>{grandTotal.toFixed(2)}</span>
           </div>
         </div>
 

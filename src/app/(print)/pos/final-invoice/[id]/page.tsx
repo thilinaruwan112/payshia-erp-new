@@ -114,7 +114,6 @@ function FinalInvoiceContent() {
             window.print();
             window.close();
         };
-        // Delay print to allow content to render
         setTimeout(handlePrint, 500);
     }
   }, [isLoading, invoice]);
