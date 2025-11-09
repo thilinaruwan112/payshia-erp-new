@@ -21,6 +21,7 @@ import {
   Printer,
   CheckCircle,
   ArrowRight,
+  User as UserIcon,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
