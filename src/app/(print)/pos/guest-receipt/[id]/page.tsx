@@ -143,13 +143,14 @@ function GuestReceiptContent() {
   const handlePrint = async () => {
     if (!receiptRef.current) return;
     
+    const printAndClose = () => {
+        window.print();
+        setTimeout(() => window.close(), 100);
+    }
+    
     if (!window.JSPM || !isJspmConnected) {
         console.warn("JSPM not ready or not connected. Falling back to browser print.");
-        const handlePrintFallback = () => {
-            window.print();
-            window.close();
-        };
-        setTimeout(handlePrintFallback, 500);
+        printAndClose();
         return;
     }
 
@@ -184,20 +185,17 @@ function GuestReceiptContent() {
 
     } catch (error) {
         console.error("Printing error:", error);
-        alert("An error occurred while printing. Please try again.");
+        alert("An error occurred while printing. Falling back to browser print.");
+        printAndClose();
     }
   };
 
   useEffect(() => {
     if (!isLoading && invoice) {
         document.title = `Guest Receipt - ${invoice.invoice_number}`;
-        const handlePrint = () => {
-            window.print();
-            setTimeout(() => window.close(), 100); // Give browser time to process print
-        };
         handlePrint();
     }
-  }, [isLoading, invoice, isJspmConnected, id, companyId]);
+  }, [isLoading, invoice, isJspmConnected]);
 
   if (isLoading || !invoice) {
     return (
@@ -269,45 +267,43 @@ function GuestReceiptContent() {
         <div className="my-2 border-t-2 border-dashed border-black"></div>
 
         <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-dashed">
-              <th className="text-left py-1 w-[40%]">Item</th>
-              <th className="text-right py-1 w-[20%]">Price</th>
-              <th className="text-right py-1 w-[20%]">Our Price</th>
-              <th className="text-center py-1 w-[10%]">Qty</th>
-              <th className="text-right py-1 w-[20%]">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(invoice.items || []).map((item, index) => {
-              const basePrice = parseFloat(String(item.item_price));
-              const quantity = parseFloat(String(item.quantity));
-              const itemDiscount = parseFloat(String(item.item_discount)) || 0;
-              const discountedPrice = basePrice;
-              const lineTotal = discountedPrice * quantity;
+           <thead>
+              <tr>
+                <th colSpan={5} className="text-left py-1"># ITEM</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(invoice.items || []).map((item, index) => {
+                const basePrice = parseFloat(String(item.item_price));
+                const quantity = parseFloat(String(item.quantity));
+                const itemDiscount = parseFloat(String(item.item_discount)) || 0;
+                const discountedPrice = basePrice;
+                const lineTotal = discountedPrice * quantity;
 
-              return (
-                <React.Fragment key={index}>
-                  <tr>
-                    <td colSpan={5} className="pt-1 font-semibold">{item.product_code} - {item.product_print_name}</td>
-                  </tr>
-                  <tr className="align-top">
-                    <td></td>
-                    <td className="text-right">{basePrice.toFixed(2)}</td>
-                    <td className="text-right">{discountedPrice.toFixed(2)}</td>
-                    <td className="text-center">{quantity.toFixed(2)}</td>
-                    <td className="text-right">{lineTotal.toFixed(2)}</td>
-                  </tr>
-                   {itemDiscount > 0 && (
-                     <tr className="text-xs">
-                        <td colSpan={3} className="text-right italic">Special Discount:</td>
-                        <td colSpan={2} className="text-right italic">-{itemDiscount.toFixed(2)}</td>
+                return (
+                  <React.Fragment key={index}>
+                    <tr>
+                      <td colSpan={5} className="pt-1 font-semibold">
+                        - {item.product_code} - {item.product_print_name}
+                      </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              )
-            })}
-          </tbody>
+                    <tr className="align-top">
+                      <td className="w-[5%] text-left">{index + 1}.</td>
+                      <td className="w-[25%] text-right">{basePrice.toFixed(2)}</td>
+                      <td className="w-[25%] text-right">{discountedPrice.toFixed(2)}</td>
+                      <td className="w-[20%] text-center">{quantity.toFixed(2)}</td>
+                      <td className="w-[25%] text-right">{lineTotal.toFixed(2)}</td>
+                    </tr>
+                    {itemDiscount > 0 && (
+                      <tr className="text-xs">
+                          <td colSpan={4} className="text-right italic">Discount:</td>
+                          <td className="text-right italic">-{itemDiscount.toFixed(2)}</td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                )
+              })}
+            </tbody>
         </table>
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>
