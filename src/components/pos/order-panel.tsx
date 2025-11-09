@@ -193,6 +193,12 @@ const PaymentDialog = ({
     }
   };
 
+  const handleCloseAsCredit = () => {
+    if (selectedMethodId) {
+      onSuccessfulPayment(selectedMethodId, 0);
+    }
+  };
+
   React.useEffect(() => {
     setAmountTendered(orderTotals.total.toFixed(2));
   }, [orderTotals.total]);
@@ -283,6 +289,7 @@ const PaymentDialog = ({
                 size="lg"
                 variant="secondary"
                 className="h-16 text-lg"
+                 onClick={handleCloseAsCredit}
             >
                 Close as Credit
             </Button>
@@ -494,8 +501,8 @@ export function OrderPanel({
         service_charge: orderTotals.serviceCharge,
         tendered_amount: tenderedAmount,
         close_type: paymentMethodId,
-        invoice_status: '1', // Paid
-        payment_status: "Paid",
+        invoice_status: tenderedAmount > 0 ? '1' : '2', // Paid or Pending
+        payment_status: tenderedAmount > 0 ? "Paid" : "Pending",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
         table_id: tableIdValue,
