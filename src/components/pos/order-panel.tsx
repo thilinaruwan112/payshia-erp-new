@@ -490,7 +490,7 @@ export function OrderPanel({
         discount_amount: totalDiscount,
         discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
         customer_code: customer.customer_id,
-        service_charge: orderTotals.serviceCharge,
+        service_charge: currentLocation.service_charge_status === 'Enabled' ? orderTotals.serviceCharge : 0,
         tendered_amount: tenderedAmount,
         close_type: paymentMethodId,
         invoice_status: isCredit ? '1' : '1',
@@ -522,7 +522,10 @@ export function OrderPanel({
             product_variant_id: parseInt(item.product.variant.id, 10),
             expire_date: item.batch.expire_date,
             company_id: company_id,
-        }))
+        })),
+        vat_amount: currentLocation.vat_status === 'Enabled' ? orderTotals.vat : 0,
+        sscl_tax: currentLocation.sscl_status === 'Enabled' ? orderTotals.sscl : 0,
+        tdl: currentLocation.tdl_status === 'Enabled' ? orderTotals.tdl : 0,
     };
 
     try {
