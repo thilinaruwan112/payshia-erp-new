@@ -224,6 +224,8 @@ function GuestReceiptContent() {
 
   const totalDiscount = parseFloat(invoice.discount_amount);
   const grandTotal = parseFloat(invoice.grand_total);
+  const totalItems = invoice.items?.length || 0;
+  const totalQuantity = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
   
 
   const getOrderTypeOrTable = (tableId: string) => {
@@ -322,8 +324,23 @@ function GuestReceiptContent() {
           </div>
         </div>
 
+        <div className="my-2 border-t-2 border-dashed border-black"></div>
+
+        <div className="text-xs space-y-0.5">
+          <div className="flex justify-between">
+            <span>Item Count:</span>
+            <span>{totalItems}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Sold Quantity:</span>
+            <span>{totalQuantity.toFixed(2)}</span>
+          </div>
+        </div>
+
         <div className="text-center mt-4 text-xs space-y-1 border-t pt-2">
-            <p>Software by Payshia</p>
+            <p className="font-bold">Thank You!</p>
+            <p>Inquiries within 24 hours.</p>
+            <p className="mt-2">Software by Payshia</p>
             <p>0770481363 | www.payshia.com</p>
         </div>
       </div>
