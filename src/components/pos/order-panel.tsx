@@ -713,7 +713,7 @@ export function OrderPanel({
           <span>-{currencySymbol}{orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
         
-        {currentLocation?.service_charge_status === 'Enabled' && (
+        {currentLocation?.service_charge_status === 'Enabled' && orderType === 'Dine-In' && (
              <div className="flex justify-between text-sm items-center">
                 <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
                     <Switch
