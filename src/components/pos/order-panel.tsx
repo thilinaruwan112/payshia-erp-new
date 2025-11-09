@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -713,29 +712,37 @@ export function OrderPanel({
           <span>-{currencySymbol}{orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
         
-        <div className="flex justify-between text-sm items-center">
-            <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
-                <Switch
-                    id="service-charge-toggle"
-                    checked={isServiceChargeActive}
-                    onCheckedChange={setIsServiceChargeActive}
-                />
-                Service Charge (10%)
-            </Label>
-            <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-            <span>TDL (1%)</span>
-            <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
-        </div>
+        {currentLocation?.service_charge_status === 'Enabled' && (
+             <div className="flex justify-between text-sm items-center">
+                <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
+                    <Switch
+                        id="service-charge-toggle"
+                        checked={isServiceChargeActive}
+                        onCheckedChange={setIsServiceChargeActive}
+                    />
+                    Service Charge (10%)
+                </Label>
+                <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
+            </div>
+        )}
+        {currentLocation?.tdl_status === 'Enabled' && orderTotals.tdl > 0 && (
             <div className="flex justify-between text-sm">
-            <span>SSCL (2.5%)</span>
-            <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
-        </div>
+                <span>TDL (1%)</span>
+                <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
+            </div>
+        )}
+        {currentLocation?.sscl_status === 'Enabled' && orderTotals.sscl > 0 && (
             <div className="flex justify-between text-sm">
-            <span>VAT (18%)</span>
-            <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
-        </div>
+                <span>SSCL (2.5%)</span>
+                <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
+            </div>
+        )}
+        {currentLocation?.vat_status === 'Enabled' && orderTotals.vat > 0 && (
+            <div className="flex justify-between text-sm">
+                <span>VAT (18%)</span>
+                <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
+            </div>
+        )}
 
          <div className="flex justify-between text-sm text-green-600">
           <span>Order Discount</span>
@@ -785,7 +792,3 @@ export function OrderPanel({
     </div>
   );
 }
-
-    
-
-    
