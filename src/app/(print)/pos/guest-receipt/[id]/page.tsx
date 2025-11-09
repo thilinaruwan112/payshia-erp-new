@@ -1,4 +1,3 @@
-
 'use client';
 
 // Import the external CSS file
@@ -270,11 +269,10 @@ function GuestReceiptContent() {
         <table className="w-full text-xs">
           <thead>
             <tr className="font-semibold">
-              <td className="text-left">ITEM</td>
-              <td className="text-right">SELLING PRICE</td>
-              <td className="text-right">DISC. PRICE</td>
-              <td className="text-right">QTY</td>
-              <td className="text-right">AMOUNT</td>
+              <td className="text-left w-[40%]">ITEM</td>
+              <td className="text-right w-[20%]">PRICE</td>
+              <td className="text-right w-[20%]">QTY</td>
+              <td className="text-right w-[20%]">AMOUNT</td>
             </tr>
           </thead>
           <tbody>
@@ -288,18 +286,17 @@ function GuestReceiptContent() {
               return (
                 <React.Fragment key={index}>
                     <tr className="border-t border-dashed border-black">
-                        <td colSpan={5}>{index + 1}. - {item.variant_sku} - {item.product_print_name}</td>
+                        <td colSpan={4}>{index + 1}. {item.variant_sku} | {item.product_print_name}</td>
                     </tr>
                     <tr>
                         <td></td>
                         <td className="text-right">{basePrice.toFixed(2)}</td>
-                        <td className="text-right">{discountedPrice.toFixed(2)}</td>
                         <td className="text-right">{quantity.toFixed(2)}</td>
                         <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
                     </tr>
                     {itemDiscount > 0 && (
                         <tr>
-                            <td colSpan={5} className="text-right text-xs italic">Special Discount: -{itemDiscount.toFixed(2)}</td>
+                            <td colSpan={4} className="text-right text-xs italic">Special Discount: -{itemDiscount.toFixed(2)}</td>
                         </tr>
                     )}
                 </React.Fragment>
@@ -323,7 +320,7 @@ function GuestReceiptContent() {
             <span>{grandTotal.toFixed(2)}</span>
           </div>
         </div>
-
+        
         <div className="my-2 border-t-2 border-dashed border-black"></div>
 
         <div className="text-xs space-y-0.5">
