@@ -76,6 +76,7 @@ import {
   SidebarInset,
   useSidebar,
   SidebarSeparator,
+  SidebarMenuSkeleton,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -108,162 +109,79 @@ import Image from 'next/image';
 import type { Role, User } from '@/lib/types';
 import { fetcher } from '@/lib/api';
 
-const navItems = [
-  {
-    href: '/dashboard',
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    label: 'Sales',
-    icon: TrendingUp,
-    subItems: [
-      { href: '/sales/dashboard', label: 'Sales Dashboard', icon: TrendingUp },
-      { href: '/orders', label: 'Orders', icon: ShoppingCart },
-      { href: '/sales/invoices', label: 'Invoices', icon: FileText },
-      { href: '/sales/receipts', label: 'Receipts', icon: Receipt },
-    ],
-  },
-  {
-    label: 'Service Center',
-    icon: Wrench,
-    subItems: [
-      { href: '/service-center', label: 'Job Dashboard', icon: LayoutDashboard },
-      { href: '/service-center/jobs/new', label: 'New Job', icon: PlusCircle },
-      { href: '/service-center/find', label: 'Find Job', icon: Search },
-    ],
-  },
-   {
-    href: '/service-center/warranty',
-    label: 'Warranty',
-    icon: ShieldCheck,
-  },
-  {
-    label: 'CRM',
-    icon: Contact,
-    subItems: [
-      // { href: '/crm/dashboard', label: 'CRM Dashboard', icon: LayoutDashboard },
-      { href: '/crm/customers', label: 'Customers', icon: Users },
-      // { href: '/crm/email-campaigns', label: 'Email Campaigns', icon: Mail },
-      // { href: '/crm/sms-campaigns', label: 'SMS Campaigns', icon: MessageSquare },
-      // { href: '/crm/loyalty-schema', label: 'Loyalty Schema', icon: Gem },
-    ],
-  },
-  {
-    label: 'Inventory & Products',
-    icon: Package,
-    subItems: [
-      { href: '/inventory/dashboard', label: 'Inventory Dashboard', icon: LayoutDashboard },
-      { href: '/products', label: 'All Products', icon: Boxes },
-      { href: '/products/categories', label: 'Categories', icon: LayoutList },
-      { href: '/products/collections', label: 'Collections', icon: Archive },
-      { href: '/products/brands', label: 'Brands', icon: ShoppingBag },
-      { href: '/products/models', label: 'Models', icon: ShoppingBag },
-      { href: '/products/colors', label: 'Colors', icon: SwatchBook },
-      { href: '/products/sizes', label: 'Sizes', icon: PencilRuler },
-      { href: '/products/custom-fields', label: 'Custom Fields', icon: PlusSquare },
-      { href: '/transfers', label: 'Stock Transfers', icon: ArrowRightLeft },
-      { href: '/inventory/goods-requisition', label: 'Goods Requisition', icon: FileText },
-      { href: '/inventory/stock-adjustment', label: 'Stock Adjustment', icon: ArrowRightLeft },
-      { href: '/inventory/opening-stock', label: 'Opening Stock', icon: PackagePlus },
-      { href: '/inventory/forecast', label: 'AI Forecast', icon: TrendingUp },
-    ],
-  },
-  {
-    label: 'Production',
-    icon: ClipboardList,
-    subItems: [
-        { href: '/production/bom', label: 'Bill of Materials', icon: FileText },
-        { href: '/production/production-note', label: 'Production Note', icon: History },
-        { href: '/production/run', label: 'Production Run', icon: Percent },
-    ]
-  },
-   {
-    label: 'Suppliers',
-    icon: Building,
-    subItems: [
-        { href: '/suppliers/dashboard', label: 'Dashboard', icon: LayoutGrid },
-        { href: '/suppliers', label: 'All Suppliers', icon: Users },
-        { href: '/suppliers/payments', label: 'Payments', icon: Wallet },
-        { href: '/suppliers/returns', label: 'Supplier Returns', icon: Undo2 },
-    ]
-  },
-  {
-    label: 'Purchasing',
-    icon: ShoppingCart,
-    subItems: [
-      { href: '/purchasing/purchase-orders', label: 'Purchase Orders', icon: ShoppingCart },
-      { href: '/purchasing/grn', label: 'Goods Received Notes (GRN)', icon: FileDigit },
-    ],
-  },
-  {
-    label: 'Accounting',
-    icon: Calculator,
-    subItems: [
-        { href: '/accounting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { href: '/accounting/chart-of-accounts', label: 'Chart of Accounts', icon: FileText },
-        { href: '/accounting/journal-entries', label: 'Journal Entries', icon: BookUser },
-        { href: '/accounting/expenses', label: 'Expenses', icon: Receipt },
-        { href: '/accounting/fixed-assets', label: 'Fixed Assets', icon: Building2 },
-        { href: '/accounting/transaction-setup', label: 'Transaction Setup', icon: FileDigit },
-    ],
-  },
-  // {
-  //   label: 'HRM',
-  //   icon: Briefcase,
-  //   subItems: [
-  //       { href: '/hrm/dashboard', label: 'HRM Dashboard', icon: LayoutDashboard },
-  //       { href: '/hrm/employees', label: 'Employees', icon: Users },
-  //       { href: '/hrm/attendance', label: 'Attendance', icon: CalendarCheck },
-  //       { href: '/hrm/payroll', label: 'Payroll', icon: DollarSign },
-  //       { href: '/hrm/leave', label: 'Leave Management', icon: CalendarDays },
-  //       { href: '/hrm/performance', label: 'Performance', icon: Star },
-  //   ],
-  // },
-  {
-    label: 'Reports',
-    icon: BarChart3,
-    subItems: [
-        { href: '/reports', label: 'Reports Center', icon: LayoutGrid },
-    ],
-  },
-  // {
-  //   label: 'AI Tools',
-  //   icon: Fingerprint,
-  //   subItems: [
-  //     { href: '/logistics', label: 'Logistics Assistant', icon: Truck },
-  //     { href: '/inventory/forecast', label: 'Inventory Forecasting', icon: TrendingUp },
-  //   ],
-  // },
-  {
-    label: 'Settings',
-    icon: Settings,
-    subItems: [
-      { href: '/settings/profile', label: 'Profile', icon: Users },
-      { href: '/settings/users', label: 'Users', icon: UserCog },
-      { href: '/settings/roles', label: 'Roles & Permissions', icon: UserCog },
-      { href: '/locations', label: 'Locations', icon: Warehouse },
-      { href: '/settings/tables', label: 'Dine-in Tables', icon: Utensils },
-      { href: '/settings/payment-methods', label: 'Payment Methods', icon: CreditCard },
-      { href: '/settings/payhere', label: 'PayHere Gateway', icon: CreditCard },
-      { href: '/settings/analytics', label: 'Analytics', icon: AreaChart },
-      { href: '/settings/cancellation', label: 'Cancellation', icon: Ban },
-      { href: '/billing', label: 'Billing & Plans', icon: CreditCard },
-      { href: '/settings/currency', label: 'Currency', icon: DollarSign },
-    ],
-  },
-  {
-    href: '/pos-system',
-    label: 'POS System',
-    icon: Terminal,
-  },
-  {
-    href: '/help',
-    label: 'How to Use',
-    icon: HelpCircle,
-  },
-];
+const iconMap: { [key: string]: React.ElementType } = {
+  dashboard: LayoutDashboard,
+  sales: TrendingUp,
+  'sales-dashboard': TrendingUp,
+  orders: ShoppingCart,
+  invoices: FileText,
+  receipts: Receipt,
+  'service-center': Wrench,
+  'job-dashboard': LayoutDashboard,
+  'new-job': PlusCircle,
+  'find-job': Search,
+  warranty: ShieldCheck,
+  crm: Contact,
+  customers: Users,
+  'inventory-products': Package,
+  'inventory-dashboard': LayoutDashboard,
+  'all-products': Boxes,
+  categories: LayoutList,
+  collections: Archive,
+  brands: ShoppingBag,
+  models: ShoppingBag,
+  colors: SwatchBook,
+  sizes: PencilRuler,
+  'custom-fields': PlusSquare,
+  transfers: ArrowRightLeft,
+  'goods-requisition': FileText,
+  'stock-adjustment': ArrowRightLeft,
+  'opening-stock': PackagePlus,
+  'ai-forecast': TrendingUp,
+  production: ClipboardList,
+  bom: FileText,
+  'production-note': History,
+  'production-run': Percent,
+  suppliers: Building,
+  'suppliers-dashboard': LayoutGrid,
+  'all-suppliers': Users,
+  'supplier-payments': Wallet,
+  'supplier-returns': Undo2,
+  purchasing: ShoppingCart,
+  'purchase-orders': ShoppingCart,
+  grn: FileDigit,
+  accounting: Calculator,
+  'accounting-dashboard': LayoutDashboard,
+  'chart-of-accounts': FileText,
+  'journal-entries': BookUser,
+  expenses: Receipt,
+  'fixed-assets': Building2,
+  'transaction-setup': FileDigit,
+  reports: BarChart3,
+  'reports-center': LayoutGrid,
+  settings: Settings,
+  profile: Users,
+  'settings-users': UserCog,
+  'roles-permissions': UserCog,
+  'settings-locations': Warehouse,
+  'dine-in-tables': Utensils,
+  'payment-methods': CreditCard,
+  'payhere-gateway': CreditCard,
+  analytics: AreaChart,
+  cancellation: Ban,
+  'billing-plans': CreditCard,
+  currency: DollarSign,
+  'pos-system': Terminal,
+  'how-to-use': HelpCircle,
+};
 
+interface NavItem {
+  href?: string;
+  label: string;
+  icon: React.ElementType;
+  name: string;
+  subItems?: NavItem[];
+}
 
 function LocationSwitcher({ isMobile = false }: { isMobile?: boolean }) {
     const { currentLocation, setCurrentLocation, availableLocations, isLoading } = useLocation();
@@ -510,7 +428,7 @@ const isPathActive = (pathname: string, href?: string, subItems?: any[]) => {
   return pathname.startsWith(href);
 }
 
-const NavMenu = ({ items, pathname, handleLinkClick }: { items: any[], pathname: string, handleLinkClick: any }) => {
+const NavMenu = ({ items, pathname, handleLinkClick }: { items: NavItem[], pathname: string, handleLinkClick: any }) => {
     return (
         <SidebarMenu>
             {items.map((item, index) =>
@@ -541,7 +459,7 @@ const NavMenu = ({ items, pathname, handleLinkClick }: { items: any[], pathname:
                     isActive={isPathActive(pathname, item.href)}
                     className="justify-start"
                   >
-                    <Link href={item.href!} onClick={(e) => handleLinkClick(item.isExternal, e)} target={item.isExternal ? "_blank" : "_self"} rel={item.isExternal ? "noopener noreferrer" : ""}>
+                    <Link href={item.href!} onClick={(e) => handleLinkClick(false, e)}>
                       {item.icon && <item.icon className="mr-2 h-4 w-4" />}
                       <span>{item.label}</span>
                     </Link>
@@ -561,6 +479,61 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [companyName, setCompanyName] = useState('Payshia ERP');
   const [roles, setRoles] = useState<Role[]>([]);
   const { company_id } = useLocation();
+  const [navItems, setNavItems] = useState<NavItem[]>([]);
+  const [isLoadingNav, setIsLoadingNav] = useState(true);
+
+  useEffect(() => {
+    const fetchNavData = async () => {
+        setIsLoadingNav(true);
+        try {
+            const response = await fetcher('https://qa-server-erp.payshia.com/pages');
+            const result = await response.json();
+            if (result.status === 'success') {
+                const pageData = result.data;
+                const categoryMap: { [key: string]: NavItem } = {};
+                const topLevelItems: NavItem[] = [];
+
+                pageData.forEach((page: any) => {
+                    const icon = iconMap[page.name] || HelpCircle;
+                    const navItem: NavItem = {
+                        href: page.page_url,
+                        label: page.display_name,
+                        icon: icon,
+                        name: page.name,
+                    };
+                    
+                    if (page.name === 'dashboard' || page.name === 'pos-system' || page.name === 'how-to-use' || page.name === 'service-center-warranty') {
+                      topLevelItems.push(navItem);
+                    }
+                    else if (page.category) {
+                        if (!categoryMap[page.category]) {
+                            const parentName = page.category.toLowerCase().replace(' & ', '-').replace(/ /g, '-');
+                            categoryMap[page.category] = {
+                                label: page.category,
+                                icon: iconMap[parentName] || HelpCircle,
+                                name: parentName,
+                                subItems: [],
+                            };
+                        }
+                        // Don't add parent category as its own sub-item
+                        if (page.display_name !== page.category) {
+                            categoryMap[page.category].subItems!.push(navItem);
+                        }
+                    }
+                });
+
+                const finalNavItems = [...topLevelItems, ...Object.values(categoryMap)];
+                setNavItems(finalNavItems);
+            }
+        } catch (error) {
+            console.error("Failed to fetch nav items:", error);
+        } finally {
+            setIsLoadingNav(false);
+        }
+    };
+
+    fetchNavData();
+  }, []);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -620,7 +593,13 @@ export function AppShell({ children }: { children: ReactNode }) {
          <LocationSwitcher isMobile={true} />
          <SidebarSeparator />
         <SidebarContent className="p-4">
-          <NavMenu items={navItems} pathname={pathname} handleLinkClick={handleLinkClick} />
+           {isLoadingNav ? (
+                <div className="space-y-2">
+                    {Array.from({length: 8}).map((_, i) => <SidebarMenuSkeleton key={i} showIcon />)}
+                </div>
+           ) : (
+                <NavMenu items={navItems} pathname={pathname} handleLinkClick={handleLinkClick} />
+           )}
         </SidebarContent>
         <SidebarFooter>
           <div className="flex items-center gap-2">
