@@ -64,7 +64,7 @@ export default function POSPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<User[]>([]);
   const [tables, setTables] = useState<TableType[]>([]);
   const [stewards, setStewards] = useState<User[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -162,110 +162,110 @@ export default function POSPage() {
     }
   }, []);
 
-  useEffect(() => {
-    async function fetchPosData() {
-        if (!company_id || !currentLocation) {
-            setIsLoading(false);
-            return;
-        }
-        setIsLoading(true);
-        try {
-            const [productsResponse, collectionsResponse, brandsResponse, categoriesResponse, customersResponse, tablesResponse, stewardsResponse, paymentMethodsResponse] = await Promise.all([
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment-method/filter/by-company?company_id=${company_id}`),
-            ]);
-
-            if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !categoriesResponse.ok || !customersResponse.ok) {
-                throw new Error('Failed to fetch POS data');
-            }
-            const productsData: { products: ProductWithVariantsResponse[] } = await productsResponse.json();
-            const collectionsData: Collection[] = await collectionsResponse.json();
-            const brandsData: Brand[] = await brandsResponse.json();
-            const categoriesData: Category[] = await categoriesResponse.json();
-            const customersData: Customer[] = await customersResponse.json();
-            const tablesData: TableType[] = await tablesResponse.json();
-            const stewardsResult = await stewardsResponse.json();
-            const paymentMethodsData = await paymentMethodsResponse.json();
-
-            setPaymentMethods(paymentMethodsData || []);
-            const stewardsData = stewardsResult.data || [];
-            
-            setTables(tablesData || []);
-             setStewards((stewardsData || []).map((s: any) => ({ 
-                id: s.id,
-                user_name: `${s.first_name} ${s.last_name}`, 
-                role: s.acc_type, 
-                avatar: s.img_path, 
-                customer_id: s.id,
-                first_name: s.first_name,
-                last_name: s.last_name
-             })));
-            
-            setCustomers(customersData || []);
-
-            setCollections(collectionsData || []);
-            setBrands(brandsData || []);
-            setCategories(categoriesData || []);
-            
-            const locationFilteredProducts = (productsData.products || []).filter(p => 
-                p.product.available_locations?.split(',').includes(currentLocation.location_id) && p.product.item_type !== 'raw'
-            );
-            
-            const flattenedProducts = locationFilteredProducts.flatMap(p => {
-                const mainProductFrontImage = p.product_images.find(img => img.image_type === 'front img')?.img_url || p.product.product_image_url;
-
-                if (!p.variants || p.variants.length === 0) {
-                    return [{
-                        ...p.product,
-                        category: categoriesData.find(c => c.id === p.product.category_id)?.name || p.product.category,
-                        imageUrl: mainProductFrontImage ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${mainProductFrontImage}` : undefined,
-                        price: parseFloat(p.product.price as any) || 0,
-                        min_price: parseFloat(p.product.min_price as any) || 0,
-                        wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
-                        cost_price: parseFloat(p.product.cost_price as any) || 0,
-                        variant: { id: p.product.id, sku: `SKU-${p.product.id}` }, // Simplified variant
-                        variantName: p.product.name,
-                    }];
-                }
-
-                return p.variants.map(v => {
-                    const variantFrontImage = v.images.find(img => img.image_type === 'front img')?.img_url;
-                    const finalImageUrl = variantFrontImage || mainProductFrontImage;
-
-                    const variantAttributes = [v.variant.color, v.variant.size].filter(Boolean).join(' - ');
-                    const variantName = variantAttributes ? `${p.product.name} - ${variantAttributes}` : `${p.product.name} (${v.variant.sku})`;
-
-                    return {
-                        ...p.product,
-                        category: categoriesData.find(c => c.id === p.product.category_id)?.name || p.product.category,
-                        imageUrl: finalImageUrl ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${finalImageUrl}` : undefined,
-                        price: parseFloat(v.variant.price as any) || 0,
-                        min_price: parseFloat(v.variant.min_price as any) || 0,
-                        wholesale_price: parseFloat(v.variant.wholesale_price as any) || 0,
-                        cost_price: parseFloat(v.variant.cost_price as any) || 0,
-                        variant: v.variant,
-                        variantName,
-                    };
-                });
-            });
-            setPosProducts(flattenedProducts);
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch data from the server.' });
-        } finally {
-            setIsLoading(false);
-        }
+  const fetchPosData = useCallback(async () => {
+    if (!company_id || !currentLocation) {
+        setIsLoading(false);
+        return;
     }
-    
+    setIsLoading(true);
+    try {
+        const [productsResponse, collectionsResponse, brandsResponse, categoriesResponse, customersResponse, tablesResponse, stewardsResponse, paymentMethodsResponse] = await Promise.all([
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/company?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment-method/filter/by-company?company_id=${company_id}`),
+        ]);
+
+        if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !categoriesResponse.ok || !customersResponse.ok) {
+            throw new Error('Failed to fetch POS data');
+        }
+        const productsData: { products: ProductWithVariantsResponse[] } = await productsResponse.json();
+        const collectionsData: Collection[] = await collectionsResponse.json();
+        const brandsData: Brand[] = await brandsResponse.json();
+        const categoriesData: Category[] = await categoriesResponse.json();
+        const customersData: User[] = await customersResponse.json();
+        const tablesData: TableType[] = await tablesResponse.json();
+        const stewardsResult = await stewardsResponse.json();
+        const paymentMethodsData = await paymentMethodsResponse.json();
+
+        setPaymentMethods(paymentMethodsData || []);
+        const stewardsData = stewardsResult.data || [];
+        
+        setTables(tablesData || []);
+         setStewards((stewardsData || []).map((s: any) => ({ 
+            id: s.id,
+            user_name: `${s.first_name} ${s.last_name}`, 
+            role: s.acc_type, 
+            avatar: s.img_path, 
+            customer_id: s.id,
+            first_name: s.first_name,
+            last_name: s.last_name
+         })));
+        
+        setCustomers(customersData || []);
+
+        setCollections(collectionsData || []);
+        setBrands(brandsData || []);
+        setCategories(categoriesData || []);
+        
+        const locationFilteredProducts = (productsData.products || []).filter(p => 
+            p.product.available_locations?.split(',').includes(currentLocation.location_id) && p.product.item_type !== 'raw'
+        );
+        
+        const flattenedProducts = locationFilteredProducts.flatMap(p => {
+            const mainProductFrontImage = p.product_images.find(img => img.image_type === 'front img')?.img_url || p.product.product_image_url;
+
+            if (!p.variants || p.variants.length === 0) {
+                return [{
+                    ...p.product,
+                    category: categoriesData.find(c => c.id === p.product.category_id)?.name || p.product.category,
+                    imageUrl: mainProductFrontImage ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${mainProductFrontImage}` : undefined,
+                    price: parseFloat(p.product.price as any) || 0,
+                    min_price: parseFloat(p.product.min_price as any) || 0,
+                    wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
+                    cost_price: parseFloat(p.product.cost_price as any) || 0,
+                    variant: { id: p.product.id, sku: `SKU-${p.product.id}` }, // Simplified variant
+                    variantName: p.product.name,
+                }];
+            }
+
+            return p.variants.map(v => {
+                const variantFrontImage = v.images.find(img => img.image_type === 'front img')?.img_url;
+                const finalImageUrl = variantFrontImage || mainProductFrontImage;
+
+                const variantAttributes = [v.variant.color, v.variant.size].filter(Boolean).join(' - ');
+                const variantName = variantAttributes ? `${p.product.name} - ${variantAttributes}` : `${p.product.name} (${v.variant.sku})`;
+
+                return {
+                    ...p.product,
+                    category: categoriesData.find(c => c.id === p.product.category_id)?.name || p.product.category,
+                    imageUrl: finalImageUrl ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${finalImageUrl}` : undefined,
+                    price: parseFloat(v.variant.price as any) || 0,
+                    min_price: parseFloat(v.variant.min_price as any) || 0,
+                    wholesale_price: parseFloat(v.variant.wholesale_price as any) || 0,
+                    cost_price: parseFloat(v.variant.cost_price as any) || 0,
+                    variant: v.variant,
+                    variantName,
+                };
+            });
+        });
+        setPosProducts(flattenedProducts);
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch data from the server.' });
+    } finally {
+        setIsLoading(false);
+    }
+}, [toast, currentLocation, company_id]);
+
+useEffect(() => {
     if (currentLocation) {
         fetchPosData();
     }
-  }, [toast, currentLocation, company_id]);
+}, [currentLocation, fetchPosData]);
 
   useEffect(() => {
     async function fetchInvoicesForReturn() {
@@ -712,6 +712,13 @@ export default function POSPage() {
   const updateCustomer = (orderId: string, customer: Customer) => {
     setActiveOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, customer: customer as User } : order));
   };
+  
+  const handleCustomerCreated = (newCustomer: User) => {
+    setCustomers(prev => [...prev, newCustomer]);
+    if(currentOrderId) {
+        updateCustomer(currentOrderId, newCustomer as Customer);
+    }
+  };
 
   const filteredProducts = useMemo(() => {
     let productsToFilter = posProducts;
@@ -790,6 +797,7 @@ export default function POSPage() {
         onUpdateDetails={onUpdateDetails}
         availableTables={tables} availableStewards={stewards}
         customers={customers} onUpdateCustomer={updateCustomer}
+        onCustomerCreated={handleCustomerCreated}
      />
   ) : null;
   
@@ -922,3 +930,4 @@ export default function POSPage() {
     </>
   );
 }
+

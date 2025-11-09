@@ -13,13 +13,8 @@ import {
   X,
   CreditCard,
   TicketPercent,
-  UserPlus,
   Trash2,
-  ChefHat,
   Notebook,
-  PlusSquare,
-  Star,
-  UserCheck,
   Settings,
   Receipt,
   Delete,
@@ -53,6 +48,7 @@ import { useCurrency } from '../currency-provider';
 import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
 import { PayshiaPosLogo } from './payshia-pos-logo';
+import { CustomerPanel } from './customer-panel';
 
 interface OrderPanelProps {
   order: ActiveOrder;
@@ -72,8 +68,9 @@ interface OrderPanelProps {
   onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
   availableTables: TableType[];
   availableStewards: User[];
-  customers: Customer[];
+  customers: User[];
   onUpdateCustomer: (orderId: string, customer: Customer) => void;
+  onCustomerCreated: (newCustomer: User) => void;
 }
 
 type Receipt = {
@@ -194,9 +191,7 @@ const PaymentDialog = ({
   };
 
   const handleCloseAsCredit = () => {
-    if (selectedMethodId) {
-      onSuccessfulPayment(selectedMethodId, 0, true);
-    }
+    onSuccessfulPayment(selectedMethodId || (paymentMethods[0]?.id || ''), 0, true);
   };
 
   React.useEffect(() => {
@@ -439,6 +434,7 @@ export function OrderPanel({
   availableStewards,
   customers,
   onUpdateCustomer,
+  onCustomerCreated
 }: OrderPanelProps) {
   const { toast } = useToast();
   const { company_id } = useLocation();
@@ -501,7 +497,7 @@ export function OrderPanel({
         service_charge: orderTotals.serviceCharge,
         tendered_amount: tenderedAmount,
         close_type: paymentMethodId,
-        invoice_status: isCredit ? '1' : (tenderedAmount > 0 ? '1' : '2'), // Active for credit
+        invoice_status: isCredit ? '1' : '1', // 1=Active/Paid
         payment_status: tenderedAmount > 0 ? (tenderedAmount >= orderTotals.total ? "Paid" : "Partial") : "Pending",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
@@ -523,7 +519,7 @@ export function OrderPanel({
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
             table_id: tableIdValue,
-            cost_price: item.product.costPrice || 0,
+            cost_price: item.product.cost_price || 0,
             is_active: 1,
             hold_status: 0,
             printed_status: 1,
@@ -574,10 +570,6 @@ export function OrderPanel({
     }
   };
   
-  const handleCustomerCreated = (newCustomer: User) => {
-    onUpdateCustomer(orderId, newCustomer as Customer);
-  }
-
   const handleGuestReceipt = () => {
     if (!order.originalInvoiceNumber) {
       toast({
@@ -595,8 +587,6 @@ export function OrderPanel({
     setSuccessData(null);
   };
   
-  const customerOptions = customers.map(c => ({ value: c.customer_id, label: `${c.first_name} ${c.last_name}` }));
-
   return (
     <div className="flex flex-col h-full bg-card">
       <SuccessDialog successData={successData} onClose={handleCloseSuccess} />
@@ -626,42 +616,13 @@ export function OrderPanel({
             </div>
       )}
 
-      <div className='p-4 border-b border-border'>
-        <div className='flex items-center gap-3'>
-            <div className="flex-1">
-                <Select
-                  value={customer?.customer_id || ''}
-                  onValueChange={(customerId) => {
-                    const newCustomer = customers.find(
-                      (c) => c.customer_id === customerId
-                    );
-                    if (newCustomer) onUpdateCustomer(orderId, newCustomer);
-                  }}
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select a customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.first_name} {c.last_name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-             <CustomerFormDialog onCustomerCreated={handleCustomerCreated}>
-                 <Button variant="outline" size="icon">
-                    <UserPlus className="h-5 w-5" />
-                </Button>
-            </CustomerFormDialog>
-        </div>
-         <div className='flex items-center justify-between mt-2 text-sm'>
-            <p className="text-muted-foreground">Loyalty Points</p>
-             <div className='flex items-center gap-1.5 text-yellow-500'>
-                <Star className='h-4 w-4' />
-                <span className='font-bold'>{customer?.loyaltyPoints || 0}</span>
-            </div>
-        </div>
-      </div>
+      <CustomerPanel 
+        order={order}
+        customers={customers}
+        onUpdateCustomer={onUpdateCustomer}
+        onCustomerCreated={onCustomerCreated}
+      />
+
 
       <div className="flex-1 min-h-0">
         {cart.length === 0 ? (
