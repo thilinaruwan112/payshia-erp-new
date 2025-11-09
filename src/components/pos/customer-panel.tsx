@@ -36,7 +36,9 @@ export function CustomerPanel({ order, customers, onUpdateCustomer, onCustomerCr
                     </SelectTrigger>
                     <SelectContent>
                         {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.first_name} {c.last_name}</SelectItem>
+                            <SelectItem key={c.customer_id} value={c.customer_id}>
+                                {c.customer_first_name} {c.customer_last_name}
+                            </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
