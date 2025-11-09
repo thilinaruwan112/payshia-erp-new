@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -543,7 +544,7 @@ export function OrderPanel({
             invoiceAmount: orderTotals.total,
             tenderAmount: tenderedAmount,
             changeAmount: tenderedAmount - orderTotals.total,
-            customerName: customer.first_name ? `${customer.first_name} ${customer.last_name}` : customer.name,
+            customerName: customer.first_name ? `${customer.first_name} ${customer.last_name}` : (customer as any).name,
             companyId: String(company_id),
         });
         
@@ -725,19 +726,19 @@ export function OrderPanel({
                 <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
             </div>
         )}
-        {currentLocation?.tdl_status === 'Enabled' && orderTotals.tdl > 0 && (
+        {currentLocation?.tdl_status === 'Enabled' && (
             <div className="flex justify-between text-sm">
                 <span>TDL (1%)</span>
                 <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
             </div>
         )}
-        {currentLocation?.sscl_status === 'Enabled' && orderTotals.sscl > 0 && (
+        {currentLocation?.sscl_status === 'Enabled' && (
             <div className="flex justify-between text-sm">
                 <span>SSCL (2.5%)</span>
                 <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
             </div>
         )}
-        {currentLocation?.vat_status === 'Enabled' && orderTotals.vat > 0 && (
+        {currentLocation?.vat_status === 'Enabled' && (
             <div className="flex justify-between text-sm">
                 <span>VAT (18%)</span>
                 <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
