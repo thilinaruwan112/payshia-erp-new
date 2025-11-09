@@ -160,12 +160,29 @@ function FinalInvoiceContent() {
   const totalDiscount = totalItemDiscount + (totalOrderDiscount - totalItemDiscount);
   
   const grandTotal = parseFloat(invoice.grand_total);
-  const serviceCharge = parseFloat(invoice.service_charge);
-  const tdl = parseFloat(invoice.tdl || "0");
-  const sscl = parseFloat(invoice.sscl_tax || "0");
-  const vat = parseFloat(invoice.vat_amount || "0");
   
-  const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
+  const baseForTaxes = subtotal - totalItemDiscount;
+  let serviceCharge = 0;
+  const orderType = getOrderTypeOrTable(invoice.table_id);
+  if (orderType?.startsWith('Dine-In') && location?.service_charge_status === 'Enabled') {
+    serviceCharge = baseForTaxes * 0.10;
+  }
+  const baseForTdl = baseForTaxes + serviceCharge;
+  let tdl = 0;
+  if (location?.tdl_status === 'Enabled') {
+    tdl = baseForTdl * 0.01;
+  }
+  const baseForSscl = baseForTaxes + serviceCharge;
+  let sscl = 0;
+  if (location?.sscl_status === 'Enabled') {
+    sscl = baseForSscl * 0.025;
+  }
+  const baseForVat = baseForTaxes + serviceCharge + tdl + sscl;
+  let vat = 0;
+  if (location?.vat_status === 'Enabled') {
+    vat = baseForVat * 0.18;
+  }
+
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
   const customerName = customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : `(ID: ${invoice.customer_code})`;
@@ -241,7 +258,7 @@ function FinalInvoiceContent() {
           </div>
           {serviceCharge > 0 && (
             <div className="flex justify-between">
-              <span>Service Charge:</span>
+              <span>Service Charge (10%):</span>
               <span>{serviceCharge.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           )}
@@ -287,5 +304,3 @@ export default function FinalInvoicePage() {
         </Suspense>
     )
 }
-
-    
