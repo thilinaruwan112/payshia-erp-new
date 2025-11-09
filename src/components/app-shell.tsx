@@ -108,6 +108,7 @@ import { Calendar } from './ui/calendar';
 import Image from 'next/image';
 import type { Role, User } from '@/lib/types';
 import { fetcher } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 const iconMap: { [key: string]: React.ElementType } = {
   dashboard: LayoutDashboard,
