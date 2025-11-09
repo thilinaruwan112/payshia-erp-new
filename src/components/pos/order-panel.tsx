@@ -13,13 +13,8 @@ import {
   X,
   CreditCard,
   TicketPercent,
-  UserPlus,
   Trash2,
-  ChefHat,
   Notebook,
-  PlusSquare,
-  Star,
-  UserCheck,
   Settings,
   Receipt,
   Delete,
@@ -27,7 +22,6 @@ import {
   CheckCircle,
   ArrowRight,
 } from 'lucide-react';
-import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -41,9 +35,6 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { CustomerFormDialog } from '../customer-form-dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Switch } from '../ui/switch';
 import { format } from 'date-fns';
@@ -53,6 +44,7 @@ import { useCurrency } from '../currency-provider';
 import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
 import { PayshiaPosLogo } from './payshia-pos-logo';
+import { CustomerPanel } from './customer-panel';
 
 interface OrderPanelProps {
   order: ActiveOrder;
@@ -72,8 +64,9 @@ interface OrderPanelProps {
   onUpdateDetails: (orderId: string, newDetails: Partial<Pick<ActiveOrder, 'orderType' | 'tableName' | 'steward'>>) => void;
   availableTables: TableType[];
   availableStewards: User[];
-  customers: Customer[];
+  customers: User[];
   onUpdateCustomer: (orderId: string, customer: Customer) => void;
+  onCustomerCreated: (newCustomer: User) => void;
 }
 
 type Receipt = {
@@ -179,7 +172,7 @@ const PaymentDialog = ({
   paymentMethods,
 }: {
   orderTotals: OrderInfo;
-  onSuccessfulPayment: (paymentMethod: string, tenderedAmount: number) => void;
+  onSuccessfulPayment: (paymentMethod: string, tenderedAmount: number, isCredit: boolean) => void;
   paymentMethods: PaymentMethod[];
 }) => {
   const { currencySymbol } = useCurrency();
@@ -189,8 +182,12 @@ const PaymentDialog = ({
 
   const handleConfirm = () => {
     if (selectedMethodId) {
-      onSuccessfulPayment(selectedMethodId, Number(amountTendered) || orderTotals.total);
+      onSuccessfulPayment(selectedMethodId, Number(amountTendered) || orderTotals.total, false);
     }
+  };
+
+  const handleCloseAsCredit = () => {
+    onSuccessfulPayment(selectedMethodId || (paymentMethods[0]?.id || ''), 0, true);
   };
 
   React.useEffect(() => {
@@ -278,14 +275,24 @@ const PaymentDialog = ({
          <DialogClose asChild>
             <Button variant="outline" size="lg" className="h-16 text-lg">Cancel</Button>
          </DialogClose>
-        <Button
-          size="lg"
-          onClick={handleConfirm}
-          disabled={!selectedMethodId || !amountTendered || change < 0}
-          className="h-16 text-lg"
-        >
-          Confirm Payment
-        </Button>
+        <div className="flex gap-2">
+            <Button
+                size="lg"
+                variant="secondary"
+                className="h-16 text-lg"
+                 onClick={handleCloseAsCredit}
+            >
+                Close as Credit
+            </Button>
+            <Button
+                size="lg"
+                onClick={handleConfirm}
+                disabled={!selectedMethodId || !amountTendered || change < 0}
+                className="h-16 text-lg"
+            >
+                Confirm Payment
+            </Button>
+        </div>
       </DialogFooter>
     </DialogContent>
   );
@@ -423,6 +430,7 @@ export function OrderPanel({
   availableStewards,
   customers,
   onUpdateCustomer,
+  onCustomerCreated
 }: OrderPanelProps) {
   const { toast } = useToast();
   const { company_id } = useLocation();
@@ -434,7 +442,7 @@ export function OrderPanel({
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType, tableName } = order;
 
-  const handleSuccessfulPayment = async (paymentMethodId: string, tenderedAmount: number) => {
+  const handleSuccessfulPayment = async (paymentMethodId: string, tenderedAmount: number, isCredit: boolean) => {
     
     if (!currentLocation || !company_id || !customer) {
         toast({
@@ -482,11 +490,11 @@ export function OrderPanel({
         discount_amount: totalDiscount,
         discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
         customer_code: customer.customer_id,
-        service_charge: orderTotals.serviceCharge,
+        service_charge: currentLocation.service_charge_status === 'Enabled' ? orderTotals.serviceCharge : 0,
         tendered_amount: tenderedAmount,
         close_type: paymentMethodId,
-        invoice_status: '1', // Paid
-        payment_status: "Paid",
+        invoice_status: isCredit ? '1' : '1',
+        payment_status: tenderedAmount > 0 ? (tenderedAmount >= orderTotals.total ? "Paid" : "Partial") : "Pending",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
         table_id: tableIdValue,
@@ -507,14 +515,17 @@ export function OrderPanel({
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
             table_id: tableIdValue,
-            cost_price: item.product.cost_price || 0,
+            cost_price: item.product.costPrice || 0,
             is_active: 1,
             hold_status: 0,
             printed_status: 1,
             product_variant_id: parseInt(item.product.variant.id, 10),
             expire_date: item.batch.expire_date,
             company_id: company_id,
-        }))
+        })),
+        vat_amount: currentLocation.vat_status === 'Enabled' ? orderTotals.vat : 0,
+        sscl_tax: currentLocation.sscl_status === 'Enabled' ? orderTotals.sscl : 0,
+        tdl: currentLocation.tdl_status === 'Enabled' ? orderTotals.tdl : 0,
     };
 
     try {
@@ -544,7 +555,7 @@ export function OrderPanel({
             invoiceAmount: orderTotals.total,
             tenderAmount: tenderedAmount,
             changeAmount: tenderedAmount - orderTotals.total,
-            customerName: customer.first_name ? `${customer.first_name} ${customer.last_name}` : customer.name,
+            customerName: `${customer.first_name} ${customer.last_name}`,
             companyId: String(company_id),
         });
         
@@ -558,10 +569,6 @@ export function OrderPanel({
     }
   };
   
-  const handleCustomerCreated = (newCustomer: User) => {
-    onUpdateCustomer(orderId, newCustomer);
-  }
-
   const handleGuestReceipt = () => {
     if (!order.originalInvoiceNumber) {
       toast({
@@ -578,7 +585,7 @@ export function OrderPanel({
     onClearCart(orderId);
     setSuccessData(null);
   };
-
+  
   return (
     <div className="flex flex-col h-full bg-card">
       <SuccessDialog successData={successData} onClose={handleCloseSuccess} />
@@ -602,48 +609,19 @@ export function OrderPanel({
       {steward && (
            <div className='p-2 px-4 border-b border-border bg-muted/30'>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <UserCheck className="h-4 w-4" />
+                    <UserIcon className="h-4 w-4" />
                     <span>Steward: <span className="font-semibold text-foreground">{steward.user_name}</span></span>
                 </div>
             </div>
       )}
 
-      <div className='p-4 border-b border-border'>
-        <div className='flex items-center gap-3'>
-            <div className="flex-1">
-                <Select
-                  value={customer?.customer_id || ''}
-                  onValueChange={(customerId) => {
-                    const newCustomer = customers.find(
-                      (c) => c.customer_id === customerId
-                    );
-                    if (newCustomer) onUpdateCustomer(orderId, newCustomer);
-                  }}
-                >
-                    <SelectTrigger>
-                        <SelectValue placeholder="Select a customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.first_name} {c.last_name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-             <CustomerFormDialog onCustomerCreated={(c) => onUpdateCustomer(orderId, c)}>
-                 <Button variant="outline" size="icon">
-                    <UserPlus className="h-5 w-5" />
-                </Button>
-            </CustomerFormDialog>
-        </div>
-         <div className='flex items-center justify-between mt-2 text-sm'>
-            <p className="text-muted-foreground">Loyalty Points</p>
-             <div className='flex items-center gap-1.5 text-yellow-500'>
-                <Star className='h-4 w-4' />
-                <span className='font-bold'>{customer?.loyaltyPoints || 0}</span>
-            </div>
-        </div>
-      </div>
+      <CustomerPanel 
+        order={order}
+        customers={customers}
+        onUpdateCustomer={onUpdateCustomer}
+        onCustomerCreated={onCustomerCreated}
+      />
+
 
       <div className="flex-1 min-h-0">
         {cart.length === 0 ? (
@@ -655,14 +633,6 @@ export function OrderPanel({
             <div className="divide-y divide-border">
               {cart.map((item) => (
                 <div key={item.uniqueId} className="p-4 flex gap-4">
-                  <Image
-                    src={item.product.imageUrl || `https://placehold.co/64x64.png`}
-                    alt={item.product.name}
-                    width={64}
-                    height={64}
-                    className="rounded-md object-cover"
-                    data-ai-hint="product photo"
-                  />
                   <div className="flex-1 flex flex-col">
                     <span className="font-semibold">{item.product.variantName}</span>
                     <span className="text-muted-foreground text-sm">
@@ -676,25 +646,30 @@ export function OrderPanel({
                           Discount: -{currencySymbol}{item.itemDiscount.toFixed(2)}
                         </span>
                       ) : null}
-                    <div className="mt-auto">
-                        <span className="text-lg font-bold">{item.quantity}</span>
-                        <span className="text-sm text-muted-foreground ml-1">
-                            {item.product.stock_unit || 'Nos'}
-                        </span>
-                    </div>
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="font-bold">
                       {currencySymbol}{((item.product.price as number) * item.quantity).toFixed(2)}
                     </span>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 mt-auto text-muted-foreground hover:text-destructive"
-                      onClick={() => onRemoveItem(item.uniqueId!)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                     <div className="flex items-center gap-2 mt-auto">
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:bg-muted"
+                            onClick={() => onUpdateQuantity(item.product.variant.id, item.batch.patch_code, item.quantity - 1)}
+                        >
+                            <MinusCircle className="h-4 w-4" />
+                        </Button>
+                        <span className="font-bold w-6 text-center">{item.quantity}</span>
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-muted-foreground hover:bg-muted"
+                            onClick={() => onUpdateQuantity(item.product.variant.id, item.batch.patch_code, item.quantity + 1)}
+                        >
+                            <PlusCircle className="h-4 w-4" />
+                        </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -708,36 +683,44 @@ export function OrderPanel({
           <span>Subtotal</span>
           <span>{currencySymbol}{orderTotals.subtotal.toFixed(2)}</span>
         </div>
-         <div className="flex justify-between text-sm text-green-600">
+         <div className="flex justify-between text-sm text-destructive">
           <span>Item Discounts</span>
           <span>-{currencySymbol}{orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
         
-        <div className="flex justify-between text-sm items-center">
-            <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
-                <Switch
-                    id="service-charge-toggle"
-                    checked={isServiceChargeActive}
-                    onCheckedChange={setIsServiceChargeActive}
-                />
-                Service Charge (10%)
-            </Label>
-            <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-            <span>TDL (1%)</span>
-            <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
-        </div>
-            <div className="flex justify-between text-sm">
-            <span>SSCL (2.5%)</span>
-            <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
-        </div>
-            <div className="flex justify-between text-sm">
-            <span>VAT (18%)</span>
-            <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
-        </div>
+        {currentLocation?.service_charge_status === 'Enabled' && orderType === 'Dine-In' && (
+             <div className="flex justify-between text-sm items-center">
+                <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
+                    <Switch
+                        id="service-charge-toggle"
+                        checked={isServiceChargeActive}
+                        onCheckedChange={setIsServiceChargeActive}
+                    />
+                    Service Charge (10%)
+                </Label>
+                <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
+            </div>
+        )}
+        {orderTotals.tdl > 0 && (
+             <div className="flex justify-between text-sm">
+                <span>TDL (1%)</span>
+                <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
+            </div>
+        )}
+         {orderTotals.sscl > 0 && (
+             <div className="flex justify-between text-sm">
+                <span>SSCL (2.5%)</span>
+                <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
+            </div>
+        )}
+         {orderTotals.vat > 0 && (
+             <div className="flex justify-between text-sm">
+                <span>VAT (18%)</span>
+                <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
+            </div>
+        )}
 
-         <div className="flex justify-between text-sm text-green-600">
+         <div className="flex justify-between text-sm text-destructive">
           <span>Order Discount</span>
           <span>-{currencySymbol}{discount.toFixed(2)}</span>
         </div>
@@ -785,7 +768,3 @@ export function OrderPanel({
     </div>
   );
 }
-
-    
-
-    

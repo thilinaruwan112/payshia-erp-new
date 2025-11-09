@@ -24,6 +24,7 @@ import { TodaySalesDialog } from '@/components/pos/dialogs/today-sales-dialog';
 import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
+import { CustomerPanel } from '@/components/pos/customer-panel';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -64,7 +65,7 @@ export default function POSPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [customers, setCustomers] = useState<User[]>([]);
   const [tables, setTables] = useState<TableType[]>([]);
   const [stewards, setStewards] = useState<User[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -162,116 +163,110 @@ export default function POSPage() {
     }
   }, []);
 
-  useEffect(() => {
-    async function fetchPosData() {
-        if (!company_id || !currentLocation) {
-            setIsLoading(false);
-            return;
-        }
-        setIsLoading(true);
-        try {
-            const [productsResponse, collectionsResponse, brandsResponse, categoriesResponse, customersResponse, tablesResponse, stewardsResponse, paymentMethodsResponse] = await Promise.all([
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment-method/filter/by-company?company_id=${company_id}`),
-            ]);
-
-            if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !categoriesResponse.ok || !customersResponse.ok) {
-                throw new Error('Failed to fetch POS data');
-            }
-            const productsData: { products: ProductWithVariantsResponse[] } = await productsResponse.json();
-            const collectionsData: Collection[] = await collectionsResponse.json();
-            const brandsData: Brand[] = await brandsResponse.json();
-            const categoriesData: Category[] = await categoriesResponse.json();
-            const customersData: Customer[] = await customersResponse.json();
-            const tablesData: TableType[] = await tablesResponse.json();
-            const stewardsResult = await stewardsResponse.json();
-            const paymentMethodsData = await paymentMethodsResponse.json();
-
-            setPaymentMethods(paymentMethodsData || []);
-            const stewardsData = stewardsResult.data || [];
-            
-            setTables(tablesData || []);
-             setStewards((stewardsData || []).map((s: any) => ({ 
-                id: s.id,
-                user_name: `${s.first_name} ${s.last_name}`, 
-                role: s.acc_type, 
-                avatar: s.img_path, 
-                customer_id: s.id,
-                first_name: s.first_name,
-                last_name: s.last_name
-             })));
-            
-            const formattedCustomers = customersData.map(c => ({
-                ...c,
-                id: c.customer_id,
-                name: `${c.customer_first_name} ${c.customer_last_name}`,
-                role: 'Customer',
-            }));
-            setCustomers(formattedCustomers);
-
-            setCollections(collectionsData || []);
-            setBrands(brandsData || []);
-            setCategories(categoriesData || []);
-            
-            const locationFilteredProducts = (productsData.products || []).filter(p => 
-                p.product.available_locations?.split(',').includes(currentLocation.location_id) && p.product.item_type !== 'raw'
-            );
-            
-            const flattenedProducts = locationFilteredProducts.flatMap(p => {
-                const mainProductFrontImage = p.product_images.find(img => img.image_type === 'front img')?.img_url || p.product.product_image_url;
-
-                if (!p.variants || p.variants.length === 0) {
-                    return [{
-                        ...p.product,
-                        category: categoriesData.find(c => c.id === p.product.category_id)?.name || p.product.category,
-                        imageUrl: mainProductFrontImage ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${mainProductFrontImage}` : undefined,
-                        price: parseFloat(p.product.price as any) || 0,
-                        min_price: parseFloat(p.product.min_price as any) || 0,
-                        wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
-                        cost_price: parseFloat(p.product.cost_price as any) || 0,
-                        variant: { id: p.product.id, sku: `SKU-${p.product.id}` }, // Simplified variant
-                        variantName: p.product.name,
-                    }];
-                }
-
-                return p.variants.map(v => {
-                    const variantFrontImage = v.images.find(img => img.image_type === 'front img')?.img_url;
-                    const finalImageUrl = variantFrontImage || mainProductFrontImage;
-
-                    const variantAttributes = [v.variant.color, v.variant.size].filter(Boolean).join(' - ');
-                    const variantName = variantAttributes ? `${p.product.name} - ${variantAttributes}` : `${p.product.name} (${v.variant.sku})`;
-
-                    return {
-                        ...p.product,
-                        category: categoriesData.find(c => c.id === p.product.category_id)?.name || p.product.category,
-                        imageUrl: finalImageUrl ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${finalImageUrl}` : undefined,
-                        price: parseFloat(v.variant.price as any) || 0,
-                        min_price: parseFloat(v.variant.min_price as any) || 0,
-                        wholesale_price: parseFloat(v.variant.wholesale_price as any) || 0,
-                        cost_price: parseFloat(v.variant.cost_price as any) || 0,
-                        variant: v.variant,
-                        variantName,
-                    };
-                });
-            });
-            setPosProducts(flattenedProducts);
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch data from the server.' });
-        } finally {
-            setIsLoading(false);
-        }
+  const fetchPosData = useCallback(async () => {
+    if (!company_id || !currentLocation) {
+        setIsLoading(false);
+        return;
     }
-    
+    setIsLoading(true);
+    try {
+        const [productsResponse, collectionsResponse, brandsResponse, categoriesResponse, customersResponse, tablesResponse, stewardsResponse, paymentMethodsResponse] = await Promise.all([
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/company?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${company_id}`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/filter/users?company_id=${company_id}&user_status=3`),
+            fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment-method/filter/by-company?company_id=${company_id}`),
+        ]);
+
+        if (!productsResponse.ok || !collectionsResponse.ok || !brandsResponse.ok || !categoriesResponse.ok || !customersResponse.ok) {
+            throw new Error('Failed to fetch POS data');
+        }
+        const productsData: { products: ProductWithVariantsResponse[] } = await productsResponse.json();
+        const collectionsData: Collection[] = await collectionsResponse.json();
+        const brandsData: Brand[] = await brandsResponse.json();
+        const categoriesData: Category[] = await categoriesResponse.json();
+        const customersData: User[] = await customersResponse.json();
+        const tablesData: TableType[] = await tablesResponse.json();
+        const stewardsResult = await stewardsResponse.json();
+        const paymentMethodsData = await paymentMethodsResponse.json();
+
+        setPaymentMethods(paymentMethodsData || []);
+        const stewardsData = stewardsResult.data || [];
+        
+        setTables(tablesData || []);
+         setStewards((stewardsData || []).map((s: any) => ({ 
+            id: s.id,
+            user_name: `${s.first_name} ${s.last_name}`, 
+            role: s.acc_type, 
+            avatar: s.img_path, 
+            customer_id: s.id,
+            first_name: s.first_name,
+            last_name: s.last_name
+         })));
+        
+        setCustomers(customersData || []);
+
+        setCollections(collectionsData || []);
+        setBrands(brandsData || []);
+        setCategories(categoriesData || []);
+        
+        const locationFilteredProducts = (productsData.products || []).filter(p => 
+            p.product.available_locations?.split(',').includes(currentLocation.location_id) && p.product.item_type !== 'raw'
+        );
+        
+        const flattenedProducts = locationFilteredProducts.flatMap(p => {
+            const mainProductFrontImage = p.product_images.find(img => img.image_type === 'front img')?.img_url || p.product.product_image_url;
+
+            if (!p.variants || p.variants.length === 0) {
+                return [{
+                    ...p.product,
+                    category: categoriesData.find(c => c.id === p.product.category_id)?.name || p.product.category,
+                    imageUrl: mainProductFrontImage ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${mainProductFrontImage}` : undefined,
+                    price: parseFloat(p.product.price as any) || 0,
+                    min_price: parseFloat(p.product.min_price as any) || 0,
+                    wholesale_price: parseFloat(p.product.wholesale_price as any) || 0,
+                    cost_price: parseFloat(p.product.cost_price as any) || 0,
+                    variant: { id: p.product.id, sku: `SKU-${p.product.id}` }, // Simplified variant
+                    variantName: p.product.name,
+                }];
+            }
+
+            return p.variants.map(v => {
+                const variantFrontImage = v.images.find(img => img.image_type === 'front img')?.img_url;
+                const finalImageUrl = variantFrontImage || mainProductFrontImage;
+
+                const variantAttributes = [v.variant.color, v.variant.size].filter(Boolean).join(' - ');
+                const variantName = variantAttributes ? `${p.product.name} - ${variantAttributes}` : `${p.product.name} (${v.variant.sku})`;
+
+                return {
+                    ...p.product,
+                    category: categoriesData.find(c => c.id === p.product.category_id)?.name || p.product.category,
+                    imageUrl: finalImageUrl ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${finalImageUrl}` : undefined,
+                    price: parseFloat(v.variant.price as any) || 0,
+                    min_price: parseFloat(v.variant.min_price as any) || 0,
+                    wholesale_price: parseFloat(v.variant.wholesale_price as any) || 0,
+                    cost_price: parseFloat(v.variant.cost_price as any) || 0,
+                    variant: v.variant,
+                    variantName,
+                };
+            });
+        });
+        setPosProducts(flattenedProducts);
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch data from the server.' });
+    } finally {
+        setIsLoading(false);
+    }
+}, [toast, currentLocation, company_id]);
+
+useEffect(() => {
     if (currentLocation) {
         fetchPosData();
     }
-  }, [toast, currentLocation, company_id]);
+}, [currentLocation, fetchPosData]);
 
   useEffect(() => {
     async function fetchInvoicesForReturn() {
@@ -718,6 +713,13 @@ export default function POSPage() {
   const updateCustomer = (orderId: string, customer: Customer) => {
     setActiveOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, customer: customer as User } : order));
   };
+  
+  const handleCustomerCreated = (newCustomer: User) => {
+    setCustomers(prev => [...prev, newCustomer]);
+    if(currentOrderId) {
+        updateCustomer(currentOrderId, newCustomer as Customer);
+    }
+  };
 
   const filteredProducts = useMemo(() => {
     let productsToFilter = posProducts;
@@ -733,54 +735,53 @@ export default function POSPage() {
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
   
   const orderTotals = useMemo((): OrderInfo => {
-    if (!currentOrder) {
+    if (!currentOrder || !currentLocation) {
       return { subtotal: 0, serviceCharge: 0, tdl: 0, sscl: 0, vat: 0, discount: 0, itemDiscounts: 0, total: 0 };
     }
 
+    const { cart, discount, orderType } = currentOrder;
+    const { service_charge_status, tdl_status, sscl_status, vat_status } = currentLocation;
+
     let subtotal = 0;
-    let totalServiceCharge = 0;
-    let totalTdl = 0;
-    let totalSscl = 0;
-    let totalVat = 0;
-    let totalItemDiscounts = 0;
-
-    for (const item of currentOrder.cart) {
+    let itemDiscounts = 0;
+    
+    for (const item of cart) {
       const basePrice = (item.product.price as number) * item.quantity;
+      const currentItemDiscount = item.itemDiscount || 0;
+      
       subtotal += basePrice;
-      totalItemDiscounts += item.itemDiscount || 0;
-
-      const basePriceAfterItemDiscount = basePrice - (item.itemDiscount || 0);
-
-      const serviceCharge = currentOrder.orderType === 'Dine-In' && isServiceChargeActive
-        ? basePriceAfterItemDiscount * 0.10
-        : 0;
-      totalServiceCharge += serviceCharge;
-
-      const tdl = basePriceAfterItemDiscount * 0.01;
-      totalTdl += tdl;
-
-      const baseForSscl = basePriceAfterItemDiscount + serviceCharge;
-      const sscl = baseForSscl * 0.025;
-      totalSscl += sscl;
-
-      const baseForVat = basePriceAfterItemDiscount + serviceCharge + tdl + sscl;
-      const vat = baseForVat * 0.18;
-      totalVat += vat;
+      itemDiscounts += currentItemDiscount;
+    }
+    
+    const baseForTaxes = subtotal - itemDiscounts;
+    
+    let serviceCharge = 0;
+    if (orderType === 'Dine-In' && service_charge_status === 'Enabled' && isServiceChargeActive) {
+      serviceCharge = baseForTaxes * 0.10;
     }
 
-    const total = subtotal - totalItemDiscounts + totalServiceCharge + totalTdl + totalSscl + totalVat - currentOrder.discount;
-    
-    return { 
-        subtotal, 
-        serviceCharge: totalServiceCharge,
-        tdl: totalTdl,
-        sscl: totalSscl,
-        vat: totalVat,
-        discount: currentOrder.discount, 
-        itemDiscounts: totalItemDiscounts, 
-        total 
-    };
-  }, [currentOrder, isServiceChargeActive]);
+    const baseForTdl = baseForTaxes + serviceCharge;
+    let tdl = 0;
+    if (tdl_status === 'Enabled') {
+      tdl = baseForTdl * 0.01;
+    }
+
+    const baseForSscl = baseForTaxes + serviceCharge;
+    let sscl = 0;
+    if (sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+
+    const baseForVat = baseForTaxes + serviceCharge + tdl + sscl;
+    let vat = 0;
+    if (vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
+    const total = baseForTaxes + serviceCharge + tdl + sscl + vat - discount;
+
+    return { subtotal, serviceCharge, tdl, sscl, vat, discount, itemDiscounts, total };
+  }, [currentOrder, currentLocation, isServiceChargeActive]);
   
   const orderPanelComponent = currentOrder && currentCashier ? (
      <OrderPanel
@@ -796,6 +797,7 @@ export default function POSPage() {
         onUpdateDetails={onUpdateDetails}
         availableTables={tables} availableStewards={stewards}
         customers={customers} onUpdateCustomer={updateCustomer}
+        onCustomerCreated={handleCustomerCreated}
      />
   ) : null;
   
@@ -879,7 +881,7 @@ export default function POSPage() {
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[calc(100vh-250px)]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
                     ) : (
-                        <ProductGrid products={filteredProducts} orderType={currentOrder?.orderType} onProductSelect={(p) => setSelectedProduct(p)} />
+                        <ProductGrid products={filteredProducts} orderType={currentOrder?.orderType} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} />
                     )}
                     </div>
                     
@@ -928,8 +930,3 @@ export default function POSPage() {
     </>
   );
 }
-
-    
-
-    
-

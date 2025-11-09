@@ -41,7 +41,7 @@ export function AddToCartDialog({
   onClose,
   onAddToCart,
 }: AddToCartDialogProps) {
-  const [quantity, setQuantity] = useState('1');
+  const [quantity, setQuantity] = useState('0');
   const [discount, setDiscount] = useState('0');
   const [stockInfo, setStockInfo] = useState<{ totalStock: number, batches: StockInfo[] } | null>(null);
   const [selectedBatch, setSelectedBatch] = useState<string>("");
@@ -108,7 +108,7 @@ export function AddToCartDialog({
     }
 
     if (product) {
-      setQuantity('1');
+      setQuantity('0');
       setDiscount('0');
       fetchStockAndImage();
       setTimeout(() => {

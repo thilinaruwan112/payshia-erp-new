@@ -9,29 +9,45 @@ import {
 } from '@/components/ui/card';
 import Image from 'next/image';
 import { useCurrency } from '../currency-provider';
-import type { ActiveOrder } from '@/lib/types';
+import type { ActiveOrder, Location } from '@/lib/types';
 
 interface ProductCardProps {
   product: PosProduct;
   orderType: ActiveOrder['orderType'] | undefined;
   onSelect: (product: PosProduct) => void;
+  currentLocation: Location | null;
 }
 
-export function ProductCard({ product, orderType, onSelect }: ProductCardProps) {
+export function ProductCard({ product, orderType, onSelect, currentLocation }: ProductCardProps) {
   const { currencySymbol } = useCurrency();
   
   const imageUrl = product.imageUrl || 'https://placehold.co/300x200.png';
 
   const calculateInclusivePrice = (basePrice: number) => {
+    if (!currentLocation) return basePrice;
+
     let serviceCharge = 0;
-    if (orderType === 'Dine-In') {
+    if (orderType === 'Dine-In' && currentLocation.service_charge_status === 'Enabled') {
         serviceCharge = basePrice * 0.10;
     }
-    const tdl = basePrice * 0.01;
+    
+    let tdl = 0;
+    if (currentLocation.tdl_status === 'Enabled') {
+      tdl = (basePrice + serviceCharge) * 0.01;
+    }
+
     const baseForSscl = basePrice + serviceCharge;
-    const sscl = baseForSscl * 0.025;
-    const baseForVat = basePrice + serviceCharge + tdl + sscl;
-    const vat = baseForVat * 0.18;
+    let sscl = 0;
+    if (currentLocation.sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+    
+    const baseForVat = baseForSscl + tdl + sscl;
+    let vat = 0;
+    if (currentLocation.vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
     return basePrice + serviceCharge + tdl + sscl + vat;
   }
 

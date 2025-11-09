@@ -102,6 +102,10 @@ export type Location = {
   pos_token: string;
   location_type: 'Retail' | 'Warehouse' | string;
   company_id: number;
+  service_charge_status?: string;
+  vat_status?: string;
+  tdl_status?: string;
+  sscl_status?: string;
 };
 
 export type InventoryItem = {
@@ -425,6 +429,7 @@ export type InvoiceItem = {
     productName?: string;
     product_variant_id?: string;
     product_print_name?: string;
+    variant_sku?: string;
 };
 
 export type Invoice = {

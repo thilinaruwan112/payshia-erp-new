@@ -4,11 +4,9 @@
 // Import the external CSS file
 import '@/app/(print)/pos/print-receipt.css';
 
-
-
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
-import type { Invoice, User, Location, Table } from '@/lib/types';
+import type { Invoice, User, Location, Table, InvoiceItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -25,6 +23,7 @@ interface Company {
     company_telephone: string;
 }
 
+// Extend the Window interface for JSPrintManager
 declare global {
   interface Window {
       JSPM: any;
@@ -89,7 +88,7 @@ function GuestReceiptContent() {
                 fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`).then(async res => {
                     if(res.ok) {
                         const allUsersRes = await res.json();
-                        const allUsers: User[] = allUsersRes.data;
+                        const allUsers = allUsersRes.data;
                         return allUsers.find((u:User) => u.user_name === data.created_by) || null;
                     }
                     return null;
@@ -143,13 +142,14 @@ function GuestReceiptContent() {
   const handlePrint = async () => {
     if (!receiptRef.current) return;
     
+    const printAndClose = () => {
+        window.print();
+        setTimeout(() => window.close(), 100);
+    }
+    
     if (!window.JSPM || !isJspmConnected) {
         console.warn("JSPM not ready or not connected. Falling back to browser print.");
-        const handlePrint = () => {
-            window.print();
-            window.close();
-        };
-        setTimeout(handlePrint, 500);
+        printAndClose();
         return;
     }
 
@@ -164,7 +164,7 @@ function GuestReceiptContent() {
         const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
 
         const cpj = new ClientPrintJob();
-        const myPrinter = new InstalledPrinter("KOT-Printer"); 
+        const myPrinter = new InstalledPrinter("Microsoft Print to PDF"); 
         
         cpj.clientPrinter = myPrinter;
 
@@ -179,21 +179,63 @@ function GuestReceiptContent() {
         cpj.sendToClient();
 
         setTimeout(() => {
-            window.close();
+            // window.close();
         }, 3000);
 
     } catch (error) {
         console.error("Printing error:", error);
-        alert("An error occurred while printing. Please try again.");
+        alert("An error occurred while printing. Falling back to browser print.");
+        printAndClose();
     }
   };
 
   useEffect(() => {
     if (!isLoading && invoice) {
-        document.title = `Guest Receipt - ${invoice.invoice_number}`;
-        handlePrint();
+      document.title = `Guest Receipt - ${invoice.invoice_number}`;
+      handlePrint();
     }
-  }, [isLoading, invoice, isJspmConnected, id, companyId]);
+  }, [isLoading, invoice, isJspmConnected]);
+
+  const getOrderTypeOrTable = (tableId: string) => {
+    if (parseInt(tableId, 10) > 0) {
+      const tableName = tables.find(t => t.id === tableId)?.table_name;
+      return `Dine-In (Table: ${tableName || tableId})`;
+    }
+    if (tableId === '0') return 'Take Away';
+    if (tableId === '-1') return 'Retail';
+    if (tableId === '-2') return 'Delivery';
+    return null;
+  }
+
+  const calculateInclusivePrice = (basePrice: number) => {
+    if (!location || !invoice) return basePrice;
+
+    const orderType = getOrderTypeOrTable(invoice.table_id);
+
+    let serviceCharge = 0;
+    if (orderType?.startsWith('Dine-In') && location.service_charge_status === 'Enabled') {
+        serviceCharge = basePrice * 0.10;
+    }
+    
+    let tdl = 0;
+    if (location.tdl_status === 'Enabled') {
+      tdl = (basePrice + serviceCharge) * 0.01;
+    }
+
+    const baseForSscl = basePrice + serviceCharge;
+    let sscl = 0;
+    if (location.sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+    
+    const baseForVat = baseForSscl + tdl + sscl;
+    let vat = 0;
+    if (location.vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
+    return basePrice + serviceCharge + tdl + sscl + vat;
+  }
 
   if (isLoading || !invoice) {
     return (
@@ -215,40 +257,21 @@ function GuestReceiptContent() {
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-  const calculateInclusivePrice = (basePrice: number) => {
-    const isDineIn = invoice.remark?.toLowerCase().includes('dine-in');
-    const serviceCharge = isDineIn ? basePrice * 0.10 : 0;
-    const tdl = basePrice * 0.01;
-    const baseForSscl = basePrice + serviceCharge;
-    const sscl = baseForSscl * 0.025;
-    const baseForVat = baseForSscl + tdl + sscl;
-    const vat = baseForVat * 0.18;
-    return basePrice + serviceCharge + tdl + sscl + vat;
-  }
-  
   const subtotal = (invoice.items || []).reduce((acc, item) => {
-    const basePrice = parseFloat(String(item.item_price));
-    const inclusivePrice = calculateInclusivePrice(basePrice);
+    const itemPrice = parseFloat(String(item.item_price));
     const quantity = parseFloat(String(item.quantity));
-    const itemDiscount = parseFloat(String(item.item_discount));
-    return acc + ((inclusivePrice * quantity) - itemDiscount);
+    const inclusivePrice = calculateInclusivePrice(itemPrice);
+    return acc + (inclusivePrice * quantity);
   }, 0);
 
   const totalDiscount = parseFloat(invoice.discount_amount);
-  const grandTotal = parseFloat(invoice.grand_total);
+  const grandTotal = subtotal - totalDiscount;
+
   
+  const itemCount = invoice.items?.length || 0;
+  const totalQuantity = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
 
-  const getOrderTypeOrTable = (tableId: string) => {
-    if (parseInt(tableId, 10) > 0) {
-      const tableName = tables.find(t => t.id === tableId)?.table_name;
-      return `Dine-In (Table: ${tableName || tableId})`;
-    }
-    if (tableId === '0') return 'Take Away';
-    if (tableId === '-1') return 'Retail';
-    if (tableId === '-2') return 'Delivery';
-    return null;
-  }
-
+  
   const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
@@ -258,7 +281,7 @@ function GuestReceiptContent() {
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
-          {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
+          {logoUrl && <Image src={logoUrl} alt="logo" width={100} height={100} className="mx-auto my-1" priority />}
           <p>{location?.location_name}</p>
           <p>{location?.address_line1}, {location?.city}</p>
           <p>Tel: {location?.phone_1}</p>
@@ -279,38 +302,36 @@ function GuestReceiptContent() {
 
         <table className="w-full text-xs">
           <thead>
-            <tr>
-              <th className="text-left">ITEM</th>
-              <th className="text-center w-[20%]">QTY</th>
-              <th className="text-right w-[25%]">PRICE</th>
-              <th className="text-right w-[25%]">TOTAL</th>
+            <tr className="font-semibold">
+              <td className="text-left w-[10%]">Item</td>
+              <td className="text-left w-[20%]">Marked Price</td>
+              <td className="text-center w-[20%]">Our Price</td>
+              <td className="text-right w-[10%]">Qty</td>
+              <td className="text-right w-[20%]">Amount</td>
             </tr>
           </thead>
           <tbody>
-            {(invoice.items || []).map((item, index) => {
+            {(invoice.items || []).map((item: InvoiceItem, index: number) => {
               const basePrice = parseFloat(String(item.item_price));
-              const inclusivePrice = calculateInclusivePrice(basePrice);
+              const itemDiscount = parseFloat(String(item.item_discount)) || 0;
               const quantity = parseFloat(String(item.quantity));
-              const itemDiscount = parseFloat(String(item.item_discount));
-              const lineTotal = (inclusivePrice * quantity) - itemDiscount;
-
+              
+              const markedPrice = calculateInclusivePrice(basePrice);
+              const ourPrice = markedPrice - itemDiscount;
+              const lineTotal = ourPrice * quantity;
+              
               return (
                 <React.Fragment key={index}>
-                  <tr>
-                    <td colSpan={4} className="pt-1">{item.product_print_name}</td>
-                  </tr>
-                  <tr className="align-top">
-                    <td></td>
-                    <td className="text-center">{quantity.toFixed(3)}</td>
-                    <td className="text-right">{inclusivePrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td className="text-right">{lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                  </tr>
-                   {itemDiscount > 0 && (
-                     <tr>
-                        <td colSpan={3} className="text-right text-xs">Discount:</td>
-                        <td className="text-right text-xs">-{itemDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <tr className="border-t border-dashed border-black">
+                        <td colSpan={5}>{index + 1}. {item.variant_sku} | {item.product_print_name}</td>
                     </tr>
-                  )}
+                    <tr>
+                        <td></td>
+                        <td className="text-left">{markedPrice.toFixed(2)}</td>
+                        <td className="text-center">{ourPrice.toFixed(2)}</td>
+                        <td className="text-right">{quantity.toFixed(2)}</td>
+                        <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
+                    </tr>
                 </React.Fragment>
               )
             })}
@@ -319,21 +340,36 @@ function GuestReceiptContent() {
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>
         <div className="space-y-1 text-xs">
-          <div className="flex justify-between">
+           <div className="flex justify-between">
             <span>Subtotal:</span>
-            <span>{subtotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
             <span>Total Discount:</span>
-            <span>-{totalDiscount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>-{totalDiscount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
-            <span>{grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>{grandTotal.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="my-2 border-t-2 border-dashed border-black"></div>
+
+        <div className="space-y-1 text-xs">
+          <div className="flex justify-between">
+            <span>Item Count:</span>
+            <span>{itemCount}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Sold Quantity:</span>
+            <span>{totalQuantity.toFixed(2)}</span>
           </div>
         </div>
 
         <div className="text-center mt-4 text-xs space-y-1 border-t pt-2">
+            <p className="font-bold">Thank You!</p>
+            <p>For inquiries, please contact us within 24 hours.</p>
             <p>Software by Payshia</p>
             <p>0770481363 | www.payshia.com</p>
         </div>
