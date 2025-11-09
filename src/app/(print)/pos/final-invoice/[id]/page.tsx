@@ -129,37 +129,6 @@ function FinalInvoiceContent() {
     return null;
   }
 
-  const calculateInclusivePrice = (basePrice: number) => {
-    if (!location || !invoice) return basePrice;
-
-    const orderType = getOrderTypeOrTable(invoice.table_id);
-
-    let serviceCharge = 0;
-    if (orderType?.startsWith('Dine-In') && location.service_charge_status === 'Enabled') {
-        serviceCharge = basePrice * 0.10;
-    }
-    
-    let tdl = 0;
-    if (location.tdl_status === 'Enabled') {
-      tdl = (basePrice + serviceCharge) * 0.01;
-    }
-
-    const baseForSscl = basePrice + serviceCharge;
-    let sscl = 0;
-    if (location.sscl_status === 'Enabled') {
-      sscl = baseForSscl * 0.025;
-    }
-    
-    const baseForVat = baseForSscl + tdl + sscl;
-    let vat = 0;
-    if (location.vat_status === 'Enabled') {
-      vat = baseForVat * 0.18;
-    }
-
-    return basePrice + serviceCharge + tdl + sscl + vat;
-  }
-
-
   if (isLoading || !invoice) {
     return (
       <div className="w-[80mm] bg-white text-black p-2 font-mono">
@@ -183,21 +152,16 @@ function FinalInvoiceContent() {
   const subtotal = (invoice.items || []).reduce((acc, item) => {
     const itemPrice = parseFloat(String(item.item_price));
     const quantity = parseFloat(String(item.quantity));
-    const inclusivePrice = calculateInclusivePrice(itemPrice);
-    return acc + (inclusivePrice * quantity);
+    const itemDiscount = parseFloat(String(item.item_discount)) || 0;
+    return acc + ((itemPrice * quantity) - itemDiscount);
   }, 0);
   
   const totalDiscount = parseFloat(invoice.discount_amount);
-  const grandTotal = subtotal - totalDiscount;
-
+  const grandTotal = parseFloat(invoice.grand_total);
   const serviceCharge = parseFloat(invoice.service_charge);
-
   const tdl = parseFloat(invoice.tdl || "0");
   const sscl = parseFloat(invoice.sscl_tax || "0");
   const vat = parseFloat(invoice.vat_amount || "0");
-  
-  const totalTaxes = tdl + sscl + vat;
-
   
   const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
@@ -231,9 +195,9 @@ function FinalInvoiceContent() {
           <thead>
             <tr className="font-semibold">
               <td className="text-left w-[10%]">Item</td>
-              <td className="text-left w-[20%]">Marked Price</td>
-              <td className="text-center w-[20%]">Our Price</td>
-              <td className="text-right w-[10%]">Qty</td>
+              <td className="text-right w-[15%]">Price</td>
+              <td className="text-center w-[15%]">Qty</td>
+              <td className="text-right w-[20%]">Discount</td>
               <td className="text-right w-[20%]">Amount</td>
             </tr>
           </thead>
@@ -243,9 +207,7 @@ function FinalInvoiceContent() {
               const itemDiscount = parseFloat(String(item.item_discount)) || 0;
               const quantity = parseFloat(String(item.quantity));
               
-              const markedPrice = calculateInclusivePrice(basePrice);
-              const ourPrice = markedPrice - itemDiscount;
-              const lineTotal = ourPrice * quantity;
+              const lineTotal = (basePrice * quantity) - itemDiscount;
               
               return (
                 <React.Fragment key={index}>
@@ -254,9 +216,9 @@ function FinalInvoiceContent() {
                     </tr>
                     <tr>
                         <td></td>
-                        <td className="text-left">{markedPrice.toFixed(2)}</td>
-                        <td className="text-center">{ourPrice.toFixed(2)}</td>
-                        <td className="text-right">{quantity.toFixed(2)}</td>
+                        <td className="text-right">{basePrice.toFixed(2)}</td>
+                        <td className="text-center">{quantity.toFixed(2)}</td>
+                        <td className="text-right">-{itemDiscount.toFixed(2)}</td>
                         <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
                     </tr>
                 </React.Fragment>
