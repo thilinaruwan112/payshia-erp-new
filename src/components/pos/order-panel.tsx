@@ -278,14 +278,23 @@ const PaymentDialog = ({
          <DialogClose asChild>
             <Button variant="outline" size="lg" className="h-16 text-lg">Cancel</Button>
          </DialogClose>
-        <Button
-          size="lg"
-          onClick={handleConfirm}
-          disabled={!selectedMethodId || !amountTendered || change < 0}
-          className="h-16 text-lg"
-        >
-          Confirm Payment
-        </Button>
+        <div className="flex gap-2">
+            <Button
+                size="lg"
+                variant="secondary"
+                className="h-16 text-lg"
+            >
+                Close as Credit
+            </Button>
+            <Button
+                size="lg"
+                onClick={handleConfirm}
+                disabled={!selectedMethodId || !amountTendered || change < 0}
+                className="h-16 text-lg"
+            >
+                Confirm Payment
+            </Button>
+        </div>
       </DialogFooter>
     </DialogContent>
   );
@@ -579,7 +588,7 @@ export function OrderPanel({
     setSuccessData(null);
   };
   
-  const customerOptions = customers.map(c => ({ value: c.customer_id, label: `${c.customer_first_name} ${c.customer_last_name}` }));
+  const customerOptions = customers.map(c => ({ value: c.customer_id, label: `${c.first_name} ${c.last_name}` }));
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -627,7 +636,7 @@ export function OrderPanel({
                     </SelectTrigger>
                     <SelectContent>
                         {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
+                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.first_name} {c.last_name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
