@@ -179,7 +179,7 @@ const PaymentDialog = ({
   paymentMethods,
 }: {
   orderTotals: OrderInfo;
-  onSuccessfulPayment: (paymentMethod: string, tenderedAmount: number) => void;
+  onSuccessfulPayment: (paymentMethod: string, tenderedAmount: number, isCredit: boolean) => void;
   paymentMethods: PaymentMethod[];
 }) => {
   const { currencySymbol } = useCurrency();
@@ -189,13 +189,13 @@ const PaymentDialog = ({
 
   const handleConfirm = () => {
     if (selectedMethodId) {
-      onSuccessfulPayment(selectedMethodId, Number(amountTendered) || orderTotals.total);
+      onSuccessfulPayment(selectedMethodId, Number(amountTendered) || orderTotals.total, false);
     }
   };
 
   const handleCloseAsCredit = () => {
     if (selectedMethodId) {
-      onSuccessfulPayment(selectedMethodId, 0);
+      onSuccessfulPayment(selectedMethodId, 0, true);
     }
   };
 
@@ -450,7 +450,7 @@ export function OrderPanel({
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType, tableName } = order;
 
-  const handleSuccessfulPayment = async (paymentMethodId: string, tenderedAmount: number) => {
+  const handleSuccessfulPayment = async (paymentMethodId: string, tenderedAmount: number, isCredit: boolean) => {
     
     if (!currentLocation || !company_id || !customer) {
         toast({
@@ -501,8 +501,8 @@ export function OrderPanel({
         service_charge: orderTotals.serviceCharge,
         tendered_amount: tenderedAmount,
         close_type: paymentMethodId,
-        invoice_status: tenderedAmount > 0 ? '1' : '2', // Paid or Pending
-        payment_status: tenderedAmount > 0 ? "Paid" : "Pending",
+        invoice_status: isCredit ? '1' : (tenderedAmount > 0 ? '1' : '2'), // Active for credit
+        payment_status: tenderedAmount > 0 ? (tenderedAmount >= orderTotals.total ? "Paid" : "Partial") : "Pending",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
         location_id: parseInt(currentLocation.location_id, 10),
         table_id: tableIdValue,
