@@ -207,13 +207,7 @@ export default function POSPage() {
                 last_name: s.last_name
              })));
             
-            const formattedCustomers = customersData.map(c => ({
-                ...c,
-                id: c.customer_id,
-                name: `${c.customer_first_name} ${c.customer_last_name}`,
-                role: 'Customer',
-            }));
-            setCustomers(formattedCustomers);
+            setCustomers(customersData || []);
 
             setCollections(collectionsData || []);
             setBrands(brandsData || []);

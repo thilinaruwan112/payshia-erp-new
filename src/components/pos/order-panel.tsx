@@ -507,7 +507,7 @@ export function OrderPanel({
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
             table_id: tableIdValue,
-            cost_price: item.product.cost_price || 0,
+            cost_price: item.product.costPrice || 0,
             is_active: 1,
             hold_status: 0,
             printed_status: 1,
@@ -544,7 +544,7 @@ export function OrderPanel({
             invoiceAmount: orderTotals.total,
             tenderAmount: tenderedAmount,
             changeAmount: tenderedAmount - orderTotals.total,
-            customerName: customer.first_name ? `${customer.first_name} ${customer.last_name}` : (customer as any).name,
+            customerName: `${customer.first_name} ${customer.last_name}`,
             companyId: String(company_id),
         });
         
@@ -559,7 +559,7 @@ export function OrderPanel({
   };
   
   const handleCustomerCreated = (newCustomer: User) => {
-    onUpdateCustomer(orderId, newCustomer);
+    onUpdateCustomer(orderId, newCustomer as Customer);
   }
 
   const handleGuestReceipt = () => {
@@ -578,6 +578,8 @@ export function OrderPanel({
     onClearCart(orderId);
     setSuccessData(null);
   };
+  
+  const customerOptions = customers.map(c => ({ value: c.customer_id, label: `${c.customer_first_name} ${c.customer_last_name}` }));
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -625,12 +627,12 @@ export function OrderPanel({
                     </SelectTrigger>
                     <SelectContent>
                         {customers.map(c => (
-                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.first_name} {c.last_name}</SelectItem>
+                            <SelectItem key={c.customer_id} value={c.customer_id}>{c.customer_first_name} {c.customer_last_name}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
             </div>
-             <CustomerFormDialog onCustomerCreated={(c) => onUpdateCustomer(orderId, c)}>
+             <CustomerFormDialog onCustomerCreated={handleCustomerCreated}>
                  <Button variant="outline" size="icon">
                     <UserPlus className="h-5 w-5" />
                 </Button>
