@@ -216,23 +216,6 @@ function GuestReceiptContent() {
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-  const totalDiscount = parseFloat(invoice.discount_amount);
-  const grandTotal = parseFloat(invoice.grand_total);
-  
-  const itemCount = invoice.items?.length || 0;
-  const totalQuantity = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
-
-  const getOrderTypeOrTable = (tableId: string) => {
-    if (parseInt(tableId, 10) > 0) {
-      const tableName = tables.find(t => t.id === tableId)?.table_name;
-      return `Dine-In (Table: ${tableName || tableId})`;
-    }
-    if (tableId === '0') return 'Take Away';
-    if (tableId === '-1') return 'Retail';
-    if (tableId === '-2') return 'Delivery';
-    return null;
-  }
-
   const calculateInclusivePrice = (basePrice: number) => {
     if (!location) return basePrice;
 
@@ -270,6 +253,23 @@ function GuestReceiptContent() {
     return acc + (inclusivePrice * quantity);
   }, 0);
 
+  const totalDiscount = parseFloat(invoice.discount_amount);
+  const grandTotal = subtotal - totalDiscount;
+
+  
+  const itemCount = invoice.items?.length || 0;
+  const totalQuantity = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
+
+  const getOrderTypeOrTable = (tableId: string) => {
+    if (parseInt(tableId, 10) > 0) {
+      const tableName = tables.find(t => t.id === tableId)?.table_name;
+      return `Dine-In (Table: ${tableName || tableId})`;
+    }
+    if (tableId === '0') return 'Take Away';
+    if (tableId === '-1') return 'Retail';
+    if (tableId === '-2') return 'Delivery';
+    return null;
+  }
 
   const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
@@ -316,7 +316,7 @@ function GuestReceiptContent() {
               const quantity = parseFloat(String(item.quantity));
               
               const markedPrice = calculateInclusivePrice(basePrice);
-              const ourPrice = itemDiscount > 0 ? markedPrice - itemDiscount : markedPrice;
+              const ourPrice = markedPrice - itemDiscount;
               const lineTotal = ourPrice * quantity;
               
               return (
