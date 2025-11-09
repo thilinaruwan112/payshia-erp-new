@@ -35,16 +35,17 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
 
-interface ProductWithApiResponse {
-  product: Product;
-  variants: { variant: ProductVariant }[];
+interface ProductWithDetails {
+    product: Product;
+    variants: ProductVariant[];
 }
+
 
 export default function ProductionHistoryPage() {
     const { company_id } = useLocation();
     const { toast } = useToast();
     const [notes, setNotes] = useState<ProductionNote[]>([]);
-    const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
+    const [productDetails, setProductDetails] = useState<Record<string, ProductWithDetails>>({});
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -56,17 +57,36 @@ export default function ProductionHistoryPage() {
         async function fetchData() {
             setIsLoading(true);
             try {
-                const [notesResponse, productsResponse] = await Promise.all([
-                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/production-notes?company_id=${company_id}`),
-                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`)
-                ]);
+                const notesResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/production-notes?company_id=${company_id}`);
 
                 if (!notesResponse.ok) throw new Error('Failed to fetch production notes');
-                if (!productsResponse.ok) throw new Error('Failed to fetch products');
+                const notesData = await notesResponse.json();
+                setNotes(notesData || []);
 
-                setNotes(await notesResponse.json());
-                const productsData = await productsResponse.json();
-                setProducts(productsData.products || []);
+                const productIds = [...new Set((notesData || []).map((note: ProductionNote) => note.product_id))];
+
+                const detailsPromises = productIds.map(id => 
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/details/${id}`)
+                        .then(res => res.ok ? res.json() : Promise.reject(`Failed for ID ${id}`))
+                );
+                
+                const results = await Promise.allSettled(detailsPromises);
+                
+                const detailsMap: Record<string, ProductWithDetails> = {};
+                results.forEach((result, index) => {
+                    if (result.status === 'fulfilled') {
+                        const productId = productIds[index];
+                        const productData = result.value;
+                        detailsMap[String(productId)] = {
+                            product: productData.product,
+                            variants: productData.variants,
+                        };
+                    } else {
+                        console.error(`Failed to fetch details for product ID ${productIds[index]}:`, result.reason);
+                    }
+                });
+
+                setProductDetails(detailsMap);
 
             } catch (error) {
                 toast({
@@ -81,14 +101,14 @@ export default function ProductionHistoryPage() {
         fetchData();
     }, [company_id, toast]);
 
-    const getProductDetails = (variantId: string) => {
-        for (const p of products) {
-            const variant = p.variants.find(v => v.variant.id === variantId);
-            if (variant) {
-                return `${p.product.name} (${variant.variant.sku})`;
-            }
-        }
-        return `Variant ID: ${variantId}`;
+    const getProductDetails = (productId: string, variantId: string) => {
+        const details = productDetails[productId];
+        if (!details) return `Variant ID: ${variantId}`;
+        
+        const variant = details.variants.find(v => v.id === variantId);
+        if (!variant) return `${details.product.name} (Variant not found)`;
+
+        return `${details.product.name} (${variant.sku})`;
     };
 
     return (
@@ -140,7 +160,7 @@ export default function ProductionHistoryPage() {
                     ) : notes.map((note) => (
                         <TableRow key={note.id}>
                             <TableCell className="font-medium">{note.pn_number || `PN-${note.id}`}</TableCell>
-                            <TableCell>{getProductDetails(note.product_variant_id)}</TableCell>
+                            <TableCell>{getProductDetails(note.product_id, note.product_variant_id)}</TableCell>
                             <TableCell>{format(new Date(note.created_at), 'dd MMM, yyyy')}</TableCell>
                             <TableCell className="text-right font-mono">{parseFloat(note.quantity).toFixed(2)}</TableCell>
                             <TableCell className="text-center">

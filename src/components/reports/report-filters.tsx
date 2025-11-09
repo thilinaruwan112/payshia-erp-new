@@ -31,7 +31,7 @@ import { fetcher } from '@/lib/api';
 
 interface ProductWithVariants {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
 }
 type ReportData = any;
 
@@ -66,6 +66,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
     // State for filter values
     const [filterValues, setFilterValues] = useState<Record<string, string>>({});
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+    const [singleDate, setSingleDate] = React.useState<Date | undefined>(new Date());
 
     const handleFilterChange = (filterName: string, value: string) => {
         setFilterValues(prev => ({ ...prev, [filterName]: value }));
@@ -95,7 +96,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                 fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`, setSuppliers, 'suppliers');
             }
             if (filters.includes('item')) {
-                 fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants?company_id=${company_id}`, setProducts, 'products');
+                 fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`, setProducts, 'products');
             }
             if (filters.includes('category')) {
                 fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`, setCategories, 'categories');
@@ -131,8 +132,8 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
         { value: 'all', label: 'All Items' },
         ...products.flatMap(p => 
             (p.variants || []).map(v => ({
-                value: v.id,
-                label: `${p.product.name} (${v.sku})`
+                value: v.variant.id,
+                label: `${p.product.name} (${v.variant.sku})`
             }))
         )
     ];
@@ -157,7 +158,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             } else if (reportName === 'Supplier Master Report') {
                  url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company`;
             } else if (reportName === 'Item Master Report') {
-                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants`;
+                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company`;
             } else if (reportName === 'Purchase Order Report') {
                 url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders/filter/`;
             } else if (reportName === 'Sales Summary Report' || reportName === 'Invoice Report') {
@@ -175,7 +176,59 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                  if (filterValues['location'] && filterValues['location'] !== 'all') {
                     params.append('location_id', filterValues['location']);
                 }
-            } else {
+            } else if (reportName === 'Stock Balance Report') {
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/stock-balance`;
+                 if (filterValues['location'] && filterValues['location'] !== 'all') {
+                    params.append('location_id', filterValues['location']);
+                }
+                if (filterValues['item'] && filterValues['item'] !== 'all') {
+                    const selectedProduct = products.find(p => p.variants.some(v => v.variant.id === filterValues['item']));
+                    const selectedVariant = selectedProduct?.variants.find(v => v.variant.id === filterValues['item'])?.variant;
+                    if (selectedProduct && selectedVariant) {
+                       params.append('product_id', selectedProduct.product.id);
+                       params.append('product_variant_id', selectedVariant.id);
+                    }
+                }
+                if (filterValues['category'] && filterValues['category'] !== 'all') {
+                    params.append('category_id', filterValues['category']);
+                }
+                if (filterValues['brand'] && filterValues['brand'] !== 'all') {
+                    params.append('brand_id', filterValues['brand']);
+                }
+                if (singleDate) {
+                    params.append('before_date', format(singleDate, 'yyyy-MM-dd'));
+                }
+            } else if (reportName === 'Bin Card Report') {
+                if (!filterValues['item'] || filterValues['item'] === 'all' || !dateRange?.from) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Filters Required',
+                        description: 'Please select an item and a date range for the Bin Card Report.',
+                    });
+                    setIsFetching(false);
+                    return;
+                }
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/bin-card`;
+                const selectedProduct = products.find(p => p.variants.some(v => v.variant.id === filterValues['item']));
+                const selectedVariant = selectedProduct?.variants.find(v => v.variant.id === filterValues['item'])?.variant;
+                if (selectedProduct && selectedVariant) {
+                   params.append('product_id', selectedProduct.product.id);
+                   params.append('product_variant_id', selectedVariant.id);
+                }
+                 if (filterValues['location'] && filterValues['location'] !== 'all') {
+                    params.append('location_id', filterValues['location']);
+                }
+            } else if (reportName === 'Stock Transfer Report') {
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/stock-transfer`;
+                if (filterValues['fromLocation'] && filterValues['fromLocation'] !== 'all') {
+                    params.append('from_location', filterValues['fromLocation']);
+                }
+                 if (filterValues['toLocation'] && filterValues['toLocation'] !== 'all') {
+                    params.append('to_location', filterValues['toLocation']);
+                }
+            }
+            
+            else {
                  toast({ title: "Coming Soon", description: "This report is not yet available for viewing." });
                  setIsFetching(false);
                  return;
@@ -191,11 +244,14 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             if (!response.ok) throw new Error(`Failed to fetch ${reportName} data`);
             const data = await response.json();
             
-            if (reportName === 'Item Wise Sales' || reportName === 'Invoice Wise Sales Report') {
-                onShowReport(data.data?.report_data || { items: [], invoices: [], summary: {} });
+            if (['Item Wise Sales', 'Invoice Wise Sales Report', 'Bin Card Report', 'Stock Transfer Report'].includes(reportName)) {
+                onShowReport(data.data || { items: [], invoices: [], summary: {} });
             } else if (reportName === 'Item Master Report') {
                 onShowReport(data.products || []);
-            } else {
+            } else if (reportName === 'Stock Balance Report') {
+                 onShowReport(data.data || []);
+            }
+            else {
                 onShowReport(data || []);
             }
         } catch (error) {
@@ -292,10 +348,15 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                     )}
                      {hasFilter('date') && (
                         <div className="space-y-1.5">
-                            <Label>Date</Label>
+                            <Label>As of Date</Label>
                             <Popover>
-                                <PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{'Select...'}</Button></PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" /></PopoverContent>
+                                <PopoverTrigger asChild>
+                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !singleDate && "text-muted-foreground")}>
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {singleDate ? format(singleDate, "PPP") : <span>Pick a date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={singleDate} onSelect={setSingleDate} /></PopoverContent>
                             </Popover>
                         </div>
                     )}

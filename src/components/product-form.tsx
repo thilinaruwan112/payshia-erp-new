@@ -62,6 +62,13 @@ type Size = {
     value: string;
 }
 
+type CustomField = {
+  field_id: string;
+  field_name: string;
+  description: string;
+  value: string;
+}
+
 type CustomFieldMaster = {
     id: string;
     field_name: string;
@@ -110,7 +117,7 @@ const productFormSchema = z.object({
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
 interface ProductFormProps {
-  product?: Product;
+  product?: Product & { images?: ProductImage[], custom_fields?: CustomField[] };
 }
 
 export function ProductForm({ product }: ProductFormProps) {
@@ -126,133 +133,148 @@ export function ProductForm({ product }: ProductFormProps) {
   const [sizes, setSizes] = useState<Size[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [customFieldMasters, setCustomFieldMasters] = useState<CustomFieldMaster[]>([]);
-  const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [productImages, setProductImages] = useState<ProductImage[]>(product?.images || []);
   const { company_id, availableLocations } = useLocation();
 
-  const fetchProductImages = useCallback(async () => {
-    if (!product || !company_id) return;
-    try {
-        let allImages: ProductImage[] = [];
-        if (product.variants && product.variants.length > 0) {
-            for (const variant of product.variants) {
-                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variant.id}`);
-                if (response.ok) {
-                    const data: ProductImage[] = await response.json();
-                    if(Array.isArray(data)) {
-                        allImages = [...allImages, ...data];
-                    }
-                }
-            }
-        }
-        const uniqueImages = Array.from(new Map(allImages.map(img => [img.id, img])).values());
-        setProductImages(uniqueImages);
-    } catch (error) {
-        toast({ variant: "destructive", title: "Error", description: "Could not load product images." });
-    }
-  }, [product, company_id, toast]);
-
-  useEffect(() => {
-    if (product && company_id) {
-      fetchProductImages();
-    }
-  }, [product, company_id, fetchProductImages]);
-
-
-  useEffect(() => {
-    async function fetchData(url: string, setData: Function, type: string) {
-       try {
-        const response = await fetcher(url);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch ${type}`);
-        }
-        const data = await response.json();
-        if (type === 'products') {
-            setData(data.products || []);
-        } else {
-            setData(data || []);
-        }
-      } catch (error) {
-        console.error(error);
-        toast({
-          variant: "destructive",
-          title: `Failed to load ${type}`,
-          description: `Could not fetch ${type} from the server.`,
-        });
-      }
-    }
-    
-    if (company_id) {
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`, setCategories, 'categories');
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`, setBrands, 'brands');
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-colors/company?company_id=${company_id}`, setColors, 'colors');
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/sizes/filter/company?company_id=${company_id}`, setSizes, 'sizes');
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`, setSuppliers, 'suppliers');
-        fetchData(`${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-fields/filter/by-company?company_id=${company_id}`, setCustomFieldMasters, 'custom fields');
-    }
-  }, [toast, company_id]);
-  
-  const defaultValues: Partial<ProductFormValues> = {
-    name: product?.name || "",
-    printName: product?.print_name || "",
-    tamilName: product?.tamil_name || "",
-    sinhalaName: product?.sinhala_name || "",
-    displayName: product?.display_name || "",
-    description: product?.description || "",
-    stockUnit: product?.stock_unit || "Nos",
-    status: product?.status || "active",
-    categoryId: product?.category_id || "",
-    brandId: product?.brand_id || "",
-    recipeType: product?.recipe_type || "standard",
-    item_type: product?.item_type || "both",
-    variants: product?.variants?.map(v => ({
-        id: v.id,
-        sku: v.sku,
-        barcode: v.barcode || "",
-        colorId: v.color_id ?? undefined,
-        sizeId: v.size_id ?? undefined,
-        price: v.price ? parseFloat(String(v.price)) : 0,
-        cost_price: v.cost_price ? parseFloat(String(v.cost_price)) : 0,
-        min_price: v.min_price ? parseFloat(String(v.min_price)) : 0,
-        wholesale_price: v.wholesale_price ? parseFloat(String(v.wholesale_price)) : 0,
-    })) || [{ sku: "", barcode: "", colorId: "", sizeId: "", price: 0 }],
-    supplier: product?.supplier?.split(',').map(sName => {
-        const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
-        return foundSupplier ? foundSupplier.supplier_id : '';
-    }).filter(Boolean) || [],
-    customFields: [],
-    base_location: product?.base_location || "",
-    available_locations: product?.available_locations?.split(',') || [],
+  const normalizeRecipeType = (apiValue?: string) => {
+    if (apiValue === 'ala cart') return 'a_la_carte';
+    if (apiValue === 'standard' || apiValue === 'item_recipe') return apiValue;
+    return 'standard';
   };
-
+  
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productFormSchema),
-    defaultValues,
+    defaultValues: {
+      name: product?.name || "",
+      printName: product?.print_name || "",
+      tamilName: product?.tamil_name || "",
+      sinhalaName: product?.sinhala_name || "",
+      displayName: product?.display_name || "",
+      description: product?.description || "",
+      stockUnit: product?.stock_unit || "Nos",
+      status: product?.status || "active",
+      categoryId: product?.category_id || "",
+      brandId: product?.brand_id || "",
+      recipeType: normalizeRecipeType(product?.recipe_type) as ProductFormValues['recipeType'],
+      item_type: product?.item_type || "both",
+      variants: product?.variants?.map(v => ({
+          id: v.id,
+          sku: v.sku,
+          barcode: v.barcode || "",
+          colorId: v.color_id ?? undefined,
+          sizeId: v.size_id ?? undefined,
+          price: v.price ? parseFloat(String(v.price)) : 0,
+          cost_price: v.cost_price ? parseFloat(String(v.cost_price)) : 0,
+          min_price: v.min_price ? parseFloat(String(v.min_price)) : 0,
+          wholesale_price: v.wholesale_price ? parseFloat(String(v.wholesale_price)) : 0,
+      })) || [{ sku: "", barcode: "", colorId: "", sizeId: "", price: 0 }],
+      supplier: [],
+      customFields: [],
+      base_location: product?.base_location || "",
+      available_locations: product?.available_locations?.split(',') || [],
+    },
     mode: "onChange",
   });
   
-  useEffect(() => {
-    if (customFieldMasters.length > 0 && form.getValues('customFields')?.length === 0) {
-        form.setValue('customFields', customFieldMasters.map(field => ({
-            master_custom_field_id: field.id,
-            value: '', 
-        })));
-    }
-  }, [customFieldMasters, form]);
-  
-  useEffect(() => {
-    if (product?.supplier && suppliers.length > 0) {
-        const supplierIds = product.supplier.split(',').map(sName => {
-            const foundSupplier = suppliers.find(s => s.supplier_name === sName.trim());
-            return foundSupplier ? foundSupplier.supplier_id : null;
-        }).filter(Boolean) as string[];
-        form.setValue('supplier', supplierIds);
-    }
-  }, [product, suppliers, form]);
-
   const { fields, append, remove } = useFieldArray({
     name: "variants",
     control: form.control,
   });
+
+  const fetchData = useCallback(async () => {
+    if (!company_id) return;
+  
+    const urls: { [key: string]: string } = {
+      categories: `${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${company_id}`,
+      brands: `${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`,
+      colors: `${process.env.NEXT_PUBLIC_API_BASE_URL}/product-colors/company?company_id=${company_id}`,
+      sizes: `${process.env.NEXT_PUBLIC_API_BASE_URL}/sizes/filter/company?company_id=${company_id}`,
+      suppliers: `${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`,
+      customFields: `${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-fields/filter/by-company?company_id=${company_id}`,
+    };
+  
+    try {
+      const responses = await Promise.all(Object.values(urls).map(url => fetcher(url)));
+      const dataPromises = responses.map(res => res.json());
+      const [
+        categoriesData,
+        brandsData,
+        colorsData,
+        sizesData,
+        suppliersData,
+        customFieldsData,
+      ] = await Promise.all(dataPromises);
+  
+      setCategories(categoriesData || []);
+      setBrands(brandsData || []);
+      setColors(colorsData || []);
+      setSizes(sizesData || []);
+      setSuppliers(suppliersData || []);
+      setCustomFieldMasters(customFieldsData || []);
+      
+      // Now that master data is loaded, set form values that depend on it
+      if (product?.supplier && suppliersData.length > 0) {
+        const supplierIds = product.supplier.split(',').map(sName => {
+            const foundSupplier = suppliersData.find((s: Supplier) => s.supplier_name === sName.trim());
+            return foundSupplier ? foundSupplier.supplier_id : null;
+        }).filter(Boolean) as string[];
+        form.setValue('supplier', supplierIds);
+      }
+
+      if (product?.custom_fields && customFieldsData.length > 0) {
+        const existingCustomFields = product.custom_fields.map(cf => ({
+            master_custom_field_id: cf.field_id,
+            value: cf.value,
+        }));
+        const masterIdsInProduct = new Set(existingCustomFields.map(f => f.master_custom_field_id));
+        const missingMasterFields = customFieldsData
+            .filter((mf: CustomFieldMaster) => !masterIdsInProduct.has(mf.id))
+            .map((mf: CustomFieldMaster) => ({
+                master_custom_field_id: mf.id,
+                value: '',
+            }));
+        form.setValue('customFields', [...existingCustomFields, ...missingMasterFields]);
+      } else if (customFieldsData.length > 0 && !product?.custom_fields) {
+        form.setValue('customFields', customFieldsData.map((mf: CustomFieldMaster) => ({
+            master_custom_field_id: mf.id,
+            value: '',
+        })));
+      }
+
+      // Fetch images only if a product exists
+      if (product) {
+        let allImages: ProductImage[] = [];
+        const variantsToFetch = product.variants && product.variants.length > 0 ? product.variants : [{ id: product.id, sku: '', product_id: product.id }];
+        for (const variant of variantsToFetch) {
+          if (!variant.id) continue;
+          try {
+            const imgResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variant.id}`);
+            if (imgResponse.ok) {
+              const imgData = await imgResponse.json();
+              if (Array.isArray(imgData)) {
+                allImages = [...allImages, ...imgData];
+              }
+            }
+          } catch(e) {
+             console.error(`Failed to fetch images for variant ${variant.id}`, e);
+          }
+        }
+        const uniqueImages = Array.from(new Map(allImages.map(img => [img.id, img])).values());
+        setProductImages(uniqueImages);
+      }
+    } catch (error) {
+      console.error("Data fetching error:", error);
+      toast({
+        variant: "destructive",
+        title: "Failed to load initial data",
+        description: "Could not fetch necessary data from the server.",
+      });
+    }
+  }, [company_id, product, toast, form]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleRemoveVariant = async (index: number) => {
     const variantId = form.getValues(`variants.${index}.id`);
@@ -357,7 +379,7 @@ export function ProductForm({ product }: ProductFormProps) {
       const returnedProduct = result.product;
       const productId = returnedProduct.id;
       
-      const detailsResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/details/${productId}`);
+      const detailsResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/details/full/slug/?slug=${returnedProduct.slug}`);
       const detailsData = await detailsResponse.json();
 
       setSavedProductId(productId);
@@ -607,7 +629,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                         <h3 className="text-sm font-medium mb-2 text-muted-foreground">Front Image</h3>
                                         <div className="relative w-full max-w-xs">
                                             <Image
-                                                src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${frontImage.img_url}`}
+                                                src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}`}
                                                 alt={product?.name || 'Front image'}
                                                 width={400}
                                                 height={400}
@@ -633,7 +655,7 @@ export function ProductForm({ product }: ProductFormProps) {
                                             {otherImages.map(image => (
                                                 <div key={image.id} className="relative group">
                                                     <Image
-                                                        src={`${process.env.NEXT_PUBLIC_API_BASE_URL}${image.img_url}`}
+                                                        src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${image.img_url}`}
                                                         alt={product?.name || 'Product image'}
                                                         width={150}
                                                         height={150}
@@ -666,7 +688,7 @@ export function ProductForm({ product }: ProductFormProps) {
                   <CardContent className="space-y-4">
                     {customFieldMasters.length > 0 && customFieldsInForm && customFieldMasters
                       .filter(masterField => customFieldsInForm.some(cf => cf.master_custom_field_id === masterField.id))
-                      .map((masterField) => {
+                      .map((masterField, masterIndex) => {
                           const fieldIndex = customFieldsInForm.findIndex(cf => cf.master_custom_field_id === masterField.id);
                           if (fieldIndex === -1) return null;
 

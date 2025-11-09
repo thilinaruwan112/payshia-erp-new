@@ -19,6 +19,7 @@ export async function fetcher(url: string, options?: RequestInit) {
 
   const response = await fetch(url, {
     ...options,
+    method: options?.method || 'GET', // Explicitly set GET as default
     headers,
   });
 

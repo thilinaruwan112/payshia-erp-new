@@ -292,7 +292,7 @@ export default function ProductsPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                <DropdownMenuItem asChild>
-                                <Link href={`/products/${product.id}`}>Edit</Link>
+                                <Link href={`/products/${product.slug}`}>Edit</Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem onSelect={() => {
                                   setSelectedProductForUpload(product);
@@ -344,5 +344,6 @@ export default function ProductsPage() {
     </>
   );
 }
+
 
 

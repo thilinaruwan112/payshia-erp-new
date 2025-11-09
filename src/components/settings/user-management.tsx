@@ -134,16 +134,24 @@ function AddNewUserDialog({ onAdd }: { onAdd: (email: string, role: string, stat
 }
 
 // Dialog to edit an existing user's role
-function EditUserRoleDialog({ user, onUpdate, roles }: { user: User, onUpdate: (userId: string, companyUserId: string, role: string, status: string) => Promise<void>, roles: Role[] }) {
+function EditUserRoleDialog({ user, onUpdate, roles }: { user: User, onUpdate: (userId: string, companyUserId: string, roleId: string, status: string) => Promise<void>, roles: Role[] }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState(user.acc_type || 'user');
+  const currentRole = roles.find(r => r.name.toLowerCase() === user.acc_type?.toLowerCase());
+  const [selectedRoleId, setSelectedRoleId] = useState(currentRole?.id || '');
   const [selectedStatus, setSelectedStatus] = useState(user.user_status || '2');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    // Update state if the user prop changes (e.g., parent list refreshes)
+    const newCurrentRole = roles.find(r => r.name.toLowerCase() === user.acc_type?.toLowerCase());
+    setSelectedRoleId(newCurrentRole?.id || '');
+    setSelectedStatus(user.user_status || '2');
+  }, [user, roles]);
+
   const handleUpdate = async () => {
-    if (!user.companyUserId) return;
+    if (!user.companyUserId || !selectedRoleId) return;
     setIsSubmitting(true);
-    await onUpdate(user.id, user.companyUserId, selectedRole, selectedStatus);
+    await onUpdate(user.id, user.companyUserId, selectedRoleId, selectedStatus);
     setIsSubmitting(false);
     setIsOpen(false);
   };
@@ -160,12 +168,12 @@ function EditUserRoleDialog({ user, onUpdate, roles }: { user: User, onUpdate: (
           <div className="space-y-4 py-4">
               <div className="space-y-2">
                   <Label htmlFor="edit-role">Role</Label>
-                  <Select value={selectedRole} onValueChange={setSelectedRole}>
+                  <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
                       <SelectTrigger id="edit-role">
                           <SelectValue placeholder="Select a role" />
                       </SelectTrigger>
                       <SelectContent>
-                          {roles.map(r => <SelectItem key={r.id} value={r.name.toLowerCase()}>{r.name}</SelectItem>)}
+                          {roles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
                       </SelectContent>
                   </Select>
               </div>
@@ -210,19 +218,13 @@ const getStatusText = (status: string): string => {
 
 export function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { company_id } = useLocation();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   
-  // Dummy roles for now
-  const roles: Role[] = [
-    { id: '1', name: 'Admin', description: '', userCount: 0, permissions: [] },
-    { id: '2', name: 'User', description: '', userCount: 0, permissions: [] },
-    { id: '3', name: 'Agent', description: '', userCount: 0, permissions: [] },
-  ];
-
   const fetchCompanyUsers = async () => {
     if (!company_id) {
       setIsLoading(false);
@@ -230,28 +232,37 @@ export function UserManagement() {
     }
     setIsLoading(true);
     try {
-      const [companyUsersRes, allUsersRes] = await Promise.all([
+      const [companyUsersRes, allUsersRes, rolesRes] = await Promise.all([
         fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users`),
         fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`),
+        fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/roles?company_id=${company_id}`)
       ]);
 
       if (!companyUsersRes.ok) throw new Error('Failed to fetch company user links');
       if (!allUsersRes.ok) throw new Error('Failed to fetch all users');
+      if (!rolesRes.ok) throw new Error('Failed to fetch roles');
 
       const companyUsersData = await companyUsersRes.json();
       const allUsersData = await allUsersRes.json();
+      const rolesData = await rolesRes.json();
       
-      if (companyUsersData.status !== 'success' || allUsersData.status !== 'success') {
+      if (companyUsersData.status !== 'success' || allUsersData.status !== 'success' || rolesData.status !== 'success') {
         throw new Error('API returned an error status');
       }
 
+      const companyRoles: Role[] = rolesData.data || [];
+      setRoles(companyRoles);
       const companyUserLinks: CompanyUser[] = companyUsersData.data || [];
       const allUsers: User[] = allUsersData.data || [];
 
       const usersInCompany = allUsers
         .map(user => {
           const link = companyUserLinks.find(l => l.user_id === user.id && l.company_id === String(company_id));
-          return link ? { ...user, companyUserId: link.id, acc_type: link.role, user_status: link.user_status } : null;
+          if (link) {
+            const roleName = companyRoles.find(r => r.id === link.role)?.name || 'Unknown Role';
+            return { ...user, companyUserId: link.id, acc_type: roleName, user_status: link.user_status };
+          }
+          return null;
         })
         .filter((user): user is User & { companyUserId: string } => user !== null);
       
@@ -335,22 +346,19 @@ export function UserManagement() {
     }
   };
 
-  const handleUpdateRole = async (userId: string, companyUserId: string, role: string, status: string) => {
+  const handleUpdateRole = async (userId: string, companyUserId: string, roleId: string, status: string) => {
      if (!company_id) {
       toast({ variant: 'destructive', title: 'Error', description: 'Company ID is not available.' });
       return;
     }
-    const loggedInUsername = localStorage.getItem('userName') || 'admin';
+    
     const payload = {
-        user_id: userId,
+        user_id: parseInt(userId),
+        role_id: parseInt(roleId),
         company_id: company_id,
-        role: role,
-        status: status,
-        created_by: loggedInUsername,
-        updated_by: loggedInUsername,
     };
     try {
-      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/company-users/assign`, {
+      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/role-permissions/user-role/update`, {
         method: 'POST',
         body: JSON.stringify(payload),
       });

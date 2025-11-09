@@ -2,19 +2,17 @@
 'use client';
 
 // Import the external CSS file
-import '../../print-receipt.css';
-
-
+import '@/app/(print)/pos/print-receipt.css';
 
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
-import type { Invoice, User, Location } from '@/lib/types';
+import type { Invoice, User, Location, Table, InvoiceItem } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import Image from 'next/image';
 import { fetcher } from '@/lib/api';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 interface Company {
     id: string;
@@ -25,6 +23,7 @@ interface Company {
     company_telephone: string;
 }
 
+// Extend the Window interface for JSPrintManager
 declare global {
   interface Window {
       JSPM: any;
@@ -38,6 +37,9 @@ function GuestReceiptContent() {
   const [customer, setCustomer] = useState<User | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
+  const [steward, setSteward] = useState<User | null>(null);
+  const [cashier, setCashier] = useState<User | null>(null);
+  const [tables, setTables] = useState<Table[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
@@ -60,19 +62,49 @@ function GuestReceiptContent() {
             const data: Invoice = await response.json();
             setInvoice(data);
             
+            const fetchPromises: Promise<any>[] = [];
+
             if (data.customer_code) {
-                const customerRes = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`);
-                if (customerRes.ok) setCustomer(await customerRes.json());
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`).then(res => res.ok ? res.json() : null));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
             }
 
             if (data.company_id && data.location_id) {
-                const [companyRes, locationRes] = await Promise.all([
-                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${data.company_id}`),
-                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${data.location_id}`),
-                ]);
-                if (companyRes.ok) setCompany(await companyRes.json());
-                if (locationRes.ok) setLocation(await locationRes.json());
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${data.company_id}`).then(res => res.ok ? res.json() : null));
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${data.location_id}`).then(res => res.ok ? res.json() : null));
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-tables/filter/by-company?company_id=${data.company_id}`).then(res => res.ok ? res.json() : []));
+            } else {
+                fetchPromises.push(Promise.resolve(null), Promise.resolve(null), Promise.resolve(null));
             }
+            
+            if (data.steward_id && data.steward_id !== "N/A") {
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/${data.steward_id}`).then(res => res.ok ? res.json() : null));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
+            }
+
+            if(data.created_by) {
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users`).then(async res => {
+                    if(res.ok) {
+                        const allUsersRes = await res.json();
+                        const allUsers = allUsersRes.data;
+                        return allUsers.find((u:User) => u.user_name === data.created_by) || null;
+                    }
+                    return null;
+                }));
+            } else {
+                fetchPromises.push(Promise.resolve(null));
+            }
+
+            const [customerData, companyData, locationData, tablesData, stewardData, cashierData] = await Promise.all(fetchPromises);
+
+            if (customerData) setCustomer(customerData);
+            if (companyData) setCompany(companyData);
+            if (locationData) setLocation(locationData);
+            if (tablesData) setTables(tablesData);
+            if (stewardData) setSteward(stewardData.data);
+            if (cashierData) setCashier(cashierData);
 
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load invoice data.' });
@@ -92,7 +124,7 @@ function GuestReceiptContent() {
       document.body.appendChild(script);
     }
 
-    const initJspm = () => {
+    const initJSPM = () => {
         if(window.JSPM) {
             try {
                 window.JSPM.JSPrintManager.auto_reconnect = true;
@@ -104,40 +136,106 @@ function GuestReceiptContent() {
             }
         }
     }
-    setTimeout(initJspm, 500);
+    setTimeout(initJSPM, 500);
   }, []);
 
   const handlePrint = async () => {
     if (!receiptRef.current) return;
     
-    // Calculate height and set print styles
-    const heightInPixels = receiptRef.current.offsetHeight;
-    const heightInMm = (heightInPixels * 25.4) / 96; // Assuming 96 DPI
+    const printAndClose = () => {
+        window.print();
+        setTimeout(() => window.close(), 100);
+    }
     
-    const style = document.createElement('style');
-    style.innerHTML = `
-        @media print {
-            @page {
-                size: 80mm ${heightInMm + 5}mm; /* Add some buffer */
-                margin: 0;
-            }
-        }
-    `;
-    document.head.appendChild(style);
+    if (!window.JSPM || !isJspmConnected) {
+        console.warn("JSPM not ready or not connected. Falling back to browser print.");
+        printAndClose();
+        return;
+    }
 
-    window.print();
+    try {
+        const element = receiptRef.current;
+        const canvas = await html2canvas(element, { scale: 2, backgroundColor: null });
 
-    // Optional: Clean up the style element after printing
-    // The timeout is to ensure the print dialog has had time to process the styles
-    
+        const b64Prefix = "data:image/png;base64,";
+        const imgBase64DataUri = canvas.toDataURL("image/png");
+        const imgBase64Content = imgBase64DataUri.substring(b64Prefix.length);
+
+        const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
+
+        const cpj = new ClientPrintJob();
+        const myPrinter = new InstalledPrinter("Microsoft Print to PDF"); 
+        
+        cpj.clientPrinter = myPrinter;
+
+        const myImageFile = new PrintFile(
+            imgBase64Content,
+            FileSourceType.Base64,
+            `GR-${invoice?.invoice_number}.png`,
+            1
+        );
+        cpj.files.push(myImageFile);
+
+        cpj.sendToClient();
+
+        setTimeout(() => {
+            // window.close();
+        }, 3000);
+
+    } catch (error) {
+        console.error("Printing error:", error);
+        alert("An error occurred while printing. Falling back to browser print.");
+        printAndClose();
+    }
   };
 
   useEffect(() => {
     if (!isLoading && invoice) {
-        document.title = `Guest Receipt - ${invoice.invoice_number}`;
-        handlePrint();
+      document.title = `Guest Receipt - ${invoice.invoice_number}`;
+      handlePrint();
     }
   }, [isLoading, invoice, isJspmConnected]);
+
+  const getOrderTypeOrTable = (tableId: string) => {
+    if (parseInt(tableId, 10) > 0) {
+      const tableName = tables.find(t => t.id === tableId)?.table_name;
+      return `Dine-In (Table: ${tableName || tableId})`;
+    }
+    if (tableId === '0') return 'Take Away';
+    if (tableId === '-1') return 'Retail';
+    if (tableId === '-2') return 'Delivery';
+    return null;
+  }
+
+  const calculateInclusivePrice = (basePrice: number) => {
+    if (!location || !invoice) return basePrice;
+
+    const orderType = getOrderTypeOrTable(invoice.table_id);
+
+    let serviceCharge = 0;
+    if (orderType?.startsWith('Dine-In') && location.service_charge_status === 'Enabled') {
+        serviceCharge = basePrice * 0.10;
+    }
+    
+    let tdl = 0;
+    if (location.tdl_status === 'Enabled') {
+      tdl = (basePrice + serviceCharge) * 0.01;
+    }
+
+    const baseForSscl = basePrice + serviceCharge;
+    let sscl = 0;
+    if (location.sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+    
+    const baseForVat = baseForSscl + tdl + sscl;
+    let vat = 0;
+    if (location.vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
+    return basePrice + serviceCharge + tdl + sscl + vat;
+  }
 
   if (isLoading || !invoice) {
     return (
@@ -158,15 +256,32 @@ function GuestReceiptContent() {
   }
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
-  const totalDiscount = parseFloat(invoice.discount_amount);
-  const subtotal = parseFloat(invoice.inv_amount);
-  const total = parseFloat(invoice.grand_total);
   
+  const subtotal = (invoice.items || []).reduce((acc, item) => {
+    const itemPrice = parseFloat(String(item.item_price));
+    const quantity = parseFloat(String(item.quantity));
+    const inclusivePrice = calculateInclusivePrice(itemPrice);
+    return acc + (inclusivePrice * quantity);
+  }, 0);
+
+  const totalDiscount = parseFloat(invoice.discount_amount);
+  const grandTotal = subtotal - totalDiscount;
+
+  
+  const itemCount = invoice.items?.length || 0;
+  const totalQuantity = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
+
+  
+  const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
+  const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
+  const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
+  const customerName = customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : `(ID: ${invoice.customer_code})`;
+
   return (
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
-          {logoUrl && <Image src={logoUrl} alt="logo" width={60} height={60} className="mx-auto my-1" />}
+          {logoUrl && <Image src={logoUrl} alt="logo" width={100} height={100} className="mx-auto my-1" priority />}
           <p>{location?.location_name}</p>
           <p>{location?.address_line1}, {location?.city}</p>
           <p>Tel: {location?.phone_1}</p>
@@ -176,65 +291,86 @@ function GuestReceiptContent() {
         
         <div className="text-xs space-y-0.5">
           <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
-          <div className="flex justify-between"><p>Customer: {customer?.first_name || 'Walk-in'}</p></div>
+          <div className="flex justify-between"><p>Customer: {customerName}</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
-          <div className="flex justify-between"><p>Cashier: {invoice.created_by}</p></div>
-          {invoice.steward_id !== "N/A" && <div className="flex justify-between"><p>Steward: {invoice.steward_id}</p></div>}
-          {invoice.table_id !== '0' && <div className="flex justify-between"><p>Table: {invoice.table_id}</p></div>}
+          <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
+          {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable}</p></div>}
+          {stewardName && <div className="flex justify-between"><p>Steward: {stewardName}</p></div>}
         </div>
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>
 
         <table className="w-full text-xs">
           <thead>
-              <tr>
-                  <th className='text-left'>ITEM</th>
-                  <th className='text-center'>QTY</th>
-                  <th className='text-right'>PRICE</th>
-                  <th className='text-right'>TOTAL</th>
-              </tr>
+            <tr className="font-semibold">
+              <td className="text-left w-[10%]">Item</td>
+              <td className="text-left w-[20%]">Marked Price</td>
+              <td className="text-center w-[20%]">Our Price</td>
+              <td className="text-right w-[10%]">Qty</td>
+              <td className="text-right w-[20%]">Amount</td>
+            </tr>
           </thead>
           <tbody>
-            {(invoice.items || []).map((item, index) => (
-              <tr key={index}>
-                <td className="py-1 align-top w-[50%]">{item.product_print_name}</td>
-                <td className="py-1 align-top text-center">{parseFloat(String(item.quantity))}</td>
-                <td className="py-1 align-top text-right">{parseFloat(String(item.item_price)).toFixed(2)}</td>
-                <td className="py-1 align-top text-right">{(parseFloat(String(item.item_price)) * parseFloat(String(item.quantity))).toFixed(2)}</td>
-              </tr>
-            ))}
+            {(invoice.items || []).map((item: InvoiceItem, index: number) => {
+              const basePrice = parseFloat(String(item.item_price));
+              const itemDiscount = parseFloat(String(item.item_discount)) || 0;
+              const quantity = parseFloat(String(item.quantity));
+              
+              const markedPrice = calculateInclusivePrice(basePrice);
+              const ourPrice = markedPrice - itemDiscount;
+              const lineTotal = ourPrice * quantity;
+              
+              return (
+                <React.Fragment key={index}>
+                    <tr className="border-t border-dashed border-black">
+                        <td colSpan={5}>{index + 1}. {item.variant_sku} | {item.product_print_name}</td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td className="text-left">{markedPrice.toFixed(2)}</td>
+                        <td className="text-center">{ourPrice.toFixed(2)}</td>
+                        <td className="text-right">{quantity.toFixed(2)}</td>
+                        <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
+                    </tr>
+                </React.Fragment>
+              )
+            })}
           </tbody>
         </table>
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>
         <div className="space-y-1 text-xs">
-          <div className="flex justify-between">
+           <div className="flex justify-between">
             <span>Subtotal:</span>
             <span>{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span>Discount:</span>
+            <span>Total Discount:</span>
             <span>-{totalDiscount.toFixed(2)}</span>
           </div>
-         <div className="flex justify-between">
-          <span>Service Charge:</span>
-          <span>{parseFloat(invoice.service_charge).toFixed(2)}</span>
-        </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
-            <span>{total.toFixed(2)}</span>
+            <span>{grandTotal.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="my-2 border-t-2 border-dashed border-black"></div>
+
+        <div className="space-y-1 text-xs">
+          <div className="flex justify-between">
+            <span>Item Count:</span>
+            <span>{itemCount}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Sold Quantity:</span>
+            <span>{totalQuantity.toFixed(2)}</span>
           </div>
         </div>
 
         <div className="text-center mt-4 text-xs space-y-1 border-t pt-2">
+            <p className="font-bold">Thank You!</p>
+            <p>For inquiries, please contact us within 24 hours.</p>
             <p>Software by Payshia</p>
-            <Image 
-                src="https://content-provider.payshia.com/payshia-erp/branding/payshia-erp-logo-01.webp" 
-                alt="Payshia Logo" 
-                width={24} 
-                height={24} 
-                className="mx-auto" 
-            />
             <p>0770481363 | www.payshia.com</p>
         </div>
       </div>
@@ -247,7 +383,6 @@ export default function GuestReceiptPage() {
     return (
         <Suspense fallback={<div>Loading...</div>}>
             <GuestReceiptContent />
-           
         </Suspense>
     )
 }

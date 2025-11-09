@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { User, Invoice } from "@/lib/types";
+import type { User, Invoice, PaymentMethod } from "@/lib/types";
 import { CalendarIcon, Loader2, CheckCircle, Info } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
@@ -63,13 +63,14 @@ const receiptFormSchema = z.object({
   customerId: z.string().min(1, "Customer is required."),
   invoiceId: z.string().min(1, "Invoice is required."),
   amount: z.coerce.number().min(0.01, "Amount must be greater than zero."),
-  paymentMethod: z.enum(["Cash", "Card", "Bank Transfer"]),
+  paymentMethodId: z.string().min(1, "Payment method is required."),
 });
 
 type ReceiptFormValues = z.infer<typeof receiptFormSchema>;
 
 interface ReceiptFormProps {
     customers: User[];
+    paymentMethods: PaymentMethod[];
 }
 
 interface BalanceDetails {
@@ -78,7 +79,7 @@ interface BalanceDetails {
     balance: number;
 }
 
-export function ReceiptForm({ customers }: ReceiptFormProps) {
+export function ReceiptForm({ customers, paymentMethods }: ReceiptFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currentLocation, company_id } = useLocation();
@@ -92,7 +93,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
   const defaultValues: Partial<ReceiptFormValues> = {
     date: new Date(),
     amount: 0,
-    paymentMethod: "Card",
+    paymentMethodId: paymentMethods[0]?.id || '',
   };
 
   const form = useForm<ReceiptFormValues>({
@@ -183,7 +184,7 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
     setIsLoading(true);
 
     const payload = {
-        type: data.paymentMethod === 'Cash' ? '0' : data.paymentMethod === 'Card' ? '1' : '2',
+        type: data.paymentMethodId,
         is_active: 1,
         date: format(data.date, "yyyy-MM-dd"),
         amount: data.amount,
@@ -380,20 +381,20 @@ export function ReceiptForm({ customers }: ReceiptFormProps) {
                         />
                         <FormField
                             control={form.control}
-                            name="paymentMethod"
+                            name="paymentMethodId"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Payment Method</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedInvoice || isFetchingBalance}>
+                                    <Select onValueChange={field.onChange} value={field.value} disabled={!selectedInvoice || isFetchingBalance}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select a method" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="Card">Card</SelectItem>
-                                            <SelectItem value="Cash">Cash</SelectItem>
-                                            <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                                            {paymentMethods.map(method => (
+                                                <SelectItem key={method.id} value={method.id}>{method.method}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
