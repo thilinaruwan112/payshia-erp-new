@@ -122,18 +122,26 @@ export default function EditRolePermissionsPage() {
 
   const handlePermissionChange = (permission: string, checked: boolean) => {
     setSelectedPermissions((prev) => {
-        if (permission === 'admin-all:process') return checked ? ['admin-all:process'] : [];
-        if (checked && permission.endsWith(':process')) {
-            const readPermission = permission.replace(':process', ':read');
-            const newPermissions = [...prev, permission];
-            if (!prev.includes(readPermission)) newPermissions.push(readPermission);
-            return newPermissions;
+        if (permission === 'admin-all:process') {
+            return checked ? ['admin-all:process'] : [];
         }
-        if (!checked && permission.endsWith(':read')) {
-            const processPermission = permission.replace(':read', ':process');
-            return prev.filter(p => p !== permission && p !== processPermission);
+
+        let newPermissions = new Set(prev);
+
+        if (checked) {
+            newPermissions.add(permission);
+            // If process is checked, read must also be checked
+            if (permission.endsWith(':process')) {
+                newPermissions.add(permission.replace(':process', ':read'));
+            }
+        } else {
+            newPermissions.delete(permission);
+            // If read is unchecked, process must also be unchecked
+            if (permission.endsWith(':read')) {
+                newPermissions.delete(permission.replace(':read', ':process'));
+            }
         }
-        return checked ? [...prev, permission] : prev.filter((p) => p !== permission);
+        return Array.from(newPermissions);
     });
   };
 
