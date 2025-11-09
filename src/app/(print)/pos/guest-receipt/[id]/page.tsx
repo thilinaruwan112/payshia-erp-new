@@ -166,7 +166,7 @@ function GuestReceiptContent() {
         const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
 
         const cpj = new ClientPrintJob();
-        const myPrinter = new InstalledPrinter("KOT-Printer"); 
+        const myPrinter = new InstalledPrinter("Microsoft Print to PDF"); 
         
         cpj.clientPrinter = myPrinter;
 
@@ -286,13 +286,23 @@ function GuestReceiptContent() {
               const lineTotal = discountedPrice * quantity;
               
               return (
-                <tr key={index}>
-                    <td className="py-1">{item.variant_sku} - {item.product_print_name}</td>
-                    <td className="py-1 text-right">{basePrice.toFixed(2)}</td>
-                    <td className="py-1 text-right">{discountedPrice.toFixed(2)}</td>
-                    <td className="py-1 text-right">{quantity.toFixed(2)}</td>
-                    <td className="py-1 text-right font-semibold">{lineTotal.toFixed(2)}</td>
-                </tr>
+                <React.Fragment key={index}>
+                  <tr>
+                      <td colSpan={5} className="pt-1 font-semibold">- {item.variant_sku} - {item.product_print_name}</td>
+                  </tr>
+                  <tr>
+                      <td>#{index + 1}</td>
+                      <td className="text-right">{basePrice.toFixed(2)}</td>
+                      <td className="text-right">{discountedPrice.toFixed(2)}</td>
+                      <td className="text-right">{quantity.toFixed(2)}</td>
+                      <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
+                  </tr>
+                  {itemDiscount > 0 && (
+                      <tr>
+                          <td colSpan={5} className="text-right text-xs italic">Special Discount: -{itemDiscount.toFixed(2)}</td>
+                      </tr>
+                  )}
+                </React.Fragment>
               )
             })}
           </tbody>
@@ -331,3 +341,5 @@ export default function GuestReceiptPage() {
         </Suspense>
     )
 }
+
+    
