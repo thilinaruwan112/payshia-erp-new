@@ -152,11 +152,13 @@ function FinalInvoiceContent() {
   const subtotal = (invoice.items || []).reduce((acc, item) => {
     const itemPrice = parseFloat(String(item.item_price));
     const quantity = parseFloat(String(item.quantity));
-    const itemDiscount = parseFloat(String(item.item_discount)) || 0;
-    return acc + ((itemPrice * quantity) - itemDiscount);
+    return acc + (itemPrice * quantity);
   }, 0);
   
-  const totalDiscount = parseFloat(invoice.discount_amount);
+  const totalItemDiscount = (invoice.items || []).reduce((acc, item) => acc + (parseFloat(String(item.item_discount)) || 0), 0);
+  const totalOrderDiscount = parseFloat(invoice.discount_amount) || 0;
+  const totalDiscount = totalItemDiscount + (totalOrderDiscount - totalItemDiscount);
+  
   const grandTotal = parseFloat(invoice.grand_total);
   const serviceCharge = parseFloat(invoice.service_charge);
   const tdl = parseFloat(invoice.tdl || "0");
@@ -285,3 +287,5 @@ export default function FinalInvoicePage() {
         </Suspense>
     )
 }
+
+    
