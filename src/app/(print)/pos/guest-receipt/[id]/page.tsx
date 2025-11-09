@@ -179,7 +179,7 @@ function GuestReceiptContent() {
         cpj.sendToClient();
 
         setTimeout(() => {
-            window.close();
+            // window.close();
         }, 3000);
 
     } catch (error) {
@@ -216,12 +216,6 @@ function GuestReceiptContent() {
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-  const subtotal = (invoice.items || []).reduce((acc, item) => {
-    const itemPrice = parseFloat(String(item.item_price));
-    const quantity = parseFloat(String(item.quantity));
-    return acc + (itemPrice * quantity);
-  }, 0);
-
   const totalDiscount = parseFloat(invoice.discount_amount);
   const grandTotal = parseFloat(invoice.grand_total);
   
@@ -269,6 +263,13 @@ function GuestReceiptContent() {
     return basePrice + serviceCharge + tdl + sscl + vat;
   }
 
+  const subtotal = (invoice.items || []).reduce((acc, item) => {
+    const itemPrice = parseFloat(String(item.item_price));
+    const quantity = parseFloat(String(item.quantity));
+    return acc + (itemPrice * quantity);
+  }, 0);
+
+
   const orderTypeOrTable = getOrderTypeOrTable(invoice.table_id);
   const cashierName = cashier ? `${cashier.first_name} ${cashier.last_name}` : invoice.created_by;
   const stewardName = steward ? `${steward.first_name} ${steward.last_name}` : null;
@@ -311,10 +312,11 @@ function GuestReceiptContent() {
             {(invoice.items || []).map((item: InvoiceItem, index: number) => {
               const basePrice = parseFloat(String(item.item_price));
               const itemDiscount = parseFloat(String(item.item_discount)) || 0;
-              const discountedPrice = basePrice - itemDiscount;
               const quantity = parseFloat(String(item.quantity));
-              const lineTotal = discountedPrice * quantity;
+              
               const markedPrice = calculateInclusivePrice(basePrice);
+              const ourPrice = itemDiscount > 0 ? markedPrice - itemDiscount : markedPrice;
+              const lineTotal = ourPrice * quantity;
               
               return (
                 <React.Fragment key={index}>
@@ -324,7 +326,7 @@ function GuestReceiptContent() {
                     <tr>
                         <td></td>
                         <td className="text-left">{markedPrice.toFixed(2)}</td>
-                        <td className="text-center">{discountedPrice.toFixed(2)}</td>
+                        <td className="text-center">{ourPrice.toFixed(2)}</td>
                         <td className="text-right">{quantity.toFixed(2)}</td>
                         <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
                     </tr>
