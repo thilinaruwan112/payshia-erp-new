@@ -733,54 +733,54 @@ export default function POSPage() {
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
   
   const orderTotals = useMemo((): OrderInfo => {
-    if (!currentOrder) {
+    if (!currentOrder || !currentLocation) {
       return { subtotal: 0, serviceCharge: 0, tdl: 0, sscl: 0, vat: 0, discount: 0, itemDiscounts: 0, total: 0 };
     }
 
+    const { cart, discount, orderType } = currentOrder;
+    const { service_charge_status, tdl_status, sscl_status, vat_status } = currentLocation;
+
     let subtotal = 0;
-    let totalServiceCharge = 0;
-    let totalTdl = 0;
-    let totalSscl = 0;
-    let totalVat = 0;
-    let totalItemDiscounts = 0;
+    let itemDiscounts = 0;
+    let serviceCharge = 0;
+    let tdl = 0;
+    let sscl = 0;
+    let vat = 0;
 
-    for (const item of currentOrder.cart) {
+    for (const item of cart) {
       const basePrice = (item.product.price as number) * item.quantity;
+      const currentItemDiscount = item.itemDiscount || 0;
+      
       subtotal += basePrice;
-      totalItemDiscounts += item.itemDiscount || 0;
+      itemDiscounts += currentItemDiscount;
+    }
+    
+    const baseForTaxes = subtotal - itemDiscounts;
 
-      const basePriceAfterItemDiscount = basePrice - (item.itemDiscount || 0);
-
-      const serviceCharge = currentOrder.orderType === 'Dine-In' && isServiceChargeActive
-        ? basePriceAfterItemDiscount * 0.10
-        : 0;
-      totalServiceCharge += serviceCharge;
-
-      const tdl = basePriceAfterItemDiscount * 0.01;
-      totalTdl += tdl;
-
-      const baseForSscl = basePriceAfterItemDiscount + serviceCharge;
-      const sscl = baseForSscl * 0.025;
-      totalSscl += sscl;
-
-      const baseForVat = basePriceAfterItemDiscount + serviceCharge + tdl + sscl;
-      const vat = baseForVat * 0.18;
-      totalVat += vat;
+    if (orderType === 'Dine-In' && service_charge_status === 'Enabled' && isServiceChargeActive) {
+      serviceCharge = baseForTaxes * 0.10;
     }
 
-    const total = subtotal - totalItemDiscounts + totalServiceCharge + totalTdl + totalSscl + totalVat - currentOrder.discount;
-    
-    return { 
-        subtotal, 
-        serviceCharge: totalServiceCharge,
-        tdl: totalTdl,
-        sscl: totalSscl,
-        vat: totalVat,
-        discount: currentOrder.discount, 
-        itemDiscounts: totalItemDiscounts, 
-        total 
-    };
-  }, [currentOrder, isServiceChargeActive]);
+    const baseForTdl = baseForTaxes + serviceCharge;
+
+    if (tdl_status === 'Enabled') {
+      tdl = baseForTdl * 0.01;
+    }
+
+    const baseForSscl = baseForTaxes + serviceCharge;
+    if (sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+
+    const baseForVat = baseForTaxes + serviceCharge + tdl + sscl;
+    if (vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
+    const total = baseForTaxes + serviceCharge + tdl + sscl + vat - discount;
+
+    return { subtotal, serviceCharge, tdl, sscl, vat, discount, itemDiscounts, total };
+  }, [currentOrder, currentLocation, isServiceChargeActive]);
   
   const orderPanelComponent = currentOrder && currentCashier ? (
      <OrderPanel
@@ -879,7 +879,7 @@ export default function POSPage() {
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[calc(100vh-250px)]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
                     ) : (
-                        <ProductGrid products={filteredProducts} orderType={currentOrder?.orderType} onProductSelect={(p) => setSelectedProduct(p)} />
+                        <ProductGrid products={filteredProducts} orderType={currentOrder?.orderType} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} />
                     )}
                     </div>
                     
@@ -928,8 +928,3 @@ export default function POSPage() {
     </>
   );
 }
-
-    
-
-    
-
