@@ -168,6 +168,8 @@ export default function EditRolePermissionsPage() {
     pages.forEach(page => {
         const hasRead = selectedPermissions.includes(`${page.name}:read`);
         const hasProcess = selectedPermissions.includes(`${page.name}:process`);
+        
+        // Only include pages where at least one permission is explicitly set
         if(hasRead || hasProcess) {
             permissionsPayload[page.id] = { right_access: hasRead, process_access: hasProcess };
         }
