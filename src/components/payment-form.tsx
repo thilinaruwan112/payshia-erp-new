@@ -146,17 +146,24 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
         return;
     }
     setIsSubmitting(true);
-
+    
+    // Distribute the total amount paid across the selected GRNs
+    let remainingAmountToDistribute = data.amount;
     const paymentPromises = data.grnIds.map(grnId => {
         const grn = dueGrns.find(g => g.id === grnId);
         if (!grn) return Promise.reject(new Error(`Could not find details for GRN ID ${grnId}`));
         
+        const amountToPayForThisGrn = Math.min(grn.dueAmount, remainingAmountToDistribute);
+        remainingAmountToDistribute -= amountToPayForThisGrn;
+        
+        if (amountToPayForThisGrn <= 0) return Promise.resolve(null); // Don't create a payment if amount is 0
+
         const payload = {
             company_id: company_id,
             grn_number: grn.grn_number,
             suppliar_id: parseInt(data.supplierId, 10),
             date_of_payment: format(data.date, "yyyy-MM-dd"),
-            total_amount: grn.dueAmount,
+            total_amount: amountToPayForThisGrn,
             is_active: 1,
         };
         
@@ -164,7 +171,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
             method: 'POST',
             body: JSON.stringify(payload),
         });
-    });
+    }).filter(p => p !== null);
 
     try {
         const responses = await Promise.all(paymentPromises);
@@ -184,7 +191,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
         if (allOk) {
             toast({
                 title: "Payments Recorded Successfully",
-                description: `All selected payments have been processed.`,
+                description: `A total of ${currencySymbol}${data.amount.toFixed(2)} has been recorded.`,
             });
             router.push('/suppliers/payments');
             router.refresh();
@@ -224,7 +231,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
 
         <Card>
             <CardHeader>
-                <CardTitle>Select Supplier</CardTitle>
+                <CardTitle>Step 1: Select Supplier</CardTitle>
             </CardHeader>
             <CardContent>
                 <FormField
@@ -254,8 +261,8 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
         {supplierId && (
             <Card>
                 <CardHeader>
-                    <CardTitle>Select GRNs to Pay</CardTitle>
-                    <CardDescription>Check the box next to each GRN you wish to pay for. The total amount will be calculated automatically.</CardDescription>
+                    <CardTitle>Step 2: Select GRNs to Pay</CardTitle>
+                    <CardDescription>Check the box next to each GRN you wish to pay for. The total amount will be calculated automatically but you can edit it.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isFetchingGrns ? (
@@ -326,7 +333,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
         
         <Card>
             <CardHeader>
-                <CardTitle>Payment Details</CardTitle>
+                <CardTitle>Step 3: Payment Details</CardTitle>
                 <CardDescription>Enter the final details of the payment.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
@@ -363,7 +370,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
                         <FormItem>
                         <FormLabel>Total Amount</FormLabel>
                         <FormControl>
-                            <Input readOnly type="number" placeholder="0.00" {...field} startIcon={currencySymbol} />
+                            <Input type="number" placeholder="0.00" {...field} startIcon={currencySymbol} />
                         </FormControl>
                          <FormMessage />
                         </FormItem>
