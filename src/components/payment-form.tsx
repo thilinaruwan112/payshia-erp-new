@@ -92,10 +92,11 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
         try {
             if (!company_id) throw new Error("Company ID not found.");
             
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn`);
-            if (!response.ok) throw new Error('Failed to fetch GRNs');
-            const allGrns: GoodsReceivedNote[] = await response.json();
-            const supplierGrns = allGrns.filter(grn => grn.supplier_id === id);
+            const response = await fetcher(`https://qa-server-erp.payshia.com/grn/supplier/${id}`);
+            if (!response.ok) throw new Error('Failed to fetch GRNs for this supplier.');
+            
+            const grnData = await response.json();
+            const supplierGrns: GoodsReceivedNote[] = grnData.data || [];
 
             const grnsWithDueAmount = await Promise.all(
                 supplierGrns.map(async (grn) => {
