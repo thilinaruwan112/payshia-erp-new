@@ -20,7 +20,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter
 } from "@/components/ui/card";
 import {
   Select,
@@ -47,7 +46,6 @@ const paymentFormSchema = z.object({
   date: z.date({ required_error: "A date is required." }),
   supplierId: z.string().min(1, "Supplier is required."),
   amount: z.coerce.number().min(0.01, "Amount must be greater than zero."),
-  paymentAccountId: z.string().min(1, "Payment account is required."),
   notes: z.string().optional(),
   grnIds: z.array(z.string()).min(1, "Please select at least one GRN to pay."),
 });
@@ -56,14 +54,13 @@ type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
 interface PaymentFormProps {
     suppliers: Supplier[];
-    paymentAccounts: Account[];
 }
 
 interface DueGrn extends GoodsReceivedNote {
     dueAmount: number;
 }
 
-export function PaymentForm({ suppliers, paymentAccounts }: PaymentFormProps) {
+export function PaymentForm({ suppliers }: PaymentFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
@@ -211,7 +208,7 @@ export function PaymentForm({ suppliers, paymentAccounts }: PaymentFormProps) {
                                                                 checked={field.value?.includes(grn.id)}
                                                                 onCheckedChange={(checked) => {
                                                                     return checked
-                                                                    ? field.onChange([...field.value, grn.id])
+                                                                    ? field.onChange([...(field.value || []), grn.id])
                                                                     : field.onChange(
                                                                         field.value?.filter(
                                                                         (value) => value !== grn.id
@@ -243,7 +240,7 @@ export function PaymentForm({ suppliers, paymentAccounts }: PaymentFormProps) {
                 <CardTitle>Payment Details</CardTitle>
                 <CardDescription>Enter the final details of the payment.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                  <FormField
                     control={form.control}
                     name="date"
@@ -267,28 +264,6 @@ export function PaymentForm({ suppliers, paymentAccounts }: PaymentFormProps) {
                             </PopoverContent>
                         </Popover>
                         <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="paymentAccountId"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Paid From</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a payment account" />
-                                    </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {paymentAccounts.map(acc => (
-                                        <SelectItem key={acc.code} value={String(acc.code)}>{acc.code} - {acc.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
                         </FormItem>
                     )}
                 />
