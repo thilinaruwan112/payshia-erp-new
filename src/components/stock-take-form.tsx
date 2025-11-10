@@ -7,14 +7,7 @@ import * as z from "zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Product, ProductVariant, StockInfo } from "@/lib/types";
@@ -32,6 +25,7 @@ import { Calendar } from "./ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useCurrency } from "./currency-provider";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Separator } from "./ui/separator";
 
 interface ProductWithApiResponse {
     product: Product;
@@ -74,7 +68,7 @@ export function StockTakeForm() {
     mode: "onChange",
   });
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "items",
   });
@@ -95,7 +89,7 @@ export function StockTakeForm() {
         const allProducts = productData.products || [];
         setProducts(allProducts);
 
-        const stockResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/report/by-location?location_id=${locationId}&company_id=${company_id}`);
+        const stockResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/stock-balance?location_id=${locationId}&company_id=${company_id}`);
         if (!stockResponse.ok) throw new Error("Failed to fetch stock levels");
         const stockData = await stockResponse.json();
         
@@ -114,7 +108,7 @@ export function StockTakeForm() {
     }
   };
 
-  const handleBarcodeScan = async () => {
+    const handleBarcodeScan = async () => {
     if (!barcode || !locationId || !company_id) return;
     setIsLoading(true);
     try {
@@ -126,7 +120,6 @@ export function StockTakeForm() {
             const product = productData.products[0];
             const variant = product.variants[0].variant;
 
-            // Check if item is already in the list
             const existingItemIndex = fields.findIndex(field => field.productVariantId === variant.id);
             if (existingItemIndex > -1) {
                 toast({ title: "Item already in list", description: "This item is already in your stock take list." });
@@ -165,6 +158,8 @@ export function StockTakeForm() {
       (p.variants || []).map(v => ({
         label: `${p.product.name} (${v.variant.sku})`,
         value: v.variant.id,
+        productId: p.product.id,
+        costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
       }))
     );
   }, [products]);
@@ -179,9 +174,8 @@ export function StockTakeForm() {
       toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
       return;
     }
-    // ... API submission logic ...
     console.log(data);
-     toast({ title: 'Stock Take Finalized', description: 'Stock adjustments will be created automatically.' });
+    toast({ title: 'Stock Take Finalized', description: 'Stock adjustments will be created automatically.' });
   }
 
   const watchedItems = form.watch('items');
@@ -211,7 +205,7 @@ export function StockTakeForm() {
               control={form.control}
               name="locationId"
               render={({ field }) => (
-                <FormItem><FormLabel>Location</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a location" /></SelectTrigger></FormControl><SelectContent>{availableLocations.map(loc => (<SelectItem key={loc.location_id} value={loc.location_id}>{loc.location_name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+                <FormItem><FormLabel>Location</FormLabel><Select onValueChange={(value) => { field.onChange(value); replace([]); }} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Select a location" /></SelectTrigger></FormControl><SelectContent>{availableLocations.map(loc => (<SelectItem key={loc.location_id} value={loc.location_id}>{loc.location_name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
               )}
             />
             <FormField
@@ -222,53 +216,111 @@ export function StockTakeForm() {
               )}
             />
           </CardContent>
-          <CardFooter>
-                <Button onClick={fetchProductsAndStock} disabled={!locationId || takeType !== 'full'}>Load Full Inventory</Button>
-          </CardFooter>
+          {takeType === 'full' && (
+            <CardFooter>
+                  <Button onClick={fetchProductsAndStock} disabled={!locationId || takeType !== 'full'}>Load Full Inventory</Button>
+            </CardFooter>
+          )}
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Item Count</CardTitle>
-            <CardDescription>Scan barcodes or manually search to add items for a partial count. For a full count, all items will be listed below.</CardDescription>
-             <div className="pt-4 flex gap-2 max-w-sm">
-                <Input placeholder="Scan or enter barcode..." value={barcode} onChange={(e) => setBarcode(e.target.value)} disabled={takeType === 'full'} />
-                <Button type="button" onClick={handleBarcodeScan} disabled={takeType === 'full'}><Search className="h-4 w-4" /></Button>
-             </div>
+            <CardDescription>
+                {takeType === 'full' ? 'All items in the selected location are listed. Update the physical quantities.' : 'Scan barcodes or manually search to add items for a partial count.'}
+            </CardDescription>
+            {takeType === 'partial' && (
+                <div className="pt-4 flex gap-2 max-w-sm">
+                    <Input placeholder="Scan or enter barcode..." value={barcode} onChange={(e) => setBarcode(e.target.value)} disabled={takeType === 'full'} />
+                    <Button type="button" onClick={handleBarcodeScan} disabled={takeType === 'full'}><Search className="h-4 w-4" /></Button>
+                </div>
+            )}
           </CardHeader>
           <CardContent>
-             <Table>
-                <TableHeader><TableRow><TableHead>Product</TableHead><TableHead>System Qty</TableHead><TableHead>Physical Qty</TableHead><TableHead>Variance</TableHead><TableHead>Cost</TableHead><TableHead className="text-right">Value</TableHead></TableRow></TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow><TableCell colSpan={6} className="text-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></TableCell></TableRow>
-                  ) : fields.length > 0 ? fields.map((field, index) => {
-                      const item = watchedItems[index];
-                      const variance = (item.physicalQty || 0) - (item.systemQty || 0);
-                      const lineValue = variance * item.costPrice;
-                      return (
-                        <TableRow key={field.id} className={cn(variance < 0 ? 'bg-destructive/10' : variance > 0 ? 'bg-green-500/10' : '')}>
-                          <TableCell>{getProductNameByVariantId(item.productVariantId)}</TableCell>
-                          <TableCell><Input readOnly disabled value={item.systemQty} className="bg-muted w-24" /></TableCell>
-                          <TableCell>
-                             <FormField
-                                control={form.control} name={`items.${index}.physicalQty`}
-                                render={({ field }) => (
-                                    <FormItem><FormControl><Input type="number" {...field} className="w-24" id={`items.${index}.physicalQty`} /></FormControl><FormMessage /></FormItem>
-                                )}
-                              />
-                          </TableCell>
-                          <TableCell className={cn("font-bold", variance !== 0 && "text-lg")}>{variance}</TableCell>
-                          <TableCell className="font-mono">{currencySymbol}{item.costPrice.toFixed(2)}</TableCell>
-                          <TableCell className="text-right font-mono">{currencySymbol}{lineValue.toFixed(2)}</TableCell>
-                        </TableRow>
-                      );
-                  }) : (
-                     <TableRow><TableCell colSpan={6} className="text-center h-48 text-muted-foreground">Load full inventory or scan barcodes to begin.</TableCell></TableRow>
-                  )}
-                </TableBody>
-                <TableFooter><TableRow><TableCell colSpan={5} className="text-right font-bold text-lg">Total Variance Value</TableCell><TableCell className="text-right font-bold font-mono text-lg">{currencySymbol}{grandTotal.toFixed(2)}</TableCell></TableRow></TableFooter>
-             </Table>
+            {/* Desktop Table */}
+            <div className="hidden md:block">
+                <Table>
+                    <TableHeader><TableRow><TableHead>Product</TableHead><TableHead>System Qty</TableHead><TableHead>Physical Qty</TableHead><TableHead>Variance</TableHead><TableHead>Cost</TableHead><TableHead className="text-right">Value</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                    {isLoading ? (
+                        <TableRow><TableCell colSpan={6} className="text-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></TableCell></TableRow>
+                    ) : fields.length > 0 ? fields.map((field, index) => {
+                        const item = watchedItems[index];
+                        const variance = (item.physicalQty || 0) - (item.systemQty || 0);
+                        const lineValue = variance * item.costPrice;
+                        return (
+                            <TableRow key={field.id} className={cn(variance !== 0 && 'bg-muted/50')}>
+                            <TableCell>{getProductNameByVariantId(item.productVariantId)}</TableCell>
+                            <TableCell><Input readOnly disabled value={item.systemQty} className="bg-muted w-24" /></TableCell>
+                            <TableCell>
+                                <FormField
+                                    control={form.control} name={`items.${index}.physicalQty`}
+                                    render={({ field }) => (
+                                        <FormItem><FormControl><Input type="number" {...field} className="w-24" id={`items.${index}.physicalQty`} /></FormControl><FormMessage /></FormItem>
+                                    )}
+                                />
+                            </TableCell>
+                            <TableCell className={cn("font-bold", variance > 0 ? 'text-green-600' : variance < 0 ? 'text-destructive' : '')}>{variance}</TableCell>
+                            <TableCell className="font-mono">{currencySymbol}{item.costPrice.toFixed(2)}</TableCell>
+                            <TableCell className="text-right font-mono">{currencySymbol}{lineValue.toFixed(2)}</TableCell>
+                            </TableRow>
+                        );
+                    }) : (
+                        <TableRow><TableCell colSpan={6} className="text-center h-48 text-muted-foreground">Load full inventory or scan barcodes to begin.</TableCell></TableRow>
+                    )}
+                    </TableBody>
+                    <TableFooter><TableRow><TableCell colSpan={5} className="text-right font-bold">Total Variance Value</TableCell><TableCell className="text-right font-bold font-mono">{currencySymbol}{grandTotal.toFixed(2)}</TableCell></TableRow></TableFooter>
+                </Table>
+            </div>
+            {/* Mobile Cards */}
+            <div className="md:hidden space-y-4">
+                {isLoading ? (
+                    <div className="flex items-center justify-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                ) : fields.length > 0 ? fields.map((field, index) => {
+                    const item = watchedItems[index];
+                    const variance = (item.physicalQty || 0) - (item.systemQty || 0);
+                    const lineValue = variance * item.costPrice;
+                    return (
+                        <Card key={field.id} className={cn(variance !== 0 && 'border-muted-foreground')}>
+                            <CardHeader>
+                                <CardTitle className="text-base">{getProductNameByVariantId(item.productVariantId)}</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <Label>System Qty</Label>
+                                    <Input readOnly disabled value={item.systemQty} className="bg-muted w-24 h-8" />
+                                </div>
+                                <div className="flex justify-between items-center">
+                                     <Label htmlFor={`items.${index}.physicalQty`}>Physical Qty</Label>
+                                     <FormField
+                                        control={form.control} name={`items.${index}.physicalQty`}
+                                        render={({ field }) => (
+                                            <FormItem><FormControl><Input type="number" {...field} className="w-24 h-8" id={`items.${index}.physicalQty`} /></FormControl></FormItem>
+                                        )}
+                                      />
+                                </div>
+                                <Separator />
+                                <div className="flex justify-between items-center font-bold">
+                                    <span>Variance</span>
+                                    <span className={cn(variance > 0 ? 'text-green-600' : variance < 0 ? 'text-destructive' : '')}>{variance}</span>
+                                </div>
+                                <div className="flex justify-between items-center font-bold">
+                                    <span>Variance Value</span>
+                                    <span className={cn("font-mono", variance > 0 ? 'text-green-600' : variance < 0 ? 'text-destructive' : '')}>{currencySymbol}{lineValue.toFixed(2)}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                }) : (
+                     <div className="flex items-center justify-center h-48 text-muted-foreground text-center p-4">Load full inventory or scan barcodes to begin.</div>
+                )}
+                {fields.length > 0 && (
+                     <div className="flex justify-end font-bold text-lg p-4 border-t">
+                        <span>Total Variance:</span>
+                        <span className="font-mono ml-4">{currencySymbol}{grandTotal.toFixed(2)}</span>
+                    </div>
+                )}
+            </div>
           </CardContent>
           <CardFooter className="flex-col items-start gap-4">
             <div className="w-full max-w-lg">
