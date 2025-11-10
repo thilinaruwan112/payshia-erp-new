@@ -458,6 +458,34 @@ export function OrderPanel({
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType, tableName } = order;
 
+  const calculateInclusivePrice = (basePrice: number) => {
+    if (!currentLocation) return basePrice;
+
+    let serviceCharge = 0;
+    if (orderType === 'Dine-In' && currentLocation.service_charge_status === 'Enabled' && isServiceChargeActive) {
+        serviceCharge = basePrice * 0.10;
+    }
+    
+    let tdl = 0;
+    if (currentLocation.tdl_status === 'Enabled') {
+      tdl = (basePrice + serviceCharge) * 0.01;
+    }
+
+    const baseForSscl = basePrice + serviceCharge;
+    let sscl = 0;
+    if (currentLocation.sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+    
+    const baseForVat = baseForSscl + tdl + sscl;
+    let vat = 0;
+    if (currentLocation.vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
+    return basePrice + serviceCharge + tdl + sscl + vat;
+  }
+
   const handleSuccessfulPayment = async (paymentMethodId: string, tenderedAmount: number, isCredit: boolean) => {
     
     if (!currentLocation || !company_id || !customer) {
