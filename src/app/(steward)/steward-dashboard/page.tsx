@@ -11,8 +11,10 @@ import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { fetcher } from '@/lib/api';
 import { useCurrency } from '@/components/currency-provider';
-import { ProductGrid, type PosProduct } from '@/components/pos/product-grid';
-import { OrderPanel, type OrderInfo } from '@/components/pos/order-panel';
+import { ProductGrid } from '@/components/pos/product-grid';
+import { OrderPanel } from '@/components/pos/order-panel';
+import type { OrderInfo } from '@/components/pos/order-panel';
+import type { PosProduct } from '@/components/pos/pos-system/page';
 import { AddToCartDialog } from '@/components/pos/add-to-cart-dialog';
 import { format } from 'date-fns';
 import { openCenteredPopup } from '@/lib/utils';
@@ -179,26 +181,54 @@ export default function StewardDashboard() {
     setSelectedProduct(null);
   };
   
-   const orderTotals = useMemo((): OrderInfo => {
-    if (!activeOrder || !currentLocation) return { subtotal: 0, serviceCharge: 0, tdl: 0, sscl: 0, vat: 0, discount: 0, itemDiscounts: 0, total: 0 };
-    const { cart, discount, orderType } = activeOrder;
-    const { service_charge_status, tdl_status, sscl_status, vat_status } = currentLocation;
-    let subtotal = 0; let itemDiscounts = 0;
-    for (const item of cart) {
-      subtotal += (item.product.price as number) * item.quantity;
-      itemDiscounts += item.itemDiscount || 0;
-    }
-    const baseForTaxes = subtotal - itemDiscounts;
+   const calculateInclusivePrice = (basePrice: number) => {
+    if (!currentLocation) return basePrice;
+
     let serviceCharge = 0;
-    if (orderType === 'Dine-In' && service_charge_status === 'Enabled' && isServiceChargeActive) serviceCharge = baseForTaxes * 0.10;
-    const baseForTdl = baseForTaxes + serviceCharge;
-    let tdl = (tdl_status === 'Enabled') ? baseForTdl * 0.01 : 0;
-    const baseForSscl = baseForTaxes + serviceCharge;
-    let sscl = (sscl_status === 'Enabled') ? baseForSscl * 0.025 : 0;
-    const baseForVat = baseForTaxes + serviceCharge + tdl + sscl;
-    let vat = (vat_status === 'Enabled') ? baseForVat * 0.18 : 0;
-    const total = baseForTaxes + serviceCharge + tdl + sscl + vat - discount;
-    return { subtotal, serviceCharge, tdl, sscl, vat, discount, itemDiscounts, total };
+    if (activeOrder?.orderType === 'Dine-In' && currentLocation.service_charge_status === 'Enabled' && isServiceChargeActive) {
+        serviceCharge = basePrice * 0.10;
+    }
+    
+    let tdl = 0;
+    if (currentLocation.tdl_status === 'Enabled') {
+      tdl = (basePrice + serviceCharge) * 0.01;
+    }
+
+    const baseForSscl = basePrice + serviceCharge;
+    let sscl = 0;
+    if (currentLocation.sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+    
+    const baseForVat = baseForSscl + tdl + sscl;
+    let vat = 0;
+    if (currentLocation.vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
+    return basePrice + serviceCharge + tdl + sscl + vat;
+  }
+
+  const orderTotals = useMemo((): OrderInfo => {
+    if (!activeOrder || !currentLocation) return { subtotal: 0, serviceCharge: 0, tdl: 0, sscl: 0, vat: 0, discount: 0, itemDiscounts: 0, total: 0 };
+    
+    const { cart, discount, orderType } = activeOrder;
+    
+    let subtotal = 0;
+    let itemDiscounts = 0;
+    
+    for (const item of cart) {
+        const inclusivePrice = calculateInclusivePrice(item.product.price as number);
+        subtotal += inclusivePrice * item.quantity;
+        itemDiscounts += item.itemDiscount || 0;
+    }
+
+    // The service charge is now part of the item price, but we display a cosmetic one.
+    const displayServiceCharge = (subtotal - itemDiscounts) / 1.1 * 0.1;
+    
+    const total = subtotal - itemDiscounts - discount;
+
+    return { subtotal, serviceCharge: displayServiceCharge, tdl: 0, sscl: 0, vat: 0, discount, itemDiscounts, total };
   }, [activeOrder, currentLocation, isServiceChargeActive]);
 
     const orderType = activeOrder?.orderType;
@@ -346,6 +376,7 @@ export default function StewardDashboard() {
         availableTables={tables} availableStewards={stewards}
         customers={customers} onUpdateCustomer={updateCustomer}
         onCustomerCreated={onCustomerCreated}
+        showInclusivePriceOnly={true}
      />
   ) : null;
   
@@ -353,7 +384,7 @@ export default function StewardDashboard() {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-full overflow-hidden">
             <div className="lg:col-span-2 h-full overflow-y-auto">
-                 <ProductGrid products={posProducts} onProductSelect={(p) => setSelectedProduct(p)} orderType={activeOrder.orderType} currentLocation={currentLocation} />
+                 <ProductGrid products={posProducts} onProductSelect={(p) => setSelectedProduct(p)} orderType={activeOrder.orderType} currentLocation={currentLocation} showInclusivePriceOnly={true} />
             </div>
             <div className="h-full overflow-y-auto bg-card border-l">
                 {orderPanelComponent}
@@ -413,7 +444,3 @@ export default function StewardDashboard() {
     </div>
   );
 }
-
-    
-
-    

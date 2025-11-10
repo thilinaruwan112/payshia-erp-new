@@ -16,9 +16,10 @@ interface ProductCardProps {
   orderType: ActiveOrder['orderType'] | undefined;
   onSelect: (product: PosProduct) => void;
   currentLocation: Location | null;
+  showInclusivePriceOnly?: boolean;
 }
 
-export function ProductCard({ product, orderType, onSelect, currentLocation }: ProductCardProps) {
+export function ProductCard({ product, orderType, onSelect, currentLocation, showInclusivePriceOnly = false }: ProductCardProps) {
   const { currencySymbol } = useCurrency();
   
   const imageUrl = product.imageUrl || 'https://placehold.co/300x200.png';
@@ -51,8 +52,9 @@ export function ProductCard({ product, orderType, onSelect, currentLocation }: P
     return basePrice + serviceCharge + tdl + sscl + vat;
   }
 
-  const showInclusivePrice = orderType === 'Dine-In' || orderType === 'Take Away';
-  const inclusivePrice = showInclusivePrice ? calculateInclusivePrice(product.price as number) : 0;
+  const showInclusivePriceOnPos = orderType === 'Dine-In' || orderType === 'Take Away';
+  const inclusivePrice = calculateInclusivePrice(product.price as number);
+  const displayPrice = showInclusivePriceOnly ? inclusivePrice : (product.price as number);
 
   return (
     <Card
@@ -72,8 +74,8 @@ export function ProductCard({ product, orderType, onSelect, currentLocation }: P
             <h3 className="font-semibold text-base truncate group-hover:text-primary leading-tight">{product.variantName}</h3>
             <p className="text-sm text-muted-foreground">{product.category}</p>
             <div className="mt-2">
-                <p className="font-bold text-xl">{currencySymbol}{(product.price as number).toFixed(2)}</p>
-                {showInclusivePrice && (
+                <p className="font-bold text-xl">{currencySymbol}{displayPrice.toFixed(2)}</p>
+                {!showInclusivePriceOnly && showInclusivePriceOnPos && (
                     <p className="text-xs text-muted-foreground font-semibold">
                         (Incl. Tax: {currencySymbol}{inclusivePrice.toFixed(2)})
                     </p>
