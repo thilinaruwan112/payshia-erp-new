@@ -22,6 +22,7 @@ import {
   CheckCircle,
   ArrowRight,
   User as UserIcon,
+  Send,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -588,6 +589,8 @@ export function OrderPanel({
     setSuccessData(null);
   };
   
+  const isStewardScreen = window.location.pathname.includes('steward-dashboard');
+
   return (
     <div className="flex flex-col h-full bg-card">
       <SuccessDialog successData={successData} onClose={handleCloseSuccess} />
@@ -732,40 +735,48 @@ export function OrderPanel({
           <span>{currencySymbol}{orderTotals.total.toFixed(2)}</span>
         </div>
         
-        <div className="grid grid-cols-2 gap-2 pt-2">
-             <Dialog open={isDiscountOpen} onOpenChange={setDiscountOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="h-12">
-                  <TicketPercent className="mr-2 h-4 w-4" /> Order Discount
-                </Button>
-              </DialogTrigger>
-              <DiscountDialog setDiscount={setDiscount} onClose={() => setDiscountOpen(false)} />
-            </Dialog>
-             <Button variant="outline" onClick={onHoldAndKitchen} disabled={cart.length === 0} className="h-12">
-                <Notebook className="mr-2 h-4 w-4" /> Hold
+        {isStewardScreen ? (
+             <Button variant="default" onClick={onHoldAndKitchen} disabled={cart.length === 0} className="w-full h-16 text-lg">
+                <Send className="mr-2 h-5 w-5" /> Send to POS
             </Button>
-             <Button variant="secondary" onClick={handleGuestReceipt} disabled={!order.originalInvoiceNumber} className="h-12">
-                <Receipt className="mr-2 h-4 w-4" /> Guest Receipt
-            </Button>
-            <Button variant="destructive" onClick={() => onClearCart(orderId)} disabled={cart.length === 0} className="h-12">
-                <Trash2 className="mr-2 h-4 w-4" /> Clear Cart
-            </Button>
-        </div>
-        <Dialog open={isPaymentOpen} onOpenChange={setPaymentOpen}>
-        <DialogTrigger asChild>
-            <Button
-            className="w-full h-16 text-lg bg-green-600 hover:bg-green-700 text-white"
-            disabled={cart.length === 0}
-            >
-            <CreditCard className="mr-2 h-5 w-5" /> Proceed to Payment
-            </Button>
-        </DialogTrigger>
-        <PaymentDialog
-            orderTotals={orderTotals}
-            onSuccessfulPayment={handleSuccessfulPayment}
-            paymentMethods={paymentMethods}
-        />
-        </Dialog>
+        ) : (
+            <>
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                    <Dialog open={isDiscountOpen} onOpenChange={setDiscountOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="h-12">
+                        <TicketPercent className="mr-2 h-4 w-4" /> Order Discount
+                        </Button>
+                    </DialogTrigger>
+                    <DiscountDialog setDiscount={setDiscount} onClose={() => setDiscountOpen(false)} />
+                    </Dialog>
+                    <Button variant="outline" onClick={onHoldAndKitchen} disabled={cart.length === 0} className="h-12">
+                        <Notebook className="mr-2 h-4 w-4" /> Hold
+                    </Button>
+                    <Button variant="secondary" onClick={handleGuestReceipt} disabled={!order.originalInvoiceNumber} className="h-12">
+                        <Receipt className="mr-2 h-4 w-4" /> Guest Receipt
+                    </Button>
+                    <Button variant="destructive" onClick={() => onClearCart(orderId)} disabled={cart.length === 0} className="h-12">
+                        <Trash2 className="mr-2 h-4 w-4" /> Clear Cart
+                    </Button>
+                </div>
+                <Dialog open={isPaymentOpen} onOpenChange={setPaymentOpen}>
+                    <DialogTrigger asChild>
+                        <Button
+                        className="w-full h-16 text-lg bg-green-600 hover:bg-green-700 text-white"
+                        disabled={cart.length === 0}
+                        >
+                        <CreditCard className="mr-2 h-5 w-5" /> Proceed to Payment
+                        </Button>
+                    </DialogTrigger>
+                    <PaymentDialog
+                        orderTotals={orderTotals}
+                        onSuccessfulPayment={handleSuccessfulPayment}
+                        paymentMethods={paymentMethods}
+                    />
+                </Dialog>
+            </>
+        )}
       </footer>
     </div>
   );
