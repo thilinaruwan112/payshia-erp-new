@@ -167,7 +167,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
             is_active: 1,
         };
         
-        return fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliar_payment`, {
+        return fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliar-payment`, {
             method: 'POST',
             body: JSON.stringify(payload),
         });
@@ -336,7 +336,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
                 <CardTitle>Step 3: Payment Details</CardTitle>
                 <CardDescription>Enter the final details of the payment.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <FormField
                     control={form.control}
                     name="date"
@@ -368,7 +368,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
                     name="amount"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Total Amount</FormLabel>
+                        <FormLabel>Total Amount to Pay</FormLabel>
                         <FormControl>
                             <Input type="number" placeholder="0.00" {...field} startIcon={currencySymbol} />
                         </FormControl>
