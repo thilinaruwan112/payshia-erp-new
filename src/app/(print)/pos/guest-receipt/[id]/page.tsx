@@ -209,7 +209,7 @@ function GuestReceiptContent() {
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
-          {logoUrl && <Image src={logoUrl} alt="logo" width={100} height={100} className="mx-auto my-1" priority />}
+          {logoUrl && <Image src={logoUrl} alt="logo" width={100} height={50} className="mx-auto my-1" priority />}
           <p>{location?.location_name}</p>
           <p>{location?.address_line1}, {location?.city}</p>
           <p>Tel: {location?.phone_1}</p>
