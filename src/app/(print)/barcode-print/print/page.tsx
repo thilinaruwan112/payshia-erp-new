@@ -17,6 +17,7 @@ interface BarcodeItem {
 function BarcodePrintContent() {
   const searchParams = useSearchParams();
   const data = searchParams.get('data');
+  const bypass = searchParams.get('bypass') === 'true';
   
   if (!data) {
     notFound();
@@ -34,6 +35,9 @@ function BarcodePrintContent() {
   return (
     <div className="bg-white text-black p-0 m-0 font-sans">
       <div className="grid grid-cols-2 gap-x-[1mm] gap-y-0">
+        {bypass && (
+            <div className="w-[38mm] h-[25mm] p-[2mm] border-none"></div>
+        )}
         {itemsToPrint.map(item => (
             <div key={item.id} className="w-[38mm] h-[25mm] p-[2mm] border border-dashed border-gray-300 flex flex-col justify-center items-center text-[8pt] leading-tight">
                 <p className="font-bold text-center truncate w-full">{item.name}</p>

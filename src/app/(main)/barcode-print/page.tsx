@@ -28,6 +28,7 @@ import { useLocation } from '@/components/location-provider';
 import { fetcher } from '@/lib/api';
 import { Checkbox } from '@/components/ui/checkbox';
 import Image from 'next/image';
+import { Label } from '@/components/ui/label';
 
 interface ProductWithVariants extends Product {
   variants: ProductVariant[];
@@ -46,6 +47,7 @@ export default function BarcodePrintPage() {
   const [products, setProducts] = useState<ProductWithVariants[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedVariants, setSelectedVariants] = useState<SelectableVariant[]>([]);
+  const [bypassFirstSpace, setBypassFirstSpace] = useState(false);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
   const { company_id } = useLocation();
@@ -111,7 +113,8 @@ export default function BarcodePrintPage() {
         return;
     }
     const dataToPrint = encodeURIComponent(JSON.stringify(selectedVariants));
-    window.open(`/barcode-print/print?data=${dataToPrint}`, '_blank');
+    const bypassParam = bypassFirstSpace ? '&bypass=true' : '';
+    window.open(`/barcode-print/print?data=${dataToPrint}${bypassParam}`, '_blank');
   };
 
   return (
@@ -123,10 +126,16 @@ export default function BarcodePrintPage() {
             Select products and variants to print barcode labels.
           </p>
         </div>
-        <Button onClick={handlePrint} disabled={selectedVariants.length === 0}>
-          <Printer className="mr-2 h-4 w-4" />
-          Print Selected ({selectedVariants.length})
-        </Button>
+        <div className="flex items-center gap-4">
+           <div className="flex items-center space-x-2">
+                <Checkbox id="bypass-space" checked={bypassFirstSpace} onCheckedChange={(checked) => setBypassFirstSpace(!!checked)} />
+                <Label htmlFor="bypass-space">Bypass first space</Label>
+            </div>
+            <Button onClick={handlePrint} disabled={selectedVariants.length === 0}>
+                <Printer className="mr-2 h-4 w-4" />
+                Print Selected ({selectedVariants.length})
+            </Button>
+        </div>
       </div>
 
       <Card>
