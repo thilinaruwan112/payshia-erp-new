@@ -11,6 +11,7 @@ import { useLocation } from '@/components/location-provider';
 import { useToast } from '@/hooks/use-toast';
 import { fetcher } from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { useCurrency } from '@/components/currency-provider';
 
 export default function StewardDashboard() {
   const [tables, setTables] = useState<TableType[]>([]);
@@ -19,6 +20,7 @@ export default function StewardDashboard() {
   const { company_id, currentLocation } = useLocation();
   const { toast } = useToast();
   const router = useRouter();
+  const { currencySymbol } = useCurrency();
 
   useEffect(() => {
     async function fetchData() {
@@ -61,7 +63,7 @@ export default function StewardDashboard() {
     if (activeOrder) {
         // If there's an active order, go to the POS and maybe auto-load it (future feature)
         // For now, we can just navigate to the POS page.
-        router.push(`/pos-system`);
+        router.push(`/pos-system?orderId=${activeOrder.invoice_number}`);
     } else {
         // If the table is free, navigate to POS and signal to create a new order for this table.
         router.push(`/pos-system?newOrder=dine-in&table=${table.table_name}`);
