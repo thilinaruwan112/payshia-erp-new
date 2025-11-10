@@ -9,7 +9,7 @@ export default function PrintLayout({
 }>) {
   return (
       <CurrencyProvider>
-        <main className="flex items-center h-[100vh] justify-center font-[Poppins] print:bg-white print:text-black">
+        <main className="bg-gray-100 flex items-start justify-center p-4 sm:p-8 font-[Poppins] print:bg-white print:text-black print:p-0">
             {children}
         </main>
       </CurrencyProvider>
