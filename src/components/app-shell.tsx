@@ -64,6 +64,7 @@ import {
   Ban,
   Percent,
   Barcode,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -139,6 +140,7 @@ const iconMap: { [key: string]: React.ElementType } = {
   'goods-requisition': FileText,
   'stock-adjustment': ArrowRightLeft,
   'opening-stock': PackagePlus,
+  'stock-take': ClipboardCheck,
   'ai-forecast': TrendingUp,
   'barcode-print': Barcode,
   production: ClipboardList,
