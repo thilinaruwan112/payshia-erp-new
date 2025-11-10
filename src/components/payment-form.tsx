@@ -40,7 +40,7 @@ import React, { useEffect, useState } from "react";
 import { useCurrency } from "./currency-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Checkbox } from "./ui/checkbox";
-import { fetcher } from '@/lib/api';
+import { fetcher } from "@/lib/api";
 import { useLocation } from "./location-provider";
 import { ScrollArea } from "./ui/scroll-area";
 import { Badge } from "./ui/badge";
@@ -70,6 +70,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
   const [dueGrns, setDueGrns] = useState<DueGrn[]>([]);
   const [isFetchingGrns, setIsFetchingGrns] = useState(false);
   const { company_id } = useLocation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -139,13 +140,68 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
   }, [selectedGrnIds, dueGrns, form]);
 
 
-  function onSubmit(data: PaymentFormValues) {
-    console.log(data);
-    toast({
-      title: "Payment Recorded",
-      description: `The payment has been saved.`,
+  async function onSubmit(data: PaymentFormValues) {
+    if (!company_id) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No company selected.' });
+        return;
+    }
+    setIsSubmitting(true);
+
+    const paymentPromises = data.grnIds.map(grnId => {
+        const grn = dueGrns.find(g => g.id === grnId);
+        if (!grn) return Promise.reject(new Error(`Could not find details for GRN ID ${grnId}`));
+        
+        const payload = {
+            company_id: company_id,
+            grn_number: grn.grn_number,
+            suppliar_id: parseInt(data.supplierId, 10),
+            date_of_payment: format(data.date, "yyyy-MM-dd"),
+            total_amount: grn.dueAmount,
+            is_active: 1,
+        };
+        
+        return fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliar_payment`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
     });
-    router.push('/suppliers/payments');
+
+    try {
+        const responses = await Promise.all(paymentPromises);
+        let allOk = true;
+        for (const response of responses) {
+            if (!response.ok) {
+                allOk = false;
+                const errorData = await response.json();
+                toast({
+                    variant: "destructive",
+                    title: "A Payment Failed",
+                    description: errorData.message || `An error occurred for one of the payments.`,
+                });
+            }
+        }
+
+        if (allOk) {
+            toast({
+                title: "Payments Recorded Successfully",
+                description: `All selected payments have been processed.`,
+            });
+            router.push('/suppliers/payments');
+            router.refresh();
+        } else {
+            throw new Error("One or more payments failed to process. Please check the list and try again.");
+        }
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: "destructive",
+            title: "Failed to Process Payments",
+            description: errorMessage,
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
 
 
@@ -158,8 +214,11 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
                  <p className="text-muted-foreground">Record a payment made to a supplier against received goods.</p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full">Cancel</Button>
-                <Button type="submit" className="w-full">Save Payment</Button>
+                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isSubmitting}>Cancel</Button>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Payment
+                </Button>
             </div>
         </div>
 
@@ -206,7 +265,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
                             control={form.control}
                             name="grnIds"
                             render={() => (
-                                <ScrollArea className="h-80 border rounded-md">
+                                <ScrollArea className="h-72 border rounded-md">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
