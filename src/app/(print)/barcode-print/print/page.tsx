@@ -4,6 +4,7 @@
 import { Suspense } from 'react';
 import { useSearchParams, notFound } from 'next/navigation';
 import Image from 'next/image';
+import React from 'react';
 
 interface BarcodeItem {
     id: string;
