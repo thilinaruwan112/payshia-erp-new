@@ -46,6 +46,12 @@ const nextConfig: NextConfig = {
         hostname: 'i.pravatar.cc',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'barcode.tec-it.com',
+        port: '',
+        pathname: '/**',
       }
     ],
   },
