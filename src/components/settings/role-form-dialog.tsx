@@ -65,13 +65,13 @@ export function RoleFormDialog({ children, onRoleCreated }: RoleFormDialogProps)
     setIsLoading(true);
 
     const payload = {
-      ...data,
-      company_id: company_id,
-      created_by: 'admin' // Placeholder for user ID
+      name: data.name,
+      description: data.description || "",
+      company_id: company_id
     };
     
     try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/roles`, {
+        const response = await fetcher(`https://qa-server-erp.payshia.com/roles`, {
             method: 'POST',
             body: JSON.stringify(payload)
         });
@@ -79,6 +79,12 @@ export function RoleFormDialog({ children, onRoleCreated }: RoleFormDialogProps)
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Failed to create role.');
+        }
+        
+        const result = await response.json();
+
+        if (result.status !== 'success') {
+          throw new Error(result.message || 'API did not return a success status.');
         }
 
         toast({
