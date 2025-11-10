@@ -2,7 +2,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import * as z from "zod";
 import {
   Form,
@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Account, PurchaseOrder, Supplier, GoodsReceivedNote } from "@/lib/types";
+import type { GoodsReceivedNote, Supplier } from "@/lib/types";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
@@ -41,6 +41,7 @@ import { useCurrency } from "./currency-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Checkbox } from "./ui/checkbox";
 import { fetcher } from '@/lib/api';
+import { useLocation } from "./location-provider";
 
 const paymentFormSchema = z.object({
   date: z.date({ required_error: "A date is required." }),
@@ -66,6 +67,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
   const { currencySymbol } = useCurrency();
   const [dueGrns, setDueGrns] = useState<DueGrn[]>([]);
   const [isFetchingGrns, setIsFetchingGrns] = useState(false);
+  const { company_id } = useLocation();
   
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
@@ -88,14 +90,29 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
         form.setValue('grnIds', []);
         form.setValue('amount', 0);
         try {
-            // In a real app, this endpoint would return only GRNs with a balance due
+            if (!company_id) throw new Error("Company ID not found.");
+            
             const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn`);
             if (!response.ok) throw new Error('Failed to fetch GRNs');
             const allGrns: GoodsReceivedNote[] = await response.json();
-            const supplierGrns = allGrns
-                .filter(grn => grn.supplier_id === id)
-                .map(grn => ({ ...grn, dueAmount: parseFloat(grn.grand_total) })); // Mock due amount
-            setDueGrns(supplierGrns);
+            const supplierGrns = allGrns.filter(grn => grn.supplier_id === id);
+
+            const grnsWithDueAmount = await Promise.all(
+                supplierGrns.map(async (grn) => {
+                    const paymentSumUrl = `https://qa-server-erp.payshia.com/suppliar_payment/sum?company_id=${company_id}&grn_number=${grn.grn_number}&suppliar_id=${id}`;
+                    const paymentResponse = await fetcher(paymentSumUrl);
+                    let paidAmount = 0;
+                    if (paymentResponse.ok) {
+                        const paymentData = await paymentResponse.json();
+                        paidAmount = paymentData.total_amount_sum || 0;
+                    }
+                    const dueAmount = parseFloat(grn.grand_total) - paidAmount;
+                    return { ...grn, dueAmount: dueAmount > 0 ? dueAmount : 0 };
+                })
+            );
+
+            setDueGrns(grnsWithDueAmount.filter(grn => grn.dueAmount > 0));
+
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch due GRNs for supplier.' });
         } finally {
@@ -107,7 +124,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
     } else {
         setDueGrns([]);
     }
-  }, [supplierId, toast, form]);
+  }, [supplierId, toast, form, company_id]);
 
 
   useEffect(() => {
@@ -192,7 +209,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
                                             <TableHead className="w-[50px]"></TableHead>
                                             <TableHead>GRN Number</TableHead>
                                             <TableHead>Date</TableHead>
-                                            <TableHead className="text-right">Total Amount</TableHead>
+                                            <TableHead className="text-right">Balance Due</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
