@@ -16,6 +16,7 @@ import { OrderPanel, type OrderInfo } from '@/components/pos/order-panel';
 import { AddToCartDialog } from '@/components/pos/add-to-cart-dialog';
 import { format } from 'date-fns';
 import { openCenteredPopup } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface ProductWithVariantsResponse {
     product: Product;
@@ -180,7 +181,7 @@ export default function StewardDashboard() {
   
    const orderTotals = useMemo((): OrderInfo => {
     if (!activeOrder || !currentLocation) return { subtotal: 0, serviceCharge: 0, tdl: 0, sscl: 0, vat: 0, discount: 0, itemDiscounts: 0, total: 0 };
-    const { cart, discount } = activeOrder;
+    const { cart, discount, orderType } = activeOrder;
     const { service_charge_status, tdl_status, sscl_status, vat_status } = currentLocation;
     let subtotal = 0; let itemDiscounts = 0;
     for (const item of cart) {
@@ -412,5 +413,7 @@ export default function StewardDashboard() {
     </div>
   );
 }
+
+    
 
     
