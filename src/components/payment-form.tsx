@@ -42,6 +42,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Checkbox } from "./ui/checkbox";
 import { fetcher } from '@/lib/api';
 import { useLocation } from "./location-provider";
+import { ScrollArea } from "./ui/scroll-area";
+import { Badge } from "./ui/badge";
 
 const paymentFormSchema = z.object({
   date: z.date({ required_error: "A date is required." }),
@@ -92,7 +94,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
         try {
             if (!company_id) throw new Error("Company ID not found.");
             
-            const response = await fetcher(`https://qa-server-erp.payshia.com/grn/supplier/${id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/grn/supplier/${id}`);
             if (!response.ok) throw new Error('Failed to fetch GRNs for this supplier.');
             
             const grnData = await response.json();
@@ -100,7 +102,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
 
             const grnsWithDueAmount = await Promise.all(
                 supplierGrns.map(async (grn) => {
-                    const paymentSumUrl = `https://qa-server-erp.payshia.com/suppliar_payment/sum?company_id=${company_id}&grn_number=${grn.grn_number}&suppliar_id=${id}`;
+                    const paymentSumUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliar_payment/sum?company_id=${company_id}&grn_number=${grn.grn_number}&suppliar_id=${id}`;
                     const paymentResponse = await fetcher(paymentSumUrl);
                     let paidAmount = 0;
                     if (paymentResponse.ok) {
@@ -204,12 +206,15 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
                             control={form.control}
                             name="grnIds"
                             render={() => (
+                                <ScrollArea className="h-80 border rounded-md">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead className="w-[50px]"></TableHead>
                                             <TableHead>GRN Number</TableHead>
                                             <TableHead>Date</TableHead>
+                                            <TableHead>Payment Status</TableHead>
+                                            <TableHead className="text-right">Total Amount</TableHead>
                                             <TableHead className="text-right">Balance Due</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -237,6 +242,12 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
                                                         </TableCell>
                                                         <TableCell className="font-medium">{grn.grn_number}</TableCell>
                                                         <TableCell>{format(new Date(grn.created_at), 'dd MMM, yyyy')}</TableCell>
+                                                        <TableCell>
+                                                            <Badge variant={grn.payment_status === 'Unpaid' ? 'destructive' : 'secondary'}>
+                                                                {grn.payment_status}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(grn.grand_total).toFixed(2)}</TableCell>
                                                         <TableCell className="text-right font-mono">{currencySymbol}{grn.dueAmount.toFixed(2)}</TableCell>
                                                     </TableRow>
                                                 )}
@@ -244,6 +255,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
                                         ))}
                                     </TableBody>
                                 </Table>
+                                </ScrollArea>
                             )}
                         />
                     ) : (
@@ -263,7 +275,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
                     control={form.control}
                     name="date"
                     render={({ field }) => (
-                        <FormItem className="flex flex-col">
+                        <FormItem className="flex flex-col justify-end">
                         <FormLabel>Date of Payment</FormLabel>
                         <Popover>
                             <PopoverTrigger asChild>
