@@ -274,7 +274,7 @@ export function PaymentForm({ suppliers }: PaymentFormProps) {
                             render={() => (
                                 <ScrollArea className="h-72 border rounded-md">
                                 <Table>
-                                    <TableHeader>
+                                    <TableHeader className="sticky top-0 bg-background z-10">
                                         <TableRow>
                                             <TableHead className="w-[50px]"></TableHead>
                                             <TableHead>GRN Number</TableHead>
