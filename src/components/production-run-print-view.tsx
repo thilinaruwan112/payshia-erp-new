@@ -73,7 +73,7 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
       if (!id) return;
       setIsLoading(true);
       try {
-        const runResponse = await fetcher(`https://qa-server-erp.payshia.com/mission-plus/${id}`);
+        const runResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/mission-plus/${id}`);
 
         if (!runResponse.ok) {
            if (runResponse.status === 404) notFound();
@@ -258,4 +258,3 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
     </div>
   );
 }
-

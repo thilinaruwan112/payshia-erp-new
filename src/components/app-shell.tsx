@@ -557,7 +557,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         setIsLoadingNav(true);
         try {
             const [pagesResponse, permsResponse] = await Promise.all([
-                fetcher('https://qa-server-erp.payshia.com/pages'),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/pages`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/role-permissions/by-role/`, {
                     method: 'POST',
                     body: JSON.stringify({ role_id: parseInt(user.roleId, 10), company_id: company_id })
