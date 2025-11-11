@@ -23,13 +23,6 @@ interface Company {
     company_telephone: string;
 }
 
-// Extend the Window interface for JSPrintManager
-declare global {
-  interface Window {
-      JSPM: any;
-  }
-}
-
 function GuestReceiptContent() {
   const { id } = useParams() as { id: string };
   const searchParams = useSearchParams();
@@ -43,7 +36,6 @@ function GuestReceiptContent() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [isJspmConnected, setIsJspmConnected] = useState(false);
   const companyId = searchParams.get('company_id');
 
    useEffect(() => {
@@ -115,78 +107,10 @@ function GuestReceiptContent() {
     fetchInvoiceData();
   }, [id, companyId, toast]);
 
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && !window.JSPM) {
-      const script = document.createElement('script');
-      script.src = "https://unpkg.com/jsprintmanager/JSPrintManager.js";
-      script.async = true;
-      document.body.appendChild(script);
-    }
-
-    const initJSPM = () => {
-        if(window.JSPM) {
-            try {
-                window.JSPM.JSPrintManager.auto_reconnect = true;
-                window.JSPM.JSPrintManager.start();
-                window.JSPM.JSPrintManager.WS.onOpen = () => setIsJspmConnected(true);
-                window.JSPM.JSPrintManager.WS.onClose = () => setIsJspmConnected(false);
-            } catch (error) {
-                console.error("Failed to start JSPM:", error);
-            }
-        }
-    }
-    setTimeout(initJSPM, 500);
-  }, []);
-
-  const handlePrint = async () => {
+  const handlePrint = () => {
     if (!receiptRef.current) return;
-    
-    const printAndClose = () => {
-        window.print();
-        setTimeout(() => window.close(), 100);
-    }
-    
-    if (!window.JSPM || !isJspmConnected) {
-        console.warn("JSPM not ready or not connected. Falling back to browser print.");
-        printAndClose();
-        return;
-    }
-
-    try {
-        const element = receiptRef.current;
-        const canvas = await html2canvas(element, { scale: 2, backgroundColor: null });
-
-        const b64Prefix = "data:image/png;base64,";
-        const imgBase64DataUri = canvas.toDataURL("image/png");
-        const imgBase64Content = imgBase64DataUri.substring(b64Prefix.length);
-
-        const { ClientPrintJob, InstalledPrinter, PrintFile, FileSourceType } = window.JSPM;
-
-        const cpj = new ClientPrintJob();
-        const myPrinter = new InstalledPrinter("Microsoft Print to PDF"); 
-        
-        cpj.clientPrinter = myPrinter;
-
-        const myImageFile = new PrintFile(
-            imgBase64Content,
-            FileSourceType.Base64,
-            `GR-${invoice?.invoice_number}.png`,
-            1
-        );
-        cpj.files.push(myImageFile);
-
-        cpj.sendToClient();
-
-        setTimeout(() => {
-            // window.close();
-        }, 3000);
-
-    } catch (error) {
-        console.error("Printing error:", error);
-        alert("An error occurred while printing. Falling back to browser print.");
-        printAndClose();
-    }
+    window.print();
+    setTimeout(() => window.close(), 100);
   };
 
   useEffect(() => {
@@ -194,7 +118,7 @@ function GuestReceiptContent() {
       document.title = `Guest Receipt - ${invoice.invoice_number}`;
       handlePrint();
     }
-  }, [isLoading, invoice, isJspmConnected]);
+  }, [isLoading, invoice]);
 
   const getOrderTypeOrTable = (tableId: string) => {
     if (parseInt(tableId, 10) > 0) {
@@ -257,16 +181,20 @@ function GuestReceiptContent() {
   
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-  const subtotal = (invoice.items || []).reduce((acc, item) => {
-    const itemPrice = parseFloat(String(item.item_price));
-    const quantity = parseFloat(String(item.quantity));
-    const inclusivePrice = calculateInclusivePrice(itemPrice);
-    return acc + (inclusivePrice * quantity);
-  }, 0);
-
   const totalDiscount = parseFloat(invoice.discount_amount);
-  const grandTotal = subtotal - totalDiscount;
+  
+  const adjustedItems = (invoice.items || []).map(item => {
+    const basePrice = parseFloat(String(item.item_price));
+    const inclusivePrice = calculateInclusivePrice(basePrice);
+    const displayPrice = inclusivePrice * 0.9;
+    const quantity = parseFloat(String(item.quantity));
+    const lineTotal = displayPrice * quantity;
+    return { ...item, displayPrice, lineTotal };
+  });
 
+  const subtotal = adjustedItems.reduce((acc, item) => acc + item.lineTotal, 0);
+  const serviceCharge = subtotal * 0.1; // 10% of the new subtotal
+  const grandTotal = subtotal + serviceCharge - totalDiscount;
   
   const itemCount = invoice.items?.length || 0;
   const totalQuantity = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
@@ -281,7 +209,7 @@ function GuestReceiptContent() {
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
-          {logoUrl && <Image src={logoUrl} alt="logo" width={100} height={100} className="mx-auto my-1" priority />}
+          {logoUrl && <Image src={logoUrl} alt="logo" width={100} height={50} className="mx-auto my-1" priority />}
           <p>{location?.location_name}</p>
           <p>{location?.address_line1}, {location?.city}</p>
           <p>Tel: {location?.phone_1}</p>
@@ -311,13 +239,13 @@ function GuestReceiptContent() {
             </tr>
           </thead>
           <tbody>
-            {(invoice.items || []).map((item: InvoiceItem, index: number) => {
+            {adjustedItems.map((item, index) => {
               const basePrice = parseFloat(String(item.item_price));
+              const inclusivePrice = calculateInclusivePrice(basePrice);
               const itemDiscount = parseFloat(String(item.item_discount)) || 0;
+              const displayPrice = item.displayPrice;
+              const ourPrice = displayPrice - (itemDiscount / item.quantity); // Distribute item discount
               const quantity = parseFloat(String(item.quantity));
-              
-              const markedPrice = calculateInclusivePrice(basePrice);
-              const ourPrice = markedPrice - itemDiscount;
               const lineTotal = ourPrice * quantity;
               
               return (
@@ -327,7 +255,7 @@ function GuestReceiptContent() {
                     </tr>
                     <tr>
                         <td></td>
-                        <td className="text-left">{markedPrice.toFixed(2)}</td>
+                        <td className="text-left">{inclusivePrice.toFixed(2)}</td>
                         <td className="text-center">{ourPrice.toFixed(2)}</td>
                         <td className="text-right">{quantity.toFixed(2)}</td>
                         <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
@@ -345,12 +273,16 @@ function GuestReceiptContent() {
             <span>{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
+            <span>Service Charge:</span>
+            <span>{serviceCharge.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
             <span>Total Discount:</span>
             <span>-{totalDiscount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
             <span>TOTAL:</span>
-            <span>{grandTotal.toFixed(2)}</span>
+            <span>{grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
 
@@ -374,7 +306,7 @@ function GuestReceiptContent() {
             <p>0770481363 | www.payshia.com</p>
         </div>
       </div>
-      <Button className="w-full mt-2 print:hidden max-w-[80mm]" onClick={() => window.print()}>Print</Button>
+      <Button className="w-full mt-2 print:hidden max-w-[80mm]" onClick={handlePrint}>Print</Button>
     </div>
   );
 }
