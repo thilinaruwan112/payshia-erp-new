@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { fetcher } from '@/lib/api';
 import { Skeleton } from '../ui/skeleton';
 import Link from 'next/link';
+import { RoleFormDialog } from './role-form-dialog';
 
 export function RoleManagement() {
   const [roles, setRoles] = useState<Role[]>([]);
@@ -32,40 +33,41 @@ export function RoleManagement() {
   const { company_id } = useLocation();
   const { toast } = useToast();
   
-  useEffect(() => {
-    async function fetchRoles() {
-      if (!company_id) {
-        setIsLoading(false);
-        return;
-      }
-      setIsLoading(true);
-      try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/roles?company_id=${company_id}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch roles');
-        }
-        const result = await response.json();
-        if (result.status === 'success') {
-          // Initialize userCount for client-side state
-          const formattedRoles = result.data.map((role: any) => ({
-            ...role,
-            userCount: 0, // API doesn't provide this, so we default it
-          }));
-          setRoles(formattedRoles);
-        } else {
-          throw new Error(result.message || 'API did not return a success status.');
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-        toast({
-          variant: 'destructive',
-          title: 'Error loading roles',
-          description: errorMessage,
-        });
-      } finally {
-        setIsLoading(false);
-      }
+  const fetchRoles = async () => {
+    if (!company_id) {
+      setIsLoading(false);
+      return;
     }
+    setIsLoading(true);
+    try {
+      const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/roles?company_id=${company_id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch roles');
+      }
+      const result = await response.json();
+      if (result.status === 'success') {
+        // Initialize userCount for client-side state
+        const formattedRoles = result.data.map((role: any) => ({
+          ...role,
+          userCount: 0, // API doesn't provide this, so we default it
+        }));
+        setRoles(formattedRoles);
+      } else {
+        throw new Error(result.message || 'API did not return a success status.');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+      toast({
+        variant: 'destructive',
+        title: 'Error loading roles',
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
     fetchRoles();
   }, [company_id, toast]);
 
@@ -78,10 +80,12 @@ export function RoleManagement() {
                  <CardTitle>All Roles</CardTitle>
                 <CardDescription>A list of all user roles in your company.</CardDescription>
             </div>
-            <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                New Role
-            </Button>
+            <RoleFormDialog onRoleCreated={fetchRoles}>
+                <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    New Role
+                </Button>
+            </RoleFormDialog>
         </div>
       </CardHeader>
       <CardContent>

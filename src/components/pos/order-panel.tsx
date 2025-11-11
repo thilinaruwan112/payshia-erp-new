@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import type { CartItem, OrderInfo, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
+import type { CartItem, ActiveOrder, StockInfo } from '@/app/(pos)/pos-system/page';
 import type { User, Table as TableType, Location, Invoice, Customer, PaymentMethod } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,6 +22,7 @@ import {
   CheckCircle,
   ArrowRight,
   User as UserIcon,
+  Send,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -48,6 +49,17 @@ import { PayshiaPosLogo } from './payshia-pos-logo';
 import { CustomerPanel } from './customer-panel';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
+export interface OrderInfo {
+  subtotal: number;
+  serviceCharge: number;
+  discount: number; // Order-level discount
+  itemDiscounts: number; // Sum of all item-level discounts
+  total: number;
+  tdl: number;
+  sscl: number;
+  vat: number;
+};
+
 interface OrderPanelProps {
   order: ActiveOrder;
   orderTotals: OrderInfo;
@@ -69,6 +81,7 @@ interface OrderPanelProps {
   customers: User[];
   onUpdateCustomer: (orderId: string, customer: Customer) => void;
   onCustomerCreated: (newCustomer: User) => void;
+  showInclusivePriceOnly?: boolean;
 }
 
 type Receipt = {
@@ -432,7 +445,8 @@ export function OrderPanel({
   availableStewards,
   customers,
   onUpdateCustomer,
-  onCustomerCreated
+  onCustomerCreated,
+  showInclusivePriceOnly = false
 }: OrderPanelProps) {
   const { toast } = useToast();
   const { company_id } = useLocation();
@@ -443,6 +457,34 @@ export function OrderPanel({
   const [successData, setSuccessData] = useState<SuccessData | null>(null);
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType, tableName } = order;
+
+  const calculateInclusivePrice = (basePrice: number) => {
+    if (!currentLocation) return basePrice;
+
+    let serviceCharge = 0;
+    if (orderType === 'Dine-In' && currentLocation.service_charge_status === 'Enabled' && isServiceChargeActive) {
+        serviceCharge = basePrice * 0.10;
+    }
+    
+    let tdl = 0;
+    if (currentLocation.tdl_status === 'Enabled') {
+      tdl = (basePrice + serviceCharge) * 0.01;
+    }
+
+    const baseForSscl = basePrice + serviceCharge;
+    let sscl = 0;
+    if (currentLocation.sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+    
+    const baseForVat = baseForSscl + tdl + sscl;
+    let vat = 0;
+    if (currentLocation.vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
+    return basePrice + serviceCharge + tdl + sscl + vat;
+  }
 
   const handleSuccessfulPayment = async (paymentMethodId: string, tenderedAmount: number, isCredit: boolean) => {
     
@@ -588,6 +630,8 @@ export function OrderPanel({
     setSuccessData(null);
   };
   
+  const isStewardScreen = window.location.pathname.includes('steward-dashboard');
+
   return (
     <div className="flex flex-col h-full bg-card">
       <SuccessDialog successData={successData} onClose={handleCloseSuccess} />
@@ -638,7 +682,7 @@ export function OrderPanel({
                   <div className="flex-1 flex flex-col">
                     <span className="font-semibold">{item.product.variantName}</span>
                     <span className="text-muted-foreground text-sm">
-                      {currencySymbol}{(item.product.price as number).toFixed(2)}
+                      {currencySymbol}{showInclusivePriceOnly ? calculateInclusivePrice(item.product.price as number).toFixed(2) : (item.product.price as number).toFixed(2)}
                     </span>
                     <Badge variant="outline" className="w-fit text-xs mt-1">
                         Batch: {item.batch.patch_code}
@@ -690,7 +734,7 @@ export function OrderPanel({
           <span>-{currencySymbol}{orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
         
-        {currentLocation?.service_charge_status === 'Enabled' && orderType === 'Dine-In' && (
+        {currentLocation?.service_charge_status === 'Enabled' && orderType === 'Dine-In' && !showInclusivePriceOnly && (
              <div className="flex justify-between text-sm items-center">
                 <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
                     <Switch
@@ -703,19 +747,19 @@ export function OrderPanel({
                 <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
             </div>
         )}
-        {orderTotals.tdl > 0 && (
+        {orderTotals.tdl > 0 && !showInclusivePriceOnly && (
              <div className="flex justify-between text-sm">
                 <span>TDL (1%)</span>
                 <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
             </div>
         )}
-         {orderTotals.sscl > 0 && (
+         {orderTotals.sscl > 0 && !showInclusivePriceOnly && (
              <div className="flex justify-between text-sm">
                 <span>SSCL (2.5%)</span>
                 <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
             </div>
         )}
-         {orderTotals.vat > 0 && (
+         {orderTotals.vat > 0 && !showInclusivePriceOnly && (
              <div className="flex justify-between text-sm">
                 <span>VAT (18%)</span>
                 <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
@@ -732,40 +776,48 @@ export function OrderPanel({
           <span>{currencySymbol}{orderTotals.total.toFixed(2)}</span>
         </div>
         
-        <div className="grid grid-cols-2 gap-2 pt-2">
-             <Dialog open={isDiscountOpen} onOpenChange={setDiscountOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="h-12">
-                  <TicketPercent className="mr-2 h-4 w-4" /> Order Discount
-                </Button>
-              </DialogTrigger>
-              <DiscountDialog setDiscount={setDiscount} onClose={() => setDiscountOpen(false)} />
-            </Dialog>
-             <Button variant="outline" onClick={onHoldAndKitchen} disabled={cart.length === 0} className="h-12">
-                <Notebook className="mr-2 h-4 w-4" /> Hold
+        {isStewardScreen ? (
+             <Button variant="default" onClick={onHoldAndKitchen} disabled={cart.length === 0} className="w-full h-16 text-lg">
+                <Send className="mr-2 h-5 w-5" /> Send to POS
             </Button>
-             <Button variant="secondary" onClick={handleGuestReceipt} disabled={!order.originalInvoiceNumber} className="h-12">
-                <Receipt className="mr-2 h-4 w-4" /> Guest Receipt
-            </Button>
-            <Button variant="destructive" onClick={() => onClearCart(orderId)} disabled={cart.length === 0} className="h-12">
-                <Trash2 className="mr-2 h-4 w-4" /> Clear Cart
-            </Button>
-        </div>
-        <Dialog open={isPaymentOpen} onOpenChange={setPaymentOpen}>
-        <DialogTrigger asChild>
-            <Button
-            className="w-full h-16 text-lg bg-green-600 hover:bg-green-700 text-white"
-            disabled={cart.length === 0}
-            >
-            <CreditCard className="mr-2 h-5 w-5" /> Proceed to Payment
-            </Button>
-        </DialogTrigger>
-        <PaymentDialog
-            orderTotals={orderTotals}
-            onSuccessfulPayment={handleSuccessfulPayment}
-            paymentMethods={paymentMethods}
-        />
-        </Dialog>
+        ) : (
+            <>
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                    <Dialog open={isDiscountOpen} onOpenChange={setDiscountOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="h-12">
+                        <TicketPercent className="mr-2 h-4 w-4" /> Order Discount
+                        </Button>
+                    </DialogTrigger>
+                    <DiscountDialog setDiscount={setDiscount} onClose={() => setDiscountOpen(false)} />
+                    </Dialog>
+                    <Button variant="outline" onClick={onHoldAndKitchen} disabled={cart.length === 0} className="h-12">
+                        <Notebook className="mr-2 h-4 w-4" /> Hold
+                    </Button>
+                    <Button variant="secondary" onClick={handleGuestReceipt} disabled={!order.originalInvoiceNumber} className="h-12">
+                        <Receipt className="mr-2 h-4 w-4" /> Guest Receipt
+                    </Button>
+                    <Button variant="destructive" onClick={() => onClearCart(orderId)} disabled={cart.length === 0} className="h-12">
+                        <Trash2 className="mr-2 h-4 w-4" /> Clear Cart
+                    </Button>
+                </div>
+                <Dialog open={isPaymentOpen} onOpenChange={setPaymentOpen}>
+                    <DialogTrigger asChild>
+                        <Button
+                        className="w-full h-16 text-lg bg-green-600 hover:bg-green-700 text-white"
+                        disabled={cart.length === 0}
+                        >
+                        <CreditCard className="mr-2 h-5 w-5" /> Proceed to Payment
+                        </Button>
+                    </DialogTrigger>
+                    <PaymentDialog
+                        orderTotals={orderTotals}
+                        onSuccessfulPayment={handleSuccessfulPayment}
+                        paymentMethods={paymentMethods}
+                    />
+                </Dialog>
+            </>
+        )}
       </footer>
     </div>
   );

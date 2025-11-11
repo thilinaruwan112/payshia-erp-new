@@ -63,6 +63,8 @@ import {
   ShieldCheck,
   Ban,
   Percent,
+  Barcode,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -99,7 +101,7 @@ import {
 import { ThemeToggle } from './theme-toggle';
 import { CalculatorModal } from './calculator-modal';
 import { format } from 'date-fns';
-import { useLocation } from '@/components/location-provider';
+import { useLocation } from './location-provider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Skeleton } from './ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -138,7 +140,9 @@ const iconMap: { [key: string]: React.ElementType } = {
   'goods-requisition': FileText,
   'stock-adjustment': ArrowRightLeft,
   'opening-stock': PackagePlus,
+  'stock-take': ClipboardCheck,
   'ai-forecast': TrendingUp,
+  'barcode-print': Barcode,
   production: ClipboardList,
   bom: FileText,
   'production-note': History,

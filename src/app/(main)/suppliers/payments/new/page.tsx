@@ -13,7 +13,6 @@ function NewPaymentPageContent() {
   const { company_id } = useLocation();
   const { toast } = useToast();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
@@ -23,24 +22,17 @@ function NewPaymentPageContent() {
             return;
         }
         try {
-            const [suppliersRes, accountsRes] = await Promise.all([
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/chart-of-accounts/company?company_id=${company_id}`)
-            ]);
+            const suppliersRes = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`);
             if (!suppliersRes.ok) throw new Error('Failed to fetch suppliers');
-            if (!accountsRes.ok) throw new Error('Failed to fetch accounts');
             
             const suppliersData = await suppliersRes.json();
-            const accountsData = await accountsRes.json();
-            
             setSuppliers(suppliersData);
-            setAccounts(accountsData);
 
         } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Error fetching data',
-                description: 'Could not fetch suppliers and accounts.',
+                description: 'Could not fetch suppliers.',
             })
         } finally {
             setIsLoading(false);
@@ -49,8 +41,6 @@ function NewPaymentPageContent() {
     fetchData();
   }, [company_id, toast]);
   
-
-  const paymentAccounts = accounts.filter(acc => acc.type === 'Asset');
 
   if (isLoading) {
     return (
@@ -65,7 +55,6 @@ function NewPaymentPageContent() {
   return (
     <PaymentForm
       suppliers={suppliers}
-      paymentAccounts={paymentAccounts}
     />
   );
 }

@@ -383,8 +383,6 @@ export type Expense = {
     amount: number;
     expenseAccountId: number;
     expenseAccountName: string;
-    paymentAccountId: number;
-    paymentAccountName: string;
 };
 
 export type Payment = {
