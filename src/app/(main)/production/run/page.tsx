@@ -79,7 +79,7 @@ export default function ProductionRunHistoryPage() {
             setIsLoading(true);
             try {
                 const [runsResponse, productsResponse] = await Promise.all([
-                    fetcher(`https://qa-server-erp.payshia.com/mission-plus/company/${company_id}`),
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/mission-plus/company/${company_id}`),
                     fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`)
                 ]);
                 

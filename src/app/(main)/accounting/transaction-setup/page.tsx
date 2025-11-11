@@ -176,7 +176,7 @@ export default function TransactionSetupPage() {
             try {
                 const [accountsRes, settingsRes] = await Promise.all([
                     fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/finance-accounts?company_id=${company_id}`),
-                    fetcher(`https://qa-server-erp.payshia.com/transaction-setup?company_id=${company_id}`)
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-setup?company_id=${company_id}`)
                 ]);
                 
                 if (!accountsRes.ok) throw new Error('Failed to fetch chart of accounts');
@@ -243,7 +243,7 @@ export default function TransactionSetupPage() {
         };
         
         try {
-            const response = await fetcher(`https://qa-server-erp.payshia.com/transaction-setup`, {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/transaction-setup`, {
                 method: 'POST',
                 body: JSON.stringify(payload),
             });

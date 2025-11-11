@@ -323,7 +323,7 @@ export function ProductionRunForm() {
     };
 
     try {
-        const response = await fetcher('https://qa-server-erp.payshia.com/mission-plus', {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/mission-plus`, {
             method: 'POST',
             body: JSON.stringify(payload),
         });
