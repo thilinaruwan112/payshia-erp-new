@@ -71,7 +71,7 @@ export function RoleFormDialog({ children, onRoleCreated }: RoleFormDialogProps)
     };
     
     try {
-        const response = await fetcher(`https://qa-server-erp.payshia.com/roles`, {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/roles`, {
             method: 'POST',
             body: JSON.stringify(payload)
         });
