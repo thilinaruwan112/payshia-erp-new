@@ -216,7 +216,6 @@ export default function ProductsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[80px] hidden sm:table-cell">Image</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead className="hidden md:table-cell">Status</TableHead>
                   <TableHead className="hidden md:table-cell">Inventory</TableHead>
@@ -230,9 +229,6 @@ export default function ProductsPage() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell className="hidden sm:table-cell">
-                        <Skeleton className="h-16 w-16 rounded-md" />
-                      </TableCell>
                       <TableCell>
                         <Skeleton className="h-4 w-48" />
                       </TableCell>
@@ -258,16 +254,6 @@ export default function ProductsPage() {
                     
                     return (
                       <TableRow key={product.id}>
-                        <TableCell className="hidden sm:table-cell">
-                          <Image
-                            alt={product.name}
-                            className="aspect-square rounded-md object-cover"
-                            src={product.frontImageUrl || "https://placehold.co/64x64.png"}
-                            width={64}
-                            height={64}
-                            data-ai-hint="product photo"
-                          />
-                        </TableCell>
                         <TableCell>
                           <div className="font-medium">{product.name}</div>
                           <div className="text-sm text-muted-foreground lg:hidden">{product.category}</div>
@@ -344,6 +330,7 @@ export default function ProductsPage() {
     </>
   );
 }
+
 
 
 
