@@ -137,7 +137,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
         setAvailableProducts([]);
       } finally {
         setIsLoadingProducts(false);
-        append({ product_id: '', product_variant_id: '', quantity: 1, order_rate: 0 });
+        append({ product_id: '', product_variant_id: '', quantity: 1, order_rate: 0, order_unit: 'Nos', is_active: 1 });
       }
     }
     if (supplierId) {
@@ -418,8 +418,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                                             value={field.value}
                                                             onChange={(value) => {
                                                                 field.onChange(value);
-                                                                const selected = availableProducts.find(p => p.product.id === value);
-                                                                form.setValue(`items.${index}.order_rate`, parseFloat(selected?.product.cost_price as string) || 0);
+                                                                form.setValue(`items.${index}.order_rate`, 0);
                                                                 form.setValue(`items.${index}.product_variant_id`, ''); // Reset variant
                                                             }}
                                                             placeholder="Select a product..."
@@ -440,7 +439,12 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                                                         <Combobox
                                                             options={variantOptions}
                                                             value={field.value}
-                                                            onChange={field.onChange}
+                                                            onChange={(value) => {
+                                                                field.onChange(value);
+                                                                const variant = productData?.variants.find(v => v.variant.id === value)?.variant;
+                                                                const costPrice = variant?.cost_price ? parseFloat(String(variant.cost_price)) : 0;
+                                                                form.setValue(`items.${index}.order_rate`, costPrice);
+                                                            }}
                                                             placeholder="Select a variant..."
                                                             notFoundText="No variant found."
                                                             disabled={!selectedProductId}
