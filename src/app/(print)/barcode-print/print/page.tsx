@@ -48,17 +48,17 @@ function BarcodePrintContent() {
             <div style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border-none"></div>
         )}
         {itemsToPrint.map((item, index) => (
-            <div key={`${item.id}-${index}`} style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border border-dashed border-gray-300 flex flex-col justify-center items-center text-[7pt] leading-tight overflow-hidden">
+            <div key={`${item.id}-${index}`} style={{ width: itemWidth, height: itemHeight }} className="p-[1.5mm] border border-dashed border-gray-300 flex flex-col justify-between items-center text-[7pt] leading-tight overflow-hidden">
                 <p className="font-semibold text-center truncate w-full">{item.name}</p>
-                <div className="relative w-full text-center my-1">
+                <div className="w-full text-center my-auto">
                   <Image 
-                      src={`https://barcode.tec-it.com/barcode.ashx?data=${item.barcode}&code=Code128&dpi=96&imagetype=Png&hidecaption=true`}
+                      src={`https://barcode.tec-it.com/barcode.ashx?data=${item.barcode}&code=Code128&dpi=96&imagetype=Png`}
                       alt={`Barcode for ${item.sku}`}
                       width={180}
                       height={40}
-                      style={{ height: '10mm', width: '100%', objectFit: 'contain' }}
+                      className="w-full h-auto max-h-[12mm]"
+                      style={{ objectFit: 'contain' }}
                   />
-                   <p className="text-center w-full font-mono text-[6pt] tracking-widest">{item.barcode}</p>
                 </div>
                 {locationName && <p className="font-semibold text-[6pt] text-center w-full truncate">{locationName}</p>}
             </div>
