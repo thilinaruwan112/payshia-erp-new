@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -7,7 +6,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu, LineChart } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu, LineChart, View } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
@@ -870,6 +869,7 @@ useEffect(() => {
                          <Button variant="outline" size="sm" onClick={() => setPendingInvoicesDialogOpen(true)}><Receipt className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Pending</span></Button>
                         <Button variant="outline" size="sm" onClick={() => setReturnDialogOpen(true)}><Undo2 className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Return</span></Button>
                         <Button variant="outline" size="sm" onClick={() => setRefundDialogOpen(true)}><Banknote className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Refund</span></Button>
+                        <Button variant="outline" size="sm"><View className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Switch View</span></Button>
                     </div>
                     <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={() => setHeldOrderDetailsDialogOpen(true)}><NotebookPen className="mr-2 h-4 w-4" />Held Orders</Button>
@@ -881,7 +881,7 @@ useEffect(() => {
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[calc(100vh-250px)]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
                     ) : (
-                        <ProductGrid products={filteredProducts} orderType={currentOrder?.orderType} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} />
+                        <ProductGrid products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} />
                     )}
                     </div>
                     
