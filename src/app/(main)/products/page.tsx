@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -19,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Star, Trash2, UploadCloud } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Star, Trash2, UploadCloud, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Product, InventoryItem, ProductVariant, ProductImage } from '@/lib/types';
 import {
   DropdownMenu,
@@ -33,7 +34,7 @@ import Link from 'next/link';
 import { checkPlanLimit } from '@/lib/plan-limits';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -59,6 +60,8 @@ export default function ProductsPage() {
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
   const { company_id } = useLocation();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const fetchProducts = useCallback(async () => {
     if (!company_id) {
@@ -127,6 +130,13 @@ export default function ProductsPage() {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+  
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return products.slice(startIndex, startIndex + itemsPerPage);
+  }, [products, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(products.length / itemsPerPage);
 
   const handleDelete = async () => {
     if (!selectedProduct) return;
@@ -216,7 +226,6 @@ export default function ProductsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[80px] hidden sm:table-cell">Image</TableHead>
                   <TableHead>Product</TableHead>
                   <TableHead className="hidden md:table-cell">Status</TableHead>
                   <TableHead className="hidden md:table-cell">Inventory</TableHead>
@@ -230,9 +239,6 @@ export default function ProductsPage() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      <TableCell className="hidden sm:table-cell">
-                        <Skeleton className="h-16 w-16 rounded-md" />
-                      </TableCell>
                       <TableCell>
                         <Skeleton className="h-4 w-48" />
                       </TableCell>
@@ -251,23 +257,13 @@ export default function ProductsPage() {
                     </TableRow>
                   ))
                 ) : (
-                  products.map((product) => {
+                  paginatedProducts.map((product) => {
                     const totalStock = (product.variants || []).reduce((sum, variant) => {
                         return sum + (Number(variant.stock) || 0);
                     }, 0);
                     
                     return (
                       <TableRow key={product.id}>
-                        <TableCell className="hidden sm:table-cell">
-                          <Image
-                            alt={product.name}
-                            className="aspect-square rounded-md object-cover"
-                            src={product.frontImageUrl || "https://placehold.co/64x64.png"}
-                            width={64}
-                            height={64}
-                            data-ai-hint="product photo"
-                          />
-                        </TableCell>
                         <TableCell>
                           <div className="font-medium">{product.name}</div>
                           <div className="text-sm text-muted-foreground lg:hidden">{product.category}</div>
@@ -322,6 +318,29 @@ export default function ProductsPage() {
               </TableBody>
             </Table>
           </CardContent>
+          <CardFooter className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardFooter>
         </Card>
       </div>
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
@@ -344,6 +363,8 @@ export default function ProductsPage() {
     </>
   );
 }
+
+
 
 
 
