@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -6,7 +7,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu, LineChart, View } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu, LineChart, View, LayoutGrid, List } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +25,7 @@ import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
 import { CustomerPanel } from '@/components/pos/customer-panel';
+import { ProductList } from '@/components/pos/product-list';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -80,6 +82,7 @@ export default function POSPage() {
   const [isHeldOrderDetailsDialogOpen, setHeldOrderDetailsDialogOpen] = useState(false);
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
   const [isTodaySalesDialogOpen, setTodaySalesDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -504,6 +507,7 @@ useEffect(() => {
         tendered_amount: 0, 
         close_type: 'N/A', 
         invoice_status: '2', // Status for held order
+        payment_status: 'Pending',
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'), 
         location_id: parseInt(currentLocation.location_id, 10), 
         table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0, 
@@ -530,6 +534,9 @@ useEffect(() => {
             printed_status: 0,
             product_variant_id: parseInt(item.product.variant.id, 10),
         })),
+        vat_amount: orderTotals.vat,
+        sscl_tax: orderTotals.sscl,
+        tdl: orderTotals.tdl,
     };
 
     try {
@@ -869,7 +876,10 @@ useEffect(() => {
                          <Button variant="outline" size="sm" onClick={() => setPendingInvoicesDialogOpen(true)}><Receipt className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Pending</span></Button>
                         <Button variant="outline" size="sm" onClick={() => setReturnDialogOpen(true)}><Undo2 className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Return</span></Button>
                         <Button variant="outline" size="sm" onClick={() => setRefundDialogOpen(true)}><Banknote className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Refund</span></Button>
-                        <Button variant="outline" size="sm"><View className="mr-0 sm:mr-2 h-4 w-4" /><span className="hidden sm:inline">Switch View</span></Button>
+                        <Button variant="outline" size="sm" onClick={() => setViewMode(prev => prev === 'grid' ? 'list' : 'grid')}>
+                            {viewMode === 'grid' ? <List className="mr-0 sm:mr-2 h-4 w-4" /> : <LayoutGrid className="mr-0 sm:mr-2 h-4 w-4" />}
+                            <span className="hidden sm:inline">Switch View</span>
+                        </Button>
                     </div>
                     <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={() => setHeldOrderDetailsDialogOpen(true)}><NotebookPen className="mr-2 h-4 w-4" />Held Orders</Button>
@@ -880,8 +890,10 @@ useEffect(() => {
                     <div className="flex-1 p-4 overflow-y-auto">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[calc(100vh-250px)]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
-                    ) : (
+                    ) : viewMode === 'grid' ? (
                         <ProductGrid products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} />
+                    ) : (
+                        <ProductList products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} />
                     )}
                     </div>
                     
@@ -889,7 +901,7 @@ useEffect(() => {
                         <div className="h-full p-2">
                             <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
                             <div className="flex flex-col gap-1">
-                                {allCategories.map(cat => <Button key={cat} variant={activeFilter.type === 'category' && activeFilter.value === cat ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('category', cat)}>{cat}</Button>)}
+                                {categories.map(cat => <Button key={cat.id} variant={activeFilter.type === 'category' && activeFilter.value === cat.name ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('category', cat.name)}>{cat.name}</Button>)}
                             </div>
                             <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 my-2 pt-2 border-t">Collections</h3>
                             <div className="flex flex-col gap-1">

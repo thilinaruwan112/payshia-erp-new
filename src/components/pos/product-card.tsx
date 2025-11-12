@@ -9,52 +9,19 @@ import {
 } from '@/components/ui/card';
 import Image from 'next/image';
 import { useCurrency } from '../currency-provider';
-import type { ActiveOrder, Location } from '@/lib/types';
+import type { Location } from '@/lib/types';
 
 interface ProductCardProps {
   product: PosProduct;
-  orderType: ActiveOrder['orderType'] | undefined;
   onSelect: (product: PosProduct) => void;
   currentLocation: Location | null;
-  showInclusivePriceOnly?: boolean;
 }
 
-export function ProductCard({ product, orderType, onSelect, currentLocation, showInclusivePriceOnly = false }: ProductCardProps) {
+export function ProductCard({ product, onSelect, currentLocation }: ProductCardProps) {
   const { currencySymbol } = useCurrency();
   
   const imageUrl = product.imageUrl || 'https://placehold.co/300x200.png';
-
-  const calculateInclusivePrice = (basePrice: number) => {
-    if (!currentLocation) return basePrice;
-
-    let serviceCharge = 0;
-    if (orderType === 'Dine-In' && currentLocation.service_charge_status === 'Enabled') {
-        serviceCharge = basePrice * 0.10;
-    }
-    
-    let tdl = 0;
-    if (currentLocation.tdl_status === 'Enabled') {
-      tdl = (basePrice + serviceCharge) * 0.01;
-    }
-
-    const baseForSscl = basePrice + serviceCharge;
-    let sscl = 0;
-    if (currentLocation.sscl_status === 'Enabled') {
-      sscl = baseForSscl * 0.025;
-    }
-    
-    const baseForVat = baseForSscl + tdl + sscl;
-    let vat = 0;
-    if (currentLocation.vat_status === 'Enabled') {
-      vat = baseForVat * 0.18;
-    }
-
-    return basePrice + serviceCharge + tdl + sscl + vat;
-  }
-
-  const showInclusivePriceOnPos = orderType === 'Dine-In' || orderType === 'Take Away';
-  const inclusivePrice = calculateInclusivePrice(product.price as number);
-  const displayPrice = showInclusivePriceOnly ? inclusivePrice : (product.price as number);
+  const displayPrice = product.price as number;
 
   return (
     <Card
@@ -75,11 +42,6 @@ export function ProductCard({ product, orderType, onSelect, currentLocation, sho
             <p className="text-sm text-muted-foreground">{product.category}</p>
             <div className="mt-2">
                 <p className="font-bold text-xl">{currencySymbol}{displayPrice.toFixed(2)}</p>
-                {!showInclusivePriceOnly && showInclusivePriceOnPos && (
-                    <p className="text-xs text-muted-foreground font-semibold">
-                        (Incl. Tax: {currencySymbol}{inclusivePrice.toFixed(2)})
-                    </p>
-                )}
             </div>
         </div>
       </CardContent>
