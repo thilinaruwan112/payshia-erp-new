@@ -346,7 +346,7 @@ const DiscountDialog = ({
   };
 
   return (
-    <DialogContent className="max-w-xs">
+    <DialogContent className="w-full sm:max-w-xs">
       <DialogHeader>
         <DialogTitle>Apply Order Discount</DialogTitle>
       </DialogHeader>
@@ -371,14 +371,16 @@ const DiscountDialog = ({
             <Button variant="outline" className="h-14 text-xl" onClick={() => handleNumpadClick('<-')}><Delete /></Button>
         </div>
       </div>
-      <DialogFooter className="grid grid-cols-2 gap-2 mt-4">
-        <Button variant="ghost" className="col-span-2" onClick={() => setIsPercentage(!isPercentage)}>
+      <DialogFooter className="grid grid-cols-1 gap-2 mt-4">
+        <Button variant="ghost" className="w-full" onClick={() => setIsPercentage(!isPercentage)}>
           Switch to {isPercentage ? 'Fixed Amount' : 'Percentage'}
         </Button>
-        <Button variant="outline" onClick={onClose} className="w-full">
-          Cancel
-        </Button>
-        <Button onClick={applyDiscount} className="w-full">Apply Discount</Button>
+        <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={onClose} className="w-full">
+            Cancel
+            </Button>
+            <Button onClick={applyDiscount} className="w-full">Apply Discount</Button>
+        </div>
       </DialogFooter>
     </DialogContent>
   );
@@ -662,7 +664,7 @@ export function OrderPanel({
   };
   
   const isStewardScreen = typeof window !== 'undefined' && window.location.pathname.includes('steward-dashboard');
-  const discountPercentage = orderTotals.subtotal > 0 ? (discount / orderTotals.subtotal) * 100 : 0;
+  const discountPercentage = orderTotals.subtotal > 0 ? (discount / (orderTotals.subtotal - orderTotals.itemDiscounts)) * 100 : 0;
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -854,5 +856,7 @@ export function OrderPanel({
     </div>
   );
 }
+
+    
 
     
