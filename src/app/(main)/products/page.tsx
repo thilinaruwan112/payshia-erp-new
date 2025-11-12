@@ -231,7 +231,7 @@ export default function ProductsPage() {
               <div>
                 <CardTitle>All Products</CardTitle>
                 <CardDescription>
-                  Showing {products.length} of {planDetails.limit === Infinity ? 'unlimited' : planDetails.limit} products.
+                  Showing {paginatedProducts.length} of {filteredProducts.length} products.
                 </CardDescription>
               </div>
               <div className="relative w-full sm:w-80">
