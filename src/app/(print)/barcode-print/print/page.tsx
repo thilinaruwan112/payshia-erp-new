@@ -56,7 +56,7 @@ function BarcodePrintContent() {
                       alt={`Barcode for ${item.sku}`}
                       width={180}
                       height={40}
-                      className="w-full h-auto max-h-[12mm]"
+                      className="w-full h-auto max-h-[14mm]"
                       style={{ objectFit: 'contain' }}
                   />
                 </div>
