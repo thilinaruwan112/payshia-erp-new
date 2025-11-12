@@ -314,40 +314,73 @@ const PaymentDialog = ({
 };
 
 const DiscountDialog = ({
+  orderSubtotal,
   setDiscount,
   onClose,
 }: {
+  orderSubtotal: number;
   setDiscount: (d: number) => void;
   onClose: () => void;
 }) => {
   const { currencySymbol } = useCurrency();
   const [discountValue, setDiscountValue] = React.useState('');
+  const [isPercentage, setIsPercentage] = React.useState(false);
 
   const applyDiscount = () => {
-    setDiscount(Number(discountValue));
+    let finalDiscount = Number(discountValue);
+    if (isPercentage) {
+      finalDiscount = (orderSubtotal * finalDiscount) / 100;
+    }
+    setDiscount(finalDiscount);
     onClose();
   };
 
+  const handleNumpadClick = (value: string) => {
+    if (value === 'C') {
+      setDiscountValue('');
+    } else if (value === '<-') {
+      setDiscountValue((prev) => prev.slice(0, -1));
+    } else {
+      setDiscountValue((prev) => prev + value);
+    }
+  };
+
   return (
-    <DialogContent>
+    <DialogContent className="w-full sm:max-w-xs">
       <DialogHeader>
         <DialogTitle>Apply Order Discount</DialogTitle>
       </DialogHeader>
-      <div className="space-y-2">
-        <Label htmlFor="discount-value">Discount Amount ({currencySymbol})</Label>
+      <div className="space-y-4">
+        <Label htmlFor="discount-value">
+            {isPercentage ? 'Discount Percentage (%)' : `Discount Amount (${currencySymbol})`}
+        </Label>
         <Input
           id="discount-value"
           type="number"
-          placeholder="e.g. 5.00"
+          placeholder="0.00"
           value={discountValue}
           onChange={(e) => setDiscountValue(e.target.value)}
+          className="h-14 text-2xl text-right"
         />
+        <div className="grid grid-cols-3 gap-2">
+            {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map(val => (
+                <Button key={val} variant="outline" className="h-14 text-xl" onClick={() => handleNumpadClick(val)}>{val}</Button>
+            ))}
+            <Button variant="outline" className="h-14 text-xl" onClick={() => handleNumpadClick('.')}>.</Button>
+            <Button variant="outline" className="h-14 text-xl" onClick={() => handleNumpadClick('0')}>0</Button>
+            <Button variant="outline" className="h-14 text-xl" onClick={() => handleNumpadClick('<-')}><Delete /></Button>
+        </div>
       </div>
-      <DialogFooter>
-        <Button variant="outline" onClick={onClose}>
-          Cancel
+      <DialogFooter className="grid grid-cols-1 gap-2 mt-4">
+        <Button variant="ghost" className="w-full" onClick={() => setIsPercentage(!isPercentage)}>
+          Switch to {isPercentage ? 'Fixed Amount' : 'Percentage'}
         </Button>
-        <Button onClick={applyDiscount}>Apply</Button>
+        <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" onClick={onClose} className="w-full">
+            Cancel
+            </Button>
+            <Button onClick={applyDiscount} className="w-full">Apply Discount</Button>
+        </div>
       </DialogFooter>
     </DialogContent>
   );
@@ -630,7 +663,8 @@ export function OrderPanel({
     setSuccessData(null);
   };
   
-  const isStewardScreen = window.location.pathname.includes('steward-dashboard');
+  const isStewardScreen = typeof window !== 'undefined' && window.location.pathname.includes('steward-dashboard');
+  const discountPercentage = orderTotals.subtotal > 0 ? (discount / (orderTotals.subtotal - orderTotals.itemDiscounts)) * 100 : 0;
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -768,7 +802,7 @@ export function OrderPanel({
 
          <div className="flex justify-between text-sm text-destructive">
           <span>Order Discount</span>
-          <span>-{currencySymbol}{discount.toFixed(2)}</span>
+          <span>-{currencySymbol}{discount.toFixed(2)} ({discountPercentage.toFixed(1)}%)</span>
         </div>
         <Separator />
         <div className="flex justify-between font-bold text-lg">
@@ -789,7 +823,7 @@ export function OrderPanel({
                         <TicketPercent className="mr-2 h-4 w-4" /> Order Discount
                         </Button>
                     </DialogTrigger>
-                    <DiscountDialog setDiscount={setDiscount} onClose={() => setDiscountOpen(false)} />
+                    <DiscountDialog setDiscount={setDiscount} orderSubtotal={orderTotals.subtotal} onClose={() => setDiscountOpen(false)} />
                     </Dialog>
                     <Button variant="outline" onClick={onHoldAndKitchen} disabled={cart.length === 0} className="h-12">
                         <Notebook className="mr-2 h-4 w-4" /> Hold
@@ -822,3 +856,7 @@ export function OrderPanel({
     </div>
   );
 }
+
+    
+
+    

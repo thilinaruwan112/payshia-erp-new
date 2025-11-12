@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Star, Trash2, UploadCloud, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Star, Trash2, UploadCloud, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import type { Product, InventoryItem, ProductVariant, ProductImage } from '@/lib/types';
 import {
   DropdownMenu,
@@ -42,6 +42,7 @@ import { useCurrency } from '@/components/currency-provider';
 import { useLocation } from '@/components/location-provider';
 import { ImageUploadDialog } from '@/components/image-upload-dialog';
 import { fetcher } from '@/lib/api';
+import { Input } from '@/components/ui/input';
 
 interface ProductWithVariants extends Product {
   variants: ProductVariant[];
@@ -61,6 +62,7 @@ export default function ProductsPage() {
   const { currencySymbol } = useCurrency();
   const { company_id } = useLocation();
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   const itemsPerPage = 10;
 
   const fetchProducts = useCallback(async () => {
@@ -131,12 +133,20 @@ export default function ProductsPage() {
     fetchProducts();
   }, [fetchProducts]);
   
+   const filteredProducts = useMemo(() => {
+    return products.filter(product =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.variants && product.variants.some(v => v.sku.toLowerCase().includes(searchTerm.toLowerCase())))
+    );
+  }, [products, searchTerm]);
+
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage;
-    return products.slice(startIndex, startIndex + itemsPerPage);
-  }, [products, currentPage, itemsPerPage]);
+    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredProducts, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   const handleDelete = async () => {
     if (!selectedProduct) return;
@@ -217,10 +227,26 @@ export default function ProductsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>All Products</CardTitle>
-            <CardDescription>
-              Showing {products.length} of {planDetails.limit === Infinity ? 'unlimited' : planDetails.limit} products.
-            </CardDescription>
+             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle>All Products</CardTitle>
+                <CardDescription>
+                  Showing {paginatedProducts.length} of {filteredProducts.length} products.
+                </CardDescription>
+              </div>
+              <div className="relative w-full sm:w-80">
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <Input
+                    placeholder="Search by name, category, SKU..."
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                 />
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
@@ -315,6 +341,13 @@ export default function ProductsPage() {
                     );
                   })
                 )}
+                 {!isLoading && paginatedProducts.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No products found.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -363,8 +396,4 @@ export default function ProductsPage() {
     </>
   );
 }
-
-
-
-
 
