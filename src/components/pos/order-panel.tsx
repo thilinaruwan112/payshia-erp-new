@@ -662,6 +662,7 @@ export function OrderPanel({
   };
   
   const isStewardScreen = typeof window !== 'undefined' && window.location.pathname.includes('steward-dashboard');
+  const discountPercentage = orderTotals.subtotal > 0 ? (discount / orderTotals.subtotal) * 100 : 0;
 
   return (
     <div className="flex flex-col h-full bg-card">
@@ -799,7 +800,7 @@ export function OrderPanel({
 
          <div className="flex justify-between text-sm text-destructive">
           <span>Order Discount</span>
-          <span>-{currencySymbol}{discount.toFixed(2)}</span>
+          <span>-{currencySymbol}{discount.toFixed(2)} ({discountPercentage.toFixed(1)}%)</span>
         </div>
         <Separator />
         <div className="flex justify-between font-bold text-lg">
@@ -853,3 +854,5 @@ export function OrderPanel({
     </div>
   );
 }
+
+    
