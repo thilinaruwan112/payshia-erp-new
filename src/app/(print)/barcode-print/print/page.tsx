@@ -47,17 +47,17 @@ function BarcodePrintContent() {
             <div style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border-none"></div>
         )}
         {itemsToPrint.map((item, index) => (
-            <div key={`${item.id}-${index}`} style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border border-dashed border-gray-300 flex flex-col justify-center items-center text-[8pt] leading-tight overflow-hidden">
+            <div key={`${item.id}-${index}`} style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border border-dashed border-gray-300 flex flex-col justify-center items-center text-[7pt] leading-tight overflow-hidden">
                 <p className="font-bold text-center truncate w-full">{item.name}</p>
-                <p className="text-center w-full">{item.sku}</p>
+                <p className="text-center w-full text-[6pt]">{item.sku}</p>
                 <Image 
                     src={`https://barcode.tec-it.com/barcode.ashx?data=${item.barcode}&code=Code128&dpi=96`} 
                     alt={`Barcode for ${item.sku}`}
                     width={120}
                     height={20}
-                    style={{ height: '10mm', width: 'auto', maxHeight: '10mm' }}
+                    style={{ height: '8mm', width: 'auto', maxHeight: '8mm', margin: '1mm 0' }}
                 />
-                <p className="font-bold text-center text-[10pt] w-full">Rs. {item.price.toFixed(2)}</p>
+                <p className="font-bold text-center text-[9pt] w-full">Rs. {item.price.toFixed(2)}</p>
             </div>
         ))}
       </div>
