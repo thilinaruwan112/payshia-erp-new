@@ -53,7 +53,7 @@ export default function BarcodePrintPage() {
   const [bypassFirstSpace, setBypassFirstSpace] = useState(false);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
-  const { company_id } = useLocation();
+  const { company_id, currentLocation } = useLocation();
 
   const [paperSize, setPaperSize] = useState('50x25');
   const [columns, setColumns] = useState('1');
@@ -141,7 +141,8 @@ export default function BarcodePrintPage() {
     const bypassParam = bypassFirstSpace ? '&bypass=true' : '';
     const sizeParam = `&size=${paperSize}`;
     const columnsParam = `&columns=${columns}`;
-    window.open(`/barcode-print/print?data=${dataToPrint}${bypassParam}${sizeParam}${columnsParam}`, '_blank');
+    const locationNameParam = currentLocation ? `&locationName=${encodeURIComponent(currentLocation.location_name)}` : '';
+    window.open(`/barcode-print/print?data=${dataToPrint}${bypassParam}${sizeParam}${columnsParam}${locationNameParam}`, '_blank');
   };
 
   return (
