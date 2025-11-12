@@ -328,26 +328,45 @@ const DiscountDialog = ({
     onClose();
   };
 
+  const handleNumpadClick = (value: string) => {
+    if (value === 'C') {
+      setDiscountValue('');
+    } else if (value === '<-') {
+      setDiscountValue((prev) => prev.slice(0, -1));
+    } else {
+      setDiscountValue((prev) => prev + value);
+    }
+  };
+
   return (
-    <DialogContent>
+    <DialogContent className="max-w-xs">
       <DialogHeader>
         <DialogTitle>Apply Order Discount</DialogTitle>
       </DialogHeader>
-      <div className="space-y-2">
+      <div className="space-y-4">
         <Label htmlFor="discount-value">Discount Amount ({currencySymbol})</Label>
         <Input
           id="discount-value"
           type="number"
-          placeholder="e.g. 5.00"
+          placeholder="0.00"
           value={discountValue}
           onChange={(e) => setDiscountValue(e.target.value)}
+          className="h-14 text-2xl text-right"
         />
+        <div className="grid grid-cols-3 gap-2">
+            {['7', '8', '9', '4', '5', '6', '1', '2', '3'].map(val => (
+                <Button key={val} variant="outline" className="h-14 text-xl" onClick={() => handleNumpadClick(val)}>{val}</Button>
+            ))}
+            <Button variant="outline" className="h-14 text-xl" onClick={() => handleNumpadClick('.')}>.</Button>
+            <Button variant="outline" className="h-14 text-xl" onClick={() => handleNumpadClick('0')}>0</Button>
+            <Button variant="outline" className="h-14 text-xl" onClick={() => handleNumpadClick('<-')}><Delete /></Button>
+        </div>
       </div>
       <DialogFooter>
-        <Button variant="outline" onClick={onClose}>
+        <Button variant="outline" onClick={onClose} className="w-full">
           Cancel
         </Button>
-        <Button onClick={applyDiscount}>Apply</Button>
+        <Button onClick={applyDiscount} className="w-full">Apply Discount</Button>
       </DialogFooter>
     </DialogContent>
   );
