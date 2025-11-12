@@ -52,15 +52,14 @@ function BarcodePrintContent() {
                 <p className="font-semibold text-center truncate w-full text-[6pt]">{item.name}</p>
                 <div className="relative w-full text-center my-1">
                   <Image 
-                      src={`https://barcode.tec-it.com/barcode.ashx?data=${item.barcode}&code=Code128&dpi=96&hide_text=true`} 
+                      src={`https://barcode.tec-it.com/barcode.ashx?data=${item.barcode}&code=Code128&dpi=96`} 
                       alt={`Barcode for ${item.sku}`}
                       width={140}
-                      height={24}
-                      style={{ height: '9mm', width: 'auto', maxHeight: '9mm', margin: '0 auto' }}
+                      height={32}
+                      style={{ height: '10mm', width: 'auto', maxHeight: '10mm', margin: '0 auto' }}
                   />
-                  <p className="text-[6pt] tracking-widest">{item.barcode}</p>
                 </div>
-                {locationName && <p className="font-bold text-[7pt] text-center w-full">{locationName}</p>}
+                {locationName && <p className="font-semibold text-[6pt] text-center w-full">{locationName}</p>}
             </div>
         ))}
       </div>
