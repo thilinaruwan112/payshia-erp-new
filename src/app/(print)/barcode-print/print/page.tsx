@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import { useSearchParams, notFound } from 'next/navigation';
 import Image from 'next/image';
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface BarcodeItem {
     id: string;
@@ -18,6 +19,8 @@ function BarcodePrintContent() {
   const searchParams = useSearchParams();
   const data = searchParams.get('data');
   const bypass = searchParams.get('bypass') === 'true';
+  const paperSize = searchParams.get('size') || '50x25';
+  const columns = parseInt(searchParams.get('columns') || '1', 10);
   
   if (!data) {
     notFound();
@@ -31,24 +34,28 @@ function BarcodePrintContent() {
         window.print();
     }, 500);
   }, []);
+  
+  const is50x25 = paperSize === '50x25';
+  const itemWidth = is50x25 ? '50mm' : '38mm';
+  const itemHeight = '25mm';
+
 
   return (
     <div className="bg-white text-black p-0 m-0 font-sans">
-      <div className="grid grid-cols-2 gap-x-[1mm] gap-y-0">
+      <div className={cn("grid gap-x-[1mm] gap-y-0", columns === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
         {bypass && (
-            <div className="w-[38mm] h-[25mm] p-[2mm] border-none"></div>
+            <div style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border-none"></div>
         )}
-        {itemsToPrint.map(item => (
-            <div key={item.id} className="w-[38mm] h-[25mm] p-[2mm] border border-dashed border-gray-300 flex flex-col justify-center items-center text-[8pt] leading-tight">
+        {itemsToPrint.map((item, index) => (
+            <div key={`${item.id}-${index}`} style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border border-dashed border-gray-300 flex flex-col justify-center items-center text-[8pt] leading-tight overflow-hidden">
                 <p className="font-bold text-center truncate w-full">{item.name}</p>
                 <p className="text-center w-full">{item.sku}</p>
-                {/* Barcode representation */}
                 <Image 
                     src={`https://barcode.tec-it.com/barcode.ashx?data=${item.barcode}&code=Code128&dpi=96`} 
                     alt={`Barcode for ${item.sku}`}
                     width={120}
                     height={20}
-                    style={{ height: '15mm', width: 'auto', maxHeight: '15mm' }}
+                    style={{ height: '10mm', width: 'auto', maxHeight: '10mm' }}
                 />
                 <p className="font-bold text-center text-[10pt] w-full">Rs. {item.price.toFixed(2)}</p>
             </div>

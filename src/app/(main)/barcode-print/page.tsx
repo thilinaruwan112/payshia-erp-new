@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Printer, Loader2 } from 'lucide-react';
+import { Printer } from 'lucide-react';
 import type { Product, ProductVariant } from '@/lib/types';
 import React, { useEffect, useState, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -29,6 +29,8 @@ import { fetcher } from '@/lib/api';
 import { Checkbox } from '@/components/ui/checkbox';
 import Image from 'next/image';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 interface ProductWithVariants extends Product {
   variants: ProductVariant[];
@@ -40,17 +42,22 @@ interface SelectableVariant {
     sku: string;
     price: number;
     barcode: string;
+    quantity: number;
 }
 
 
 export default function BarcodePrintPage() {
   const [products, setProducts] = useState<ProductWithVariants[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedVariants, setSelectedVariants] = useState<SelectableVariant[]>([]);
+  const [selectedVariants, setSelectedVariants] = useState<Record<string, SelectableVariant>>({});
   const [bypassFirstSpace, setBypassFirstSpace] = useState(false);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
   const { company_id } = useLocation();
+
+  const [paperSize, setPaperSize] = useState('50x25');
+  const [columns, setColumns] = useState('1');
+
 
   const fetchProducts = useCallback(async () => {
     if (!company_id) {
@@ -91,30 +98,50 @@ export default function BarcodePrintPage() {
   }, [fetchProducts]);
 
   const handleSelectVariant = (product: Product, variant: ProductVariant, isSelected: boolean) => {
-     const selectableVariant: SelectableVariant = {
-        id: variant.id,
-        name: product.name,
-        sku: variant.sku,
-        price: Number(variant.price),
-        barcode: variant.barcode || variant.sku,
-    };
-    setSelectedVariants(prev => {
-        if (isSelected) {
-            return [...prev, selectableVariant];
-        } else {
-            return prev.filter(v => v.id !== variant.id);
-        }
-    });
+    const variantId = variant.id;
+    const newSelectedVariants = { ...selectedVariants };
+
+    if (isSelected) {
+      if (!newSelectedVariants[variantId]) {
+        newSelectedVariants[variantId] = {
+          id: variant.id,
+          name: product.name,
+          sku: variant.sku,
+          price: Number(variant.price),
+          barcode: variant.barcode || variant.sku,
+          quantity: 1,
+        };
+      }
+    } else {
+      delete newSelectedVariants[variantId];
+    }
+    setSelectedVariants(newSelectedVariants);
   };
   
+  const handleQuantityChange = (variantId: string, quantity: number) => {
+    if (selectedVariants[variantId]) {
+        const newSelectedVariants = { ...selectedVariants };
+        newSelectedVariants[variantId].quantity = Math.max(0, quantity);
+        setSelectedVariants(newSelectedVariants);
+    }
+  };
+
+  const totalLabelsToPrint = Object.values(selectedVariants).reduce((sum, v) => sum + v.quantity, 0);
+  
   const handlePrint = () => {
-    if (selectedVariants.length === 0) {
-        toast({ title: 'No items selected', description: 'Please select at least one item to print.', variant: 'destructive' });
+    const itemsToPrint = Object.values(selectedVariants).filter(v => v.quantity > 0);
+    if (itemsToPrint.length === 0) {
+        toast({ title: 'No items selected', description: 'Please select items and set quantities to print.', variant: 'destructive' });
         return;
     }
-    const dataToPrint = encodeURIComponent(JSON.stringify(selectedVariants));
+    
+    const printItems = itemsToPrint.flatMap(item => Array.from({ length: item.quantity }, () => item));
+
+    const dataToPrint = encodeURIComponent(JSON.stringify(printItems));
     const bypassParam = bypassFirstSpace ? '&bypass=true' : '';
-    window.open(`/barcode-print/print?data=${dataToPrint}${bypassParam}`, '_blank');
+    const sizeParam = `&size=${paperSize}`;
+    const columnsParam = `&columns=${columns}`;
+    window.open(`/barcode-print/print?data=${dataToPrint}${bypassParam}${sizeParam}${columnsParam}`, '_blank');
   };
 
   return (
@@ -126,14 +153,38 @@ export default function BarcodePrintPage() {
             Select products and variants to print barcode labels.
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
+             <div className="flex items-center space-x-2">
+                <Label htmlFor="paper-size">Paper Size</Label>
+                <Select value={paperSize} onValueChange={setPaperSize}>
+                    <SelectTrigger id="paper-size" className="w-[120px]">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="50x25">50x25mm</SelectItem>
+                        <SelectItem value="38x25">38x25mm</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="flex items-center space-x-2">
+                <Label htmlFor="columns">Columns</Label>
+                <Select value={columns} onValueChange={setColumns}>
+                    <SelectTrigger id="columns" className="w-[100px]">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="1">1</SelectItem>
+                        <SelectItem value="2">2</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
            <div className="flex items-center space-x-2">
                 <Checkbox id="bypass-space" checked={bypassFirstSpace} onCheckedChange={(checked) => setBypassFirstSpace(!!checked)} />
                 <Label htmlFor="bypass-space">Bypass first space</Label>
             </div>
-            <Button onClick={handlePrint} disabled={selectedVariants.length === 0}>
+            <Button onClick={handlePrint} disabled={totalLabelsToPrint === 0}>
                 <Printer className="mr-2 h-4 w-4" />
-                Print Selected ({selectedVariants.length})
+                Print Selected ({totalLabelsToPrint})
             </Button>
         </div>
       </div>
@@ -151,6 +202,7 @@ export default function BarcodePrintPage() {
               <TableRow>
                 <TableHead className="w-[50px]"></TableHead>
                 <TableHead>Product / Variant</TableHead>
+                <TableHead className="w-[150px]">Quantity</TableHead>
                 <TableHead className="hidden sm:table-cell">Status</TableHead>
                 <TableHead className="hidden lg:table-cell">Price</TableHead>
               </TableRow>
@@ -169,6 +221,7 @@ export default function BarcodePrintPage() {
                         </div>
                       </div>
                     </TableCell>
+                    <TableCell><Skeleton className="h-10 w-24" /></TableCell>
                     <TableCell className="hidden sm:table-cell">
                       <Skeleton className="h-6 w-20 rounded-full" />
                     </TableCell>
@@ -178,13 +231,13 @@ export default function BarcodePrintPage() {
                   </TableRow>
                 ))
               ) : (
-                products.map((product) =>
+                products.flatMap((product) =>
                   product.variants.map((variant) => (
                     <TableRow key={variant.id}>
                       <TableCell>
                         <Checkbox
                           onCheckedChange={(checked) => handleSelectVariant(product, variant, !!checked)}
-                          checked={selectedVariants.some(v => v.id === variant.id)}
+                          checked={!!selectedVariants[variant.id]}
                         />
                       </TableCell>
                       <TableCell>
@@ -204,6 +257,17 @@ export default function BarcodePrintPage() {
                                 </div>
                             </div>
                         </div>
+                      </TableCell>
+                       <TableCell>
+                        {selectedVariants[variant.id] && (
+                            <Input
+                                type="number"
+                                value={selectedVariants[variant.id].quantity}
+                                onChange={(e) => handleQuantityChange(variant.id, parseInt(e.target.value, 10) || 0)}
+                                className="w-24"
+                                min="0"
+                            />
+                        )}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         <Badge variant={product.status === 'active' ? 'default' : 'secondary'} className={product.status === 'active' ? 'bg-green-100 text-green-800' : ''}>
