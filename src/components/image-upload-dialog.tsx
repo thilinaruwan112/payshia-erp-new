@@ -202,6 +202,35 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
     }
   };
 
+  const handleImageTypeChange = async (imageId: string, newType: string) => {
+    if (!companyId) return;
+
+    try {
+        const payload = {
+            id: parseInt(imageId),
+            company_id: companyId,
+            image_type: newType,
+        };
+
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/update/image-type`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Failed to update image type.");
+        }
+
+        toast({ title: "Image Type Updated" });
+        setUploadedImages(prev => prev.map(img => img.id === imageId ? { ...img, image_type: newType } : img));
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: "destructive", title: "Update Failed", description: errorMessage });
+    }
+  };
+
 
   const hasVariants = productVariants && productVariants.length > 0;
   const isUploadDisabled = isUploading || !fileToUpload || !selectedVariantId;
@@ -291,42 +320,56 @@ export function ImageUploadDialog({ isOpen, onOpenChange, productId, productVari
                             const variant = productVariants.find(v => v.id === image.product_variant_id);
                             const variantName = variant ? [variant.sku, variant.color, variant.size].filter(Boolean).join(' - ') : 'General';
                             return (
-                                <div key={image.id} className="relative group">
-                                    <div className="aspect-square w-full rounded-md overflow-hidden border">
-                                    <img
-                                        src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${image.img_url}`}
-                                        alt={`Uploaded for ${variantName}`}
-                                        className="w-full h-full object-cover"
-                                    />
+                                <div key={image.id} className="relative group space-y-2">
+                                    <div className="relative">
+                                        <div className="aspect-square w-full rounded-md overflow-hidden border">
+                                        <img
+                                            src={`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${image.img_url}`}
+                                            alt={`Uploaded for ${variantName}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        </div>
+                                        <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button
+                                                variant="destructive"
+                                                size="icon"
+                                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={() => setSelectedImageForDeletion(image)}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently delete the image.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel onClick={() => setSelectedImageForDeletion(null)}>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={handleDeleteImage}>Continue</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs text-center p-1 rounded-b-md backdrop-blur-sm">
+                                            <p className="font-semibold truncate">{variantName}</p>
+                                        </div>
                                     </div>
-                                    <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button
-                                            variant="destructive"
-                                            size="icon"
-                                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onClick={() => setSelectedImageForDeletion(image)}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete the image.
-                                            </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                            <AlertDialogCancel onClick={() => setSelectedImageForDeletion(null)}>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={handleDeleteImage}>Continue</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs text-center p-1 rounded-b-md backdrop-blur-sm">
-                                        <p className="font-semibold truncate">{variantName}</p>
-                                        <p className="opacity-80">{image.image_type}</p>
-                                    </div>
+                                    <Select 
+                                        value={image.image_type} 
+                                        onValueChange={(newType) => handleImageTypeChange(image.id, newType)}
+                                    >
+                                        <SelectTrigger className="h-8 text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="front img">Front Image</SelectItem>
+                                            <SelectItem value="2nd image">2nd Image</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             )
                           })}
