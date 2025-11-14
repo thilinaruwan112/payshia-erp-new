@@ -195,9 +195,6 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                 if (filterValues['brand'] && filterValues['brand'] !== 'all') {
                     params.append('brand_id', filterValues['brand']);
                 }
-                if (singleDate) {
-                    params.append('before_date', format(singleDate, 'yyyy-MM-dd'));
-                }
             } else if (reportName === 'Bin Card Report') {
                 if (!filterValues['item'] || filterValues['item'] === 'all' || !dateRange?.from) {
                     toast({
@@ -226,6 +223,11 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                  if (filterValues['toLocation'] && filterValues['toLocation'] !== 'all') {
                     params.append('to_location', filterValues['toLocation']);
                 }
+            } else if (reportName === 'Day End Sale Report') {
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/sales-summary`;
+                if (singleDate) {
+                    params.append('date', format(singleDate, 'yyyy-MM-dd'));
+                }
             }
             
             else {
@@ -237,6 +239,9 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             if (dateRange?.from) {
                 params.append('start_date', format(dateRange.from, 'yyyy-MM-dd'));
                 params.append('end_date', format(dateRange.to || dateRange.from, 'yyyy-MM-dd'));
+            } else if (singleDate && hasFilter('date')) {
+                params.append('start_date', format(singleDate, 'yyyy-MM-dd'));
+                params.append('end_date', format(singleDate, 'yyyy-MM-dd'));
             }
             
             const finalUrl = `${url}?${params.toString()}`;
@@ -306,7 +311,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             <CardContent className="space-y-4">
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {hasFilter('dateRange') && (
-                        <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
+                        <div className="space-y-1.5">
                             <Label>Date Range</Label>
                              <Popover>
                                 <PopoverTrigger asChild>
@@ -348,7 +353,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                     )}
                     {hasFilter('date') && (
                       <div className="space-y-1.5">
-                        <Label>As of Date</Label>
+                        <Label>Date</Label>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
