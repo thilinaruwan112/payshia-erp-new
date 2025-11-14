@@ -180,17 +180,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const billDiscount = form.watch("discount") || 0;
   const invoiceType = form.watch("invoiceType");
 
-  const [totals, setTotals] = useState({
-    subtotal: 0,
-    itemDiscounts: 0,
-    serviceCharge: 0,
-    tdl: 0,
-    sscl: 0,
-    vat: 0,
-    grandTotal: 0,
-  });
-
-  useEffect(() => {
+  const totals = useMemo(() => {
     let sub = 0;
     let itemDisc = 0;
 
@@ -226,7 +216,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
 
     const finalGrandTotal = baseForTaxes + serviceCharge + tdl + sscl + vat - billDiscount;
 
-    setTotals({
+    return {
       subtotal: sub,
       itemDiscounts: itemDisc,
       serviceCharge,
@@ -234,7 +224,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
       sscl,
       vat,
       grandTotal: finalGrandTotal,
-    });
+    };
   }, [watchedItems, billDiscount, invoiceType, currentLocation]);
 
   useEffect(() => {
@@ -647,14 +637,14 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                     <TableCell>
                                         <FormField
                                             control={form.control}
-                                            name={`items.${index}.productVariantId`}
+                                            name={`items.${index}.sku`}
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <Select
                                                         onValueChange={(value) => {
                                                             field.onChange(value);
                                                             const selected = allSkus.find(s => s.value === value);
-                                                            form.setValue(`items.${index}.sku`, selected?.skuString || '');
+                                                            form.setValue(`items.${index}.productVariantId`, selected?.value || '');
                                                             form.setValue(`items.${index}.productId`, selected?.productId || '');
                                                             form.setValue(`items.${index}.recipeType`, selected?.recipeType || 'standard');
                                                             handleProductSelect(selected?.productId || '', selected?.value || '', index);
@@ -863,3 +853,5 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     </Form>
   );
 }
+
+    
