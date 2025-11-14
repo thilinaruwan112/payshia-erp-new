@@ -52,6 +52,7 @@ type StockInfo = {
     stock_balance: string;
     patch_code: string;
     product_variant_id: string;
+    manufacture_date?: string; // Adding this for payload consistency
 }
 
 interface ProductWithApiResponse {
@@ -235,12 +236,15 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   }
 
  const { subtotal, itemDiscounts, calculatedServiceCharge, calculatedTdl, calculatedSscl, calculatedVat } = React.useMemo(() => {
-    const sub = watchedItems.reduce((total, item) => {
+    let sub = 0;
+    let itemDisc = 0;
+
+    for (const item of watchedItems) {
         const quantity = Number(item.quantity) || 0;
         const unitPrice = Number(item.unitPrice) || 0;
-        return total + (quantity * unitPrice);
-    }, 0);
-    const itemDisc = watchedItems.reduce((total, item) => (total + (Number(item.discount) || 0)), 0);
+        sub += quantity * unitPrice;
+        itemDisc += Number(item.discount) || 0;
+    }
 
     const baseForTaxes = sub - itemDisc;
     
@@ -275,10 +279,10 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const vatValue = form.watch("vat") || 0;
 
   useEffect(() => {
-    form.setValue('serviceCharge', calculatedServiceCharge);
-    form.setValue('tdl', calculatedTdl);
-    form.setValue('sscl', calculatedSscl);
-    form.setValue('vat', calculatedVat);
+    form.setValue('serviceCharge', calculatedServiceCharge, { shouldValidate: true });
+    form.setValue('tdl', calculatedTdl, { shouldValidate: true });
+    form.setValue('sscl', calculatedSscl, { shouldValidate: true });
+    form.setValue('vat', calculatedVat, { shouldValidate: true });
   }, [calculatedServiceCharge, calculatedTdl, calculatedSscl, calculatedVat, form]);
 
   const totalDiscountAmount = itemDiscounts + billDiscount;
