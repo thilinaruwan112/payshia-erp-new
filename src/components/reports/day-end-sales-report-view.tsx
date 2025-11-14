@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +14,8 @@ interface ReportData {
     receipt_total: string;
     return_total: string;
     refund_total: string;
-    balance: number;
+    cash_inhand: number;
+    creditsale: number;
     receipts_by_payment_type: {
         type_id: string;
         type_name: string;
@@ -35,7 +37,8 @@ export const DayEndSalesReportView = ({ reportData }: { reportData: ReportData }
     const { currencySymbol } = useCurrency();
     const receiptTotal = parseFloat(reportData.receipt_total || '0');
     const returnTotal = parseFloat(reportData.return_total || '0');
-    const netBalance = receiptTotal - returnTotal;
+    const cashInHand = reportData.cash_inhand || 0;
+    const creditSale = reportData.creditsale || 0;
 
     return (
         <Card className="w-full">
@@ -44,7 +47,7 @@ export const DayEndSalesReportView = ({ reportData }: { reportData: ReportData }
                 <CardDescription>A summary of all transactions for the selected day.</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                     <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Sales</CardTitle></CardHeader>
                         <CardContent><p className="text-2xl font-bold">{currencySymbol}{parseFloat(reportData.invoice_total || '0').toFixed(2)}</p></CardContent>
@@ -57,9 +60,13 @@ export const DayEndSalesReportView = ({ reportData }: { reportData: ReportData }
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Returns</CardTitle></CardHeader>
                         <CardContent><p className="text-2xl font-bold text-destructive">-{currencySymbol}{returnTotal.toFixed(2)}</p></CardContent>
                     </Card>
-                    <Card className="bg-primary/10 border-primary">
-                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Net Balance</CardTitle></CardHeader>
-                        <CardContent><p className="text-2xl font-bold">{currencySymbol}{netBalance.toFixed(2)}</p></CardContent>
+                    <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Credit Sales</CardTitle></CardHeader>
+                        <CardContent><p className="text-2xl font-bold">{currencySymbol}{creditSale.toFixed(2)}</p></CardContent>
+                    </Card>
+                     <Card className="bg-primary/10 border-primary col-span-2 lg:col-span-1">
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Cash In Hand</CardTitle></CardHeader>
+                        <CardContent><p className="text-2xl font-bold">{currencySymbol}{cashInHand.toFixed(2)}</p></CardContent>
                     </Card>
                 </div>
                  <h3 className="text-lg font-semibold mb-4">Receipts by Payment Type</h3>
