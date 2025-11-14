@@ -43,6 +43,7 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
 import { fetcher } from "@/lib/api";
+import { useCurrency } from "./currency-provider";
 
 type StockInfo = {
     product_id: string;
@@ -109,6 +110,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currentLocation, company_id } = useLocation();
+  const { currencySymbol } = useCurrency();
   const [isLoading, setIsLoading] = React.useState(false);
   const [productsWithVariants, setProductsWithVariants] = React.useState<ProductWithApiResponse[]>([]);
   const [availableBatches, setAvailableBatches] = React.useState<Record<number, StockInfo[]>>({});
@@ -225,8 +227,8 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
       vat,
       grandTotal: finalGrandTotal,
     };
-    // By stringifying the watched items, we ensure this memo re-calculates on any change within them.
   }, [JSON.stringify(watchedItems), billDiscount, invoiceType, currentLocation]);
+
 
   useEffect(() => {
     form.setValue('serviceCharge', totals.serviceCharge);
@@ -491,7 +493,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             </FormControl>
                             <SelectContent>
                                 {availableOrders.map(o => (
-                                    <SelectItem key={o.id} value={o.id}>{o.id} - ${o.total.toFixed(2)}</SelectItem>
+                                    <SelectItem key={o.id} value={o.id}>{o.id} - {currencySymbol}{o.total.toFixed(2)}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -720,7 +722,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} startIcon="$" />
+                                                        <Input type="number" {...field} startIcon={currencySymbol} readOnly disabled />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -734,14 +736,14 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} startIcon="$" />
+                                                        <Input type="number" {...field} startIcon={currencySymbol} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
                                     </TableCell>
-                                    <TableCell className="text-right font-mono">${total.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-mono">{currencySymbol}{total.toFixed(2)}</TableCell>
                                     <TableCell>
                                         {fields.length > 1 && (
                                             <Button variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -762,11 +764,11 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                 <div className="w-full max-w-sm space-y-2">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span className="font-mono">${totals.subtotal.toFixed(2)}</span>
+                        <span className="font-mono">{currencySymbol}{totals.subtotal.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between text-destructive">
                         <span>Item-wise Discount</span>
-                        <span className="font-mono">-${totals.itemDiscounts.toFixed(2)}</span>
+                        <span className="font-mono">-{currencySymbol}{totals.itemDiscounts.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between text-destructive">
                         <span className="flex-1 mr-4">Overall Discount</span>
@@ -776,7 +778,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
+                                        <Input type="number" {...field} startIcon={currencySymbol} className="h-8 max-w-[120px]" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -791,7 +793,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" readOnly disabled />
+                                        <Input type="number" {...field} startIcon={currencySymbol} className="h-8 max-w-[120px]" readOnly disabled />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -806,7 +808,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" readOnly disabled />
+                                        <Input type="number" {...field} startIcon={currencySymbol} className="h-8 max-w-[120px]" readOnly disabled />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -821,7 +823,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" readOnly disabled />
+                                        <Input type="number" {...field} startIcon={currencySymbol} className="h-8 max-w-[120px]" readOnly disabled />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -836,7 +838,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" readOnly disabled />
+                                        <Input type="number" {...field} startIcon={currencySymbol} className="h-8 max-w-[120px]" readOnly disabled />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -845,7 +847,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                     </div>
                      <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Grand Total</span>
-                        <span className="font-mono">${Number(totals.grandTotal).toFixed(2)}</span>
+                        <span className="font-mono">{currencySymbol}{Number(totals.grandTotal).toFixed(2)}</span>
                     </div>
                 </div>
             </CardFooter>
@@ -854,5 +856,3 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     </Form>
   );
 }
-
-    
