@@ -492,7 +492,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             </FormControl>
                             <SelectContent>
                                 {availableOrders.map(o => (
-                                    <SelectItem key={o.id} value={o.id}>{o.id} - ${o.total.toFixed(2)}</SelectItem>
+                                    <SelectItem key={o.id} value={o.id}>{o.id} - LKR{o.total.toFixed(2)}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -721,7 +721,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} startIcon={"LKR"} readOnly disabled className="min-w-[120px]" />
+                                                        <Input type="number" {...field} className="min-w-[120px]" readOnly disabled />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -735,7 +735,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} startIcon={"LKR"} />
+                                                        <Input type="number" {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -784,66 +784,30 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             )}
                         />
                     </div>
-                    <div className={cn("justify-between", invoiceType === 'Wholesale' || currentLocation?.service_charge_status !== 'Enabled' ? 'hidden' : 'flex')}>
-                        <span className="flex-1 mr-4">Service Charge (10%)</span>
-                         <FormField
-                            control={form.control}
-                            name={`serviceCharge`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input type="number" {...field} startIcon={"LKR"} className="h-8 max-w-[120px]" readOnly disabled />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <div className={cn("justify-between", currentLocation?.tdl_status !== 'Enabled' ? 'hidden' : 'flex')}>
-                        <span className="flex-1 mr-4">TDL (1%)</span>
-                         <FormField
-                            control={form.control}
-                            name={`tdl`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input type="number" {...field} startIcon={"LKR"} className="h-8 max-w-[120px]" readOnly disabled />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                     <div className={cn("justify-between", currentLocation?.sscl_status !== 'Enabled' ? 'hidden' : 'flex')}>
-                        <span className="flex-1 mr-4">SSCL (2.5%)</span>
-                         <FormField
-                            control={form.control}
-                            name={`sscl`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input type="number" {...field} startIcon={"LKR"} className="h-8 max-w-[120px]" readOnly disabled />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                     <div className={cn("justify-between", currentLocation?.vat_status !== 'Enabled' ? 'hidden' : 'flex')}>
-                        <span className="flex-1 mr-4">VAT (18%)</span>
-                         <FormField
-                            control={form.control}
-                            name={`vat`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input type="number" {...field} startIcon={"LKR"} className="h-8 max-w-[120px]" readOnly disabled />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
+                    {currentLocation?.service_charge_status === 'Enabled' && invoiceType !== 'Wholesale' && (
+                      <div className="flex justify-between">
+                          <span>Service Charge (10%)</span>
+                          <span className="font-mono">LKR{totals.serviceCharge.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {currentLocation?.tdl_status === 'Enabled' && (
+                         <div className="flex justify-between">
+                            <span>TDL (1%)</span>
+                            <span className="font-mono">LKR{totals.tdl.toFixed(2)}</span>
+                        </div>
+                    )}
+                    {currentLocation?.sscl_status === 'Enabled' && (
+                         <div className="flex justify-between">
+                            <span>SSCL (2.5%)</span>
+                            <span className="font-mono">LKR{totals.sscl.toFixed(2)}</span>
+                        </div>
+                    )}
+                     {currentLocation?.vat_status === 'Enabled' && (
+                         <div className="flex justify-between">
+                            <span>VAT (18%)</span>
+                            <span className="font-mono">LKR{totals.vat.toFixed(2)}</span>
+                        </div>
+                    )}
                      <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Grand Total</span>
                         <span className="font-mono">LKR{Number(totals.grandTotal).toFixed(2)}</span>
