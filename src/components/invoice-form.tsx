@@ -620,8 +620,8 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                         <TableRow>
                             <TableHead className="w-[30%]">Product</TableHead>
                             <TableHead className="w-[20%]">Batch</TableHead>
-                            <TableHead>Qty</TableHead>
-                            <TableHead>Unit Price</TableHead>
+                            <TableHead className="w-[100px]">Qty</TableHead>
+                            <TableHead className="w-[150px]">Unit Price</TableHead>
                             <TableHead>Discount</TableHead>
                             <TableHead className="text-right">Total</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
@@ -722,7 +722,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} startIcon={currencySymbol} readOnly disabled />
+                                                        <Input type="number" {...field} startIcon={"LKR"} readOnly disabled />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -736,7 +736,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} startIcon={currencySymbol} />
+                                                        <Input type="number" {...field} startIcon={"LKR"} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -785,7 +785,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             )}
                         />
                     </div>
-                    <div className={cn("justify-between", invoiceType === 'Wholesale' ? 'hidden' : 'flex')}>
+                    <div className={cn("justify-between", invoiceType === 'Wholesale' || currentLocation?.service_charge_status !== 'Enabled' ? 'hidden' : 'flex')}>
                         <span className="flex-1 mr-4">Service Charge</span>
                          <FormField
                             control={form.control}
