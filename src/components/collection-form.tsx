@@ -104,7 +104,7 @@ export function CollectionForm({ collection }: CollectionFormProps) {
     setIsLoading(true);
 
     const url = collection ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/collections/${collection.id}` : `${process.env.NEXT_PUBLIC_API_BASE_URL}/collections`;
-    let method = collection ? 'PUT' : 'POST';
+    let method = 'POST';
     
     let body;
     const headers = new Headers();
@@ -120,16 +120,25 @@ export function CollectionForm({ collection }: CollectionFormProps) {
         // Use POST with _method spoofing for file uploads on update
         if (collection) {
             formData.append('_method', 'PUT');
-            method = 'POST';
         }
         body = formData;
     } else {
-        body = JSON.stringify({
+        const payload = {
             title: data.title,
             description: data.description || '',
             status: data.status,
             company_id: company_id,
-        });
+        };
+        
+        if (collection) {
+           // For updates without a file, we can still use POST with spoofing if needed,
+           // or just use PUT if the server handles both for non-multipart requests.
+           // To be safe and consistent, we will use POST and spoof PUT.
+           const spoofedPayload = { ...payload, _method: 'PUT' };
+           body = JSON.stringify(spoofedPayload);
+        } else {
+            body = JSON.stringify(payload);
+        }
         headers.append('Content-Type', 'application/json');
     }
     
