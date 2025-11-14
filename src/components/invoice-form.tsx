@@ -225,7 +225,8 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
       vat,
       grandTotal: finalGrandTotal,
     };
-  }, [watchedItems, billDiscount, invoiceType, currentLocation]);
+    // By stringifying the watched items, we ensure this memo re-calculates on any change within them.
+  }, [JSON.stringify(watchedItems), billDiscount, invoiceType, currentLocation]);
 
   useEffect(() => {
     form.setValue('serviceCharge', totals.serviceCharge);
