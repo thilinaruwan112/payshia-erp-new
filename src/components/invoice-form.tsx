@@ -180,6 +180,70 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const billDiscount = form.watch("discount") || 0;
   const invoiceType = form.watch("invoiceType");
 
+  const [totals, setTotals] = useState({
+    subtotal: 0,
+    itemDiscounts: 0,
+    serviceCharge: 0,
+    tdl: 0,
+    sscl: 0,
+    vat: 0,
+    grandTotal: 0,
+  });
+
+  useEffect(() => {
+    let sub = 0;
+    let itemDisc = 0;
+
+    for (const item of watchedItems) {
+      const quantity = Number(item.quantity) || 0;
+      const unitPrice = Number(item.unitPrice) || 0;
+      sub += quantity * unitPrice;
+      itemDisc += Number(item.discount) || 0;
+    }
+
+    const baseForTaxes = sub - itemDisc;
+    let serviceCharge = 0;
+    if (currentLocation?.service_charge_status === 'Enabled' && invoiceType !== 'Wholesale') {
+      serviceCharge = baseForTaxes * 0.10;
+    }
+
+    let tdl = 0;
+    if (currentLocation?.tdl_status === 'Enabled') {
+      tdl = (baseForTaxes + serviceCharge) * 0.01;
+    }
+
+    const baseForSscl = baseForTaxes + serviceCharge;
+    let sscl = 0;
+    if (currentLocation?.sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+
+    const baseForVat = baseForSscl + tdl + sscl;
+    let vat = 0;
+    if (currentLocation?.vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
+    const finalGrandTotal = baseForTaxes + serviceCharge + tdl + sscl + vat - billDiscount;
+
+    setTotals({
+      subtotal: sub,
+      itemDiscounts: itemDisc,
+      serviceCharge,
+      tdl,
+      sscl,
+      vat,
+      grandTotal: finalGrandTotal,
+    });
+  }, [watchedItems, billDiscount, invoiceType, currentLocation]);
+
+  useEffect(() => {
+    form.setValue('serviceCharge', totals.serviceCharge);
+    form.setValue('tdl', totals.tdl);
+    form.setValue('sscl', totals.sscl);
+    form.setValue('vat', totals.vat);
+  }, [totals, form]);
+
   const availableOrders = React.useMemo(() => {
     if (!customerId) return [];
     const customer = customers.find(c => c.customer_id === customerId);
@@ -235,59 +299,6 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     }
   }
 
- const { subtotal, itemDiscounts, calculatedServiceCharge, calculatedTdl, calculatedSscl, calculatedVat } = React.useMemo(() => {
-    let sub = 0;
-    let itemDisc = 0;
-
-    for (const item of watchedItems) {
-        const quantity = Number(item.quantity) || 0;
-        const unitPrice = Number(item.unitPrice) || 0;
-        sub += quantity * unitPrice;
-        itemDisc += Number(item.discount) || 0;
-    }
-
-    const baseForTaxes = sub - itemDisc;
-    
-    let serviceCharge = 0;
-    if (currentLocation?.service_charge_status === 'Enabled' && invoiceType !== "Wholesale") {
-      serviceCharge = baseForTaxes * 0.10;
-    }
-
-    let tdl = 0;
-    if (currentLocation?.tdl_status === 'Enabled') {
-      tdl = (baseForTaxes + serviceCharge) * 0.01;
-    }
-    
-    const baseForSscl = baseForTaxes + serviceCharge;
-    let sscl = 0;
-    if (currentLocation?.sscl_status === 'Enabled') {
-       sscl = baseForSscl * 0.025;
-    }
-    
-    const baseForVat = baseForTaxes + serviceCharge + tdl + sscl;
-    let vat = 0;
-    if (currentLocation?.vat_status === 'Enabled') {
-       vat = baseForVat * 0.18;
-    }
-
-    return { subtotal: sub, itemDiscounts: itemDisc, calculatedServiceCharge: serviceCharge, calculatedTdl: tdl, calculatedSscl: sscl, calculatedVat: vat };
-  }, [watchedItems, invoiceType, currentLocation]);
-
-  const serviceChargeValue = form.watch("serviceCharge") || 0;
-  const tdlValue = form.watch("tdl") || 0;
-  const ssclValue = form.watch("sscl") || 0;
-  const vatValue = form.watch("vat") || 0;
-
-  useEffect(() => {
-    form.setValue('serviceCharge', calculatedServiceCharge, { shouldValidate: true });
-    form.setValue('tdl', calculatedTdl, { shouldValidate: true });
-    form.setValue('sscl', calculatedSscl, { shouldValidate: true });
-    form.setValue('vat', calculatedVat, { shouldValidate: true });
-  }, [calculatedServiceCharge, calculatedTdl, calculatedSscl, calculatedVat, form]);
-
-  const totalDiscountAmount = itemDiscounts + billDiscount;
-  const grandTotal = subtotal - totalDiscountAmount + serviceChargeValue + tdlValue + ssclValue + vatValue;
-
   async function onSubmit(data: InvoiceFormValues) {
     setIsLoading(true);
     
@@ -301,13 +312,13 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
 
     const payload = {
         invoice_date: format(data.invoiceDate, 'yyyy-MM-dd'),
-        inv_amount: subtotal,
-        grand_total: grandTotal,
-        discount_amount: totalDiscountAmount,
-        discount_percentage: subtotal > 0 ? (totalDiscountAmount / subtotal) * 100 : 0,
+        inv_amount: totals.subtotal,
+        grand_total: totals.grandTotal,
+        discount_amount: totals.itemDiscounts + billDiscount,
+        discount_percentage: totals.subtotal > 0 ? ((totals.itemDiscounts + billDiscount) / totals.subtotal) * 100 : 0,
         customer_code: data.customerId,
         service_charge: data.serviceCharge,
-        tendered_amount: data.status === '1' ? grandTotal : 0, // 1 is Active/Paid
+        tendered_amount: data.status === '1' ? totals.grandTotal : 0, // 1 is Active/Paid
         close_type: "Cash",
         invoice_status: data.status,
         payment_status: "Pending",
@@ -760,11 +771,11 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                 <div className="w-full max-w-sm space-y-2">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span className="font-mono">${subtotal.toFixed(2)}</span>
+                        <span className="font-mono">${totals.subtotal.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between text-destructive">
                         <span>Item-wise Discount</span>
-                        <span className="font-mono">-${itemDiscounts.toFixed(2)}</span>
+                        <span className="font-mono">-${totals.itemDiscounts.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between text-destructive">
                         <span className="flex-1 mr-4">Overall Discount</span>
@@ -843,7 +854,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                     </div>
                      <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Grand Total</span>
-                        <span className="font-mono">${Number(grandTotal).toFixed(2)}</span>
+                        <span className="font-mono">${Number(totals.grandTotal).toFixed(2)}</span>
                     </div>
                 </div>
             </CardFooter>
