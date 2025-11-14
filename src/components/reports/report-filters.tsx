@@ -1,7 +1,6 @@
-
 'use client'
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useCallback } from 'react';
 import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand, PurchaseOrder, Invoice, GoodsReceivedNote } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -224,10 +223,19 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                     params.append('to_location', filterValues['toLocation']);
                 }
             } else if (reportName === 'Day End Sale Report') {
-                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/sales-summary`;
-                if (singleDate) {
-                    params.append('date', format(singleDate, 'yyyy-MM-dd'));
+                if (!singleDate) {
+                    toast({ variant: 'destructive', title: 'Date Required', description: 'Please select a date for the Day End Report.' });
+                    setIsFetching(false);
+                    return;
                 }
+                if (!filterValues['location'] || filterValues['location'] === 'all') {
+                    toast({ variant: 'destructive', title: 'Location Required', description: 'Please select a location for the Day End Report.' });
+                    setIsFetching(false);
+                    return;
+                }
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/get/day-and-report`;
+                params.append('date', format(singleDate, 'yyyy-MM-dd'));
+                params.append('location_id', filterValues['location']);
             }
             
             else {
@@ -239,7 +247,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             if (dateRange?.from) {
                 params.append('start_date', format(dateRange.from, 'yyyy-MM-dd'));
                 params.append('end_date', format(dateRange.to || dateRange.from, 'yyyy-MM-dd'));
-            } else if (singleDate && hasFilter('date')) {
+            } else if (singleDate && hasFilter('date') && reportName !== 'Day End Sale Report') {
                 params.append('start_date', format(singleDate, 'yyyy-MM-dd'));
                 params.append('end_date', format(singleDate, 'yyyy-MM-dd'));
             }
@@ -249,8 +257,8 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             if (!response.ok) throw new Error(`Failed to fetch ${reportName} data`);
             const data = await response.json();
             
-            if (['Item Wise Sales', 'Invoice Wise Sales Report', 'Bin Card Report', 'Stock Transfer Report'].includes(reportName)) {
-                onShowReport(data.data || { items: [], invoices: [], summary: {} });
+            if (['Item Wise Sales', 'Invoice Wise Sales Report', 'Bin Card Report', 'Stock Transfer Report', 'Day End Sale Report'].includes(reportName)) {
+                onShowReport(data.data || data || { items: [], invoices: [], summary: {} });
             } else if (reportName === 'Item Master Report') {
                 onShowReport(data.products || []);
             } else if (reportName === 'Stock Balance Report') {
