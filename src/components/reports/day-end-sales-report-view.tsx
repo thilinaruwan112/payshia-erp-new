@@ -1,3 +1,4 @@
+
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +33,9 @@ const getPaymentIcon = (type: string) => {
 
 export const DayEndSalesReportView = ({ reportData }: { reportData: ReportData }) => {
     const { currencySymbol } = useCurrency();
+    const receiptTotal = parseFloat(reportData.receipt_total || '0');
+    const returnTotal = parseFloat(reportData.return_total || '0');
+    const netBalance = receiptTotal - returnTotal;
 
     return (
         <Card className="w-full">
@@ -47,15 +51,15 @@ export const DayEndSalesReportView = ({ reportData }: { reportData: ReportData }
                     </Card>
                      <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Receipts</CardTitle></CardHeader>
-                        <CardContent><p className="text-2xl font-bold">{currencySymbol}{parseFloat(reportData.receipt_total || '0').toFixed(2)}</p></CardContent>
+                        <CardContent><p className="text-2xl font-bold">{currencySymbol}{receiptTotal.toFixed(2)}</p></CardContent>
                     </Card>
                      <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Returns</CardTitle></CardHeader>
-                        <CardContent><p className="text-2xl font-bold text-destructive">-{currencySymbol}{parseFloat(reportData.return_total || '0').toFixed(2)}</p></CardContent>
+                        <CardContent><p className="text-2xl font-bold text-destructive">-{currencySymbol}{returnTotal.toFixed(2)}</p></CardContent>
                     </Card>
                     <Card className="bg-primary/10 border-primary">
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Net Balance</CardTitle></CardHeader>
-                        <CardContent><p className="text-2xl font-bold">{currencySymbol}{reportData.balance.toFixed(2)}</p></CardContent>
+                        <CardContent><p className="text-2xl font-bold">{currencySymbol}{netBalance.toFixed(2)}</p></CardContent>
                     </Card>
                 </div>
                  <h3 className="text-lg font-semibold mb-4">Receipts by Payment Type</h3>
