@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,7 +37,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
@@ -177,10 +176,6 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const watchedItems = form.watch("items");
   const customerId = form.watch("customerId");
   const billDiscount = form.watch("discount") || 0;
-  const serviceCharge = form.watch("serviceCharge") || 0;
-  const tdlValue = form.watch("tdl") || 0;
-  const ssclValue = form.watch("sscl") || 0;
-  const vatValue = form.watch("vat") || 0;
   const invoiceType = form.watch("invoiceType");
 
   const availableOrders = React.useMemo(() => {
@@ -238,7 +233,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     }
   }
 
-  const { subtotal, itemDiscounts, calculatedServiceCharge, calculatedTdl, calculatedSscl, calculatedVat } = React.useMemo(() => {
+ const { subtotal, itemDiscounts, calculatedServiceCharge, calculatedTdl, calculatedSscl, calculatedVat } = React.useMemo(() => {
     const sub = watchedItems.reduce((total, item) => {
         const quantity = Number(item.quantity) || 0;
         const unitPrice = Number(item.unitPrice) || 0;
@@ -247,15 +242,36 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     const itemDisc = watchedItems.reduce((total, item) => (total + (Number(item.discount) || 0)), 0);
 
     const baseForTaxes = sub - itemDisc;
-    const serviceCharge = invoiceType !== "Wholesale" ? baseForTaxes * 0.10 : 0;
-    const tdl = baseForTaxes * 0.01;
+    
+    let serviceCharge = 0;
+    if (currentLocation?.service_charge_status === 'Enabled' && invoiceType !== "Wholesale") {
+      serviceCharge = baseForTaxes * 0.10;
+    }
+
+    let tdl = 0;
+    if (currentLocation?.tdl_status === 'Enabled') {
+      tdl = (baseForTaxes + serviceCharge) * 0.01;
+    }
+    
     const baseForSscl = baseForTaxes + serviceCharge;
-    const sscl = baseForSscl * 0.025;
+    let sscl = 0;
+    if (currentLocation?.sscl_status === 'Enabled') {
+       sscl = baseForSscl * 0.025;
+    }
+    
     const baseForVat = baseForTaxes + serviceCharge + tdl + sscl;
-    const vat = baseForVat * 0.18;
+    let vat = 0;
+    if (currentLocation?.vat_status === 'Enabled') {
+       vat = baseForVat * 0.18;
+    }
 
     return { subtotal: sub, itemDiscounts: itemDisc, calculatedServiceCharge: serviceCharge, calculatedTdl: tdl, calculatedSscl: sscl, calculatedVat: vat };
-  }, [watchedItems, invoiceType]);
+  }, [watchedItems, invoiceType, currentLocation]);
+
+  const serviceChargeValue = form.watch("serviceCharge") || 0;
+  const tdlValue = form.watch("tdl") || 0;
+  const ssclValue = form.watch("sscl") || 0;
+  const vatValue = form.watch("vat") || 0;
 
   useEffect(() => {
     form.setValue('serviceCharge', calculatedServiceCharge);
@@ -265,7 +281,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   }, [calculatedServiceCharge, calculatedTdl, calculatedSscl, calculatedVat, form]);
 
   const totalDiscountAmount = itemDiscounts + billDiscount;
-  const grandTotal = subtotal - totalDiscountAmount + serviceCharge + tdlValue + ssclValue + vatValue;
+  const grandTotal = subtotal - totalDiscountAmount + serviceChargeValue + tdlValue + ssclValue + vatValue;
 
   async function onSubmit(data: InvoiceFormValues) {
     setIsLoading(true);
@@ -286,7 +302,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
         discount_percentage: subtotal > 0 ? (totalDiscountAmount / subtotal) * 100 : 0,
         customer_code: data.customerId,
         service_charge: data.serviceCharge,
-        tendered_amount: data.status === '1' ? grandTotal : 0, // 1 is Paid
+        tendered_amount: data.status === '1' ? grandTotal : 0, // 1 is Active/Paid
         close_type: "Cash",
         invoice_status: data.status,
         payment_status: "Pending",
@@ -404,7 +420,6 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
             <Card className="lg:col-span-2">
                 <CardHeader>
                     <CardTitle>Invoice Details</CardTitle>
-                    <CardDescription>The endpoint for this form is: POST /invoices</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
@@ -761,7 +776,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             )}
                         />
                     </div>
-                     <div className="flex justify-between">
+                    <div className={cn("justify-between", invoiceType === 'Wholesale' ? 'hidden' : 'flex')}>
                         <span className="flex-1 mr-4">Service Charge</span>
                          <FormField
                             control={form.control}
@@ -769,14 +784,14 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
+                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" readOnly disabled />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
                     </div>
-                    <div className="flex justify-between">
+                    <div className={cn("justify-between", currentLocation?.tdl_status !== 'Enabled' ? 'hidden' : 'flex')}>
                         <span className="flex-1 mr-4">TDL</span>
                          <FormField
                             control={form.control}
@@ -784,14 +799,14 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
+                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" readOnly disabled />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
                     </div>
-                     <div className="flex justify-between">
+                     <div className={cn("justify-between", currentLocation?.sscl_status !== 'Enabled' ? 'hidden' : 'flex')}>
                         <span className="flex-1 mr-4">SSCL</span>
                          <FormField
                             control={form.control}
@@ -799,14 +814,14 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
+                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" readOnly disabled />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
                     </div>
-                     <div className="flex justify-between">
+                     <div className={cn("justify-between", currentLocation?.vat_status !== 'Enabled' ? 'hidden' : 'flex')}>
                         <span className="flex-1 mr-4">VAT</span>
                          <FormField
                             control={form.control}
@@ -814,7 +829,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
+                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" readOnly disabled />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -832,5 +847,3 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     </Form>
   );
 }
-
-    
