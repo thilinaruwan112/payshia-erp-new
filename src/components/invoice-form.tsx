@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -679,9 +680,9 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                {(availableBatches[index] || []).map(stock => (
-                                                                    <SelectItem key={stock.patch_code} value={JSON.stringify(stock)}>
-                                                                        {stock.patch_code} (Qty: {parseFloat(stock.stock_balance).toFixed(2)})
+                                                                {(availableBatches[index] || []).map(batch => (
+                                                                    <SelectItem key={batch.patch_code} value={JSON.stringify(batch)}>
+                                                                        {batch.patch_code} (Qty: {parseFloat(batch.stock_balance).toFixed(2)})
                                                                     </SelectItem>
                                                                 ))}
                                                             </SelectContent>
