@@ -346,19 +346,35 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                             </Popover>
                         </div>
                     )}
-                     {hasFilter('date') && (
-                        <div className="space-y-1.5">
-                            <Label>As of Date</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !singleDate && "text-muted-foreground")}>
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {singleDate ? format(singleDate, "PPP") : <span>Pick a date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={singleDate} onSelect={setSingleDate} /></PopoverContent>
-                            </Popover>
-                        </div>
+                    {hasFilter('date') && (
+                      <div className="space-y-1.5">
+                        <Label>As of Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !singleDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {singleDate ? (
+                                format(singleDate, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={singleDate}
+                              onSelect={setSingleDate}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     )}
                     {hasFilter('location') && (
                         <div className="space-y-1.5">
