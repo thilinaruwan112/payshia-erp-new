@@ -42,6 +42,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
 import { fetcher } from "@/lib/api";
+import { Separator } from "./ui/separator";
 
 interface ProductWithApiResponse {
   product: Product;
@@ -82,13 +83,13 @@ export function QuotationForm({ customers }: QuotationFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currentLocation, company_id } = useLocation();
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [productsWithVariants, setProductsWithVariants] = React.useState<ProductWithApiResponse[]>([]);
   
   React.useEffect(() => {
     async function fetchProducts() {
         if (!company_id) return;
-        setIsLoading(true);
+        setIsSubmitting(true);
          try {
             const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
             if (!response.ok) {
@@ -103,7 +104,7 @@ export function QuotationForm({ customers }: QuotationFormProps) {
                 description: 'Could not load product data for the form.',
             });
         } finally {
-            setIsLoading(false);
+            setIsSubmitting(false);
         }
     }
     fetchProducts();
@@ -116,10 +117,11 @@ export function QuotationForm({ customers }: QuotationFormProps) {
       label: `${p.product.name} (${v.variant.sku})`,
       value: v.variant.id,
       productId: p.product.id,
-      sellingPrice: parseFloat(String(p.product.price)),
-      wholesalePrice: p.product.wholesale_price ? parseFloat(String(p.product.wholesale_price)) : parseFloat(String(p.product.price)),
-      costPrice: p.product.cost_price ? parseFloat(String(p.product.cost_price)) : 0,
-      skuString: v.variant.sku
+      sellingPrice: parseFloat(String(v.variant.price)),
+      wholesalePrice: v.variant.wholesale_price ? parseFloat(String(v.variant.wholesale_price)) : parseFloat(String(v.variant.price)),
+      costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
+      skuString: v.variant.sku,
+      recipeType: p.product.recipe_type
   })));
   
   const defaultValues: Partial<QuotationFormValues> = {
@@ -204,16 +206,67 @@ export function QuotationForm({ customers }: QuotationFormProps) {
 
 
   async function onSubmit(data: QuotationFormValues) {
-    setIsLoading(true);
-    // Placeholder for actual API submission
-    console.log("Submitting Quotation:", data);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-        title: "Quotation Created",
-        description: "The quotation has been saved successfully.",
-    });
-    router.push('/sales/quotation');
-    setIsLoading(false);
+    if (!company_id || !currentLocation) {
+      toast({ variant: 'destructive', title: 'Error', description: 'Company or Location not selected.' });
+      return;
+    }
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      toast({ variant: 'destructive', title: 'Error', description: 'User not logged in.' });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    const payload = {
+        customer_id: parseInt(data.customerId, 10),
+        company_id: company_id,
+        location_id: parseInt(currentLocation.location_id, 10),
+        quatation_date: format(data.quotationDate, 'yyyy-MM-dd'),
+        expire_date: format(data.expiryDate, 'yyyy-MM-dd'),
+        remark: data.remark,
+        service_charge: data.serviceCharge,
+        TDL: data.tdl,
+        SSCL: data.sscl,
+        VAT: data.vat,
+        created_by: parseInt(userId, 10),
+        items: data.items.map(item => ({
+            product_id: parseInt(item.productId, 10),
+            qty: item.quantity,
+            unit_price: item.unitPrice,
+            total: item.quantity * item.unitPrice
+        }))
+    };
+
+    try {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/quotations`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to create quotation.');
+        }
+
+        toast({
+            title: "Quotation Created Successfully!",
+            description: "The quotation has been saved.",
+        });
+        
+        router.push('/sales/invoices'); // Or a dedicated quotations list page
+        router.refresh();
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({
+            variant: "destructive",
+            title: "Failed to create quotation",
+            description: errorMessage,
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   }
   
   const customerOptions = customers.map(c => ({
@@ -230,9 +283,9 @@ export function QuotationForm({ customers }: QuotationFormProps) {
                  <p className="text-muted-foreground">Create a new price quotation for a customer.</p>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
-                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isLoading}>Cancel</Button>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isSubmitting}>Cancel</Button>
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Quotation
                 </Button>
             </div>
