@@ -11,7 +11,6 @@ import Image from 'next/image';
 import { useCurrency } from '../currency-provider';
 import type { Location } from '@/lib/types';
 import { useMemo } from 'react';
-import { Separator } from './ui/separator';
 
 interface ProductCardProps {
   product: PosProduct;
@@ -33,6 +32,7 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
     let inclusivePrice = basePrice;
     let serviceCharge = 0;
     
+    // Service charge is only for Dine-In
     if (orderType === 'Dine-In' && currentLocation.service_charge_status === 'Enabled') {
         serviceCharge = basePrice * 0.10;
     }
@@ -47,12 +47,13 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
       inclusivePrice += baseForOtherTaxes * 0.025;
     }
     
-    const baseForVat = inclusivePrice; // VAT is calculated on the price after other taxes are added
+    // VAT on the price after other taxes
+    const baseForVat = inclusivePrice; 
     if (currentLocation.vat_status === 'Enabled') {
       inclusivePrice += baseForVat * 0.18;
     }
     
-    // Add service charge at the end for the final inclusive price
+    // Add service charge at the very end to the final price
     inclusivePrice += serviceCharge;
     
     return inclusivePrice;
@@ -81,7 +82,7 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
             <div className="mt-2">
                {showBothPrices ? (
                   <>
-                    <p className="text-xs text-muted-foreground line-through">{currencySymbol}{basePrice.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">Base: {currencySymbol}{basePrice.toFixed(2)}</p>
                     <p className="font-bold text-lg">{currencySymbol}{displayPrice.toFixed(2)}</p>
                   </>
                 ) : (

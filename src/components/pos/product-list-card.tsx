@@ -78,7 +78,7 @@ export function ProductListCard({ product, onSelect, currentLocation, orderType 
       <TableCell className="text-right">
         {showBothPrices ? (
           <>
-            <p className="text-xs text-muted-foreground line-through">{currencySymbol}{basePrice.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground">Base: {currencySymbol}{basePrice.toFixed(2)}</p>
             <p className="font-bold text-base">{currencySymbol}{displayPrice.toFixed(2)}</p>
           </>
         ) : (
@@ -88,4 +88,3 @@ export function ProductListCard({ product, onSelect, currentLocation, orderType 
     </TableRow>
   );
 }
-
