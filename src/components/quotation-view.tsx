@@ -131,7 +131,9 @@ export function QuotationView({ id }: QuotationViewProps) {
   };
 
   const handlePrint = () => {
-    toast({ title: 'Print function not yet implemented.' });
+    if (quotation) {
+        window.open(`/sales-print/quotations/${quotation.id}/print`, '_blank');
+    }
   };
 
   if (isLoading) {
@@ -180,7 +182,7 @@ export function QuotationView({ id }: QuotationViewProps) {
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
               </Button>
-              <Button onClick={handlePrint} disabled>
+              <Button onClick={handlePrint}>
                   <Printer className="mr-2 h-4 w-4" />
                   Print
               </Button>
