@@ -186,7 +186,7 @@ function GuestReceiptContent() {
   const adjustedItems = (invoice.items || []).map(item => {
     const basePrice = parseFloat(String(item.item_price));
     const inclusivePrice = calculateInclusivePrice(basePrice);
-    const ourPrice = inclusivePrice; // No discount applied here
+    const ourPrice = inclusivePrice;
     const quantity = parseFloat(String(item.quantity));
     const lineTotal = ourPrice * quantity;
     return { ...item, lineTotal, inclusivePrice, ourPrice };
@@ -208,7 +208,8 @@ function GuestReceiptContent() {
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
-            <p>Tel: {location?.phone_1}</p>
+          {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
+          <p>Tel: {location?.phone_1}</p>
           <h1 className="font-bold text-lg">GUEST RECEIPT</h1>
         </div>
 
