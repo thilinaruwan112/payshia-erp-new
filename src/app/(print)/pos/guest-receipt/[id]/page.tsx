@@ -189,7 +189,7 @@ function GuestReceiptContent() {
     const ourPrice = inclusivePrice * 0.9;
     const quantity = parseFloat(String(item.quantity));
     const lineTotal = ourPrice * quantity;
-    return { ...item, displayPrice: displayPrice, lineTotal, inclusivePrice, ourPrice };
+    return { ...item, lineTotal, inclusivePrice, ourPrice };
   });
 
   const subtotal = adjustedItems.reduce((acc, item) => acc + item.lineTotal, 0);
@@ -237,11 +237,10 @@ function GuestReceiptContent() {
           </thead>
           <tbody>
             {adjustedItems.map((item, index) => {
-              const basePrice = parseFloat(String(item.item_price));
-              const inclusivePrice = calculateInclusivePrice(basePrice);
+              const inclusivePrice = item.inclusivePrice;
               const ourPrice = item.ourPrice;
               const quantity = parseFloat(String(item.quantity));
-              const lineTotal = ourPrice * quantity;
+              const lineTotal = item.lineTotal;
               
               return (
                 <React.Fragment key={index}>
