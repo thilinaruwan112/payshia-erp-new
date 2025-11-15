@@ -2,14 +2,14 @@
 'use client'
 
 import { type User, type Product, type ProductVariant, type Location } from '@/lib/types';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { fetcher } from '@/lib/api';
-import { useCurrency } from '../currency-provider';
+import { useCurrency } from '@/components/currency-provider';
 
 
 interface QuotationItem {
