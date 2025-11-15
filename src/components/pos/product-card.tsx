@@ -30,31 +30,23 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
     if (!currentLocation) return basePrice;
     
     let inclusivePrice = basePrice;
-    let serviceCharge = 0;
-    
+
     // Service charge is only for Dine-In
     if (orderType === 'Dine-In' && currentLocation.service_charge_status === 'Enabled') {
-        serviceCharge = basePrice * 0.10;
+        inclusivePrice += basePrice * 0.10;
     }
     
-    const baseForOtherTaxes = basePrice + serviceCharge;
-
     if (currentLocation.tdl_status === 'Enabled') {
-      inclusivePrice += baseForOtherTaxes * 0.01;
+      inclusivePrice += inclusivePrice * 0.01;
     }
     
     if (currentLocation.sscl_status === 'Enabled') {
-      inclusivePrice += baseForOtherTaxes * 0.025;
+      inclusivePrice += inclusivePrice * 0.025;
     }
     
-    // VAT on the price after other taxes
-    const baseForVat = inclusivePrice; 
     if (currentLocation.vat_status === 'Enabled') {
-      inclusivePrice += baseForVat * 0.18;
+      inclusivePrice += inclusivePrice * 0.18;
     }
-    
-    // Add service charge at the very end to the final price
-    inclusivePrice += serviceCharge;
     
     return inclusivePrice;
   }, [basePrice, currentLocation, orderType]);

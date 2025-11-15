@@ -27,28 +27,22 @@ export function ProductListCard({ product, onSelect, currentLocation, orderType 
     if (!currentLocation) return basePrice;
 
     let inclusivePrice = basePrice;
-    let serviceCharge = 0;
     
     if (orderType === 'Dine-In' && currentLocation.service_charge_status === 'Enabled') {
-        serviceCharge = basePrice * 0.10;
+        inclusivePrice += basePrice * 0.10;
     }
     
-    const baseForOtherTaxes = basePrice + serviceCharge;
-
     if (currentLocation.tdl_status === 'Enabled') {
-      inclusivePrice += baseForOtherTaxes * 0.01;
+      inclusivePrice += inclusivePrice * 0.01;
     }
     
     if (currentLocation.sscl_status === 'Enabled') {
-      inclusivePrice += baseForOtherTaxes * 0.025;
+      inclusivePrice += inclusivePrice * 0.025;
     }
     
-    const baseForVat = inclusivePrice;
     if (currentLocation.vat_status === 'Enabled') {
-      inclusivePrice += baseForVat * 0.18;
+      inclusivePrice += inclusivePrice * 0.18;
     }
-    
-    inclusivePrice += serviceCharge;
     
     return inclusivePrice;
   }, [basePrice, currentLocation, orderType]);
