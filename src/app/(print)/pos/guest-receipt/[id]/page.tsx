@@ -1,4 +1,5 @@
 
+
 'use client';
 
 // Import the external CSS file
@@ -186,7 +187,7 @@ function GuestReceiptContent() {
   const adjustedItems = (invoice.items || []).map(item => {
     const basePrice = parseFloat(String(item.item_price));
     const inclusivePrice = calculateInclusivePrice(basePrice);
-    const ourPrice = inclusivePrice;
+    const ourPrice = inclusivePrice; 
     const quantity = parseFloat(String(item.quantity));
     const lineTotal = ourPrice * quantity;
     return { ...item, lineTotal, inclusivePrice, ourPrice };
@@ -208,9 +209,15 @@ function GuestReceiptContent() {
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
-          {logoUrl && <Image src={logoUrl} alt="logo" width={40} height={40} className="mx-auto my-1" />}
-          <p>Tel: {location?.phone_1}</p>
-          <h1 className="font-bold text-lg">GUEST RECEIPT</h1>
+          {logoUrl && <Image src={logoUrl} alt="logo" width={100} height={60} className="mx-auto my-1" />}
+          {location && (
+            <>
+              <p className="font-bold">{location.location_name}</p>
+              <p>{location.address_line1}, {location.city}</p>
+              <p>Tel: {location.phone_1}</p>
+            </>
+          )}
+          <h1 className="font-bold text-lg mt-2">GUEST RECEIPT</h1>
         </div>
 
         <div className="my-2 border-t-2 border-dashed border-black"></div>
