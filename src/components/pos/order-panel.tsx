@@ -82,6 +82,7 @@ interface OrderPanelProps {
   customers: User[];
   onUpdateCustomer: (orderId: string, customer: User) => void;
   onCustomerCreated: (newCustomer: User) => void;
+  showInclusivePriceOnly?: boolean;
 }
 
 type Receipt = {

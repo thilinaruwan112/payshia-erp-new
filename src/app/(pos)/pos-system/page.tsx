@@ -773,14 +773,14 @@ useEffect(() => {
         cashierName={currentCashier.user_name} currentLocation={currentLocation}
         paymentMethods={paymentMethods}
         onUpdateQuantity={updateQuantity} onRemoveItem={removeFromCart} onClearCart={onClearCart}
-        onHoldAndKitchen={onHoldAndKitchen}
+        onHoldAndKitchen={handleHoldAndKitchen}
         isDrawer={isDrawerOpen} onClose={() => setDrawerOpen(false)}
         setDiscount={setDiscount} 
         isServiceChargeActive={isServiceChargeActive}
         setIsServiceChargeActive={setIsServiceChargeActive}
         onUpdateDetails={onUpdateDetails}
         availableTables={tables} availableStewards={stewards}
-        customers={customers} onUpdateCustomer={onUpdateCustomer}
+        customers={customers} onUpdateCustomer={updateCustomer}
         onCustomerCreated={handleCustomerCreated}
      />
   ) : null;
@@ -920,3 +920,4 @@ useEffect(() => {
     </>
   );
 }
+
