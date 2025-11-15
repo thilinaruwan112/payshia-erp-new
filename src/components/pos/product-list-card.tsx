@@ -26,23 +26,30 @@ export function ProductListCard({ product, onSelect, currentLocation, orderType 
   const displayPrice = useMemo(() => {
     if (!currentLocation) return basePrice;
 
-    let inclusivePrice = basePrice;
-    
+    let baseForTaxes = basePrice;
+
+    // Service charge is only for Dine-In
     if (orderType === 'Dine-In' && currentLocation.service_charge_status === 'Enabled') {
-        inclusivePrice += basePrice * 0.10;
+        baseForTaxes += basePrice * 0.10;
     }
     
+    let tdl = 0;
     if (currentLocation.tdl_status === 'Enabled') {
-      inclusivePrice += inclusivePrice * 0.01;
+      tdl = baseForTaxes * 0.01;
     }
     
+    let sscl = 0;
     if (currentLocation.sscl_status === 'Enabled') {
-      inclusivePrice += inclusivePrice * 0.025;
+      sscl = baseForTaxes * 0.025;
     }
     
+    const baseForVat = baseForTaxes + tdl + sscl;
+    let vat = 0;
     if (currentLocation.vat_status === 'Enabled') {
-      inclusivePrice += inclusivePrice * 0.18;
+      vat = baseForVat * 0.18;
     }
+    
+    const inclusivePrice = baseForTaxes + tdl + sscl + vat;
     
     return inclusivePrice;
   }, [basePrice, currentLocation, orderType]);
