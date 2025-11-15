@@ -38,11 +38,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
 import { fetcher } from "@/lib/api";
+import { Separator } from "./ui/separator";
 
 type StockInfo = {
     product_id: string;
@@ -52,6 +53,7 @@ type StockInfo = {
     stock_balance: string;
     patch_code: string;
     product_variant_id: string;
+    manufacture_date?: string; // Adding this for payload consistency
 }
 
 interface ProductWithApiResponse {
@@ -177,11 +179,62 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const watchedItems = form.watch("items");
   const customerId = form.watch("customerId");
   const billDiscount = form.watch("discount") || 0;
-  const serviceCharge = form.watch("serviceCharge") || 0;
-  const tdlValue = form.watch("tdl") || 0;
-  const ssclValue = form.watch("sscl") || 0;
-  const vatValue = form.watch("vat") || 0;
   const invoiceType = form.watch("invoiceType");
+
+  const totals = useMemo(() => {
+    let sub = 0;
+    let itemDisc = 0;
+
+    for (const item of watchedItems) {
+      const quantity = Number(item.quantity) || 0;
+      const unitPrice = Number(item.unitPrice) || 0;
+      sub += quantity * unitPrice;
+      itemDisc += Number(item.discount) || 0;
+    }
+
+    const baseForTaxes = sub - itemDisc;
+    let serviceCharge = 0;
+    if (currentLocation?.service_charge_status === 'Enabled' && invoiceType !== 'Wholesale') {
+      serviceCharge = baseForTaxes * 0.10;
+    }
+
+    let tdl = 0;
+    if (currentLocation?.tdl_status === 'Enabled') {
+      tdl = (baseForTaxes + serviceCharge) * 0.01;
+    }
+
+    const baseForSscl = baseForTaxes + serviceCharge;
+    let sscl = 0;
+    if (currentLocation?.sscl_status === 'Enabled') {
+      sscl = baseForSscl * 0.025;
+    }
+
+    const baseForVat = baseForSscl + tdl + sscl;
+    let vat = 0;
+    if (currentLocation?.vat_status === 'Enabled') {
+      vat = baseForVat * 0.18;
+    }
+
+    const finalGrandTotal = baseForTaxes + serviceCharge + tdl + sscl + vat - billDiscount;
+
+    return {
+      subtotal: sub,
+      itemDiscounts: itemDisc,
+      serviceCharge,
+      tdl,
+      sscl,
+      vat,
+      grandTotal: finalGrandTotal,
+    };
+  }, [JSON.stringify(watchedItems), billDiscount, invoiceType, currentLocation]);
+
+
+  useEffect(() => {
+    form.setValue('serviceCharge', totals.serviceCharge);
+    form.setValue('tdl', totals.tdl);
+    form.setValue('sscl', totals.sscl);
+    form.setValue('vat', totals.vat);
+  }, [totals, form]);
 
   const availableOrders = React.useMemo(() => {
     if (!customerId) return [];
@@ -238,35 +291,6 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     }
   }
 
-  const { subtotal, itemDiscounts, calculatedServiceCharge, calculatedTdl, calculatedSscl, calculatedVat } = React.useMemo(() => {
-    const sub = watchedItems.reduce((total, item) => {
-        const quantity = Number(item.quantity) || 0;
-        const unitPrice = Number(item.unitPrice) || 0;
-        return total + (quantity * unitPrice);
-    }, 0);
-    const itemDisc = watchedItems.reduce((total, item) => (total + (Number(item.discount) || 0)), 0);
-
-    const baseForTaxes = sub - itemDisc;
-    const serviceCharge = invoiceType !== "Wholesale" ? baseForTaxes * 0.10 : 0;
-    const tdl = baseForTaxes * 0.01;
-    const baseForSscl = baseForTaxes + serviceCharge;
-    const sscl = baseForSscl * 0.025;
-    const baseForVat = baseForTaxes + serviceCharge + tdl + sscl;
-    const vat = baseForVat * 0.18;
-
-    return { subtotal: sub, itemDiscounts: itemDisc, calculatedServiceCharge: serviceCharge, calculatedTdl: tdl, calculatedSscl: sscl, calculatedVat: vat };
-  }, [watchedItems, invoiceType]);
-
-  useEffect(() => {
-    form.setValue('serviceCharge', calculatedServiceCharge);
-    form.setValue('tdl', calculatedTdl);
-    form.setValue('sscl', calculatedSscl);
-    form.setValue('vat', calculatedVat);
-  }, [calculatedServiceCharge, calculatedTdl, calculatedSscl, calculatedVat, form]);
-
-  const totalDiscountAmount = itemDiscounts + billDiscount;
-  const grandTotal = subtotal - totalDiscountAmount + serviceCharge + tdlValue + ssclValue + vatValue;
-
   async function onSubmit(data: InvoiceFormValues) {
     setIsLoading(true);
     
@@ -280,13 +304,13 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
 
     const payload = {
         invoice_date: format(data.invoiceDate, 'yyyy-MM-dd'),
-        inv_amount: subtotal,
-        grand_total: grandTotal,
-        discount_amount: totalDiscountAmount,
-        discount_percentage: subtotal > 0 ? (totalDiscountAmount / subtotal) * 100 : 0,
+        inv_amount: totals.subtotal,
+        grand_total: totals.grandTotal,
+        discount_amount: totals.itemDiscounts + billDiscount,
+        discount_percentage: totals.subtotal > 0 ? ((totals.itemDiscounts + billDiscount) / totals.subtotal) * 100 : 0,
         customer_code: data.customerId,
         service_charge: data.serviceCharge,
-        tendered_amount: data.status === '1' ? grandTotal : 0, // 1 is Paid
+        tendered_amount: data.status === '1' ? totals.grandTotal : 0, // 1 is Active/Paid
         close_type: "Cash",
         invoice_status: data.status,
         payment_status: "Pending",
@@ -404,7 +428,6 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
             <Card className="lg:col-span-2">
                 <CardHeader>
                     <CardTitle>Invoice Details</CardTitle>
-                    <CardDescription>The endpoint for this form is: POST /invoices</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
@@ -469,7 +492,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             </FormControl>
                             <SelectContent>
                                 {availableOrders.map(o => (
-                                    <SelectItem key={o.id} value={o.id}>{o.id} - ${o.total.toFixed(2)}</SelectItem>
+                                    <SelectItem key={o.id} value={o.id}>{o.id} - LKR{o.total.toFixed(2)}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -596,8 +619,8 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                         <TableRow>
                             <TableHead className="w-[30%]">Product</TableHead>
                             <TableHead className="w-[20%]">Batch</TableHead>
-                            <TableHead>Qty</TableHead>
-                            <TableHead>Unit Price</TableHead>
+                            <TableHead className="w-[100px]">Qty</TableHead>
+                            <TableHead className="w-[150px]">Unit Price</TableHead>
                             <TableHead>Discount</TableHead>
                             <TableHead className="text-right">Total</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
@@ -616,14 +639,14 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                     <TableCell>
                                         <FormField
                                             control={form.control}
-                                            name={`items.${index}.productVariantId`}
+                                            name={`items.${index}.sku`}
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <Select
                                                         onValueChange={(value) => {
                                                             field.onChange(value);
                                                             const selected = allSkus.find(s => s.value === value);
-                                                            form.setValue(`items.${index}.sku`, selected?.skuString || '');
+                                                            form.setValue(`items.${index}.productVariantId`, selected?.value || '');
                                                             form.setValue(`items.${index}.productId`, selected?.productId || '');
                                                             form.setValue(`items.${index}.recipeType`, selected?.recipeType || 'standard');
                                                             handleProductSelect(selected?.productId || '', selected?.value || '', index);
@@ -664,9 +687,9 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                                                 </SelectTrigger>
                                                             </FormControl>
                                                             <SelectContent>
-                                                                {(availableBatches[index] || []).map(stock => (
-                                                                    <SelectItem key={stock.patch_code} value={JSON.stringify(stock)}>
-                                                                        {stock.patch_code} (Qty: {parseFloat(stock.stock_balance).toFixed(2)})
+                                                                {(availableBatches[index] || []).map(batch => (
+                                                                    <SelectItem key={batch.patch_code} value={JSON.stringify(batch)}>
+                                                                        {batch.patch_code} (Qty: {parseFloat(batch.stock_balance).toFixed(2)})
                                                                     </SelectItem>
                                                                 ))}
                                                             </SelectContent>
@@ -698,7 +721,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} startIcon="$" />
+                                                        <Input type="number" {...field} className="min-w-[120px]" readOnly disabled />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -712,14 +735,14 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} startIcon="$" />
+                                                        <Input type="number" {...field} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
                                     </TableCell>
-                                    <TableCell className="text-right font-mono">${total.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-mono">LKR{total.toFixed(2)}</TableCell>
                                     <TableCell>
                                         {fields.length > 1 && (
                                             <Button variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -740,11 +763,11 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                 <div className="w-full max-w-sm space-y-2">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span className="font-mono">${subtotal.toFixed(2)}</span>
+                        <span className="font-mono">LKR{totals.subtotal.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between text-destructive">
                         <span>Item-wise Discount</span>
-                        <span className="font-mono">-${itemDiscounts.toFixed(2)}</span>
+                        <span className="font-mono">-LKR{totals.itemDiscounts.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between text-destructive">
                         <span className="flex-1 mr-4">Overall Discount</span>
@@ -754,76 +777,40 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
+                                        <Input type="number" {...field} startIcon={"LKR"} className="h-8 max-w-[120px]" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )}
                         />
                     </div>
-                     <div className="flex justify-between">
-                        <span className="flex-1 mr-4">Service Charge</span>
-                         <FormField
-                            control={form.control}
-                            name={`serviceCharge`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="flex-1 mr-4">TDL</span>
-                         <FormField
-                            control={form.control}
-                            name={`tdl`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                     <div className="flex justify-between">
-                        <span className="flex-1 mr-4">SSCL</span>
-                         <FormField
-                            control={form.control}
-                            name={`sscl`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                     <div className="flex justify-between">
-                        <span className="flex-1 mr-4">VAT</span>
-                         <FormField
-                            control={form.control}
-                            name={`vat`}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormControl>
-                                        <Input type="number" {...field} startIcon="$" className="h-8 max-w-[120px]" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
+                    {currentLocation?.service_charge_status === 'Enabled' && invoiceType !== 'Wholesale' && (
+                      <div className="flex justify-between">
+                          <span>Service Charge (10%)</span>
+                          <span className="font-mono">LKR{totals.serviceCharge.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {currentLocation?.tdl_status === 'Enabled' && (
+                         <div className="flex justify-between">
+                            <span>TDL (1%)</span>
+                            <span className="font-mono">LKR{totals.tdl.toFixed(2)}</span>
+                        </div>
+                    )}
+                    {currentLocation?.sscl_status === 'Enabled' && (
+                         <div className="flex justify-between">
+                            <span>SSCL (2.5%)</span>
+                            <span className="font-mono">LKR{totals.sscl.toFixed(2)}</span>
+                        </div>
+                    )}
+                     {currentLocation?.vat_status === 'Enabled' && (
+                         <div className="flex justify-between">
+                            <span>VAT (18%)</span>
+                            <span className="font-mono">LKR{totals.vat.toFixed(2)}</span>
+                        </div>
+                    )}
                      <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Grand Total</span>
-                        <span className="font-mono">${Number(grandTotal).toFixed(2)}</span>
+                        <span className="font-mono">LKR{Number(totals.grandTotal).toFixed(2)}</span>
                     </div>
                 </div>
             </CardFooter>
@@ -832,5 +819,3 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
     </Form>
   );
 }
-
-    

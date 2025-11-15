@@ -29,7 +29,7 @@ export const reportCategories = [
         reports: [
             { name: 'Credit Sales Summary Report', href: '/reports/credit-sales-summary', filters: ['dateRange', 'customer', 'location'] },
             { name: 'Customer Order Report', href: '/reports/customer-report', filters: ['dateRange', 'customer'] },
-            { name: 'Day End Sale Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
+            { name: 'Day End Sale Report', href: '/reports/sales-summary', filters: ['date', 'location'] },
             { name: 'Hourly Sales Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
             { name: 'Invoice Report', href: '/reports/invoice-report', filters: ['dateRange', 'customer', 'status'] },
             { name: 'Invoice Wise Sales Report', href: '#', filters: ['dateRange', 'location', 'user'] },
