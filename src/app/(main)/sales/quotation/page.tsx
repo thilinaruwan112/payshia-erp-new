@@ -202,7 +202,9 @@ export default function QuotationsPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem disabled>View Details</DropdownMenuItem>
+                               <DropdownMenuItem asChild>
+                                <Link href={`/sales/quotation/${quote.id}`}>View Details</Link>
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
