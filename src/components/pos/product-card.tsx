@@ -11,6 +11,7 @@ import Image from 'next/image';
 import { useCurrency } from '../currency-provider';
 import type { Location } from '@/lib/types';
 import { useMemo } from 'react';
+import { Separator } from './ui/separator';
 
 interface ProductCardProps {
   product: PosProduct;
@@ -24,41 +25,48 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
   
   const imageUrl = product.imageUrl || 'https://placehold.co/300x200.png';
   
+  const basePrice = product.price as number;
+
   const displayPrice = useMemo(() => {
-    const basePrice = product.price as number;
     if (!currentLocation) return basePrice;
     
     let inclusivePrice = basePrice;
+    let serviceCharge = 0;
     
     if (orderType === 'Dine-In' && currentLocation.service_charge_status === 'Enabled') {
-        inclusivePrice += basePrice * 0.10; // Add 10% Service Charge
+        serviceCharge = basePrice * 0.10;
     }
     
-    // Always add these taxes if enabled
-    if (currentLocation.tdl_status === 'Enabled') {
-      inclusivePrice += (basePrice + (orderType === 'Dine-In' ? basePrice * 0.10 : 0)) * 0.01;
-    }
+    const baseForOtherTaxes = basePrice + serviceCharge;
 
-    const baseForSscl = basePrice + (orderType === 'Dine-In' ? basePrice * 0.10 : 0);
-    if (currentLocation.sscl_status === 'Enabled') {
-      inclusivePrice += baseForSscl * 0.025;
+    if (currentLocation.tdl_status === 'Enabled') {
+      inclusivePrice += baseForOtherTaxes * 0.01;
     }
     
-    const baseForVat = baseForSscl + ((baseForSscl) * 0.01 * (currentLocation.tdl_status === 'Enabled' ? 1: 0)) + ((baseForSscl) * 0.025 * (currentLocation.sscl_status === 'Enabled' ? 1: 0));
+    if (currentLocation.sscl_status === 'Enabled') {
+      inclusivePrice += baseForOtherTaxes * 0.025;
+    }
+    
+    const baseForVat = inclusivePrice; // VAT is calculated on the price after other taxes are added
     if (currentLocation.vat_status === 'Enabled') {
       inclusivePrice += baseForVat * 0.18;
     }
-
+    
+    // Add service charge at the end for the final inclusive price
+    inclusivePrice += serviceCharge;
+    
     return inclusivePrice;
-  }, [product.price, currentLocation, orderType]);
+  }, [basePrice, currentLocation, orderType]);
+
+  const showBothPrices = displayPrice.toFixed(2) !== basePrice.toFixed(2);
 
 
   return (
     <Card
-      className="overflow-hidden cursor-pointer hover:border-primary transition-colors group"
+      className="overflow-hidden cursor-pointer hover:border-primary transition-colors group flex flex-col"
       onClick={() => onSelect(product)}
     >
-      <CardContent className="p-0">
+      <CardContent className="p-0 flex flex-col flex-grow">
         <Image
           src={imageUrl}
           alt={product.name}
@@ -67,11 +75,18 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
           className="w-full h-32 object-cover"
           data-ai-hint="product photo"
         />
-        <div className='p-4'>
+        <div className='p-3 flex flex-col flex-grow'>
             <h3 className="font-semibold text-base truncate group-hover:text-primary leading-tight">{product.variantName}</h3>
-            <p className="text-sm text-muted-foreground">{product.category}</p>
+            <p className="text-sm text-muted-foreground flex-grow">{product.category}</p>
             <div className="mt-2">
-                <p className="font-bold text-xl">{currencySymbol}{displayPrice.toFixed(2)}</p>
+               {showBothPrices ? (
+                  <>
+                    <p className="text-xs text-muted-foreground line-through">{currencySymbol}{basePrice.toFixed(2)}</p>
+                    <p className="font-bold text-lg">{currencySymbol}{displayPrice.toFixed(2)}</p>
+                  </>
+                ) : (
+                  <p className="font-bold text-lg">{currencySymbol}{basePrice.toFixed(2)}</p>
+                )}
             </div>
         </div>
       </CardContent>

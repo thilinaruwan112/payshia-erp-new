@@ -21,32 +21,40 @@ export function ProductListCard({ product, onSelect, currentLocation, orderType 
   
   const imageUrl = product.imageUrl || 'https://placehold.co/64x64.png';
   
+  const basePrice = product.price as number;
+
   const displayPrice = useMemo(() => {
-    const basePrice = product.price as number;
     if (!currentLocation) return basePrice;
 
     let inclusivePrice = basePrice;
+    let serviceCharge = 0;
     
     if (orderType === 'Dine-In' && currentLocation.service_charge_status === 'Enabled') {
-        inclusivePrice += basePrice * 0.10; // Add 10% Service Charge
+        serviceCharge = basePrice * 0.10;
     }
     
-    if (currentLocation.tdl_status === 'Enabled') {
-      inclusivePrice += (basePrice + (orderType === 'Dine-In' ? basePrice * 0.10 : 0)) * 0.01;
-    }
+    const baseForOtherTaxes = basePrice + serviceCharge;
 
-    const baseForSscl = basePrice + (orderType === 'Dine-In' ? basePrice * 0.10 : 0);
-    if (currentLocation.sscl_status === 'Enabled') {
-      inclusivePrice += baseForSscl * 0.025;
+    if (currentLocation.tdl_status === 'Enabled') {
+      inclusivePrice += baseForOtherTaxes * 0.01;
     }
     
-    const baseForVat = baseForSscl + ((baseForSscl) * 0.01 * (currentLocation.tdl_status === 'Enabled' ? 1: 0)) + ((baseForSscl) * 0.025 * (currentLocation.sscl_status === 'Enabled' ? 1: 0));
+    if (currentLocation.sscl_status === 'Enabled') {
+      inclusivePrice += baseForOtherTaxes * 0.025;
+    }
+    
+    const baseForVat = inclusivePrice;
     if (currentLocation.vat_status === 'Enabled') {
       inclusivePrice += baseForVat * 0.18;
     }
-
+    
+    inclusivePrice += serviceCharge;
+    
     return inclusivePrice;
-  }, [product.price, currentLocation, orderType]);
+  }, [basePrice, currentLocation, orderType]);
+
+  const showBothPrices = displayPrice.toFixed(2) !== basePrice.toFixed(2);
+
 
   return (
     <TableRow
@@ -67,9 +75,17 @@ export function ProductListCard({ product, onSelect, currentLocation, orderType 
         <p className="font-semibold">{product.variantName}</p>
         <p className="text-sm text-muted-foreground">{product.category}</p>
       </TableCell>
-      <TableCell className="text-right font-mono font-bold text-base">
-        {currencySymbol}{displayPrice.toFixed(2)}
+      <TableCell className="text-right">
+        {showBothPrices ? (
+          <>
+            <p className="text-xs text-muted-foreground line-through">{currencySymbol}{basePrice.toFixed(2)}</p>
+            <p className="font-bold text-base">{currencySymbol}{displayPrice.toFixed(2)}</p>
+          </>
+        ) : (
+          <p className="font-bold text-base">{currencySymbol}{basePrice.toFixed(2)}</p>
+        )}
       </TableCell>
     </TableRow>
   );
 }
+
