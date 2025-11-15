@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { type ReactNode, useState, useEffect, useCallback } from 'react';
@@ -65,6 +66,7 @@ import {
   Percent,
   Barcode,
   ClipboardCheck,
+  FileSignature,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -118,6 +120,7 @@ const iconMap: { [key: string]: React.ElementType } = {
   'sales-dashboard': TrendingUp,
   orders: ShoppingCart,
   invoices: FileText,
+  quotation: FileSignature,
   receipts: Receipt,
   'service-center': Wrench,
   'job-dashboard': LayoutDashboard,

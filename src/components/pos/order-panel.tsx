@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -52,12 +53,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 export interface OrderInfo {
   subtotal: number;
   serviceCharge: number;
-  discount: number; // Order-level discount
-  itemDiscounts: number; // Sum of all item-level discounts
-  total: number;
   tdl: number;
   sscl: number;
   vat: number;
+  discount: number; // Order-level discount
+  itemDiscounts: number; // Sum of all item-level discounts
+  total: number;
 };
 
 interface OrderPanelProps {
@@ -479,7 +480,6 @@ export function OrderPanel({
   customers,
   onUpdateCustomer,
   onCustomerCreated,
-  showInclusivePriceOnly = false
 }: OrderPanelProps) {
   const { toast } = useToast();
   const { company_id } = useLocation();
@@ -688,7 +688,7 @@ export function OrderPanel({
                   <div className="flex-1 flex flex-col">
                     <span className="font-semibold">{item.product.variantName}</span>
                     <span className="text-muted-foreground text-sm">
-                      {currencySymbol}{showInclusivePriceOnly ? item.product.price as number : (item.product.price as number).toFixed(2)}
+                      {currencySymbol}{(item.product.price as number).toFixed(2)}
                     </span>
                     <Badge variant="outline" className="w-fit text-xs mt-1">
                         Batch: {item.batch.patch_code}
@@ -740,7 +740,7 @@ export function OrderPanel({
           <span>-{currencySymbol}{orderTotals.itemDiscounts.toFixed(2)}</span>
         </div>
         
-        {currentLocation?.service_charge_status === 'Enabled' && orderType === 'Dine-In' && !showInclusivePriceOnly && (
+        {currentLocation?.service_charge_status === 'Enabled' && orderType === 'Dine-In' && (
              <div className="flex justify-between text-sm items-center">
                 <Label htmlFor="service-charge-toggle" className="flex items-center gap-2 cursor-pointer">
                     <Switch
@@ -753,19 +753,19 @@ export function OrderPanel({
                 <span>{currencySymbol}{orderTotals.serviceCharge.toFixed(2)}</span>
             </div>
         )}
-        {orderTotals.tdl > 0 && !showInclusivePriceOnly && (
+        {currentLocation?.tdl_status === 'Enabled' && (
              <div className="flex justify-between text-sm">
                 <span>TDL (1%)</span>
                 <span>{currencySymbol}{orderTotals.tdl.toFixed(2)}</span>
             </div>
         )}
-         {orderTotals.sscl > 0 && !showInclusivePriceOnly && (
+         {currentLocation?.sscl_status === 'Enabled' && (
              <div className="flex justify-between text-sm">
                 <span>SSCL (2.5%)</span>
                 <span>{currencySymbol}{orderTotals.sscl.toFixed(2)}</span>
             </div>
         )}
-         {orderTotals.vat > 0 && !showInclusivePriceOnly && (
+         {currentLocation?.vat_status === 'Enabled' && (
              <div className="flex justify-between text-sm">
                 <span>VAT (18%)</span>
                 <span>{currencySymbol}{orderTotals.vat.toFixed(2)}</span>
