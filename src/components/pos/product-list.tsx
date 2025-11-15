@@ -11,9 +11,10 @@ interface ProductListProps {
   products: PosProduct[];
   onProductSelect: (product: PosProduct) => void;
   currentLocation: Location | null;
+  orderType?: 'Dine-In' | 'Take Away' | 'Delivery' | 'Retail';
 }
 
-export function ProductList({ products, onProductSelect, currentLocation }: ProductListProps) {
+export function ProductList({ products, onProductSelect, currentLocation, orderType }: ProductListProps) {
   return (
     <Table>
       <TableHeader>
@@ -30,6 +31,7 @@ export function ProductList({ products, onProductSelect, currentLocation }: Prod
             product={product}
             onSelect={onProductSelect}
             currentLocation={currentLocation}
+            orderType={orderType}
           />
         ))}
       </TableBody>

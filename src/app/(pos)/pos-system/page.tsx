@@ -507,7 +507,7 @@ useEffect(() => {
         tendered_amount: 0, 
         close_type: 'N/A', 
         invoice_status: '2', // Status for held order
-        payment_status: 'Pending',
+        payment_status: "Pending",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'), 
         location_id: parseInt(currentLocation.location_id, 10), 
         table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0, 
@@ -740,7 +740,7 @@ useEffect(() => {
   
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
   
-  const orderTotals = useMemo((): OrderInfo => {
+ const orderTotals = useMemo((): OrderInfo => {
     if (!currentOrder || !currentLocation) {
       return { subtotal: 0, serviceCharge: 0, tdl: 0, sscl: 0, vat: 0, discount: 0, itemDiscounts: 0, total: 0 };
     }
@@ -766,10 +766,9 @@ useEffect(() => {
       serviceCharge = baseForTaxes * 0.10;
     }
 
-    const baseForTdl = baseForTaxes + serviceCharge;
     let tdl = 0;
     if (tdl_status === 'Enabled') {
-      tdl = baseForTdl * 0.01;
+      tdl = (baseForTaxes + serviceCharge) * 0.01;
     }
 
     const baseForSscl = baseForTaxes + serviceCharge;
@@ -778,7 +777,7 @@ useEffect(() => {
       sscl = baseForSscl * 0.025;
     }
 
-    const baseForVat = baseForTaxes + serviceCharge + tdl + sscl;
+    const baseForVat = baseForSscl + tdl + sscl;
     let vat = 0;
     if (vat_status === 'Enabled') {
       vat = baseForVat * 0.18;
@@ -942,3 +941,8 @@ useEffect(() => {
     </>
   );
 }
+
+    
+
+    
+

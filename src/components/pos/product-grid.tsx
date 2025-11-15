@@ -10,9 +10,10 @@ interface ProductGridProps {
   products: PosProduct[];
   onProductSelect: (product: PosProduct) => void;
   currentLocation: Location | null;
+  orderType?: 'Dine-In' | 'Take Away' | 'Delivery' | 'Retail';
 }
 
-export function ProductGrid({ products, onProductSelect, currentLocation }: ProductGridProps) {
+export function ProductGrid({ products, onProductSelect, currentLocation, orderType }: ProductGridProps) {
   return (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {products.map((product) => (
@@ -21,6 +22,7 @@ export function ProductGrid({ products, onProductSelect, currentLocation }: Prod
                 product={product}
                 onSelect={onProductSelect}
                 currentLocation={currentLocation}
+                orderType={orderType}
             />
             ))}
         </div>
