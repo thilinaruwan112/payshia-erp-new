@@ -1,3 +1,4 @@
+
 # Sample Database Schema for Roles & Permissions
 
 This document outlines a sample SQL schema for implementing a flexible role-based access control (RBAC) system. This revised schema uses a dedicated `pages` table.
@@ -13,7 +14,9 @@ CREATE TABLE pages (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     display_name VARCHAR(255) NOT NULL,
-    description TEXT
+    description TEXT,
+    page_url VARCHAR(255),
+    category VARCHAR(255)
 );
 ```
 ---
@@ -134,3 +137,5 @@ CREATE TABLE page_user_permissions (
 4.  **Check Access**: When a user tries to access a page, your backend would check if their assigned role(s) have the necessary permission (e.g., access to 'products' page with 'read' action).
 
 
+
+```

@@ -7,6 +7,7 @@ import * as z from "zod";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -49,6 +50,10 @@ const locationFormSchema = z.object({
   phone_2: z.string().optional(),
   pos_status: z.boolean().default(false),
   logo: z.any().optional(),
+  service_charge_status: z.boolean().default(false),
+  vat_status: z.boolean().default(false),
+  tdl_status: z.boolean().default(false),
+  sscl_status: z.boolean().default(false),
 });
 
 type LocationFormValues = z.infer<typeof locationFormSchema>;
@@ -75,6 +80,10 @@ export function LocationForm({ location }: LocationFormProps) {
     phone_1: location?.phone_1 || "",
     phone_2: location?.phone_2 || "",
     pos_status: location?.pos_status === "1",
+    service_charge_status: location?.service_charge_status === "Enabled",
+    vat_status: location?.vat_status === "Enabled",
+    tdl_status: location?.tdl_status === "Enabled",
+    sscl_status: location?.sscl_status === "Enabled",
   };
 
   const form = useForm<LocationFormValues>({
@@ -122,6 +131,11 @@ export function LocationForm({ location }: LocationFormProps) {
     formData.append('created_by', 'admin');
     formData.append('updated_by', "admin");
     formData.append('pos_token', "101");
+    formData.append('service_charge_status', data.service_charge_status ? 'Enabled' : 'Disabled');
+    formData.append('vat_status', data.vat_status ? 'Enabled' : 'Disabled');
+    formData.append('tdl_status', data.tdl_status ? 'Enabled' : 'Disabled');
+    formData.append('sscl_status', data.sscl_status ? 'Enabled' : 'Disabled');
+
 
     if (data.logo instanceof File) {
       formData.append('logo_path', data.logo);
@@ -319,7 +333,7 @@ export function LocationForm({ location }: LocationFormProps) {
                 </CardContent>
             </Card>
           </div>
-          <div>
+          <div className="space-y-8">
             <Card>
                 <CardHeader>
                   <CardTitle>Location Logo</CardTitle>
@@ -356,6 +370,54 @@ export function LocationForm({ location }: LocationFormProps) {
                     </label>
                   )}
                   <Input id="logo-upload" type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Tax Settings</CardTitle>
+                    <CardDescription>Enable or disable taxes for this location.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <FormField
+                        control={form.control}
+                        name="service_charge_status"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                <FormLabel>Service Charge</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="tdl_status"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                <FormLabel>TDL</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="sscl_status"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                <FormLabel>SSCL</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="vat_status"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                                <FormLabel>VAT</FormLabel>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )}
+                    />
                 </CardContent>
             </Card>
           </div>

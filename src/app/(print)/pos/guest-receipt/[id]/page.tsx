@@ -1,4 +1,5 @@
 
+
 'use client';
 
 // Import the external CSS file
@@ -186,15 +187,14 @@ function GuestReceiptContent() {
   const adjustedItems = (invoice.items || []).map(item => {
     const basePrice = parseFloat(String(item.item_price));
     const inclusivePrice = calculateInclusivePrice(basePrice);
-    const displayPrice = inclusivePrice * 0.9;
+    const ourPrice = inclusivePrice; 
     const quantity = parseFloat(String(item.quantity));
-    const lineTotal = displayPrice * quantity;
-    return { ...item, displayPrice, lineTotal };
+    const lineTotal = ourPrice * quantity;
+    return { ...item, lineTotal, inclusivePrice, ourPrice };
   });
 
   const subtotal = adjustedItems.reduce((acc, item) => acc + item.lineTotal, 0);
-  const serviceCharge = subtotal * 0.1; // 10% of the new subtotal
-  const grandTotal = subtotal + serviceCharge - totalDiscount;
+  const grandTotal = subtotal - totalDiscount;
   
   const itemCount = invoice.items?.length || 0;
   const totalQuantity = (invoice.items || []).reduce((acc, item) => acc + parseFloat(String(item.quantity)), 0);
@@ -209,20 +209,25 @@ function GuestReceiptContent() {
     <div className="flex flex-col items-center">
       <div id="receipt-print-area" ref={receiptRef} className="shadow-lg w-[80mm] bg-white text-black p-2 font-mono text-sm leading-tight">
         <div className="text-center mb-2">
-          {logoUrl && <Image src={logoUrl} alt="logo" width={100} height={50} className="mx-auto my-1" priority />}
-          <p>{location?.location_name}</p>
-          <p>{location?.address_line1}, {location?.city}</p>
-          <p>Tel: {location?.phone_1}</p>
-          <div className="my-2 border-t-2 border-dashed border-black"></div>
-          <h1 className="font-bold text-lg">GUEST RECEIPT</h1>
+          {logoUrl && <Image src={logoUrl} alt="logo" width={100} height={60} className="mx-auto my-1" />}
+          {location && (
+            <>
+              <p className="font-bold">{location.location_name}</p>
+              <p>{location.address_line1}, {location.city}</p>
+              <p>Tel: {location.phone_1}</p>
+            </>
+          )}
+          <h1 className="font-bold text-lg mt-2">GUEST RECEIPT</h1>
         </div>
+
+        <div className="my-2 border-t-2 border-dashed border-black"></div>
         
         <div className="text-xs space-y-0.5">
           <div className="flex justify-between"><p>Invoice #: {invoice.invoice_number}</p></div>
           <div className="flex justify-between"><p>Customer: {customerName}</p></div>
           <div className="flex justify-between"><p>Date: {format(new Date(invoice.current_time.replace(' ', 'T')), "yyyy-MM-dd HH:mm:ss")}</p></div>
           <div className="flex justify-between"><p>Cashier: {cashierName}</p></div>
-          {orderTypeOrTable && <div className="flex justify-between"><p className="font-semibold">Bill Type:</p><p>{orderTypeOrTable}</p></div>}
+          {orderTypeOrTable && <div className="flex justify-between"><p>Bill Type:</p><p>{orderTypeOrTable}</p></div>}
           {stewardName && <div className="flex justify-between"><p>Steward: {stewardName}</p></div>}
         </div>
 
@@ -231,22 +236,19 @@ function GuestReceiptContent() {
         <table className="w-full text-xs">
           <thead>
             <tr className="font-semibold">
-              <td className="text-left w-[10%]">Item</td>
-              <td className="text-left w-[20%]">Marked Price</td>
-              <td className="text-center w-[20%]">Our Price</td>
-              <td className="text-right w-[10%]">Qty</td>
-              <td className="text-right w-[20%]">Amount</td>
+              <td className="text-left">Item</td>
+              <td className="text-left">Marked<br/>Price</td>
+              <td className="text-left">Our Price</td>
+              <td className="text-center">Qty</td>
+              <td className="text-right">Amount</td>
             </tr>
           </thead>
           <tbody>
             {adjustedItems.map((item, index) => {
-              const basePrice = parseFloat(String(item.item_price));
-              const inclusivePrice = calculateInclusivePrice(basePrice);
-              const itemDiscount = parseFloat(String(item.item_discount)) || 0;
-              const displayPrice = item.displayPrice;
-              const ourPrice = displayPrice - (itemDiscount / item.quantity); // Distribute item discount
+              const inclusivePrice = item.inclusivePrice;
+              const ourPrice = item.ourPrice;
               const quantity = parseFloat(String(item.quantity));
-              const lineTotal = ourPrice * quantity;
+              const lineTotal = item.lineTotal;
               
               return (
                 <React.Fragment key={index}>
@@ -256,8 +258,8 @@ function GuestReceiptContent() {
                     <tr>
                         <td></td>
                         <td className="text-left">{inclusivePrice.toFixed(2)}</td>
-                        <td className="text-center">{ourPrice.toFixed(2)}</td>
-                        <td className="text-right">{quantity.toFixed(2)}</td>
+                        <td className="text-left">{ourPrice.toFixed(2)}</td>
+                        <td className="text-center">{quantity.toFixed(2)}</td>
                         <td className="text-right font-semibold">{lineTotal.toFixed(2)}</td>
                     </tr>
                 </React.Fragment>
@@ -273,14 +275,11 @@ function GuestReceiptContent() {
             <span>{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span>Service Charge:</span>
-            <span>{serviceCharge.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
             <span>Total Discount:</span>
             <span>-{totalDiscount.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between font-bold text-base mt-1 border-t border-black pt-1">
+          <div className="my-1 border-t-2 border-dashed border-black"></div>
+          <div className="flex justify-between font-bold text-base mt-1">
             <span>TOTAL:</span>
             <span>{grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
@@ -303,7 +302,6 @@ function GuestReceiptContent() {
             <p className="font-bold">Thank You!</p>
             <p>For inquiries, please contact us within 24 hours.</p>
             <p>Software by Payshia</p>
-            <p>0770481363 | www.payshia.com</p>
         </div>
       </div>
       <Button className="w-full mt-2 print:hidden max-w-[80mm]" onClick={handlePrint}>Print</Button>

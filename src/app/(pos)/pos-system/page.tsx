@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -33,7 +34,7 @@ export type PosProduct = Product & {
   imageUrl?: string;
 };
 
-export type OrderInfo = {
+export interface OrderInfo {
   subtotal: number;
   serviceCharge: number;
   tdl: number;
@@ -507,7 +508,7 @@ useEffect(() => {
         tendered_amount: 0, 
         close_type: 'N/A', 
         invoice_status: '2', // Status for held order
-        payment_status: 'Pending',
+        payment_status: "Pending",
         current_time: format(new Date(), 'yyyy-MM-dd HH:mm:ss'), 
         location_id: parseInt(currentLocation.location_id, 10), 
         table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0, 
@@ -742,47 +743,24 @@ useEffect(() => {
   
   const orderTotals = useMemo((): OrderInfo => {
     if (!currentOrder || !currentLocation) {
-      return { subtotal: 0, serviceCharge: 0, tdl: 0, sscl: 0, vat: 0, discount: 0, itemDiscounts: 0, total: 0 };
+        return { subtotal: 0, serviceCharge: 0, tdl: 0, sscl: 0, vat: 0, discount: 0, itemDiscounts: 0, total: 0 };
     }
 
     const { cart, discount, orderType } = currentOrder;
     const { service_charge_status, tdl_status, sscl_status, vat_status } = currentLocation;
 
-    let subtotal = 0;
-    let itemDiscounts = 0;
+    const subtotal = cart.reduce((acc, item) => acc + (item.product.price as number) * item.quantity, 0);
+    const itemDiscounts = cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
     
-    for (const item of cart) {
-      const basePrice = (item.product.price as number) * item.quantity;
-      const currentItemDiscount = item.itemDiscount || 0;
-      
-      subtotal += basePrice;
-      itemDiscounts += currentItemDiscount;
-    }
+    let baseForTaxes = subtotal - itemDiscounts;
     
-    const baseForTaxes = subtotal - itemDiscounts;
+    const serviceCharge = (orderType === 'Dine-In' && service_charge_status === 'Enabled' && isServiceChargeActive)
+        ? baseForTaxes * 0.10
+        : 0;
     
-    let serviceCharge = 0;
-    if (orderType === 'Dine-In' && service_charge_status === 'Enabled' && isServiceChargeActive) {
-      serviceCharge = baseForTaxes * 0.10;
-    }
-
-    const baseForTdl = baseForTaxes + serviceCharge;
-    let tdl = 0;
-    if (tdl_status === 'Enabled') {
-      tdl = baseForTdl * 0.01;
-    }
-
-    const baseForSscl = baseForTaxes + serviceCharge;
-    let sscl = 0;
-    if (sscl_status === 'Enabled') {
-      sscl = baseForSscl * 0.025;
-    }
-
-    const baseForVat = baseForTaxes + serviceCharge + tdl + sscl;
-    let vat = 0;
-    if (vat_status === 'Enabled') {
-      vat = baseForVat * 0.18;
-    }
+    const tdl = (tdl_status === 'Enabled') ? (baseForTaxes + serviceCharge) * 0.01 : 0;
+    const sscl = (sscl_status === 'Enabled') ? (baseForTaxes + serviceCharge) * 0.025 : 0;
+    const vat = (vat_status === 'Enabled') ? (baseForTaxes + serviceCharge + tdl + sscl) * 0.18 : 0;
 
     const total = baseForTaxes + serviceCharge + tdl + sscl + vat - discount;
 
@@ -891,9 +869,9 @@ useEffect(() => {
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[calc(100vh-250px)]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
                     ) : viewMode === 'grid' ? (
-                        <ProductGrid products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} />
+                        <ProductGrid products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} orderType={currentOrder?.orderType} />
                     ) : (
-                        <ProductList products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} />
+                        <ProductList products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} orderType={currentOrder?.orderType} />
                     )}
                     </div>
                     
@@ -942,3 +920,4 @@ useEffect(() => {
     </>
   );
 }
+
