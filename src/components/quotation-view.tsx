@@ -19,6 +19,7 @@ import { fetcher } from '@/lib/api';
 interface QuotationItem {
     id: string;
     product_id: string;
+    product_variant_id: string | null;
     qty: string;
     unit_price: string;
     total: string;
@@ -33,6 +34,7 @@ interface Quotation {
   items: QuotationItem[];
   remark: string;
   grand_total: string;
+  company_id: string;
 }
 
 interface ProductWithApiResponse {
@@ -77,10 +79,7 @@ export function QuotationView({ id }: QuotationViewProps) {
       if (!id) return;
       setIsLoading(true);
       try {
-        const [quotationResponse, productsResponse] = await Promise.all([
-           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/quotations/${id}`),
-           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=1`), // Assuming company_id 1
-        ]);
+        const quotationResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/quotations/${id}`);
         
         if (!quotationResponse.ok) {
            if (quotationResponse.status === 404) notFound();
@@ -88,15 +87,19 @@ export function QuotationView({ id }: QuotationViewProps) {
         }
         const quotationData: Quotation = await quotationResponse.json();
         setQuotation(quotationData);
+
+        const [productsResponse, customerResponse] = await Promise.all([
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${quotationData.company_id}`),
+           fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${quotationData.customer_id}`),
+        ]);
         
         if (productsResponse.ok) {
             const productsData = await productsResponse.json();
             setProducts(productsData.products || []);
         }
 
-        if (quotationData.customer_id) {
-             const customerResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${quotationData.customer_id}`);
-             if (customerResponse.ok) setCustomer(await customerResponse.json());
+        if (customerResponse.ok) {
+            setCustomer(await customerResponse.json());
         }
 
       } catch (error) {
@@ -112,13 +115,19 @@ export function QuotationView({ id }: QuotationViewProps) {
     fetchData();
   }, [id, toast]);
 
-   const getProductName = (productId: string) => {
-    for (const p of products) {
-      if (p.product.id === productId) {
-        return p.product.name;
-      }
+   const getProductName = (productId: string, variantId: string | null) => {
+    const productData = products.find(p => p.product.id === productId);
+    if (!productData) return `Product ID: ${productId}`;
+
+    if (variantId) {
+        const variant = productData.variants.find(v => v.variant.id === variantId)?.variant;
+        if (variant) {
+            const variantAttributes = [variant.color, variant.size].filter(Boolean).join(' - ');
+            return variantAttributes ? `${productData.product.name} - ${variantAttributes}` : `${productData.product.name} (${variant.sku})`;
+        }
     }
-    return `Product ID: ${productId}`;
+
+    return productData.product.name;
   };
 
   const handlePrint = () => {
@@ -148,11 +157,12 @@ export function QuotationView({ id }: QuotationViewProps) {
   
   const quotationItems = quotation.items?.map(item => ({
     ...item,
-    product_name: getProductName(item.product_id),
+    product_name: getProductName(item.product_id, item.product_variant_id),
     total_cost: parseFloat(String(item.unit_price)) * parseFloat(item.qty),
   }));
   
   const statusText = getStatusText(quotation.is_active);
+  const totalValue = quotation.items.reduce((acc, item) => acc + parseFloat(item.total), 0);
 
   return (
     <div className="space-y-6">
@@ -231,7 +241,7 @@ export function QuotationView({ id }: QuotationViewProps) {
              <CardFooter className="flex justify-end font-bold text-lg">
                 <div className="flex items-center gap-4">
                     <span>Grand Total:</span>
-                    <span className="font-mono">{currencySymbol}{quotation.items.reduce((acc, item) => acc + parseFloat(item.total), 0).toFixed(2)}</span>
+                    <span className="font-mono">{currencySymbol}{totalValue.toFixed(2)}</span>
                 </div>
             </CardFooter>
          </Card>
