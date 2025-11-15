@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -24,7 +25,7 @@ export function ProductListCard({ product, onSelect, currentLocation, orderType 
   const basePrice = product.price as number;
 
   const displayPrice = useMemo(() => {
-    if (!currentLocation) return basePrice;
+    if (!currentLocation || !orderType) return basePrice;
 
     let baseForTaxes = basePrice;
 
@@ -40,7 +41,7 @@ export function ProductListCard({ product, onSelect, currentLocation, orderType 
     
     let sscl = 0;
     if (currentLocation.sscl_status === 'Enabled') {
-      sscl = baseForTaxes * 0.025;
+      sscl = (baseForTaxes + tdl) * 0.025;
     }
     
     const baseForVat = baseForTaxes + tdl + sscl;
@@ -49,12 +50,10 @@ export function ProductListCard({ product, onSelect, currentLocation, orderType 
       vat = baseForVat * 0.18;
     }
     
-    const inclusivePrice = baseForTaxes + tdl + sscl + vat;
-    
-    return inclusivePrice;
+    return baseForTaxes + tdl + sscl + vat;
   }, [basePrice, currentLocation, orderType]);
 
-  const showBothPrices = displayPrice.toFixed(2) !== basePrice.toFixed(2);
+  const showInclusivePrice = orderType && displayPrice.toFixed(2) !== basePrice.toFixed(2);
 
 
   return (
@@ -77,7 +76,7 @@ export function ProductListCard({ product, onSelect, currentLocation, orderType 
         <p className="text-sm text-muted-foreground">{product.category}</p>
       </TableCell>
       <TableCell className="text-right">
-        {showBothPrices ? (
+        {showInclusivePrice ? (
           <>
             <p className="text-xs text-muted-foreground">Base: {currencySymbol}{basePrice.toFixed(2)}</p>
             <p className="font-bold text-base">{currencySymbol}{displayPrice.toFixed(2)}</p>

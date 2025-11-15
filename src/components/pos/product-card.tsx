@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -27,9 +28,7 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
   const basePrice = product.price as number;
 
   const displayPrice = useMemo(() => {
-    if (!currentLocation) return basePrice;
-    
-    let inclusivePrice = basePrice;
+    if (!currentLocation || !orderType) return basePrice;
     
     let baseForTaxes = basePrice;
 
@@ -45,7 +44,7 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
 
     let sscl = 0;
     if (currentLocation.sscl_status === 'Enabled') {
-      sscl = baseForTaxes * 0.025;
+      sscl = (baseForTaxes + tdl) * 0.025;
     }
     
     const baseForVat = baseForTaxes + tdl + sscl;
@@ -54,12 +53,10 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
       vat = baseForVat * 0.18;
     }
     
-    inclusivePrice = baseForTaxes + tdl + sscl + vat;
-    
-    return inclusivePrice;
+    return baseForTaxes + tdl + sscl + vat;
   }, [basePrice, currentLocation, orderType]);
 
-  const showBothPrices = displayPrice.toFixed(2) !== basePrice.toFixed(2);
+  const showInclusivePrice = orderType && displayPrice.toFixed(2) !== basePrice.toFixed(2);
 
 
   return (
@@ -80,7 +77,7 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
             <h3 className="font-semibold text-base truncate group-hover:text-primary leading-tight">{product.variantName}</h3>
             <p className="text-sm text-muted-foreground flex-grow">{product.category}</p>
             <div className="mt-2">
-               {showBothPrices ? (
+               {showInclusivePrice ? (
                   <>
                     <p className="text-xs text-muted-foreground">Base: {currencySymbol}{basePrice.toFixed(2)}</p>
                     <p className="font-bold text-lg">{currencySymbol}{displayPrice.toFixed(2)}</p>

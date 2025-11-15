@@ -741,7 +741,7 @@ useEffect(() => {
   
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
   
- const orderTotals = useMemo((): OrderInfo => {
+  const orderTotals = useMemo((): OrderInfo => {
     if (!currentOrder || !currentLocation) {
         return { subtotal: 0, serviceCharge: 0, tdl: 0, sscl: 0, vat: 0, discount: 0, itemDiscounts: 0, total: 0 };
     }
@@ -751,30 +751,21 @@ useEffect(() => {
 
     const subtotal = cart.reduce((acc, item) => acc + (item.product.price as number) * item.quantity, 0);
     const itemDiscounts = cart.reduce((acc, item) => acc + (item.itemDiscount || 0), 0);
-    const baseForTaxes = subtotal - itemDiscounts;
-
+    
+    let baseForTaxes = subtotal - itemDiscounts;
+    
     const serviceCharge = (orderType === 'Dine-In' && service_charge_status === 'Enabled' && isServiceChargeActive)
         ? baseForTaxes * 0.10
         : 0;
-
-    const tdl = (tdl_status === 'Enabled')
-        ? (baseForTaxes + serviceCharge) * 0.01
-        : 0;
     
-    const baseForSscl = baseForTaxes + serviceCharge;
-    const sscl = (sscl_status === 'Enabled')
-        ? baseForSscl * 0.025
-        : 0;
-    
-    const baseForVat = baseForSscl + tdl + sscl;
-    const vat = (vat_status === 'Enabled')
-        ? baseForVat * 0.18
-        : 0;
+    const tdl = (tdl_status === 'Enabled') ? (baseForTaxes + serviceCharge) * 0.01 : 0;
+    const sscl = (sscl_status === 'Enabled') ? (baseForTaxes + serviceCharge) * 0.025 : 0;
+    const vat = (vat_status === 'Enabled') ? (baseForTaxes + serviceCharge + tdl + sscl) * 0.18 : 0;
 
     const total = baseForTaxes + serviceCharge + tdl + sscl + vat - discount;
 
     return { subtotal, serviceCharge, tdl, sscl, vat, discount, itemDiscounts, total };
-}, [currentOrder, currentLocation, isServiceChargeActive]);
+  }, [currentOrder, currentLocation, isServiceChargeActive]);
   
   const orderPanelComponent = currentOrder && currentCashier ? (
      <OrderPanel
@@ -782,14 +773,14 @@ useEffect(() => {
         cashierName={currentCashier.user_name} currentLocation={currentLocation}
         paymentMethods={paymentMethods}
         onUpdateQuantity={updateQuantity} onRemoveItem={removeFromCart} onClearCart={onClearCart}
-        onHoldAndKitchen={handleHoldAndKitchen}
+        onHoldAndKitchen={onHoldAndKitchen}
         isDrawer={isDrawerOpen} onClose={() => setDrawerOpen(false)}
         setDiscount={setDiscount} 
         isServiceChargeActive={isServiceChargeActive}
         setIsServiceChargeActive={setIsServiceChargeActive}
         onUpdateDetails={onUpdateDetails}
         availableTables={tables} availableStewards={stewards}
-        customers={customers} onUpdateCustomer={updateCustomer}
+        customers={customers} onUpdateCustomer={onUpdateCustomer}
         onCustomerCreated={handleCustomerCreated}
      />
   ) : null;
@@ -878,9 +869,9 @@ useEffect(() => {
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[calc(100vh-250px)]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
                     ) : viewMode === 'grid' ? (
-                        <ProductGrid products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} />
+                        <ProductGrid products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} orderType={currentOrder?.orderType} />
                     ) : (
-                        <ProductList products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} />
+                        <ProductList products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} orderType={currentOrder?.orderType} />
                     )}
                     </div>
                     
@@ -929,9 +920,3 @@ useEffect(() => {
     </>
   );
 }
-
-    
-
-    
-
-
