@@ -186,7 +186,7 @@ function GuestReceiptContent() {
   const adjustedItems = (invoice.items || []).map(item => {
     const basePrice = parseFloat(String(item.item_price));
     const inclusivePrice = calculateInclusivePrice(basePrice);
-    const ourPrice = inclusivePrice * 0.9;
+    const ourPrice = inclusivePrice; // No discount applied here
     const quantity = parseFloat(String(item.quantity));
     const lineTotal = ourPrice * quantity;
     return { ...item, lineTotal, inclusivePrice, ourPrice };
