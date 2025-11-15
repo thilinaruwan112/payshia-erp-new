@@ -232,7 +232,7 @@ export function AddToCartDialog({
                                     <SelectContent>
                                         {stockInfo?.batches.map(batch => (
                                             <SelectItem key={`${batch.patch_code}-${batch.expire_date}`} value={JSON.stringify(batch)}>
-                                                EXP: {format(new Date(batch.expire_date), 'dd/MM/yy')} (Qty: {batch.stock_balance})
+                                                EXP: {batch.expire_date && batch.expire_date !== '0000-00-00' ? format(new Date(batch.expire_date), 'dd/MM/yy') : 'N/A'} (Qty: {batch.stock_balance})
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
