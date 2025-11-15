@@ -102,10 +102,10 @@ export type Location = {
   pos_token: string;
   location_type: 'Retail' | 'Warehouse' | string;
   company_id: number;
-  service_charge_status?: string;
-  vat_status?: string;
-  tdl_status?: string;
-  sscl_status?: string;
+  service_charge_status?: 'Enabled' | 'Disabled';
+  vat_status?: 'Enabled' | 'Disabled';
+  tdl_status?: 'Enabled' | 'Disabled';
+  sscl_status?: 'Enabled' | 'Disabled';
 };
 
 export type InventoryItem = {

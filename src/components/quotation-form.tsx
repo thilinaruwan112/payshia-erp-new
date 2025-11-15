@@ -42,7 +42,6 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
 import { fetcher } from "@/lib/api";
-import { Separator } from "./ui/separator";
 
 interface ProductWithApiResponse {
   product: Product;
@@ -150,18 +149,17 @@ export function QuotationForm({ customers }: QuotationFormProps) {
   const billDiscount = form.watch("discount") || 0;
 
   const totals = useMemo(() => {
-    const calculatedTotals = watchedItems.reduce((acc, item) => {
-        const quantity = item.quantity || 0;
-        const unitPrice = item.unitPrice || 0;
-        const discount = item.discount || 0;
-        
-        acc.subtotal += unitPrice * quantity;
-        acc.itemDiscounts += discount;
-        
-        return acc;
-    }, { subtotal: 0, itemDiscounts: 0 });
+    let sub = 0;
+    let itemDisc = 0;
 
-    const baseForTaxes = calculatedTotals.subtotal - calculatedTotals.itemDiscounts;
+    for (const item of watchedItems) {
+      const quantity = Number(item.quantity) || 0;
+      const unitPrice = Number(item.unitPrice) || 0;
+      sub += quantity * unitPrice;
+      itemDisc += Number(item.discount) || 0;
+    }
+
+    const baseForTaxes = sub - itemDisc;
     let serviceCharge = 0;
     if (currentLocation?.service_charge_status === 'Enabled') {
       serviceCharge = baseForTaxes * 0.10;
@@ -187,8 +185,8 @@ export function QuotationForm({ customers }: QuotationFormProps) {
     const finalGrandTotal = baseForTaxes + serviceCharge + tdl + sscl + vat - billDiscount;
 
     return {
-      subtotal: calculatedTotals.subtotal,
-      itemDiscounts: calculatedTotals.itemDiscounts,
+      subtotal: sub,
+      itemDiscounts: itemDisc,
       serviceCharge,
       tdl,
       sscl,
@@ -432,7 +430,7 @@ export function QuotationForm({ customers }: QuotationFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" placeholder="1" {...field} />
+                                                        <Input type="number" placeholder="1" {...field} className="w-24" />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -446,7 +444,7 @@ export function QuotationForm({ customers }: QuotationFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} className="min-w-[120px]" />
+                                                        <Input type="number" {...field} className="min-w-[150px] pl-10" startIcon={"LKR"} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -460,7 +458,7 @@ export function QuotationForm({ customers }: QuotationFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} />
+                                                        <Input type="number" {...field} className="min-w-[150px] pl-10" startIcon={"LKR"} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -502,7 +500,7 @@ export function QuotationForm({ customers }: QuotationFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} startIcon={"LKR"} className="h-8 max-w-[120px]" />
+                                        <Input type="number" {...field} className="h-8 max-w-[150px] pl-10" startIcon={"LKR"} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
