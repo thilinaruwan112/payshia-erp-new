@@ -152,8 +152,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     return total + (quantity * cost);
   }, 0);
   
-  const taxAmount = subTotal * 0.15;
-  const totalAmount = subTotal + taxAmount;
+  const totalAmount = subTotal;
 
   async function onSubmit(data: PurchaseOrderFormValues) {
     if (!currentLocation || !company_id) {
@@ -201,7 +200,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     try {
         const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders`, {
             method: 'POST',
-            body: JSON.stringify(poPayload),
+            body: JSON.stringify(payload),
         });
 
         const result = await response.json();
@@ -505,10 +504,6 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                     <div className="flex justify-between">
                         <span>Subtotal</span>
                         <span className="font-mono">{currencySymbol}{subTotal.toFixed(2)}</span>
-                    </div>
-                     <div className="flex justify-between">
-                        <span>Tax (15%)</span>
-                        <span className="font-mono">{currencySymbol}{taxAmount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total</span>

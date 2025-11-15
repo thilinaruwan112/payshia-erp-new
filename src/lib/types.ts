@@ -79,7 +79,7 @@ export type Product = {
   display_name?: string | null;
   collectionProductId?: string; // Used for collection product association
   supplier?: string;
-  recipe_type?: 'standard' | 'a_la_carte' | 'item_recipe';
+  recipe_type?: 'standard' | 'ala cart' | 'item_recipe';
   base_location?: string;
   available_locations?: string;
   item_type?: 'raw' | 'menu' | 'both';

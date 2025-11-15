@@ -1,7 +1,6 @@
-
 'use client'
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useCallback } from 'react';
 import type { User, Supplier, Product, ProductVariant, Collection, Color, Size, Brand, PurchaseOrder, Invoice, GoodsReceivedNote } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -195,9 +194,6 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                 if (filterValues['brand'] && filterValues['brand'] !== 'all') {
                     params.append('brand_id', filterValues['brand']);
                 }
-                if (singleDate) {
-                    params.append('before_date', format(singleDate, 'yyyy-MM-dd'));
-                }
             } else if (reportName === 'Bin Card Report') {
                 if (!filterValues['item'] || filterValues['item'] === 'all' || !dateRange?.from) {
                     toast({
@@ -226,6 +222,20 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                  if (filterValues['toLocation'] && filterValues['toLocation'] !== 'all') {
                     params.append('to_location', filterValues['toLocation']);
                 }
+            } else if (reportName === 'Day End Sale Report') {
+                if (!singleDate) {
+                    toast({ variant: 'destructive', title: 'Date Required', description: 'Please select a date for the Day End Report.' });
+                    setIsFetching(false);
+                    return;
+                }
+                if (!filterValues['location'] || filterValues['location'] === 'all') {
+                    toast({ variant: 'destructive', title: 'Location Required', description: 'Please select a location for the Day End Report.' });
+                    setIsFetching(false);
+                    return;
+                }
+                url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/get/day-and-report`;
+                params.append('date', format(singleDate, 'yyyy-MM-dd'));
+                params.append('location_id', filterValues['location']);
             }
             
             else {
@@ -237,6 +247,9 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             if (dateRange?.from) {
                 params.append('start_date', format(dateRange.from, 'yyyy-MM-dd'));
                 params.append('end_date', format(dateRange.to || dateRange.from, 'yyyy-MM-dd'));
+            } else if (singleDate && hasFilter('date') && reportName !== 'Day End Sale Report') {
+                params.append('start_date', format(singleDate, 'yyyy-MM-dd'));
+                params.append('end_date', format(singleDate, 'yyyy-MM-dd'));
             }
             
             const finalUrl = `${url}?${params.toString()}`;
@@ -244,8 +257,8 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             if (!response.ok) throw new Error(`Failed to fetch ${reportName} data`);
             const data = await response.json();
             
-            if (['Item Wise Sales', 'Invoice Wise Sales Report', 'Bin Card Report', 'Stock Transfer Report'].includes(reportName)) {
-                onShowReport(data.data || { items: [], invoices: [], summary: {} });
+            if (['Item Wise Sales', 'Invoice Wise Sales Report', 'Bin Card Report', 'Stock Transfer Report', 'Day End Sale Report'].includes(reportName)) {
+                onShowReport(data.data || data || { items: [], invoices: [], summary: {} });
             } else if (reportName === 'Item Master Report') {
                 onShowReport(data.products || []);
             } else if (reportName === 'Stock Balance Report') {
@@ -306,7 +319,7 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
             <CardContent className="space-y-4">
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {hasFilter('dateRange') && (
-                        <div className="space-y-1.5 md:col-span-2 lg:col-span-1">
+                        <div className="space-y-1.5">
                             <Label>Date Range</Label>
                              <Popover>
                                 <PopoverTrigger asChild>
@@ -346,19 +359,35 @@ export const ReportFilters = ({ reportName, onBack, onShowReport, onPrintReport,
                             </Popover>
                         </div>
                     )}
-                     {hasFilter('date') && (
-                        <div className="space-y-1.5">
-                            <Label>As of Date</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button variant={"outline"} className={cn("w-full justify-start text-left font-normal", !singleDate && "text-muted-foreground")}>
-                                        <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {singleDate ? format(singleDate, "PPP") : <span>Pick a date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={singleDate} onSelect={setSingleDate} /></PopoverContent>
-                            </Popover>
-                        </div>
+                    {hasFilter('date') && (
+                      <div className="space-y-1.5">
+                        <Label>Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !singleDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {singleDate ? (
+                                format(singleDate, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={singleDate}
+                              onSelect={setSingleDate}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     )}
                     {hasFilter('location') && (
                         <div className="space-y-1.5">

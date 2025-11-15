@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useSearchParams } from 'next/navigation';
@@ -19,6 +18,7 @@ import { InvoiceWiseSalesReportView } from '@/components/reports/invoice-wise-sa
 import { StockBalanceReportView } from '@/components/reports/stock-balance-report-view';
 import { BinCardReportView } from '@/components/reports/bin-card-report-view';
 import { StockTransferReportView } from '@/components/reports/stock-transfer-report-view';
+import { DayEndSalesReportView } from '@/components/reports/day-end-sales-report-view';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import jsPDF from 'jspdf';
@@ -224,7 +224,7 @@ function ReportsPage() {
       }
     }, [searchParams, handleSelectReport]);
 
-    const hasData = Array.isArray(reportData) ? reportData.length > 0 : (reportData?.items?.length > 0 || reportData?.invoices?.length > 0 || reportData?.data?.length > 0 || reportData?.transactions?.length > 0 || reportData?.transfers?.length > 0);
+    const hasData = Array.isArray(reportData) ? reportData.length > 0 : (reportData?.items?.length > 0 || reportData?.invoices?.length > 0 || reportData?.data?.length > 0 || reportData?.transactions?.length > 0 || reportData?.transfers?.length > 0 || Object.keys(reportData).length > 2);
 
   return (
     <div className="flex flex-col gap-6">
@@ -293,6 +293,9 @@ function ReportsPage() {
                          )}
                          {hasData && selectedReport === 'Stock Transfer Report' && (
                             <StockTransferReportView reportData={reportData} />
+                         )}
+                         {hasData && selectedReport === 'Day End Sale Report' && (
+                            <DayEndSalesReportView reportData={reportData} />
                          )}
                     </div>
                 ) : (
