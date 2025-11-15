@@ -140,6 +140,8 @@ export type Customer = {
 
 
 export type User = {
+  customer_last_name: any;
+  customer_first_name: any;
   id: string;
   first_name?: string;
   last_name?: string;
