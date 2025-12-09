@@ -43,7 +43,7 @@ function BarcodePrintContent() {
 
   return (
     <div className="bg-white text-black p-0 m-0 font-sans">
-      <div className={cn("grid gap-x-[1mm] gap-y-0", columns === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
+      <div className={cn("grid gap-x-[1mm] gap-y-[2mm]", columns === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
         {bypass && (
             <div style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border-none"></div>
         )}
