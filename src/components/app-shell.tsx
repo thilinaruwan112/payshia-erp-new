@@ -120,7 +120,7 @@ const iconMap: { [key: string]: React.ElementType } = {
   'sales-dashboard': TrendingUp,
   orders: ShoppingCart,
   invoices: FileText,
-  quotation: FileSignature,
+  quotations: FileSignature,
   receipts: Receipt,
   'service-center': Wrench,
   'job-dashboard': LayoutDashboard,
