@@ -6,7 +6,7 @@ import { useSearchParams, notFound } from 'next/navigation';
 import Image from 'next/image';
 import React from 'react';
 import { cn } from '@/lib/utils';
-import '@/app/(print)/pos/print-receipt.css';
+import './barcode-styels.css';
 
 interface BarcodeItem {
     id: string;

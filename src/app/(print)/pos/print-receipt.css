@@ -1,35 +1,28 @@
 @page {
-    size: 50.8mm 26mm;
-    margin: 0;
-  }
-  
-  @media print {
-    html, body {
-      -webkit-print-color-adjust: exact !important;
-      color-adjust: exact !important;
-      width: 50.8mm;
-      height: 26mm;
-      margin: 0;
-      padding: 0;
-    }
+  size: 78mm auto;
+  margin: 0mm;
+}
 
-    body * {
-      visibility: hidden;
-    }
-    #receipt-print-area,
-    #receipt-print-area * {
-      visibility: visible;
-    }
-    #receipt-print-area {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-    }   
+@media print {
+  body * {
+    visibility: hidden;
   }
+  #receipt-print-area,
+  #receipt-print-area * {
+    visibility: visible;
 
-  body {
-    /* Set a gray background on the page so the white receipt "paper" stands out */
-    background-color: #f0f0f0;
-    font-family: 'Courier New', Courier, monospace;     
   }
+  #receipt-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    
+  }   
+}
+
+body {
+  /* Set a gray background on the page so the white receipt "paper" stands out */
+  background-color: #f0f0f0;
+  font-family: 'Courier New', Courier, monospace;     
+}
