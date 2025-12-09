@@ -1,5 +1,5 @@
 @page {
-    size: A4;
+    size: 50.8mm 26mm;
     margin: 0;
   }
   
@@ -7,6 +7,10 @@
     html, body {
       -webkit-print-color-adjust: exact !important;
       color-adjust: exact !important;
+      width: 50.8mm;
+      height: 26mm;
+      margin: 0;
+      padding: 0;
     }
 
     body * {

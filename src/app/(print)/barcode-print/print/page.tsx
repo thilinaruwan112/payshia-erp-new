@@ -6,6 +6,7 @@ import { useSearchParams, notFound } from 'next/navigation';
 import Image from 'next/image';
 import React from 'react';
 import { cn } from '@/lib/utils';
+import '@/app/(print)/pos/print-receipt.css';
 
 interface BarcodeItem {
     id: string;
@@ -19,7 +20,6 @@ function BarcodePrintContent() {
   const searchParams = useSearchParams();
   const data = searchParams.get('data');
   const bypass = searchParams.get('bypass') === 'true';
-  const paperSize = searchParams.get('size') || '50x25';
   const columns = parseInt(searchParams.get('columns') || '1', 10);
   const locationName = searchParams.get('locationName');
   
@@ -41,8 +41,8 @@ function BarcodePrintContent() {
 
 
   return (
-    <div className="bg-white text-black p-0 m-0 font-sans">
-      <div className={cn("grid gap-x-[1mm] gap-y-[2mm] print:block", columns === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
+    <div id="receipt-print-area" className="bg-white text-black p-0 m-0 font-sans">
+      <div className={cn("grid gap-y-[2mm] print:block", columns === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
         {bypass && (
             <div style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border-none print:break-after-page"></div>
         )}
