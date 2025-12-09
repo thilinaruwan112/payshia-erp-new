@@ -38,7 +38,7 @@ function BarcodePrintContent() {
   
   // 2in = 50.8mm, 1in = 25.4mm
   const itemWidth = '50.8mm';
-  const itemHeight = '25.4mm';
+  const itemHeight = '26mm';
 
 
   return (
