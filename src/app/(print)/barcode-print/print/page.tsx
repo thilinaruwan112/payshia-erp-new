@@ -36,19 +36,18 @@ function BarcodePrintContent() {
     }, 500);
   }, []);
   
-  // 2in = 50.8mm, 1in = 25.4mm
   const itemWidth = '50.8mm';
   const itemHeight = '26mm';
 
 
   return (
     <div className="bg-white text-black p-0 m-0 font-sans">
-      <div className={cn("grid gap-x-[1mm] gap-y-[2mm]", columns === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
+      <div className={cn("grid gap-x-[1mm] gap-y-[2mm] print:block", columns === 2 ? 'grid-cols-2' : 'grid-cols-1')}>
         {bypass && (
-            <div style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border-none"></div>
+            <div style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border-none print:break-after-page"></div>
         )}
         {itemsToPrint.map((item, index) => (
-            <div key={`${item.id}-${index}`} style={{ width: itemWidth, height: itemHeight }} className="p-[1.5mm] border border-dashed border-gray-300 flex flex-col justify-center items-center text-[8pt] leading-tight overflow-hidden">
+            <div key={`${item.id}-${index}`} style={{ width: itemWidth, height: itemHeight }} className="p-[1.5mm] border border-dashed border-gray-300 flex flex-col justify-center items-center text-[8pt] leading-tight overflow-hidden print:border-none print:break-after-page">
                 <p className="font-bold text-center truncate w-full">{item.name}</p>
                  <p className="font-semibold text-center truncate w-full">Rs. {item.price.toFixed(2)}</p>
                 <div className="w-full text-center my-1">
