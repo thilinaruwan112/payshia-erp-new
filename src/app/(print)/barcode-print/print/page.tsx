@@ -36,9 +36,9 @@ function BarcodePrintContent() {
     }, 500);
   }, []);
   
-  const is50x25 = paperSize === '50x25';
-  const itemWidth = is50x25 ? '50mm' : '38mm';
-  const itemHeight = '25mm';
+  // 2in = 50.8mm, 1in = 25.4mm
+  const itemWidth = '50.8mm';
+  const itemHeight = '25.4mm';
 
 
   return (
@@ -48,19 +48,21 @@ function BarcodePrintContent() {
             <div style={{ width: itemWidth, height: itemHeight }} className="p-[2mm] border-none"></div>
         )}
         {itemsToPrint.map((item, index) => (
-            <div key={`${item.id}-${index}`} style={{ width: itemWidth, height: itemHeight }} className="p-[1.5mm] border border-dashed border-gray-300 flex flex-col justify-between items-center text-[7pt] leading-tight overflow-hidden">
-                <p className="font-semibold text-center truncate w-full">{item.name}</p>
-                <div className="w-full text-center my-auto">
+            <div key={`${item.id}-${index}`} style={{ width: itemWidth, height: itemHeight }} className="p-[1.5mm] border border-dashed border-gray-300 flex flex-col justify-center items-center text-[8pt] leading-tight overflow-hidden">
+                <p className="font-bold text-center truncate w-full">{item.name}</p>
+                 <p className="font-semibold text-center truncate w-full">Rs. {item.price.toFixed(2)}</p>
+                <div className="w-full text-center my-1">
                   <Image 
                       src={`https://barcode.tec-it.com/barcode.ashx?data=${item.barcode}&code=Code128&dpi=96&imagetype=Png`}
                       alt={`Barcode for ${item.sku}`}
                       width={180}
-                      height={40}
-                      className="w-full h-auto max-h-[14mm]"
+                      height={35}
+                      className="w-full h-auto max-h-[12mm]"
                       style={{ objectFit: 'contain' }}
+                      unoptimized // Prevents Next.js image optimization which can interfere with external barcode services
                   />
                 </div>
-                {locationName && <p className="font-semibold text-[6pt] text-center w-full truncate">{locationName}</p>}
+                {locationName && <p className="font-semibold text-[7pt] text-center w-full truncate">{locationName}</p>}
             </div>
         ))}
       </div>
