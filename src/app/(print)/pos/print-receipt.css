@@ -4,9 +4,10 @@
   }
   
   @media print {
-    body, html {
-      margin: 0;
-      padding: 0;
+    html, body {
+      height: initial !important;
+      overflow: initial !important;
+      -webkit-print-color-adjust: exact;
     }
     body * {
       visibility: hidden;
