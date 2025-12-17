@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -8,7 +7,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu, LineChart, View, LayoutGrid, List } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu, LineChart, View, LayoutGrid, List, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
@@ -77,9 +76,8 @@ export default function POSPage() {
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [categorySearch, setCategorySearch] = useState('');
-  const [collectionSearch, setCollectionSearch] = useState('');
-  const [brandSearch, setBrandSearch] = useState('');
+  const [filterSearch, setFilterSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState<{type: 'category' | 'collection' | 'brand', value: string}>({type: 'category', value: 'All'});
   
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isNewOrderDialogOpen, setNewOrderDialogOpen] = useState(false);
@@ -388,6 +386,26 @@ useEffect(() => {
     } finally {
         setIsSubmittingReturn(false);
     }
+  };
+
+  const handleFilterChange = useCallback(async (type: 'category' | 'collection' | 'brand', value: string) => {
+    setActiveFilter({ type, value });
+    if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
+        try {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collection-products/get/by?collection_id=${value}&company_id=${company_id}`);
+            if (!response.ok) throw new Error('Failed to fetch collection products');
+            const data: CollectionProductLink[] = await response.json();
+            setCollectionProducts(prev => ({ ...prev, [value]: data.map(p => p.product_id) }));
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load products for this collection.' });
+        }
+    }
+  }, [company_id, collectionProducts, toast]);
+  
+  const handleResetFilters = () => {
+    setFilterSearch('');
+    setSearchTerm('');
+    setActiveFilter({ type: 'category', value: 'All' });
   };
 
 
@@ -725,13 +743,15 @@ useEffect(() => {
   };
 
   const filteredProducts = useMemo(() => {
-    return posProducts.filter(product =>
-        product.variantName.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (categorySearch === '' || product.category.toLowerCase().includes(categorySearch.toLowerCase())) &&
-        (collectionSearch === '' || (product.collections && product.collections.some((c: any) => c.title.toLowerCase().includes(collectionSearch.toLowerCase())))) &&
-        (brandSearch === '' || (product.brand && product.brand.name.toLowerCase().includes(brandSearch.toLowerCase())))
-    );
-  }, [searchTerm, categorySearch, collectionSearch, brandSearch, posProducts]);
+    let productsToFilter = posProducts;
+    if (activeFilter.type === 'brand' && activeFilter.value !== 'All') productsToFilter = posProducts.filter(p => p.brand_id === activeFilter.value);
+    else if (activeFilter.type === 'collection') {
+        const productIdsInCollection = collectionProducts[activeFilter.value];
+        if (productIdsInCollection) productsToFilter = posProducts.filter(p => productIdsInCollection.includes(p.id));
+        else if (activeFilter.value !== 'All') return [];
+    } else if (activeFilter.type === 'category' && activeFilter.value !== 'All') productsToFilter = posProducts.filter(p => p.category === activeFilter.value);
+    return productsToFilter.filter(product => product.variantName.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [searchTerm, activeFilter, posProducts, collectionProducts]);
 
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
   
@@ -779,9 +799,9 @@ useEffect(() => {
      />
   ) : null;
   
-  const filteredCategories = useMemo(() => categories.filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase())), [categories, categorySearch]);
-  const filteredCollections = useMemo(() => collections.filter(c => c.title.toLowerCase().includes(collectionSearch.toLowerCase())), [collections, collectionSearch]);
-  const filteredBrands = useMemo(() => brands.filter(b => b.name.toLowerCase().includes(brandSearch.toLowerCase())), [brands, brandSearch]);
+  const filteredCategories = useMemo(() => categories.filter(c => c.name.toLowerCase().includes(filterSearch.toLowerCase())), [categories, filterSearch]);
+  const filteredCollections = useMemo(() => collections.filter(c => c.title.toLowerCase().includes(filterSearch.toLowerCase())), [collections, filterSearch]);
+  const filteredBrands = useMemo(() => brands.filter(b => b.name.toLowerCase().includes(filterSearch.toLowerCase())), [brands, filterSearch]);
 
   if (isLocationLoading) return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (!currentLocation) return <LocationSelectionDialog open={!currentLocation} locations={availableLocations.filter(loc => loc.pos_status === '1')} onSelectLocation={(loc) => setCurrentLocation(loc)} />;
@@ -873,25 +893,29 @@ useEffect(() => {
                     
                     <aside className="hidden md:block w-48 border-l border-border overflow-y-auto">
                         <div className="h-full p-2 space-y-4">
+                            <div className="relative">
+                                <Input placeholder="Filter lists..." className="h-9 pr-8" value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} />
+                                {filterSearch && <XCircle onClick={handleResetFilters} className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground" />}
+                            </div>
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
-                                <Input placeholder="Search Categories..." className="h-8" value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} />
                                 <div className="flex flex-col gap-1 mt-2">
-                                    {filteredCategories.map(cat => <Button key={cat.id} variant='ghost' className="justify-start" onClick={() => {}}>{cat.name}</Button>)}
+                                     <Button variant={activeFilter.type === 'category' && activeFilter.value === 'All' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('category', 'All')}>All Categories</Button>
+                                    {filteredCategories.map(cat => <Button key={cat.id} variant={activeFilter.type === 'category' && activeFilter.value === cat.name ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('category', cat.name)}>{cat.name}</Button>)}
                                 </div>
                             </div>
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2 pt-2 border-t">Collections</h3>
-                                <Input placeholder="Search Collections..." className="h-8" value={collectionSearch} onChange={(e) => setCollectionSearch(e.target.value)} />
                                 <div className="flex flex-col gap-1 mt-2">
-                                    {filteredCollections.map(col => <Button key={col.id} variant='ghost' className="justify-start" onClick={() => {}}>{col.title}</Button>)}
+                                    <Button variant={activeFilter.type === 'collection' && activeFilter.value === 'All' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('collection', 'All')}>All Collections</Button>
+                                    {filteredCollections.map(col => <Button key={col.id} variant={activeFilter.type === 'collection' && activeFilter.value === col.id ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('collection', col.id)}>{col.title}</Button>)}
                                 </div>
                             </div>
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2 pt-2 border-t">Brands</h3>
-                                <Input placeholder="Search Brands..." className="h-8" value={brandSearch} onChange={(e) => setBrandSearch(e.target.value)} />
                                 <div className="flex flex-col gap-1 mt-2">
-                                    {filteredBrands.map(brand => <Button key={brand.id} variant='ghost' className="justify-start" onClick={() => {}}>{brand.name}</Button>)}
+                                     <Button variant={activeFilter.type === 'brand' && activeFilter.value === 'All' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('brand', 'All')}>All Brands</Button>
+                                    {filteredBrands.map(brand => <Button key={brand.id} variant={activeFilter.type === 'brand' && activeFilter.value === brand.id ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('brand', brand.id)}>{brand.name}</Button>)}
                                 </div>
                             </div>
                         </div>
@@ -925,4 +949,10 @@ useEffect(() => {
 }
 
 
+
+
+
+
+
+    
 

@@ -230,7 +230,6 @@ export default function ProductsPage() {
                 <TableRow>
                   <TableHead>Product</TableHead>
                   <TableHead className="hidden md:table-cell">Status</TableHead>
-                  <TableHead className="hidden md:table-cell">Inventory</TableHead>
                   <TableHead className="hidden lg:table-cell">Price</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -247,9 +246,6 @@ export default function ProductsPage() {
                       <TableCell className="hidden md:table-cell">
                         <Skeleton className="h-6 w-20 rounded-full" />
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                         <Skeleton className="h-4 w-24" />
-                      </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <Skeleton className="h-4 w-16" />
                       </TableCell>
@@ -260,10 +256,6 @@ export default function ProductsPage() {
                   ))
                 ) : (
                   paginatedProducts.map((product) => {
-                    const totalStock = (product.variants || []).reduce((sum, variant) => {
-                        return sum + (Number(variant.stock) || 0);
-                    }, 0);
-                    
                     return (
                       <TableRow key={product.id}>
                         <TableCell>
@@ -277,7 +269,6 @@ export default function ProductsPage() {
                             {product.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">{totalStock} in stock</TableCell>
                         <TableCell className="hidden lg:table-cell">{currencySymbol}{(product.price as number).toFixed(2)}</TableCell>
                         <TableCell>
                           <DropdownMenu>
