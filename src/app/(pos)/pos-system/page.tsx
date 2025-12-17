@@ -110,12 +110,19 @@ export default function POSPage() {
   const [barcode, setBarcode] = useState('');
 
   const handleBarcodeScan = useCallback((scannedCode: string) => {
-    const product = posProducts.find(p => p.variant.sku === scannedCode);
+    // First, try to find a match in the dedicated 'barcode' field.
+    let product = posProducts.find(p => p.variant.barcode === scannedCode);
+
+    // If no match on barcode, fall back to searching the SKU.
+    if (!product) {
+        product = posProducts.find(p => p.variant.sku === scannedCode);
+    }
+    
     if (product) {
         toast({ title: "Product Found!", description: `Opening details for ${product.variantName}` });
         setSelectedProduct(product);
     } else {
-        toast({ variant: 'destructive', title: "Not Found", description: `No product found with barcode: ${scannedCode}`});
+        toast({ variant: 'destructive', title: "Not Found", description: `No product found with barcode or SKU: ${scannedCode}`});
     }
   }, [posProducts, toast]);
 
@@ -920,4 +927,5 @@ useEffect(() => {
     </>
   );
 }
+
 
