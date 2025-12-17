@@ -214,10 +214,10 @@ export function ProductForm({ product }: ProductFormProps) {
       
       // Now that master data is loaded, set form values that depend on it
       if (product?.supplier && suppliersData.length > 0) {
-        const supplierIds = product.supplier.split(',').map(sName => {
-            const foundSupplier = suppliersData.find((s: Supplier) => s.supplier_name === sName.trim());
-            return foundSupplier ? foundSupplier.supplier_id : null;
-        }).filter(Boolean) as string[];
+        const supplierNames = product.supplier.split(',').map(s => s.trim());
+        const supplierIds = suppliersData
+            .filter((s: Supplier) => supplierNames.includes(s.supplier_name))
+            .map((s: Supplier) => s.supplier_id);
         form.setValue('supplier', supplierIds);
       }
 
