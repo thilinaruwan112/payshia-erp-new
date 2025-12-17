@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useSearchParams } from 'next/navigation';
@@ -55,20 +54,22 @@ function PrintViewContent() {
   const companyId = searchParams.get('company_id');
   const locationName = searchParams.get('location');
   const date = searchParams.get('date');
+  const locationId = searchParams.get('location_id');
 
   useEffect(() => {
     async function fetchData() {
-        if (!companyId || !date || !locationName) {
+        if (!companyId || !date || !locationId) {
             toast({ variant: 'destructive', title: 'Error', description: 'Required parameters are missing for the report.' });
             setIsLoading(false);
             return;
         };
 
+        setIsLoading(true);
         try {
             const params = new URLSearchParams({
                 date: date,
                 company_id: companyId,
-                location_id: searchParams.get('location_id') || '',
+                location_id: locationId,
             });
             const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/get/day-and-report?${params.toString()}`;
 
@@ -79,7 +80,8 @@ function PrintViewContent() {
 
             if (!reportRes.ok) throw new Error('Failed to fetch report data');
             const resultData = await reportRes.json();
-            setReportData(resultData.data);
+            
+            setReportData(resultData);
             
             if (companyRes.ok) setCompany(await companyRes.json());
 
@@ -90,7 +92,7 @@ function PrintViewContent() {
         }
     }
     fetchData();
-  }, [companyId, locationName, date, toast, searchParams]);
+  }, [companyId, locationName, date, locationId, toast]);
 
   useEffect(() => {
     if (!isLoading && reportData) {
@@ -111,7 +113,7 @@ function PrintViewContent() {
         </div>
       )
   }
-  
+
   return (
     <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
         <header className="flex justify-between items-start pb-4 border-b">
@@ -162,7 +164,10 @@ function PrintViewContent() {
                 <tbody>
                     {reportData.receipts_by_payment_type.map(pm => (
                         <tr key={pm.type_id} className="border-b">
-                            <td className="p-2 border border-gray-300 font-medium">{pm.type_name}</td>
+                            <td className="p-2 border border-gray-300 font-medium flex items-center gap-3">
+                                {getPaymentIcon(pm.type_name)}
+                                {pm.type_name}
+                            </td>
                             <td className="p-2 border border-gray-300 text-right font-mono text-base">{currencySymbol}{parseFloat(pm.amount).toFixed(2)}</td>
                         </tr>
                     ))}
@@ -180,4 +185,3 @@ export default function PrintDayEndSaleReportPage() {
         </Suspense>
     )
 }
-

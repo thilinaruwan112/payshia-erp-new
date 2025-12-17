@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useSearchParams } from 'next/navigation';
@@ -24,6 +25,7 @@ import { useLocation } from '@/components/location-provider';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { allReports, reportCategories } from '@/lib/report-list';
+import { format } from 'date-fns';
 
 
 interface ProductWithVariants {
@@ -37,8 +39,12 @@ function ReportsPage() {
     const [selectedReport, setSelectedReport] = useState<string | null>(null);
     const [reportData, setReportData] = useState<ReportData>([]);
     const [customers, setCustomers] = useState<User[]>([]);
-    const { company_id } = useLocation();
+    const { company_id, availableLocations } = useLocation();
     const { toast } = useToast();
+    const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+    const [singleDate, setSingleDate] = React.useState<Date | undefined>(new Date());
+    const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+
 
     const handleShowReport = useCallback((data: ReportData) => {
         setReportData(data);
@@ -77,9 +83,28 @@ function ReportsPage() {
         } else if (selectedReport === 'Sales Summary Report' || selectedReport === 'Invoice Report') {
             const reportDataString = encodeURIComponent(JSON.stringify(reportData));
             const reportPath = selectedReport === 'Invoice Report' ? 'invoice-report' : 'sales-summary';
-            url = `/reports-print/${reportPath}/print?company_id=${company_id}&data=${reportDataString}`;
+            const params = new URLSearchParams({ company_id: String(company_id) });
+             if (dateRange?.from) params.append('from_date', format(dateRange.from, 'yyyy-MM-dd'));
+             if (dateRange?.to) params.append('to_date', format(dateRange.to, 'yyyy-MM-dd'));
+             if (filterValues['location'] && filterValues['location'] !== 'all') {
+                const loc = availableLocations.find(l => l.location_id === filterValues['location']);
+                if (loc) params.append('location', loc.location_name);
+             }
+            url = `/reports-print/sales-summary/print?${params.toString()}`;
         } else if (selectedReport === 'GRN Report') {
              url = `/reports-print/grn-report/print?company_id=${company_id}`;
+        } else if (selectedReport === 'Day End Sale Report') {
+            if (!singleDate || !filterValues['location'] || filterValues['location'] === 'all') {
+                toast({ title: "Missing Filters", description: "Please select a date and a specific location to print the Day End Report.", variant: "destructive" });
+                return;
+            }
+            const params = new URLSearchParams({ 
+                company_id: String(company_id),
+                date: format(singleDate, 'yyyy-MM-dd'),
+                location_id: filterValues['location'],
+                location: availableLocations.find(l => l.location_id === filterValues['location'])?.location_name || '',
+            });
+            url = `/reports-print/day-end-sale/print?${params.toString()}`;
         }
         
         if (url) {
@@ -87,7 +112,7 @@ function ReportsPage() {
         } else {
              toast({ title: "Coming Soon", description: "This report is not yet available for printing." });
         }
-    }, [selectedReport, company_id, toast, reportData]);
+    }, [selectedReport, company_id, toast, reportData, dateRange, filterValues, availableLocations, singleDate]);
 
     const handleExportCSV = useCallback(() => {
         if (!reportData || (Array.isArray(reportData) && reportData.length === 0)) {
@@ -257,6 +282,12 @@ function ReportsPage() {
                             onExportCsv={handleExportCSV}
                             onExportPdf={handleExportPdf}
                             reportData={reportData}
+                            dateRange={dateRange}
+                            setDateRange={setDateRange}
+                            singleDate={singleDate}
+                            setSingleDate={setSingleDate}
+                            filterValues={filterValues}
+                            setFilterValues={setFilterValues}
                         />
                          {hasData && selectedReport === 'Customer Master Report' && (
                             <CustomerReportView customers={reportData as User[]} />

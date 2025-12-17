@@ -7,7 +7,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu, LineChart, View, LayoutGrid, List, XCircle } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu, LineChart, View, LayoutGrid, List, XCircle, Settings } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +27,16 @@ import { openCenteredPopup } from '@/lib/utils';
 import { CustomerPanel } from '@/components/pos/customer-panel';
 import { ProductList } from '@/components/pos/product-list';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -85,6 +95,8 @@ export default function POSPage() {
   const [isPendingInvoicesDialogOpen, setPendingInvoicesDialogOpen] = useState(false);
   const [isTodaySalesDialogOpen, setTodaySalesDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showProductImages, setShowProductImages] = useState(true);
   
   const [collectionProducts, setCollectionProducts] = useState<Record<string, string[]>>({});
   const [selectedProduct, setSelectedProduct] = useState<PosProduct | null>(null);
@@ -838,12 +850,36 @@ useEffect(() => {
       />
       <RefundDialog isOpen={isRefundDialogOpen} onOpenChange={setRefundDialogOpen} customers={customers} />
       <TodaySalesDialog isOpen={isTodaySalesDialogOpen} onOpenChange={setTodaySalesDialogOpen} />
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>POS Display Settings</DialogTitle>
+                <DialogDescription>Customize the appearance of the Point of Sale interface.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                <div className="flex items-center justify-between rounded-lg border p-4">
+                    <Label htmlFor="show-images" className="flex flex-col space-y-1">
+                        <span>Show Product Images</span>
+                        <span className="font-normal leading-snug text-muted-foreground">
+                            Disable this on slower connections to improve performance.
+                        </span>
+                    </Label>
+                    <Switch
+                        id="show-images"
+                        checked={showProductImages}
+                        onCheckedChange={setShowProductImages}
+                    />
+                </div>
+            </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex h-screen w-screen flex-col">
         <PosHeader
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             cashier={currentCashier}
+            onSettingsClick={() => setIsSettingsOpen(true)}
         />
         <div className="flex-1 flex overflow-hidden relative">
              {!currentOrder && (
@@ -885,17 +921,17 @@ useEffect(() => {
                     {isLoading ? (
                         <div className="flex items-center justify-center h-[calc(100vh-250px)]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>
                     ) : viewMode === 'grid' ? (
-                        <ProductGrid products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} orderType={currentOrder?.orderType} />
+                        <ProductGrid products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} orderType={currentOrder?.orderType} showImages={showProductImages} />
                     ) : (
-                        <ProductList products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} orderType={currentOrder?.orderType} />
+                        <ProductList products={filteredProducts} onProductSelect={(p) => setSelectedProduct(p)} currentLocation={currentLocation} orderType={currentOrder?.orderType} showImages={showProductImages} />
                     )}
                     </div>
                     
                     <aside className="hidden md:block w-48 border-l border-border overflow-y-auto">
                         <div className="h-full p-2 space-y-4">
-                            <div className="relative">
-                                <Input placeholder="Filter lists..." className="h-9 pr-8" value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} />
-                                {filterSearch && <XCircle onClick={handleResetFilters} className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground" />}
+                             <div className="relative p-2">
+                                <Input placeholder="Filter..." className="h-9 pr-8" value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} />
+                                {filterSearch && <XCircle onClick={handleResetFilters} className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground" />}
                             </div>
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
@@ -955,4 +991,3 @@ useEffect(() => {
 
 
     
-
