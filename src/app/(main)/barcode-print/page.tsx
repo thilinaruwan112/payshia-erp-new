@@ -155,26 +155,6 @@ export default function BarcodePrintPage() {
     }
   };
   
-  const handleSelectAll = async () => {
-    const allVariantPromises = products.flatMap(p => p.variants.map(v => ({product: p, variant: v})));
-    
-    const newSelected: Record<string, SelectableVariant> = {};
-
-    for (const { product, variant } of allVariantPromises) {
-        const stock = await fetchAndSetStock(product, variant);
-        newSelected[variant.id] = {
-            id: variant.id,
-            productId: product.id,
-            name: product.name,
-            sku: variant.sku,
-            price: Number(variant.price),
-            barcode: variant.barcode || variant.sku,
-            quantity: stock,
-        };
-    }
-    setSelectedVariants(newSelected);
-  };
-
   const handleUnselectAll = () => {
     setSelectedVariants({});
   };
@@ -281,7 +261,6 @@ export default function BarcodePrintPage() {
                         }}
                     />
                 </div>
-                <Button variant="outline" size="sm" onClick={handleSelectAll}>Select All</Button>
                 <Button variant="outline" size="sm" onClick={handleUnselectAll}>Unselect All</Button>
             </div>
           </div>
@@ -417,4 +396,3 @@ export default function BarcodePrintPage() {
     </div>
   );
 }
-
