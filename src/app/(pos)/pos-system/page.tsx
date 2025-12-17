@@ -723,12 +723,9 @@ useEffect(() => {
 
   const filteredProducts = useMemo(() => {
     return posProducts.filter(product =>
-        product.variantName.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (product.category.toLowerCase().includes(filterSearch.toLowerCase()) ||
-        (product.collections && product.collections.some((c: any) => c.title.toLowerCase().includes(filterSearch.toLowerCase()))) ||
-        (product.brand && product.brand.name.toLowerCase().includes(filterSearch.toLowerCase())))
+        product.variantName.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm, filterSearch, posProducts]);
+  }, [searchTerm, posProducts]);
 
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
   
@@ -918,6 +915,7 @@ useEffect(() => {
     </>
   );
 }
+
 
 
 
