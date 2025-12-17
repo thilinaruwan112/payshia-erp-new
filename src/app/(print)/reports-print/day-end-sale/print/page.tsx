@@ -58,8 +58,11 @@ function PrintViewContent() {
 
   useEffect(() => {
     async function fetchData() {
+        console.log("DEBUG: Fetching data with params:", { companyId, date, locationId });
+
         if (!companyId || !date || !locationId) {
             toast({ variant: 'destructive', title: 'Error', description: 'Required parameters are missing for the report.' });
+            console.error("DEBUG: Missing parameters", { companyId, date, locationId });
             setIsLoading(false);
             return;
         };
@@ -72,6 +75,7 @@ function PrintViewContent() {
                 location_id: locationId,
             });
             const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/get/day-and-report?${params.toString()}`;
+            console.log("DEBUG: Fetching URL:", url);
 
             const [reportRes, companyRes] = await Promise.all([
                  fetcher(url),
@@ -80,12 +84,15 @@ function PrintViewContent() {
 
             if (!reportRes.ok) throw new Error('Failed to fetch report data');
             const resultData = await reportRes.json();
-            // The API nests the actual data inside a "data" property.
+            console.log("DEBUG: Raw API Response:", resultData);
+            
             setReportData(resultData.data);
+            console.log("DEBUG: Set reportData state to:", resultData.data);
             
             if (companyRes.ok) setCompany(await companyRes.json());
 
         } catch(error) {
+            console.error("DEBUG: Fetch error:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch report data.' });
         } finally {
             setIsLoading(false);
@@ -96,10 +103,11 @@ function PrintViewContent() {
 
   useEffect(() => {
     if (!isLoading && reportData) {
+      console.log("DEBUG: Printing report...");
       document.title = `Day End Report - ${date}`;
       setTimeout(() => window.print(), 1000);
     } else if (!isLoading && !reportData) {
-        console.log("No data found, not printing.");
+        console.log("DEBUG: No data found, not printing.");
     }
   }, [isLoading, reportData, date]);
 
@@ -108,6 +116,7 @@ function PrintViewContent() {
   }
   
   if (!reportData) {
+      console.log("DEBUG: reportData is null or undefined in render, showing 'No Data Found'.");
       return (
         <div className="bg-white text-black p-8 text-center">
             <h2 className="text-xl font-bold">No Data Found</h2>
@@ -116,6 +125,8 @@ function PrintViewContent() {
       )
   }
   
+  console.log("DEBUG: Rendering report with data:", reportData);
+
   return (
     <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
         <header className="flex justify-between items-start pb-4 border-b">
@@ -166,7 +177,10 @@ function PrintViewContent() {
                 <tbody>
                     {reportData.receipts_by_payment_type.map(pm => (
                         <tr key={pm.type_id} className="border-b">
-                            <td className="p-2 border border-gray-300 font-medium">{pm.type_name}</td>
+                            <td className="p-2 border border-gray-300 font-medium flex items-center gap-3">
+                                {getPaymentIcon(pm.type_name)}
+                                {pm.type_name}
+                            </td>
                             <td className="p-2 border border-gray-300 text-right font-mono text-base">{currencySymbol}{parseFloat(pm.amount).toFixed(2)}</td>
                         </tr>
                     ))}
