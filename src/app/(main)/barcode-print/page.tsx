@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Printer } from 'lucide-react';
+import { Printer, Loader2 } from 'lucide-react';
 import type { Product, ProductVariant } from '@/lib/types';
 import React, { useEffect, useState, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,6 +43,7 @@ interface SelectableVariant {
     price: number;
     barcode: string;
     quantity: number;
+    productId: string;
 }
 
 
@@ -57,6 +58,7 @@ export default function BarcodePrintPage() {
 
   const [paperSize, setPaperSize] = useState('50x25');
   const [columns, setColumns] = useState('1');
+  const [isFetchingStock, setIsFetchingStock] = useState<Record<string, boolean>>({});
 
 
   const fetchProducts = useCallback(async () => {
@@ -93,21 +95,39 @@ export default function BarcodePrintPage() {
     fetchProducts();
   }, [fetchProducts]);
 
-  const handleSelectVariant = (product: Product, variant: ProductVariant, isSelected: boolean) => {
+  const handleSelectVariant = async (product: Product, variant: ProductVariant, isSelected: boolean) => {
     const variantId = variant.id;
     const newSelectedVariants = { ...selectedVariants };
 
     if (isSelected) {
+      setIsFetchingStock(prev => ({...prev, [variantId]: true}));
+      let stockQuantity = 1; // Default to 1 if API fails
+
+      if (company_id && currentLocation) {
+          try {
+              const stockResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
+              if(stockResponse.ok) {
+                  const stockData = await stockResponse.json();
+                  stockQuantity = stockData.total_stock[0]?.stock_balance ? parseFloat(stockData.total_stock[0].stock_balance) : 0;
+              }
+          } catch (error) {
+              console.error("Failed to fetch stock", error);
+              toast({ title: "Could not fetch stock", description: "Defaulting quantity to 1.", variant: "destructive" });
+          }
+      }
+      
       if (!newSelectedVariants[variantId]) {
         newSelectedVariants[variantId] = {
           id: variant.id,
+          productId: product.id,
           name: product.name,
           sku: variant.sku,
           price: Number(variant.price),
           barcode: variant.barcode || variant.sku,
-          quantity: 1,
+          quantity: stockQuantity,
         };
       }
+      setIsFetchingStock(prev => ({...prev, [variantId]: false}));
     } else {
       delete newSelectedVariants[variantId];
     }
@@ -257,13 +277,17 @@ export default function BarcodePrintPage() {
                       </TableCell>
                        <TableCell>
                         {selectedVariants[variant.id] && (
-                            <Input
-                                type="number"
-                                value={selectedVariants[variant.id].quantity}
-                                onChange={(e) => handleQuantityChange(variant.id, parseInt(e.target.value, 10) || 0)}
-                                className="w-24"
-                                min="0"
-                            />
+                            isFetchingStock[variant.id] ? (
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                            ) : (
+                                <Input
+                                    type="number"
+                                    value={selectedVariants[variant.id].quantity}
+                                    onChange={(e) => handleQuantityChange(variant.id, parseInt(e.target.value, 10) || 0)}
+                                    className="w-24"
+                                    min="0"
+                                />
+                            )
                         )}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
