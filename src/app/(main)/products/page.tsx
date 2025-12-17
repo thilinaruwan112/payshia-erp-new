@@ -79,42 +79,18 @@ export default function ProductsPage() {
       
       if (!productsResponse.ok) throw new Error('Failed to fetch products');
       
-      const productsData: Product[] = await productsResponse.json();
+      const productsData: { products: { product: Product, variants: ProductVariant[] }[] } = await productsResponse.json();
       
-      const productsWithDetails = await Promise.all(
-        productsData.map(async (p) => {
-          const detailsResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/details/${p.id}`, { cache: 'no-store' });
-          if (!detailsResponse.ok) {
-            console.error(`Failed to fetch details for product ${p.id}`);
-            return { ...p, variants: [], frontImageUrl: p.product_image_url };
-          }
-          const detailsData = await detailsResponse.json();
-
-          // Fetch the front image specifically
-          let frontImageUrl: string | null = null;
-          if (detailsData.variants && detailsData.variants.length > 0) {
-              const firstVariant = detailsData.variants[0];
-              const imageResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/get/img?company_id=${company_id}&product_id=${p.id}&product_variant_id=${firstVariant.id}`);
-              if (imageResponse.ok) {
-                  const images: ProductImage[] = await imageResponse.json();
-                  const frontImage = images.find(img => img.image_type === 'front img');
-                  frontImageUrl = frontImage ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}` : null;
-              }
-          }
-           if (!frontImageUrl) {
-            frontImageUrl = p.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${p.product_image_url}` : null;
-          }
-
-          return { 
-            ...p, 
-            price: parseFloat(p.price as any), 
-            variants: detailsData.variants || [],
-            frontImageUrl: frontImageUrl,
+      const productsWithVariants = (productsData.products || []).map(item => {
+          return {
+              ...item.product,
+              variants: item.variants || [],
+              price: parseFloat(item.product.price as any) || 0,
+              frontImageUrl: item.product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${item.product.product_image_url}` : null,
           };
-        })
-      );
+      });
       
-      setProducts(productsWithDetails);
+      setProducts(productsWithVariants);
       setPlanDetails(limitResponse);
 
     } catch (error) {
@@ -396,4 +372,3 @@ export default function ProductsPage() {
     </>
   );
 }
-
