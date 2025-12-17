@@ -42,7 +42,7 @@ export function ProductCard({ product, onSelect, currentLocation, orderType, sho
     if (currentLocation.tdl_status === 'Enabled') {
       tdl = baseForTaxes * 0.01;
     }
-
+    
     let sscl = 0;
     if (currentLocation.sscl_status === 'Enabled') {
       sscl = (baseForTaxes + tdl) * 0.025;
@@ -66,7 +66,7 @@ export function ProductCard({ product, onSelect, currentLocation, orderType, sho
       onClick={() => onSelect(product)}
     >
       <CardContent className="p-0 flex flex-col flex-grow">
-        {showImage ? (
+        {showImage && (
             <Image
                 src={imageUrl}
                 alt={product.name}
@@ -75,10 +75,6 @@ export function ProductCard({ product, onSelect, currentLocation, orderType, sho
                 className="w-full h-32 object-cover"
                 data-ai-hint="product photo"
             />
-        ) : (
-             <div className="w-full h-32 bg-muted flex items-center justify-center">
-                <ImageIcon className="h-12 w-12 text-muted-foreground/50" />
-            </div>
         )}
         <div className='p-3 flex flex-col flex-grow'>
             <h3 className="font-semibold text-base truncate group-hover:text-primary leading-tight">{product.variantName}</h3>
