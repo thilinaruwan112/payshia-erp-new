@@ -7,6 +7,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Table,
@@ -18,9 +19,9 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Printer, Loader2 } from 'lucide-react';
+import { Printer, Loader2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Product, ProductVariant } from '@/lib/types';
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/components/currency-provider';
@@ -55,10 +56,12 @@ export default function BarcodePrintPage() {
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
   const { company_id, currentLocation } = useLocation();
-
   const [paperSize, setPaperSize] = useState('50x25');
   const [columns, setColumns] = useState('1');
   const [isFetchingStock, setIsFetchingStock] = useState<Record<string, boolean>>({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
 
   const fetchProducts = useCallback(async () => {
@@ -175,7 +178,6 @@ export default function BarcodePrintPage() {
     setSelectedVariants({});
   };
 
-
   const totalLabelsToPrint = Object.values(selectedVariants).reduce((sum, v) => sum + v.quantity, 0);
   
   const handlePrint = () => {
@@ -194,6 +196,22 @@ export default function BarcodePrintPage() {
     const locationNameParam = currentLocation ? `&locationName=${encodeURIComponent(currentLocation.location_name)}` : '';
     window.open(`/barcode-print/print?data=${dataToPrint}${bypassParam}${sizeParam}${columnsParam}${locationNameParam}`, '_blank');
   };
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(product =>
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.variants && product.variants.some(v => v.sku.toLowerCase().includes(searchTerm.toLowerCase())))
+    );
+  }, [products, searchTerm]);
+
+  const totalPages = Math.ceil(filteredProducts.reduce((acc, p) => acc + p.variants.length, 0) / itemsPerPage);
+  
+  const paginatedVariants = useMemo(() => {
+    const allVariants = filteredProducts.flatMap(p => p.variants.map(v => ({ product: p, variant: v })));
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return allVariants.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredProducts, currentPage, itemsPerPage]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -249,7 +267,19 @@ export default function BarcodePrintPage() {
                 Check the boxes for the product variants you want to print labels for.
               </CardDescription>
             </div>
-             <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+                <div className="relative w-full sm:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search products..."
+                        className="pl-9"
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                    />
+                </div>
                 <Button variant="outline" size="sm" onClick={handleSelectAll}>Select All</Button>
                 <Button variant="outline" size="sm" onClick={handleUnselectAll}>Unselect All</Button>
             </div>
@@ -290,8 +320,7 @@ export default function BarcodePrintPage() {
                   </TableRow>
                 ))
               ) : (
-                products.flatMap((product) =>
-                  product.variants.map((variant) => (
+                paginatedVariants.map(({product, variant}) => (
                     <TableRow key={variant.id}>
                       <TableCell>
                         <Checkbox
@@ -342,11 +371,43 @@ export default function BarcodePrintPage() {
                       </TableCell>
                     </TableRow>
                   ))
-                )
               )}
+               {!isLoading && paginatedVariants.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="h-24 text-center">
+                      No products found.
+                    </TableCell>
+                  </TableRow>
+                )}
             </TableBody>
           </Table>
         </CardContent>
+        <CardFooter className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">
+              Showing {paginatedVariants.length} of {filteredProducts.reduce((acc, p) => acc + p.variants.length, 0)} variants.
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardFooter>
       </Card>
     </div>
   );
