@@ -404,6 +404,7 @@ useEffect(() => {
   
   const handleResetFilters = () => {
     setFilterSearch('');
+    setSearchTerm('');
     setActiveFilter({ type: 'category', value: 'All' });
   };
 
@@ -894,11 +895,8 @@ useEffect(() => {
                         <div className="h-full p-2 space-y-4">
                             <div className="relative">
                                 <Input placeholder="Filter lists..." className="h-9 pr-8" value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} />
-                                {filterSearch && <XCircle onClick={() => setFilterSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground" />}
+                                {filterSearch && <XCircle onClick={handleResetFilters} className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground" />}
                             </div>
-                            {filterSearch && (
-                                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleResetFilters}>Reset Filters</Button>
-                            )}
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
                                 <div className="flex flex-col gap-1 mt-2">
@@ -957,3 +955,4 @@ useEffect(() => {
 
 
     
+
