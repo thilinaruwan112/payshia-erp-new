@@ -215,7 +215,7 @@ export default function BarcodePrintPage() {
   }, [filteredProducts, currentPage, itemsPerPage]);
 
   return (
-    <div className="flex flex-col gap-6 h-full">
+    <div className="flex flex-col gap-6 h-[calc(100vh-10rem)]">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Barcode Printing</h1>
@@ -259,7 +259,7 @@ export default function BarcodePrintPage() {
         </div>
       </div>
 
-      <Card className="flex-1 flex flex-col">
+      <Card className="flex-1 flex flex-col min-h-0">
         <CardHeader>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -286,105 +286,107 @@ export default function BarcodePrintPage() {
             </div>
           </div>
         </CardHeader>
-        <ScrollArea className="flex-1 min-h-0">
-            <CardContent>
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
-                    <TableHead>Product / Variant</TableHead>
-                    <TableHead className="w-[150px]">Quantity</TableHead>
-                    <TableHead className="hidden sm:table-cell">Status</TableHead>
-                    <TableHead className="hidden lg:table-cell">Price</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {isLoading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-5" /></TableCell>
-                        <TableCell>
-                        <div className="flex items-center gap-3">
-                            <Skeleton className="h-10 w-10 rounded-md" />
-                            <div className="space-y-2">
-                            <Skeleton className="h-4 w-48" />
-                            <Skeleton className="h-3 w-24" />
-                            </div>
-                        </div>
-                        </TableCell>
-                        <TableCell><Skeleton className="h-10 w-24" /></TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                        <Skeleton className="h-6 w-20 rounded-full" />
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                        <Skeleton className="h-4 w-16" />
-                        </TableCell>
-                    </TableRow>
-                    ))
-                ) : (
-                    paginatedVariants.map(({product, variant}) => (
-                        <TableRow key={variant.id}>
-                        <TableCell>
-                            <Checkbox
-                            onCheckedChange={(checked) => handleSelectVariant(product, variant, !!checked)}
-                            checked={!!selectedVariants[variant.id]}
-                            />
-                        </TableCell>
-                        <TableCell>
-                            <div className="flex items-center gap-3">
-                            <Image
-                                    alt={product.name}
-                                    className="aspect-square rounded-md object-cover"
-                                    src={product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${product.product_image_url}` : "https://placehold.co/64x64.png"}
-                                    width={40}
-                                    height={40}
-                                    data-ai-hint="product photo"
-                                />
-                                <div>
-                                    <div className="font-medium">{product.name}</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        SKU: {variant.sku}
+        <div className="flex-1 min-h-0">
+            <ScrollArea className="h-full">
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-[50px]"></TableHead>
+                            <TableHead>Product / Variant</TableHead>
+                            <TableHead className="w-[150px]">Quantity</TableHead>
+                            <TableHead className="hidden sm:table-cell">Status</TableHead>
+                            <TableHead className="hidden lg:table-cell">Price</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {isLoading ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-5" /></TableCell>
+                                <TableCell>
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="h-10 w-10 rounded-md" />
+                                    <div className="space-y-2">
+                                    <Skeleton className="h-4 w-48" />
+                                    <Skeleton className="h-3 w-24" />
                                     </div>
                                 </div>
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                            {selectedVariants[variant.id] && (
-                                isFetchingStock[variant.id] ? (
-                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                ) : (
-                                    <Input
-                                        type="number"
-                                        value={selectedVariants[variant.id].quantity}
-                                        onChange={(e) => handleQuantityChange(variant.id, parseInt(e.target.value, 10) || 0)}
-                                        className="w-24"
-                                        min="0"
+                                </TableCell>
+                                <TableCell><Skeleton className="h-10 w-24" /></TableCell>
+                                <TableCell className="hidden sm:table-cell">
+                                <Skeleton className="h-6 w-20 rounded-full" />
+                                </TableCell>
+                                <TableCell className="hidden lg:table-cell">
+                                <Skeleton className="h-4 w-16" />
+                                </TableCell>
+                            </TableRow>
+                            ))
+                        ) : (
+                            paginatedVariants.map(({product, variant}) => (
+                                <TableRow key={variant.id}>
+                                <TableCell>
+                                    <Checkbox
+                                    onCheckedChange={(checked) => handleSelectVariant(product, variant, !!checked)}
+                                    checked={!!selectedVariants[variant.id]}
                                     />
-                                )
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-3">
+                                    <Image
+                                            alt={product.name}
+                                            className="aspect-square rounded-md object-cover"
+                                            src={product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${product.product_image_url}` : "https://placehold.co/64x64.png"}
+                                            width={40}
+                                            height={40}
+                                            data-ai-hint="product photo"
+                                        />
+                                        <div>
+                                            <div className="font-medium">{product.name}</div>
+                                            <div className="text-sm text-muted-foreground">
+                                                SKU: {variant.sku}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    {selectedVariants[variant.id] && (
+                                        isFetchingStock[variant.id] ? (
+                                            <Loader2 className="h-5 w-5 animate-spin" />
+                                        ) : (
+                                            <Input
+                                                type="number"
+                                                value={selectedVariants[variant.id].quantity}
+                                                onChange={(e) => handleQuantityChange(variant.id, parseInt(e.target.value, 10) || 0)}
+                                                className="w-24"
+                                                min="0"
+                                            />
+                                        )
+                                    )}
+                                </TableCell>
+                                <TableCell className="hidden sm:table-cell">
+                                    <Badge variant={product.status === 'active' ? 'default' : 'secondary'} className={product.status === 'active' ? 'bg-green-100 text-green-800' : ''}>
+                                    {product.status}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="hidden lg:table-cell">
+                                    {currencySymbol}{(Number(variant.price)).toFixed(2)}
+                                </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                        {!isLoading && paginatedVariants.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center">
+                                No products found.
+                                </TableCell>
+                            </TableRow>
                             )}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                            <Badge variant={product.status === 'active' ? 'default' : 'secondary'} className={product.status === 'active' ? 'bg-green-100 text-green-800' : ''}>
-                            {product.status}
-                            </Badge>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                            {currencySymbol}{(Number(variant.price)).toFixed(2)}
-                        </TableCell>
-                        </TableRow>
-                    ))
-                )}
-                {!isLoading && paginatedVariants.length === 0 && (
-                    <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
-                        No products found.
-                        </TableCell>
-                    </TableRow>
-                    )}
-                </TableBody>
-            </Table>
-            </CardContent>
-        </ScrollArea>
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </ScrollArea>
+        </div>
         <CardFooter className="flex items-center justify-between mt-auto border-t pt-6">
             <div className="text-sm text-muted-foreground">
               Showing {paginatedVariants.length} of {filteredProducts.reduce((acc, p) => acc + p.variants.length, 0)} variants.
