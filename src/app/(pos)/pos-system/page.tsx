@@ -77,6 +77,7 @@ export default function POSPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSearch, setFilterSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState<{type: 'category' | 'collection' | 'brand', value: string}>({type: 'category', value: 'All'});
   
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isNewOrderDialogOpen, setNewOrderDialogOpen] = useState(false);
@@ -386,6 +387,20 @@ useEffect(() => {
         setIsSubmittingReturn(false);
     }
   };
+
+  const handleFilterChange = async (type: 'category' | 'collection' | 'brand', value: string) => {
+    setActiveFilter({ type, value });
+    if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
+        try {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collection-products/get/by?collection_id=${value}&company_id=${company_id}`);
+            if (!response.ok) throw new Error('Failed to fetch collection products');
+            const data: CollectionProductLink[] = await response.json();
+            setCollectionProducts(prev => ({ ...prev, [value]: data.map(p => p.product_id) }));
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load products for this collection.' });
+        }
+    }
+  }
 
 
   const currentOrder = useMemo(() => activeOrders.find((order) => order.id === currentOrderId), [activeOrders, currentOrderId]);
@@ -722,10 +737,15 @@ useEffect(() => {
   };
 
   const filteredProducts = useMemo(() => {
-    return posProducts.filter(product =>
-        product.variantName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [searchTerm, posProducts]);
+    let productsToFilter = posProducts;
+    if (activeFilter.type === 'brand' && activeFilter.value !== 'All') productsToFilter = posProducts.filter(p => p.brand_id === activeFilter.value);
+    else if (activeFilter.type === 'collection') {
+        const productIdsInCollection = collectionProducts[activeFilter.value];
+        if (productIdsInCollection) productsToFilter = posProducts.filter(p => productIdsInCollection.includes(p.id));
+        else if (activeFilter.value !== 'All') return [];
+    } else if (activeFilter.type === 'category' && activeFilter.value !== 'All') productsToFilter = posProducts.filter(p => p.category === activeFilter.value);
+    return productsToFilter.filter(product => product.variantName.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [searchTerm, activeFilter, posProducts, collectionProducts]);
 
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
   
@@ -871,19 +891,22 @@ useEffect(() => {
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
                                 <div className="flex flex-col gap-1 mt-2">
-                                    {filteredCategories.map(cat => <Button key={cat.id} variant='ghost' className="justify-start" onClick={() => {}}>{cat.name}</Button>)}
+                                     <Button variant={activeFilter.type === 'category' && activeFilter.value === 'All' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('category', 'All')}>All Categories</Button>
+                                    {filteredCategories.map(cat => <Button key={cat.id} variant={activeFilter.type === 'category' && activeFilter.value === cat.name ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('category', cat.name)}>{cat.name}</Button>)}
                                 </div>
                             </div>
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2 pt-2 border-t">Collections</h3>
                                 <div className="flex flex-col gap-1 mt-2">
-                                    {filteredCollections.map(col => <Button key={col.id} variant='ghost' className="justify-start" onClick={() => {}}>{col.title}</Button>)}
+                                    <Button variant={activeFilter.type === 'collection' && activeFilter.value === 'All' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('collection', 'All')}>All Collections</Button>
+                                    {filteredCollections.map(col => <Button key={col.id} variant={activeFilter.type === 'collection' && activeFilter.value === col.id ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('collection', col.id)}>{col.title}</Button>)}
                                 </div>
                             </div>
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2 pt-2 border-t">Brands</h3>
                                 <div className="flex flex-col gap-1 mt-2">
-                                    {filteredBrands.map(brand => <Button key={brand.id} variant='ghost' className="justify-start" onClick={() => {}}>{brand.name}</Button>)}
+                                     <Button variant={activeFilter.type === 'brand' && activeFilter.value === 'All' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('brand', 'All')}>All Brands</Button>
+                                    {filteredBrands.map(brand => <Button key={brand.id} variant={activeFilter.type === 'brand' && activeFilter.value === brand.id ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('brand', brand.id)}>{brand.name}</Button>)}
                                 </div>
                             </div>
                         </div>
@@ -920,3 +943,6 @@ useEffect(() => {
 
 
 
+
+
+    
