@@ -52,7 +52,7 @@ function BarcodePrintContent() {
                  <p className="font-semibold text-center truncate w-full">Rs. {item.price.toFixed(2)}</p>
                 <div className="w-full text-center my-1">
                   <Image 
-                      src={`https://barcode.tec-it.com/barcode.ashx?data=${item.barcode}&code=Code128&dpi=96&imagetype=Png`}
+                      src={`https://barcode.tec-it.com/barcode.ashx?data=${item.barcode}&code=Code128&dpi=300&imagetype=Png`}
                       alt={`Barcode for ${item.sku}`}
                       width={180}
                       height={35}
