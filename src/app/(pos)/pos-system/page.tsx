@@ -7,7 +7,7 @@ import { ProductGrid } from '@/components/pos/product-grid';
 import { OrderPanel } from '@/components/pos/order-panel';
 import { PosHeader } from '@/components/pos/pos-header';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu, LineChart, View, LayoutGrid, List } from 'lucide-react';
+import { ShoppingCart, ChefHat, Plus, NotebookPen, Loader2, Receipt, Undo2, Banknote, Maximize, Menu, LineChart, View, LayoutGrid, List, XCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
@@ -388,7 +388,7 @@ useEffect(() => {
     }
   };
 
-  const handleFilterChange = async (type: 'category' | 'collection' | 'brand', value: string) => {
+  const handleFilterChange = useCallback(async (type: 'category' | 'collection' | 'brand', value: string) => {
     setActiveFilter({ type, value });
     if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
         try {
@@ -400,7 +400,12 @@ useEffect(() => {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not load products for this collection.' });
         }
     }
-  }
+  }, [company_id, collectionProducts, toast]);
+  
+  const handleResetFilters = () => {
+    setFilterSearch('');
+    setActiveFilter({ type: 'category', value: 'All' });
+  };
 
 
   const currentOrder = useMemo(() => activeOrders.find((order) => order.id === currentOrderId), [activeOrders, currentOrderId]);
@@ -887,7 +892,13 @@ useEffect(() => {
                     
                     <aside className="hidden md:block w-48 border-l border-border overflow-y-auto">
                         <div className="h-full p-2 space-y-4">
-                             <Input placeholder="Search filters..." className="h-9" value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} />
+                            <div className="relative">
+                                <Input placeholder="Filter lists..." className="h-9 pr-8" value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} />
+                                {filterSearch && <XCircle onClick={() => setFilterSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground cursor-pointer hover:text-foreground" />}
+                            </div>
+                            {filterSearch && (
+                                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleResetFilters}>Reset Filters</Button>
+                            )}
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
                                 <div className="flex flex-col gap-1 mt-2">
