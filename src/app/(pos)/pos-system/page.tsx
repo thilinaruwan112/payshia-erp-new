@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -77,9 +76,7 @@ export default function POSPage() {
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [categorySearch, setCategorySearch] = useState('');
-  const [collectionSearch, setCollectionSearch] = useState('');
-  const [brandSearch, setBrandSearch] = useState('');
+  const [filterSearch, setFilterSearch] = useState('');
   
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isNewOrderDialogOpen, setNewOrderDialogOpen] = useState(false);
@@ -727,11 +724,11 @@ useEffect(() => {
   const filteredProducts = useMemo(() => {
     return posProducts.filter(product =>
         product.variantName.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (categorySearch === '' || product.category.toLowerCase().includes(categorySearch.toLowerCase())) &&
-        (collectionSearch === '' || (product.collections && product.collections.some((c: any) => c.title.toLowerCase().includes(collectionSearch.toLowerCase())))) &&
-        (brandSearch === '' || (product.brand && product.brand.name.toLowerCase().includes(brandSearch.toLowerCase())))
+        (product.category.toLowerCase().includes(filterSearch.toLowerCase()) ||
+        (product.collections && product.collections.some((c: any) => c.title.toLowerCase().includes(filterSearch.toLowerCase()))) ||
+        (product.brand && product.brand.name.toLowerCase().includes(filterSearch.toLowerCase())))
     );
-  }, [searchTerm, categorySearch, collectionSearch, brandSearch, posProducts]);
+  }, [searchTerm, filterSearch, posProducts]);
 
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
   
@@ -779,9 +776,9 @@ useEffect(() => {
      />
   ) : null;
   
-  const filteredCategories = useMemo(() => categories.filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase())), [categories, categorySearch]);
-  const filteredCollections = useMemo(() => collections.filter(c => c.title.toLowerCase().includes(collectionSearch.toLowerCase())), [collections, collectionSearch]);
-  const filteredBrands = useMemo(() => brands.filter(b => b.name.toLowerCase().includes(brandSearch.toLowerCase())), [brands, brandSearch]);
+  const filteredCategories = useMemo(() => categories.filter(c => c.name.toLowerCase().includes(filterSearch.toLowerCase())), [categories, filterSearch]);
+  const filteredCollections = useMemo(() => collections.filter(c => c.title.toLowerCase().includes(filterSearch.toLowerCase())), [collections, filterSearch]);
+  const filteredBrands = useMemo(() => brands.filter(b => b.name.toLowerCase().includes(filterSearch.toLowerCase())), [brands, filterSearch]);
 
   if (isLocationLoading) return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (!currentLocation) return <LocationSelectionDialog open={!currentLocation} locations={availableLocations.filter(loc => loc.pos_status === '1')} onSelectLocation={(loc) => setCurrentLocation(loc)} />;
@@ -873,23 +870,21 @@ useEffect(() => {
                     
                     <aside className="hidden md:block w-48 border-l border-border overflow-y-auto">
                         <div className="h-full p-2 space-y-4">
+                             <Input placeholder="Search filters..." className="h-9" value={filterSearch} onChange={(e) => setFilterSearch(e.target.value)} />
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
-                                <Input placeholder="Search Categories..." className="h-8" value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} />
                                 <div className="flex flex-col gap-1 mt-2">
                                     {filteredCategories.map(cat => <Button key={cat.id} variant='ghost' className="justify-start" onClick={() => {}}>{cat.name}</Button>)}
                                 </div>
                             </div>
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2 pt-2 border-t">Collections</h3>
-                                <Input placeholder="Search Collections..." className="h-8" value={collectionSearch} onChange={(e) => setCollectionSearch(e.target.value)} />
                                 <div className="flex flex-col gap-1 mt-2">
                                     {filteredCollections.map(col => <Button key={col.id} variant='ghost' className="justify-start" onClick={() => {}}>{col.title}</Button>)}
                                 </div>
                             </div>
                             <div>
                                 <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2 pt-2 border-t">Brands</h3>
-                                <Input placeholder="Search Brands..." className="h-8" value={brandSearch} onChange={(e) => setBrandSearch(e.target.value)} />
                                 <div className="flex flex-col gap-1 mt-2">
                                     {filteredBrands.map(brand => <Button key={brand.id} variant='ghost' className="justify-start" onClick={() => {}}>{brand.name}</Button>)}
                                 </div>
@@ -923,6 +918,7 @@ useEffect(() => {
     </>
   );
 }
+
 
 
 
