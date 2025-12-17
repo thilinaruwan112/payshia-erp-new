@@ -12,6 +12,7 @@ import { useCurrency } from '../currency-provider';
 import type { Location } from '@/lib/types';
 import { useMemo } from 'react';
 import { ImageIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
   product: PosProduct;
@@ -66,7 +67,7 @@ export function ProductCard({ product, onSelect, currentLocation, orderType, sho
       onClick={() => onSelect(product)}
     >
       <CardContent className="p-0 flex flex-col flex-grow">
-        {showImage && (
+        {showImage ? (
             <Image
                 src={imageUrl}
                 alt={product.name}
@@ -75,9 +76,16 @@ export function ProductCard({ product, onSelect, currentLocation, orderType, sho
                 className="w-full h-32 object-cover"
                 data-ai-hint="product photo"
             />
+        ) : (
+            <div className="h-32 bg-muted/30 flex items-center justify-center">
+                <ImageIcon className="h-12 w-12 text-muted-foreground" />
+            </div>
         )}
         <div className='p-3 flex flex-col flex-grow'>
-            <h3 className="font-semibold text-base truncate group-hover:text-primary leading-tight">{product.variantName}</h3>
+            <h3 className={cn(
+              "font-semibold text-base group-hover:text-primary leading-tight",
+              showImage && "truncate" 
+            )}>{product.variantName}</h3>
             <p className="text-sm text-muted-foreground flex-grow">{product.category}</p>
             <div className="mt-2">
                {showInclusivePrice ? (
