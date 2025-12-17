@@ -27,6 +27,7 @@ import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
 import { CustomerPanel } from '@/components/pos/customer-panel';
 import { ProductList } from '@/components/pos/product-list';
+import { Input } from '@/components/ui/input';
 
 export type PosProduct = Product & {
   variant: ProductVariant;
@@ -76,7 +77,9 @@ export default function POSPage() {
   const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState<{type: 'category' | 'collection' | 'brand', value: string}>({type: 'category', value: 'All'});
+  const [categorySearch, setCategorySearch] = useState('');
+  const [collectionSearch, setCollectionSearch] = useState('');
+  const [brandSearch, setBrandSearch] = useState('');
   
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isNewOrderDialogOpen, setNewOrderDialogOpen] = useState(false);
@@ -110,12 +113,19 @@ export default function POSPage() {
   const [barcode, setBarcode] = useState('');
 
   const handleBarcodeScan = useCallback((scannedCode: string) => {
-    const product = posProducts.find(p => p.variant.sku === scannedCode);
+    // First, try to find a match in the dedicated 'barcode' field.
+    let product = posProducts.find(p => p.variant.barcode === scannedCode);
+
+    // If no match on barcode, fall back to searching the SKU.
+    if (!product) {
+        product = posProducts.find(p => p.variant.sku === scannedCode);
+    }
+    
     if (product) {
         toast({ title: "Product Found!", description: `Opening details for ${product.variantName}` });
         setSelectedProduct(product);
     } else {
-        toast({ variant: 'destructive', title: "Not Found", description: `No product found with barcode: ${scannedCode}`});
+        toast({ variant: 'destructive', title: "Not Found", description: `No product found with barcode or SKU: ${scannedCode}`});
     }
   }, [posProducts, toast]);
 
@@ -380,20 +390,6 @@ useEffect(() => {
     }
   };
 
-
-  const handleFilterChange = async (type: 'category' | 'collection' | 'brand', value: string) => {
-    setActiveFilter({ type, value });
-    if (type === 'collection' && value !== 'All' && !collectionProducts[value]) {
-        try {
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/collection-products?collection_id=${value}&company_id=${company_id}`);
-            if (!response.ok) throw new Error('Failed to fetch collection products');
-            const data: CollectionProductLink[] = await response.json();
-            setCollectionProducts(prev => ({ ...prev, [value]: data.map(p => p.product_id) }));
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not load products for this collection.' });
-        }
-    }
-  }
 
   const currentOrder = useMemo(() => activeOrders.find((order) => order.id === currentOrderId), [activeOrders, currentOrderId]);
   
@@ -717,7 +713,7 @@ useEffect(() => {
       }));
   };
   
-  const updateCustomer = (orderId: string, customer: Customer) => {
+  const updateCustomer = (orderId: string, customer: User) => {
     setActiveOrders(prevOrders => prevOrders.map(order => order.id === orderId ? { ...order, customer: customer as User } : order));
   };
   
@@ -729,16 +725,14 @@ useEffect(() => {
   };
 
   const filteredProducts = useMemo(() => {
-    let productsToFilter = posProducts;
-    if (activeFilter.type === 'brand' && activeFilter.value !== 'All') productsToFilter = posProducts.filter(p => p.brand_id === activeFilter.value);
-    else if (activeFilter.type === 'collection') {
-        const productIdsInCollection = collectionProducts[activeFilter.value];
-        if (productIdsInCollection) productsToFilter = posProducts.filter(p => productIdsInCollection.includes(p.id));
-        else if (activeFilter.value !== 'All') return [];
-    } else if (activeFilter.type === 'category' && activeFilter.value !== 'All') productsToFilter = posProducts.filter(p => p.category === activeFilter.value);
-    return productsToFilter.filter(product => product.variantName.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [searchTerm, activeFilter, posProducts, collectionProducts]);
-  
+    return posProducts.filter(product =>
+        product.variantName.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (categorySearch === '' || product.category.toLowerCase().includes(categorySearch.toLowerCase())) &&
+        (collectionSearch === '' || (product.collections && product.collections.some((c: any) => c.title.toLowerCase().includes(collectionSearch.toLowerCase())))) &&
+        (brandSearch === '' || (product.brand && product.brand.name.toLowerCase().includes(brandSearch.toLowerCase())))
+    );
+  }, [searchTerm, categorySearch, collectionSearch, brandSearch, posProducts]);
+
   const totalItems = useMemo(() => currentOrder ? currentOrder.cart.reduce((total, item) => total + item.quantity, 0) : 0, [currentOrder]);
   
   const orderTotals = useMemo((): OrderInfo => {
@@ -785,7 +779,9 @@ useEffect(() => {
      />
   ) : null;
   
-  const allCategories = ['All', ...new Set(posProducts.map((p) => p.category))];
+  const filteredCategories = useMemo(() => categories.filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase())), [categories, categorySearch]);
+  const filteredCollections = useMemo(() => collections.filter(c => c.title.toLowerCase().includes(collectionSearch.toLowerCase())), [collections, collectionSearch]);
+  const filteredBrands = useMemo(() => brands.filter(b => b.name.toLowerCase().includes(brandSearch.toLowerCase())), [brands, brandSearch]);
 
   if (isLocationLoading) return <div className="flex h-screen w-screen items-center justify-center"><Loader2 className="h-12 w-12 animate-spin text-primary" /></div>;
   if (!currentLocation) return <LocationSelectionDialog open={!currentLocation} locations={availableLocations.filter(loc => loc.pos_status === '1')} onSelectLocation={(loc) => setCurrentLocation(loc)} />;
@@ -876,20 +872,27 @@ useEffect(() => {
                     </div>
                     
                     <aside className="hidden md:block w-48 border-l border-border overflow-y-auto">
-                        <div className="h-full p-2">
-                            <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
-                            <div className="flex flex-col gap-1">
-                                {categories.map(cat => <Button key={cat.id} variant={activeFilter.type === 'category' && activeFilter.value === cat.name ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('category', cat.name)}>{cat.name}</Button>)}
+                        <div className="h-full p-2 space-y-4">
+                            <div>
+                                <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2">Categories</h3>
+                                <Input placeholder="Search Categories..." className="h-8" value={categorySearch} onChange={(e) => setCategorySearch(e.target.value)} />
+                                <div className="flex flex-col gap-1 mt-2">
+                                    {filteredCategories.map(cat => <Button key={cat.id} variant='ghost' className="justify-start" onClick={() => {}}>{cat.name}</Button>)}
+                                </div>
                             </div>
-                            <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 my-2 pt-2 border-t">Collections</h3>
-                            <div className="flex flex-col gap-1">
-                                <Button variant={activeFilter.type === 'collection' && activeFilter.value === 'All' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('collection', 'All')}>All Collections</Button>
-                                {collections.map(col => <Button key={col.id} variant={activeFilter.type === 'collection' && activeFilter.value === col.id ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('collection', col.id)}>{col.title}</Button>)}
+                            <div>
+                                <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2 pt-2 border-t">Collections</h3>
+                                <Input placeholder="Search Collections..." className="h-8" value={collectionSearch} onChange={(e) => setCollectionSearch(e.target.value)} />
+                                <div className="flex flex-col gap-1 mt-2">
+                                    {filteredCollections.map(col => <Button key={col.id} variant='ghost' className="justify-start" onClick={() => {}}>{col.title}</Button>)}
+                                </div>
                             </div>
-                            <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 my-2 pt-2 border-t">Brands</h3>
-                            <div className="flex flex-col gap-1">
-                                <Button variant={activeFilter.type === 'brand' && activeFilter.value === 'All' ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('brand', 'All')}>All Brands</Button>
-                                {brands.map(brand => <Button key={brand.id} variant={activeFilter.type === 'brand' && activeFilter.value === brand.id ? 'secondary' : 'ghost'} className="justify-start" onClick={() => handleFilterChange('brand', brand.id)}>{brand.name}</Button>)}
+                            <div>
+                                <h3 className="text-xs font-semibold uppercase text-muted-foreground px-2 mb-2 pt-2 border-t">Brands</h3>
+                                <Input placeholder="Search Brands..." className="h-8" value={brandSearch} onChange={(e) => setBrandSearch(e.target.value)} />
+                                <div className="flex flex-col gap-1 mt-2">
+                                    {filteredBrands.map(brand => <Button key={brand.id} variant='ghost' className="justify-start" onClick={() => {}}>{brand.name}</Button>)}
+                                </div>
                             </div>
                         </div>
                     </aside>
@@ -920,4 +923,6 @@ useEffect(() => {
     </>
   );
 }
+
+
 

@@ -212,12 +212,9 @@ export function ProductForm({ product }: ProductFormProps) {
       setSuppliers(suppliersData || []);
       setCustomFieldMasters(customFieldsData || []);
       
-      // Now that master data is loaded, set form values that depend on it
-      if (product?.supplier && suppliersData.length > 0) {
-        const supplierIds = product.supplier.split(',').map(sName => {
-            const foundSupplier = suppliersData.find((s: Supplier) => s.supplier_name === sName.trim());
-            return foundSupplier ? foundSupplier.supplier_id : null;
-        }).filter(Boolean) as string[];
+      // Correctly handle supplier IDs from the product data
+      if (product?.supplier) {
+        const supplierIds = product.supplier.split(',').map(s => s.trim());
         form.setValue('supplier', supplierIds);
       }
 
