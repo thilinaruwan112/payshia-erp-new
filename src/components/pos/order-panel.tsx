@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -35,7 +34,7 @@ import {
   DialogFooter,
   DialogClose,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
@@ -49,6 +48,7 @@ import { openCenteredPopup } from '@/lib/utils';
 import { PayshiaPosLogo } from './payshia-pos-logo';
 import { CustomerPanel } from './customer-panel';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { cn } from '@/lib/utils';
 
 export interface OrderInfo {
   subtotal: number;
@@ -406,9 +406,12 @@ const EditOrderDialog = ({ order, onUpdateDetails, availableTables, availableSte
         });
         onClose();
     }
+    
+    const orderTypes: ActiveOrder['orderType'][] = ['Take Away', 'Delivery', 'Dine-In', 'Retail'];
+
 
     return (
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
             <DialogHeader>
                 <DialogTitle>Edit Order Details</DialogTitle>
                 <DialogDescription>Change the order type, table, or assigned steward.</DialogDescription>
@@ -416,13 +419,17 @@ const EditOrderDialog = ({ order, onUpdateDetails, availableTables, availableSte
             <div className="space-y-4 py-4">
                  <div className="space-y-2">
                     <Label>Order Type</Label>
-                    <RadioGroup value={orderType} onValueChange={(value) => setOrderType(value as ActiveOrder['orderType'])}>
-                        <div className="flex items-center space-x-4">
-                           <div className="flex items-center space-x-2"><RadioGroupItem value="Take Away" id="r-takeaway" /><Label htmlFor="r-takeaway">Take Away</Label></div>
-                           <div className="flex items-center space-x-2"><RadioGroupItem value="Delivery" id="r-delivery" /><Label htmlFor="r-delivery">Delivery</Label></div>
-                           <div className="flex items-center space-x-2"><RadioGroupItem value="Dine-In" id="r-dinein" /><Label htmlFor="r-dinein">Dine-In</Label></div>
-                        </div>
-                    </RadioGroup>
+                    <div className="flex flex-wrap gap-2">
+                      {orderTypes.map(type => (
+                        <Button
+                          key={type}
+                          variant={orderType === type ? "default" : "outline"}
+                          onClick={() => setOrderType(type)}
+                        >
+                          {type}
+                        </Button>
+                      ))}
+                    </div>
                 </div>
                 {orderType === 'Dine-In' && (
                     <>

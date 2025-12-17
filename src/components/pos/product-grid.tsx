@@ -11,9 +11,10 @@ interface ProductGridProps {
   onProductSelect: (product: PosProduct) => void;
   currentLocation: Location | null;
   orderType?: 'Dine-In' | 'Take Away' | 'Delivery' | 'Retail';
+  showImages: boolean;
 }
 
-export function ProductGrid({ products, onProductSelect, currentLocation, orderType }: ProductGridProps) {
+export function ProductGrid({ products, onProductSelect, currentLocation, orderType, showImages }: ProductGridProps) {
   return (
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
             {products.map((product) => (
@@ -23,6 +24,7 @@ export function ProductGrid({ products, onProductSelect, currentLocation, orderT
                 onSelect={onProductSelect}
                 currentLocation={currentLocation}
                 orderType={orderType}
+                showImage={showImages}
             />
             ))}
         </div>

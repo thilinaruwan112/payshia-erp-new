@@ -27,6 +27,7 @@ interface AddToCartDialogProps {
   product: PosProduct | null;
   onClose: () => void;
   onAddToCart: (product: PosProduct, quantity: number, discount: number, batch: StockInfo, imageUrl?: string) => void;
+  showImages?: boolean; // Add this prop
 }
 
 const FormField = ({ label, value }: { label: string, value: React.ReactNode }) => (
@@ -40,6 +41,7 @@ export function AddToCartDialog({
   product,
   onClose,
   onAddToCart,
+  showImages = true, // Default to true
 }: AddToCartDialogProps) {
   const [quantity, setQuantity] = useState('0');
   const [discount, setDiscount] = useState('0');
@@ -62,21 +64,24 @@ export function AddToCartDialog({
         setIsLoadingStock(true);
         setStockInfo(null);
         setSelectedBatch("");
-        setProductImage(null);
-
-        // Fetch Image
-        try {
-           const imageResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}`);
-           if (imageResponse.ok) {
-               const images: ProductImage[] = await imageResponse.json();
-               const frontImage = images.find(img => img.image_type === 'front img');
-               if (frontImage) {
-                   setProductImage(`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}`);
-               }
-           }
-        } catch (error) {
-           console.error("Failed to fetch product image.", error);
+        
+        if (showImages) {
+          setProductImage(null);
+          // Fetch Image
+          try {
+             const imageResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-images/get/img?company_id=${company_id}&product_id=${product.id}&product_variant_id=${product.variant.id}`);
+             if (imageResponse.ok) {
+                 const images: ProductImage[] = await imageResponse.json();
+                 const frontImage = images.find(img => img.image_type === 'front img');
+                 if (frontImage) {
+                     setProductImage(`${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${frontImage.img_url}`);
+                 }
+             }
+          } catch (error) {
+             console.error("Failed to fetch product image.", error);
+          }
         }
+
 
         if (!isAlaCarte) {
             // Fetch Stock
@@ -116,7 +121,7 @@ export function AddToCartDialog({
         quantityInputRef.current?.select();
       }, 100);
     }
-  }, [product, currentLocation, company_id, toast, isAlaCarte]);
+  }, [product, currentLocation, company_id, toast, isAlaCarte, showImages]);
 
   const handleAddToCart = useCallback(() => {
     if (product) {
@@ -206,16 +211,18 @@ export function AddToCartDialog({
             <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 px-6 overflow-y-auto">
                 {/* Left Column: Product Info */}
                 <div className="flex flex-col">
-                    <div className="bg-muted/50 rounded-lg p-4 flex justify-center items-center mb-4">
-                        <Image
-                        src={imageUrl}
-                        alt={product.name}
-                        width={200}
-                        height={150}
-                        className="rounded-md object-cover"
-                        data-ai-hint="product photo"
-                        />
-                    </div>
+                    {showImages && (
+                        <div className="bg-muted/50 rounded-lg p-4 flex justify-center items-center mb-4">
+                            <Image
+                            src={imageUrl}
+                            alt={product.name}
+                            width={200}
+                            height={150}
+                            className="rounded-md object-cover"
+                            data-ai-hint="product photo"
+                            />
+                        </div>
+                    )}
                     
                     {!isAlaCarte ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">

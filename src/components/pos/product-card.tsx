@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React from 'react';
@@ -12,15 +11,18 @@ import Image from 'next/image';
 import { useCurrency } from '../currency-provider';
 import type { Location } from '@/lib/types';
 import { useMemo } from 'react';
+import { ImageIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
   product: PosProduct;
   onSelect: (product: PosProduct) => void;
   currentLocation: Location | null;
   orderType?: 'Dine-In' | 'Take Away' | 'Delivery' | 'Retail';
+  showImage: boolean;
 }
 
-export function ProductCard({ product, onSelect, currentLocation, orderType }: ProductCardProps) {
+export function ProductCard({ product, onSelect, currentLocation, orderType, showImage }: ProductCardProps) {
   const { currencySymbol } = useCurrency();
   
   const imageUrl = product.imageUrl || 'https://placehold.co/300x200.png';
@@ -41,7 +43,7 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
     if (currentLocation.tdl_status === 'Enabled') {
       tdl = baseForTaxes * 0.01;
     }
-
+    
     let sscl = 0;
     if (currentLocation.sscl_status === 'Enabled') {
       sscl = (baseForTaxes + tdl) * 0.025;
@@ -65,16 +67,21 @@ export function ProductCard({ product, onSelect, currentLocation, orderType }: P
       onClick={() => onSelect(product)}
     >
       <CardContent className="p-0 flex flex-col flex-grow">
-        <Image
-          src={imageUrl}
-          alt={product.name}
-          width={300}
-          height={200}
-          className="w-full h-32 object-cover"
-          data-ai-hint="product photo"
-        />
+        {showImage && (
+            <Image
+                src={imageUrl}
+                alt={product.name}
+                width={300}
+                height={200}
+                className="w-full h-32 object-cover"
+                data-ai-hint="product photo"
+            />
+        )}
         <div className='p-3 flex flex-col flex-grow'>
-            <h3 className="font-semibold text-base truncate group-hover:text-primary leading-tight">{product.variantName}</h3>
+            <h3 className={cn(
+              "font-semibold text-base group-hover:text-primary leading-tight",
+              showImage && "truncate" 
+            )}>{product.variantName}</h3>
             <p className="text-sm text-muted-foreground flex-grow">{product.category}</p>
             <div className="mt-2">
                {showInclusivePrice ? (
