@@ -70,18 +70,14 @@ export default function BarcodePrintPage() {
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get/filter/by-company?company_id=${company_id}`
       );
       if (!productsResponse.ok) throw new Error('Failed to fetch products');
-      const productsData: Product[] = await productsResponse.json();
+      const productsData: { products: { product: Product, variants: ProductVariant[] }[] } = await productsResponse.json();
       
-      const productsWithDetails = await Promise.all(
-        productsData.map(async (p) => {
-          const detailsResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/details/${p.id}`);
-          if (!detailsResponse.ok) return { ...p, variants: [] };
-          const detailsData = await detailsResponse.json();
-          return { ...p, variants: detailsData.variants || [] };
-        })
-      );
+      const productsWithVariants = (productsData.products || []).map(item => ({
+        ...item.product,
+        variants: item.variants || []
+      }));
       
-      setProducts(productsWithDetails);
+      setProducts(productsWithVariants);
     } catch (error) {
       toast({
         variant: 'destructive',
