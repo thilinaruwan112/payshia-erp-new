@@ -55,10 +55,11 @@ function PrintViewContent() {
   const companyId = searchParams.get('company_id');
   const locationName = searchParams.get('location');
   const date = searchParams.get('date');
+  const locationId = searchParams.get('location_id');
 
   useEffect(() => {
     async function fetchData() {
-        if (!companyId || !date || !locationName) {
+        if (!companyId || !date || !locationId) {
             toast({ variant: 'destructive', title: 'Error', description: 'Required parameters are missing for the report.' });
             setIsLoading(false);
             return;
@@ -68,7 +69,7 @@ function PrintViewContent() {
             const params = new URLSearchParams({
                 date: date,
                 company_id: companyId,
-                location_id: searchParams.get('location_id') || '',
+                location_id: locationId,
             });
             const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/get/day-and-report?${params.toString()}`;
 
@@ -90,12 +91,15 @@ function PrintViewContent() {
         }
     }
     fetchData();
-  }, [companyId, locationName, date, toast, searchParams]);
+  }, [companyId, locationName, date, locationId, toast, searchParams]);
 
   useEffect(() => {
     if (!isLoading && reportData) {
       document.title = `Day End Report - ${date}`;
       setTimeout(() => window.print(), 1000);
+    } else if (!isLoading && !reportData) {
+        // Handle case where API returns no data
+        console.log("No data found, not printing.");
     }
   }, [isLoading, reportData, date]);
 
