@@ -35,7 +35,7 @@ import {
   DialogFooter,
   DialogClose,
   DialogDescription,
-} from '@/components/ui/dialog';
+} from '../ui/dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
@@ -408,7 +408,7 @@ const EditOrderDialog = ({ order, onUpdateDetails, availableTables, availableSte
     }
 
     return (
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
             <DialogHeader>
                 <DialogTitle>Edit Order Details</DialogTitle>
                 <DialogDescription>Change the order type, table, or assigned steward.</DialogDescription>
