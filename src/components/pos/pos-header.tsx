@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { User } from '@/lib/types';
-import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock, ChevronDown, Building, History, Utensils, Truck } from 'lucide-react';
+import { LayoutDashboard, LogOut, Search, User as UserIcon, MapPin, CalendarDays, Clock, ChevronDown, Building, History, Utensils, Truck, Settings } from 'lucide-react';
 import { ThemeToggle } from '../theme-toggle';
 import Link from 'next/link';
 import { Button } from '../ui/button';
@@ -37,14 +37,15 @@ interface PosHeaderProps {
   searchTerm: string;
   setSearchTerm: (value: string) => void;
   cashier: User;
+  onSettingsClick: () => void;
 }
 
 function DateTimeLocation() {
-    const [currentTime, setCurrentTime] = useState(new Date());
+    const [currentTime, setCurrentTime] = React.useState(new Date());
     const { currentLocation, setCurrentLocation, availableLocations, isLoading } = useLocation();
 
 
-    useEffect(() => {
+    React.useEffect(() => {
         const timer = setInterval(() => {
             setCurrentTime(new Date());
         }, 1000);
@@ -111,6 +112,7 @@ export function PosHeader({
   searchTerm,
   setSearchTerm,
   cashier,
+  onSettingsClick,
 }: PosHeaderProps) {
   const router = useRouter();
 
@@ -137,6 +139,10 @@ export function PosHeader({
       </div>
       <div className="flex items-center gap-2 order-1 sm:order-5 ml-auto sm:ml-0">
         <ThemeToggle />
+        <Button variant="ghost" size="icon" onClick={onSettingsClick}>
+            <Settings />
+            <span className="sr-only">POS Settings</span>
+        </Button>
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">

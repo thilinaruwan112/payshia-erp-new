@@ -12,14 +12,15 @@ interface ProductListProps {
   onProductSelect: (product: PosProduct) => void;
   currentLocation: Location | null;
   orderType?: 'Dine-In' | 'Take Away' | 'Delivery' | 'Retail';
+  showImages: boolean;
 }
 
-export function ProductList({ products, onProductSelect, currentLocation, orderType }: ProductListProps) {
+export function ProductList({ products, onProductSelect, currentLocation, orderType, showImages }: ProductListProps) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[80px]">Image</TableHead>
+          {showImages && <TableHead className="w-[80px]">Image</TableHead>}
           <TableHead>Product Details</TableHead>
           <TableHead className="text-right">Price</TableHead>
         </TableRow>
@@ -32,6 +33,7 @@ export function ProductList({ products, onProductSelect, currentLocation, orderT
             onSelect={onProductSelect}
             currentLocation={currentLocation}
             orderType={orderType}
+            showImage={showImages}
           />
         ))}
       </TableBody>
