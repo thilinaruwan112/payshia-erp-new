@@ -80,6 +80,7 @@ function PrintViewContent() {
 
             if (!reportRes.ok) throw new Error('Failed to fetch report data');
             const resultData = await reportRes.json();
+            // The API nests the actual data inside a "data" property.
             setReportData(resultData.data);
             
             if (companyRes.ok) setCompany(await companyRes.json());
@@ -98,7 +99,6 @@ function PrintViewContent() {
       document.title = `Day End Report - ${date}`;
       setTimeout(() => window.print(), 1000);
     } else if (!isLoading && !reportData) {
-        // Handle case where API returns no data
         console.log("No data found, not printing.");
     }
   }, [isLoading, reportData, date]);
