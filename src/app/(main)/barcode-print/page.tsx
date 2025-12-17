@@ -94,27 +94,37 @@ export default function BarcodePrintPage() {
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
+  
+  const fetchAndSetStock = useCallback(async (product: Product, variant: ProductVariant) => {
+    if (!company_id || !currentLocation) {
+        toast({ title: "Location not set", description: "Please select a location.", variant: "destructive" });
+        return 1; // Default to 1 if location isn't set
+    }
+    
+    setIsFetchingStock(prev => ({...prev, [variant.id]: true}));
+    let stockQuantity = 1; // Default to 1
+    try {
+        const stockResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variant.id}&location_id=${currentLocation.location_id}`);
+        if(stockResponse.ok) {
+            const stockData = await stockResponse.json();
+            stockQuantity = stockData.total_stock[0]?.stock_balance ? parseFloat(stockData.total_stock[0].stock_balance) : 0;
+        }
+    } catch (error) {
+        console.error("Failed to fetch stock", error);
+        toast({ title: "Could not fetch stock", description: "Defaulting quantity to 1.", variant: "destructive" });
+    } finally {
+        setIsFetchingStock(prev => ({...prev, [variant.id]: false}));
+    }
+    return stockQuantity;
+  }, [company_id, currentLocation, toast]);
+
 
   const handleSelectVariant = async (product: Product, variant: ProductVariant, isSelected: boolean) => {
     const variantId = variant.id;
     const newSelectedVariants = { ...selectedVariants };
 
     if (isSelected) {
-      setIsFetchingStock(prev => ({...prev, [variantId]: true}));
-      let stockQuantity = 1; // Default to 1 if API fails
-
-      if (company_id && currentLocation) {
-          try {
-              const stockResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/summary?company_id=${company_id}&product_id=${product.id}&product_variant_id=${variantId}&location_id=${currentLocation.location_id}`);
-              if(stockResponse.ok) {
-                  const stockData = await stockResponse.json();
-                  stockQuantity = stockData.total_stock[0]?.stock_balance ? parseFloat(stockData.total_stock[0].stock_balance) : 0;
-              }
-          } catch (error) {
-              console.error("Failed to fetch stock", error);
-              toast({ title: "Could not fetch stock", description: "Defaulting quantity to 1.", variant: "destructive" });
-          }
-      }
+      const stockQuantity = await fetchAndSetStock(product, variant);
       
       if (!newSelectedVariants[variantId]) {
         newSelectedVariants[variantId] = {
@@ -127,7 +137,6 @@ export default function BarcodePrintPage() {
           quantity: stockQuantity,
         };
       }
-      setIsFetchingStock(prev => ({...prev, [variantId]: false}));
     } else {
       delete newSelectedVariants[variantId];
     }
@@ -141,6 +150,31 @@ export default function BarcodePrintPage() {
         setSelectedVariants(newSelectedVariants);
     }
   };
+  
+  const handleSelectAll = async () => {
+    const allVariantPromises = products.flatMap(p => p.variants.map(v => ({product: p, variant: v})));
+    
+    const newSelected: Record<string, SelectableVariant> = {};
+
+    for (const { product, variant } of allVariantPromises) {
+        const stock = await fetchAndSetStock(product, variant);
+        newSelected[variant.id] = {
+            id: variant.id,
+            productId: product.id,
+            name: product.name,
+            sku: variant.sku,
+            price: Number(variant.price),
+            barcode: variant.barcode || variant.sku,
+            quantity: stock,
+        };
+    }
+    setSelectedVariants(newSelected);
+  };
+
+  const handleUnselectAll = () => {
+    setSelectedVariants({});
+  };
+
 
   const totalLabelsToPrint = Object.values(selectedVariants).reduce((sum, v) => sum + v.quantity, 0);
   
@@ -208,10 +242,18 @@ export default function BarcodePrintPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Products</CardTitle>
-          <CardDescription>
-            Check the boxes for the product variants you want to print labels for.
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle>All Products</CardTitle>
+              <CardDescription>
+                Check the boxes for the product variants you want to print labels for.
+              </CardDescription>
+            </div>
+             <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleSelectAll}>Select All</Button>
+                <Button variant="outline" size="sm" onClick={handleUnselectAll}>Unselect All</Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
