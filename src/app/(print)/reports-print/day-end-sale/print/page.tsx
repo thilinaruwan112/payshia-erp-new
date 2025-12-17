@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useSearchParams } from 'next/navigation';
@@ -65,6 +64,7 @@ function PrintViewContent() {
             return;
         };
 
+        setIsLoading(true);
         try {
             const params = new URLSearchParams({
                 date: date,
@@ -91,7 +91,7 @@ function PrintViewContent() {
         }
     }
     fetchData();
-  }, [companyId, locationName, date, locationId, toast, searchParams]);
+  }, [companyId, locationName, date, locationId, toast]);
 
   useEffect(() => {
     if (!isLoading && reportData) {
