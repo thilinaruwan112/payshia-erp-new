@@ -101,13 +101,15 @@ export function OpeningStockForm({ children, onStockAdded }: OpeningStockFormPro
 
   const allSkus = useMemo(() => {
     return products.flatMap(p =>
-      (p.variants || []).map(v => ({
-        label: `${p.product.name} (${v.variant.sku})`,
-        value: v.variant.id,
-        productId: p.product.id,
-        brandName: p.product.brand_name || 'N/A',
-        costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
-      }))
+      (p.variants || []).map(v => {
+        const brandText = p.product.brand_name ? ` (${p.product.brand_name})` : '';
+        return {
+            label: `${p.product.name}${brandText} - ${v.variant.sku}`,
+            value: v.variant.id,
+            productId: p.product.id,
+            costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
+        }
+      })
     );
   }, [products]);
 
@@ -232,8 +234,7 @@ export function OpeningStockForm({ children, onStockAdded }: OpeningStockFormPro
                     <Table>
                         <TableHeader>
                             <TableRow>
-                            <TableHead className="w-[40%]">Product</TableHead>
-                             <TableHead>Brand</TableHead>
+                            <TableHead className="w-[50%]">Product</TableHead>
                             <TableHead>Quantity</TableHead>
                             <TableHead>Batch No.</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
@@ -241,8 +242,6 @@ export function OpeningStockForm({ children, onStockAdded }: OpeningStockFormPro
                         </TableHeader>
                         <TableBody>
                         {fields.map((field, index) => {
-                             const selectedVariantId = form.watch(`items.${index}.productVariantId`);
-                             const brandName = allSkus.find(sku => sku.value === selectedVariantId)?.brandName || '';
                             return (
                                 <TableRow key={field.id}>
                                 <TableCell>
@@ -259,7 +258,7 @@ export function OpeningStockForm({ children, onStockAdded }: OpeningStockFormPro
                                                         field.onChange(value);
                                                         const selectedSku = allSkus.find(s => s.value === value);
                                                         form.setValue(`items.${index}.cost_value`, selectedSku?.costPrice || 0);
-                                                        form.setValue(`items.${index}.batchNumber`, `OPEN-${selectedSku?.label.split('(')[1].replace(')','')}`);
+                                                        form.setValue(`items.${index}.batchNumber`, `OPEN-${selectedSku?.label.split('(')[1]?.replace(')','') || ''}`);
                                                     }}
                                                     placeholder="Select a product..."
                                                     notFoundText="No product found."
@@ -270,9 +269,6 @@ export function OpeningStockForm({ children, onStockAdded }: OpeningStockFormPro
                                             </FormItem>
                                         )}
                                     />
-                                </TableCell>
-                                <TableCell>
-                                    <Input value={brandName} readOnly disabled className="bg-muted border-none" />
                                 </TableCell>
                                 <TableCell>
                                         <FormField
