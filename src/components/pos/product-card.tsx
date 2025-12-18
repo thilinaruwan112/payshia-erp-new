@@ -13,6 +13,7 @@ import type { Location } from '@/lib/types';
 import { useMemo } from 'react';
 import { ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Badge } from '../ui/badge';
 
 interface ProductCardProps {
   product: PosProduct;
@@ -82,6 +83,7 @@ export function ProductCard({ product, onSelect, currentLocation, orderType, sho
               "font-semibold text-base group-hover:text-primary leading-tight",
               showImage && "truncate" 
             )}>{product.variantName}</h3>
+            {product.brand_name && <p className="text-xs font-semibold text-muted-foreground mt-1">{product.brand_name}</p>}
             <p className="text-sm text-muted-foreground flex-grow">{product.category}</p>
             <div className="mt-2">
                {showInclusivePrice ? (
