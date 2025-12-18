@@ -40,7 +40,7 @@ interface OpeningStockEntry {
 }
 
 interface ProductWithApiResponse {
-    product: Product;
+    product: Product & { brand_name?: string };
     variants: { variant: ProductVariant }[];
 }
 
@@ -88,14 +88,18 @@ export default function OpeningStockPage() {
         fetchOpeningStock();
     }, [company_id]);
 
-    const getProductDetails = (variantId: string) => {
+    const getProductInfo = (variantId: string) => {
         for (const p of products) {
             const variant = p.variants.find(v => v.variant.id === variantId);
             if (variant) {
-                return `${p.product.name} (${variant.variant.sku})`;
+                return {
+                    name: p.product.name,
+                    sku: `(${variant.variant.sku})`,
+                    brand: p.product.brand_name || 'N/A'
+                };
             }
         }
-        return `Variant ID: ${variantId}`;
+        return { name: `Variant ID: ${variantId}`, sku: '', brand: 'N/A' };
     };
 
     const getLocationName = (locationId: string) => {
@@ -132,6 +136,7 @@ export default function OpeningStockPage() {
                         <TableRow>
                             <TableHead>Date</TableHead>
                             <TableHead>Product</TableHead>
+                            <TableHead className="hidden md:table-cell">Brand</TableHead>
                             <TableHead className="hidden md:table-cell">Location</TableHead>
                             <TableHead className="hidden sm:table-cell text-right">Cost Value</TableHead>
                             <TableHead className="text-right">Quantity</TableHead>
@@ -143,24 +148,29 @@ export default function OpeningStockPage() {
                             <TableRow key={i}>
                                 <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                                 <TableCell><Skeleton className="h-4 w-48" /></TableCell>
+                                <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
                                 <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-32" /></TableCell>
                                 <TableCell className="hidden sm:table-cell text-right"><Skeleton className="h-4 w-20" /></TableCell>
                                 <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
                             </TableRow>
                         ))
                     ) : entries.length > 0 ? (
-                         entries.map((entry) => (
-                            <TableRow key={entry.id}>
-                                <TableCell>{format(new Date(entry.created_at), 'dd MMM, yyyy')}</TableCell>
-                                <TableCell className="font-medium">{getProductDetails(entry.product_variant_id)}</TableCell>
-                                <TableCell className="hidden md:table-cell">{getLocationName(entry.location_id)}</TableCell>
-                                <TableCell className="hidden sm:table-cell text-right font-mono">{currencySymbol}{parseFloat(entry.cost_value).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono">{parseFloat(entry.quantity).toFixed(2)}</TableCell>
-                            </TableRow>
-                        ))
+                         entries.map((entry) => {
+                            const productInfo = getProductInfo(entry.product_variant_id);
+                            return (
+                                <TableRow key={entry.id}>
+                                    <TableCell>{format(new Date(entry.created_at), 'dd MMM, yyyy')}</TableCell>
+                                    <TableCell className="font-medium">{productInfo.name} <span className="text-xs text-muted-foreground">{productInfo.sku}</span></TableCell>
+                                    <TableCell className="hidden md:table-cell">{productInfo.brand}</TableCell>
+                                    <TableCell className="hidden md:table-cell">{getLocationName(entry.location_id)}</TableCell>
+                                    <TableCell className="hidden sm:table-cell text-right font-mono">{currencySymbol}{parseFloat(entry.cost_value).toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-mono">{parseFloat(entry.quantity).toFixed(2)}</TableCell>
+                                </TableRow>
+                            )
+                        })
                     ) : (
                          <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
+                            <TableCell colSpan={6} className="h-24 text-center">
                                 No opening stock entries found.
                             </TableCell>
                         </TableRow>
