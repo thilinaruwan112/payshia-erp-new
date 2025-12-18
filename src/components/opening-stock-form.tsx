@@ -31,7 +31,7 @@ import { ScrollArea } from "./ui/scroll-area";
 
 
 interface ProductWithApiResponse {
-    product: Product;
+    product: Product & { brand_name?: string };
     variants: { variant: ProductVariant }[];
 }
 
@@ -105,6 +105,7 @@ export function OpeningStockForm({ children, onStockAdded }: OpeningStockFormPro
         label: `${p.product.name} (${v.variant.sku})`,
         value: v.variant.id,
         productId: p.product.id,
+        brandName: p.product.brand_name || 'N/A',
         costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
       }))
     );
@@ -232,75 +233,83 @@ export function OpeningStockForm({ children, onStockAdded }: OpeningStockFormPro
                         <TableHeader>
                             <TableRow>
                             <TableHead className="w-[40%]">Product</TableHead>
+                             <TableHead>Brand</TableHead>
                             <TableHead>Quantity</TableHead>
                             <TableHead>Batch No.</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {fields.map((field, index) => (
-                            <TableRow key={field.id}>
-                            <TableCell>
-                                <FormField
-                                    control={form.control}
-                                    name={`items.${index}.productVariantId`}
-                                    render={({ field }) => (
-                                        <FormItem>
-                                        <FormControl>
-                                            <Combobox
-                                                options={allSkus}
-                                                value={field.value}
-                                                onChange={(value) => {
-                                                    field.onChange(value);
-                                                    const selectedSku = allSkus.find(s => s.value === value);
-                                                    form.setValue(`items.${index}.cost_value`, selectedSku?.costPrice || 0);
-                                                    form.setValue(`items.${index}.batchNumber`, `OPEN-${selectedSku?.label.split('(')[1].replace(')','')}`);
-                                                }}
-                                                placeholder="Select a product..."
-                                                notFoundText="No product found."
-                                                disabled={isLoading}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                        </FormItem>
-                                    )}
-                                />
-                            </TableCell>
-                            <TableCell>
+                        {fields.map((field, index) => {
+                             const selectedVariantId = form.watch(`items.${index}.productVariantId`);
+                             const brandName = allSkus.find(sku => sku.value === selectedVariantId)?.brandName || '';
+                            return (
+                                <TableRow key={field.id}>
+                                <TableCell>
                                     <FormField
                                         control={form.control}
-                                        name={`items.${index}.quantity`}
+                                        name={`items.${index}.productVariantId`}
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormControl>
-                                                    <Input type="number" {...field} className="w-24" />
-                                                </FormControl>
-                                                <FormMessage />
+                                            <FormControl>
+                                                <Combobox
+                                                    options={allSkus}
+                                                    value={field.value}
+                                                    onChange={(value) => {
+                                                        field.onChange(value);
+                                                        const selectedSku = allSkus.find(s => s.value === value);
+                                                        form.setValue(`items.${index}.cost_value`, selectedSku?.costPrice || 0);
+                                                        form.setValue(`items.${index}.batchNumber`, `OPEN-${selectedSku?.label.split('(')[1].replace(')','')}`);
+                                                    }}
+                                                    placeholder="Select a product..."
+                                                    notFoundText="No product found."
+                                                    disabled={isLoading}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
                                             </FormItem>
                                         )}
                                     />
                                 </TableCell>
                                 <TableCell>
-                                    <FormField
-                                        control={form.control}
-                                        name={`items.${index}.batchNumber`}
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormControl>
-                                                    <Input {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
+                                    <Input value={brandName} readOnly disabled className="bg-muted border-none" />
                                 </TableCell>
                                 <TableCell>
-                                    <Button variant="ghost" size="icon" onClick={() => remove(index)}>
-                                        <Trash2 className="h-4 w-4 text-muted-foreground" />
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                                        <FormField
+                                            control={form.control}
+                                            name={`items.${index}.quantity`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <Input type="number" {...field} className="w-24" />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <FormField
+                                            control={form.control}
+                                            name={`items.${index}.batchNumber`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <Input {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button variant="ghost" size="icon" onClick={() => remove(index)}>
+                                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
                         </TableBody>
                     </Table>
                 </ScrollArea>
