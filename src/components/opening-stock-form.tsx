@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,13 +8,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import type { Product, ProductVariant, StockInfo } from "@/lib/types";
@@ -23,17 +25,9 @@ import { useLocation } from "./location-provider";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
 import { fetcher } from "@/lib/api";
 import { format } from "date-fns";
-import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Calendar } from "./ui/calendar";
-import { cn } from "@/lib/utils";
 import { Combobox } from "./ui/combobox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "./ui/scroll-area";
 
 
 interface ProductWithApiResponse {
@@ -57,23 +51,19 @@ const openingStockFormSchema = z.object({
 
 type OpeningStockFormValues = z.infer<typeof openingStockFormSchema>;
 
-interface ExistingStockEntry {
-  id: string;
-  product_id: string;
-  product_variant_id: string;
-  quantity: string;
-  patch_code: string;
-  expire_date: string;
+interface OpeningStockFormProps {
+    children: React.ReactNode;
+    onStockAdded: () => void;
 }
 
-export function OpeningStockForm() {
+export function OpeningStockForm({ children, onStockAdded }: OpeningStockFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id, availableLocations } = useLocation();
-  const [existingStock, setExistingStock] = useState<ExistingStockEntry[]>([]);
 
   const form = useForm<OpeningStockFormValues>({
     resolver: zodResolver(openingStockFormSchema),
@@ -104,8 +94,10 @@ export function OpeningStockForm() {
         setIsLoading(false);
       }
     }
-    fetchProducts();
-  }, [company_id, toast]);
+    if (isOpen) {
+        fetchProducts();
+    }
+  }, [isOpen, company_id, toast]);
 
   const allSkus = useMemo(() => {
     return products.flatMap(p =>
@@ -124,7 +116,6 @@ export function OpeningStockForm() {
       return;
     }
     setIsSubmitting(true);
-    setExistingStock([]); // Clear previous existing stock on new submission
     const itemsWithStock = data.items.filter(item => item.quantity > 0);
 
     if (itemsWithStock.length === 0) {
@@ -146,7 +137,7 @@ export function OpeningStockForm() {
             cost_value: item.cost_value || 0,
             quantity: item.quantity,
             patch_code: item.batchNumber || `OPEN-${skuDetails?.label.split('(')[1].replace(')','')}`,
-            expire_date: item.expiryDate ? format(item.expiryDate, 'yyyy-MM-dd') : undefined,
+            expire_date: item.expiryDate ? format(item.expiryDate, 'yyyy-MM-dd') : '0000-00-00',
             transaction_type: 'OPENING_STOCK',
         }
       }),
@@ -160,8 +151,7 @@ export function OpeningStockForm() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        if (response.status === 409 && errorData.existing_data) {
-          setExistingStock(errorData.existing_data);
+        if (response.status === 409) {
           toast({
             variant: "destructive",
             title: errorData.error,
@@ -175,231 +165,164 @@ export function OpeningStockForm() {
             title: "Opening Stock Saved",
             description: "The initial stock levels have been successfully recorded.",
         });
-        router.push('/inventory/dashboard');
-        router.refresh();
+        setIsOpen(false);
+        form.reset();
+        onStockAdded();
       }
 
     } catch (error) {
-      if (!existingStock.length) { // Only show generic error if it's not a 409
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         toast({ variant: 'destructive', title: 'Submission Failed', description: errorMessage });
-      }
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  const getProductNameByVariantId = (variantId: string) => {
-    const found = allSkus.find(sku => sku.value === variantId);
-    return found ? found.label : 'Unknown Product';
-  }
-
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Opening Stock Details</CardTitle>
-            <CardDescription>
-              Set the initial inventory levels for your products at a specific location.
-            </CardDescription>
-          </CardHeader>
-           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="locationId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a location" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {availableLocations.map(loc => (
-                          <SelectItem key={loc.location_id} value={loc.location_id}>{loc.location_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <Input readOnly disabled value={format(field.value, "PPP")} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
-        {existingStock.length > 0 && (
-          <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle className="text-destructive">Existing Opening Stock</CardTitle>
-              <CardDescription>
-                The selected location already has opening stock records. You can only create one opening stock entry per location.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Batch Code</TableHead>
-                      <TableHead>Expiry Date</TableHead>
-                      <TableHead className="text-right">Quantity</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {existingStock.map(entry => (
-                      <TableRow key={entry.id}>
-                        <TableCell>{getProductNameByVariantId(entry.product_variant_id)}</TableCell>
-                        <TableCell>{entry.patch_code}</TableCell>
-                        <TableCell>{entry.expire_date !== '0000-00-00' ? format(new Date(entry.expire_date), 'dd MMM, yyyy') : 'N/A'}</TableCell>
-                        <TableCell className="text-right">{parseFloat(entry.quantity).toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-            </CardContent>
-          </Card>
-        )}
-        <Card>
-          <CardHeader>
-            <CardTitle>Stock Items</CardTitle>
-            <CardDescription>
-              Add products and their initial quantities.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[30%]">Product</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead>Batch No.</TableHead>
-                    <TableHead>Expiry Date</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {fields.map((field, index) => (
-                    <TableRow key={field.id}>
-                      <TableCell>
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.productVariantId`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormControl>
-                                <Combobox
-                                    options={allSkus}
-                                    value={field.value}
-                                    onChange={(value) => {
-                                        field.onChange(value);
-                                        const selectedSku = allSkus.find(s => s.value === value);
-                                        form.setValue(`items.${index}.cost_value`, selectedSku?.costPrice || 0);
-                                        form.setValue(`items.${index}.batchNumber`, `OPEN-${selectedSku?.label.split('(')[1].replace(')','')}`);
-                                    }}
-                                    placeholder="Select a product..."
-                                    notFoundText="No product found."
-                                    disabled={isLoading}
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+            <DialogTitle>New Opening Stock</DialogTitle>
+             <DialogDescription>
+                Set the initial inventory levels for your products at a specific location.
+            </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                    control={form.control}
+                    name="locationId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Location</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a location" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {availableLocations.map(loc => (
+                                <SelectItem key={loc.location_id} value={loc.location_id}>{loc.location_name}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Date</FormLabel>
+                        <FormControl>
+                            <Input readOnly disabled value={format(field.value, "PPP")} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
+                 <ScrollArea className="h-72 border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead className="w-[40%]">Product</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead>Batch No.</TableHead>
+                            <TableHead className="w-[50px]"></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {fields.map((field, index) => (
+                            <TableRow key={field.id}>
+                            <TableCell>
+                                <FormField
+                                    control={form.control}
+                                    name={`items.${index}.productVariantId`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormControl>
+                                            <Combobox
+                                                options={allSkus}
+                                                value={field.value}
+                                                onChange={(value) => {
+                                                    field.onChange(value);
+                                                    const selectedSku = allSkus.find(s => s.value === value);
+                                                    form.setValue(`items.${index}.cost_value`, selectedSku?.costPrice || 0);
+                                                    form.setValue(`items.${index}.batchNumber`, `OPEN-${selectedSku?.label.split('(')[1].replace(')','')}`);
+                                                }}
+                                                placeholder="Select a product..."
+                                                notFoundText="No product found."
+                                                disabled={isLoading}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
                                 />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </TableCell>
-                       <TableCell>
-                            <FormField
-                                control={form.control}
-                                name={`items.${index}.quantity`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <Input type="number" {...field} className="w-24" />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </TableCell>
-                        <TableCell>
-                            <FormField
-                                control={form.control}
-                                name={`items.${index}.batchNumber`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </TableCell>
-                        <TableCell>
-                            <FormField
-                                control={form.control}
-                                name={`items.${index}.expiryDate`}
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <Popover>
-                                            <PopoverTrigger asChild>
+                            </TableCell>
+                            <TableCell>
+                                    <FormField
+                                        control={form.control}
+                                        name={`items.${index}.quantity`}
+                                        render={({ field }) => (
+                                            <FormItem>
                                                 <FormControl>
-                                                    <Button variant="outline" className={cn("w-[180px] pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                                        {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                    </Button>
+                                                    <Input type="number" {...field} className="w-24" />
                                                 </FormControl>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent>
-                                        </Popover>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </TableCell>
-                        <TableCell>
-                            <Button variant="ghost" size="icon" onClick={() => remove(index)}>
-                                <Trash2 className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                        </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-             <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => append({ productVariantId: "", quantity: 0, batchNumber: "" })}
-                className="mt-4"
-                >
-                Add Item
-            </Button>
-          </CardContent>
-          <CardFooter className="justify-end">
-            <Button type="submit" disabled={isSubmitting || isLoading}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Opening Stock
-            </Button>
-          </CardFooter>
-        </Card>
-      </form>
-    </Form>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <FormField
+                                        control={form.control}
+                                        name={`items.${index}.batchNumber`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormControl>
+                                                    <Input {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </TableCell>
+                                <TableCell>
+                                    <Button variant="ghost" size="icon" onClick={() => remove(index)}>
+                                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                </ScrollArea>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ productVariantId: "", quantity: 0, batchNumber: "" })}
+                    className="mt-4"
+                    >
+                    Add Item
+                </Button>
+                <DialogFooter>
+                    <Button variant="outline" type="button" onClick={() => setIsOpen(false)}>Cancel</Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Opening Stock
+                    </Button>
+                </DialogFooter>
+            </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
