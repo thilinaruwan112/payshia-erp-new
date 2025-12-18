@@ -47,6 +47,7 @@ import { Input } from '@/components/ui/input';
 interface ProductWithVariants extends Product {
   variants: ProductVariant[];
   frontImageUrl?: string | null;
+  brand_name?: string;
 }
 
 
@@ -113,6 +114,7 @@ export default function ProductsPage() {
     return products.filter(product =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (product.brand_name && product.brand_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (product.variants && product.variants.some(v => v.sku.toLowerCase().includes(searchTerm.toLowerCase())))
     );
   }, [products, searchTerm]);
@@ -229,6 +231,7 @@ export default function ProductsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Product</TableHead>
+                  <TableHead className="hidden md:table-cell">Brand</TableHead>
                   <TableHead className="hidden md:table-cell">Status</TableHead>
                   <TableHead className="hidden lg:table-cell">Price</TableHead>
                   <TableHead>
@@ -242,6 +245,9 @@ export default function ProductsPage() {
                     <TableRow key={i}>
                       <TableCell>
                         <Skeleton className="h-4 w-48" />
+                      </TableCell>
+                       <TableCell className="hidden md:table-cell">
+                        <Skeleton className="h-4 w-24" />
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <Skeleton className="h-6 w-20 rounded-full" />
@@ -262,6 +268,7 @@ export default function ProductsPage() {
                           <div className="font-medium">{product.name}</div>
                           <div className="text-sm text-muted-foreground lg:hidden">{product.category}</div>
                         </TableCell>
+                        <TableCell className="hidden md:table-cell">{product.brand_name}</TableCell>
                         <TableCell className="hidden md:table-cell">
                            <Badge variant={'secondary'} className={cn(
                               product.status === 'active' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
