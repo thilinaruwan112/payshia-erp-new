@@ -26,7 +26,7 @@ import { fetcher } from '@/lib/api';
 interface AddToCartDialogProps {
   product: PosProduct | null;
   onClose: () => void;
-  onAddToCart: (product: PosProduct, quantity: number, discount: number, batch: StockInfo, imageUrl?: string) => void;
+  onAddToCart: (product: PosProduct, quantity: number, discountPerItem: number, batch: StockInfo, imageUrl?: string) => void;
   showImages?: boolean; // Add this prop
 }
 
@@ -250,7 +250,7 @@ export function AddToCartDialog({
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="item-discount">Item Discount</Label>
+                            <Label htmlFor="item-discount">Discount Per Item</Label>
                             <Input 
                                 id="item-discount" 
                                 type="number" 
@@ -260,7 +260,7 @@ export function AddToCartDialog({
                             />
                         </div>
                         <div>
-                            <Label htmlFor="discounted-price">Discounted Price</Label>
+                            <Label htmlFor="discounted-price">Price After Discount</Label>
                             <Input id="discounted-price" readOnly value={discountedPrice.toFixed(2)} />
                         </div>
                     </div>

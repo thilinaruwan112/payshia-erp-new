@@ -567,7 +567,7 @@ export function OrderPanel({
             user_id: parseInt(steward?.id || '1', 10), // Default user_id as per example
             product_id: parseInt(item.product.id, 10),
             item_price: item.product.price,
-            item_discount: item.itemDiscount || 0,
+            item_discount: item.itemDiscount,
             quantity: item.quantity,
             customer_id: parseInt(customer.customer_id, 10),
             table_id: tableIdValue,
@@ -702,7 +702,7 @@ export function OrderPanel({
                     </Badge>
                     {item.itemDiscount && item.itemDiscount > 0 ? (
                         <span className="text-xs text-green-600">
-                          Discount: -{currencySymbol}{item.itemDiscount.toFixed(2)}
+                          Discount: -{currencySymbol}{(item.discountPerItem * item.quantity).toFixed(2)}
                         </span>
                       ) : null}
                   </div>

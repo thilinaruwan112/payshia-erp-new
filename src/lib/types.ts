@@ -535,7 +535,8 @@ export type CartItem = {
   uniqueId?: string;
   product: Product & { variant: ProductVariant; variantName: string; imageUrl?: string };
   quantity: number;
-  itemDiscount?: number;
+  itemDiscount: number;
+  discountPerItem: number;
   batch: StockInfo;
   originalItemId?: string;
   originalQuantity?: number;
