@@ -477,7 +477,7 @@ useEffect(() => {
                         user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
                         product_id: parseInt(item.product.id, 10),
                         item_price: item.product.price,
-                        item_discount: item.itemDiscount || 0,
+                        item_discount: item.discountPerItem || 0, // This should be per item
                         quantity: isNewItem ? newQty : qtyToAdd,
                         customer_id: parseInt(currentOrder.customer.customer_id, 10),
                         table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
@@ -551,7 +551,7 @@ useEffect(() => {
             user_id: parseInt(currentOrder.steward?.id || currentCashier.id, 10),
             product_id: parseInt(item.product.id, 10), 
             item_price: item.product.price,
-            item_discount: item.itemDiscount || 0, 
+            item_discount: item.itemDiscount, 
             quantity: item.quantity, 
             customer_id: parseInt(currentOrder.customer.customer_id, 10),
             table_id: tables.find(t => t.table_name === currentOrder.tableName)?.id ? parseInt(tables.find(t => t.table_name === currentOrder.tableName)!.id, 10) : 0,
@@ -585,7 +585,7 @@ useEffect(() => {
     }
   };
 
-  const addToCart = async (product: PosProduct, quantity: number, discount: number, batch: StockInfo, imageUrl?: string) => {
+  const addToCart = async (product: PosProduct, quantity: number, discountPerItem: number, batch: StockInfo, imageUrl?: string) => {
     if (!currentOrderId) {
       toast({
         title: 'No Active Order',
@@ -608,14 +608,16 @@ useEffect(() => {
             newCart[existingItemIndex] = {
                 ...newCart[existingItemIndex],
                 quantity: newCart[existingItemIndex].quantity + quantity,
-                itemDiscount: (newCart[existingItemIndex].itemDiscount || 0) + discount,
+                itemDiscount: (newCart[existingItemIndex].discountPerItem * newCart[existingItemIndex].quantity) + (discountPerItem * quantity), // Recalculate total discount
+                discountPerItem: newCart[existingItemIndex].discountPerItem, // Keep the per-item discount rate the same
             };
         } else {
             const newCartItem: CartItem = { 
                 uniqueId: `${product.variant.id}-${batch.patch_code}-${Date.now()}`, 
                 product: {...product, imageUrl }, 
                 quantity, 
-                itemDiscount: discount, 
+                itemDiscount: discountPerItem * quantity,
+                discountPerItem: discountPerItem,
                 batch 
             };
             newCart = [...order.cart, newCartItem];
@@ -652,14 +654,19 @@ useEffect(() => {
             stock_balance: '9999', // Assume enough stock to load, validation is on adding more
         };
         
+        const itemDiscountTotal = parseFloat(String(item.item_discount));
+        const quantity = parseFloat(String(item.quantity));
+        const discountPerItem = quantity > 0 ? itemDiscountTotal / quantity : 0;
+
         return {
             uniqueId: `${product.variant.id}-HELD-${item.id}`,
             product: product,
-            quantity: parseFloat(String(item.quantity)),
-            itemDiscount: parseFloat(String(item.item_discount)),
+            quantity: quantity,
+            itemDiscount: itemDiscountTotal,
+            discountPerItem: discountPerItem,
             batch: placeholderBatch,
             originalItemId: item.id,
-            originalQuantity: parseFloat(String(item.quantity)),
+            originalQuantity: quantity,
         };
     });
 
@@ -702,7 +709,7 @@ useEffect(() => {
           newCart = order.cart.filter((item) => !(item.product.variant.id === variantId && item.batch.patch_code === batchCode));
         } else {
           newCart = order.cart.map((item) =>
-            item.product.variant.id === variantId && item.batch.patch_code === batchCode ? { ...item, quantity: newQuantity } : item
+            item.product.variant.id === variantId && item.batch.patch_code === batchCode ? { ...item, quantity: newQuantity, itemDiscount: item.discountPerItem * newQuantity } : item
           );
         }
         return { ...order, cart: newCart };
