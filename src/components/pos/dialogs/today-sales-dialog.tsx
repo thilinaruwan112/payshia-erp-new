@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -64,22 +65,22 @@ export function TodaySalesDialog({
     }
   }, [isOpen, fetchInvoices]);
 
-  const handleReprint = (invoiceId: string, companyId: string) => {
-    window.open(`/sales-print/invoices/${invoiceId}/print?company_id=${companyId}`, '_blank');
+  const handleReprint = (invoiceNumber: string, companyId: string) => {
+    window.open(`/pos/final-invoice/${invoiceNumber}?company_id=${companyId}`, '_blank');
   };
 
   const totalSales = invoices.reduce((acc, inv) => acc + parseFloat(inv.grand_total), 0);
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 flex flex-col max-h-[100vh]">
+      <DialogContent className="max-w-md p-0 flex flex-col h-[90vh]">
         <DialogHeader className="p-6 border-b shrink-0">
           <PayshiaPosLogo />
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden flex flex-col">
           <div className="p-6 pb-4 shrink-0">
-            <h2 className="text-xl font-semibold">Today's Invoice List</h2>
+             <h2 className="text-xl font-semibold">Today's Invoice List</h2>
           </div>
 
           <ScrollArea className="flex-1 px-6">
@@ -130,8 +131,6 @@ export function TodaySalesDialog({
             <span>{currencySymbol} {totalSales.toFixed(2)}</span>
           </div>
         </div>
-
-        
       </DialogContent>
     </Dialog>
   );
