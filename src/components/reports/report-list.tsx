@@ -31,9 +31,9 @@ export function ReportList({ reportCategories, selectedReport, onSelectReport }:
     onSelectReport: (name: string) => void
 }) {
     return (
-        <Accordion type="multiple" className="w-full space-y-4 md:space-y-0 md:border-0 md:p-0">
+        <Accordion type="multiple" className="w-full space-y-4 md:space-y-0 md:border-0 md:p-0" defaultValue={reportCategories.map(c => c.name)}>
         {reportCategories.map((category, index) => (
-          <AccordionItem value={`item-${index}`} key={category.name} className="border-b-0 md:border-b">
+          <AccordionItem value={category.name} key={category.name} className="border-b-0 md:border-b">
             <Card className="md:shadow-none md:border-0 md:rounded-none">
                 <AccordionTrigger className="p-4 text-lg font-semibold hover:no-underline">
                     {category.name}

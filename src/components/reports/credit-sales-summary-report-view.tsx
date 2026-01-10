@@ -7,10 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, DollarSign, FileText, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useCurrency } from '../currency-provider';
+import type { User } from '@/lib/types';
 
 interface Invoice {
     id: string;
@@ -19,7 +20,6 @@ interface Invoice {
     grand_total: string;
     payment_status: string;
     customer_code: string;
-    // Assuming customer name will be added to this object later
     customerName?: string; 
 }
 
@@ -60,8 +60,6 @@ export const CreditSalesSummaryReportView = ({ reportData, customers }: { report
     return (
         <Card className="w-full">
             <CardHeader>
-                <CardTitle>Credit Sales Summary Report</CardTitle>
-                <CardDescription>An overview of all sales made on credit.</CardDescription>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
                     <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Credit Invoices</CardTitle></CardHeader>
