@@ -268,11 +268,16 @@ function ReportsPage() {
 
     const report = allReports.find(r => r.name === selectedReport);
     const hasData = reportData && 
-        ( (reportData.data?.invoices && Array.isArray(reportData.data.invoices) && reportData.data.invoices.length > 0) ||
-          (reportData.invoices && Array.isArray(reportData.invoices) && reportData.invoices.length > 0) ||
-          (Array.isArray(reportData) && reportData.length > 0) ||
-          (reportData.transactions && Array.isArray(reportData.transactions) && reportData.transactions.length > 0) ||
-          (reportData.items && Array.isArray(reportData.items) && reportData.items.length > 0));
+    (
+        (Array.isArray(reportData) && reportData.length > 0) ||
+        (reportData.invoices && Array.isArray(reportData.invoices) && reportData.invoices.length > 0) ||
+        (reportData.items && Array.isArray(reportData.items) && reportData.items.length > 0) ||
+        (reportData.transactions && Array.isArray(reportData.transactions) && reportData.transactions.length > 0) ||
+        (reportData.data && (
+            (reportData.data.invoices && Array.isArray(reportData.data.invoices) && reportData.data.invoices.length > 0) ||
+            (Array.isArray(reportData.data) && reportData.data.length > 0)
+        ))
+    );
 
 
   return (
@@ -363,7 +368,7 @@ function ReportsPage() {
                             <DayEndSalesReportView reportData={reportData} />
                          )}
                           {hasData && selectedReport === 'Credit Sales Summary Report' && (
-                            <CreditSalesSummaryReportView reportData={reportData.data} customers={customers} />
+                            <CreditSalesSummaryReportView reportData={reportData} customers={customers} />
                          )}
                     </div>
                 ) : (
@@ -387,3 +392,4 @@ function ReportsPageWrapper() {
 }
 
 export default ReportsPageWrapper;
+
