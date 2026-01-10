@@ -31,6 +31,7 @@ export const reportCategories = [
             { name: 'Invoice Wise Sales Report', href: '/reports/invoice-wise-sales-report', filters: ['dateRange', 'location'] },
             { name: 'Item Wise Sales', href: '/reports/item-wise-sales-report', filters: ['dateRange', 'location', 'category', 'brand'] },
             { name: 'Invoice Report', href: '/reports/invoice-report', filters: ['dateRange'] },
+            { name: 'Hourly Invoice Report', href: '/reports/hourly-invoice-report', filters: ['dateRange', 'location', 'customer'] },
         ]
     },
     { 
