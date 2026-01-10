@@ -3,7 +3,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, Suspense, useCallback } from 'react';
-import type { User, Supplier, Product, ProductVariant, PurchaseOrder, Invoice, GoodsReceivedNote, StockTransfer } from '@/lib/types';
+import type { User, Supplier, Product, ProductVariant, PurchaseOrder, Invoice, GoodsReceivedNote, StockTransfer, Collection, Color, Size, Brand } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { ReportFilters } from '@/components/reports/report-filters';
 import { ReportList } from '@/components/reports/report-list';
@@ -20,30 +20,47 @@ import { StockBalanceReportView } from '@/components/reports/stock-balance-repor
 import { BinCardReportView } from '@/components/reports/bin-card-report-view';
 import { StockTransferReportView } from '@/components/reports/stock-transfer-report-view';
 import { DayEndSalesReportView } from '@/components/reports/day-end-sales-report-view';
+import { CreditSalesSummaryReportView } from '@/components/reports/credit-sales-summary-report-view';
 import { cn } from '@/lib/utils';
 import { useLocation } from '@/components/location-provider';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { allReports, reportCategories } from '@/lib/report-list';
 import { format } from 'date-fns';
-
+import { DateRange } from 'react-day-picker';
+import { fetcher } from '@/lib/api';
 
 interface ProductWithVariants {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
 }
+
+interface CustomField {
+    id: string;
+    field_name: string;
+}
+
 type ReportData = any;
 
 function ReportsPage() {
     const searchParams = useSearchParams();
     const [selectedReport, setSelectedReport] = useState<string | null>(null);
-    const [reportData, setReportData] = useState<ReportData>([]);
+    const [reportData, setReportData] = useState<ReportData>(null);
     const [customers, setCustomers] = useState<User[]>([]);
+    const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+    const [products, setProducts] = useState<ProductWithVariants[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [brands, setBrands] = useState<Brand[]>([]);
+    const [collections, setCollections] = useState<Collection[]>([]);
+    const [colors, setColors] = useState<Color[]>([]);
+    const [sizes, setSizes] = useState<Size[]>([]);
+    const [customFields, setCustomFields] = useState<CustomField[]>([]);
     const { company_id, availableLocations } = useLocation();
     const { toast } = useToast();
     const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
     const [singleDate, setSingleDate] = React.useState<Date | undefined>(new Date());
     const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+    const [isFetching, setIsFetching] = useState(false);
 
 
     const handleShowReport = useCallback((data: ReportData) => {
@@ -52,7 +69,7 @@ function ReportsPage() {
     
     const handleSelectReport = useCallback((name: string) => {
         setSelectedReport(name);
-        setReportData([]);
+        setReportData(null);
     }, []);
     
     useEffect(() => {
@@ -60,7 +77,7 @@ function ReportsPage() {
         async function fetchInitialData() {
              if (!company_id) return;
              try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`);
+                const res = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`);
                 if (res.ok) setCustomers(await res.json());
              } catch (error) {
                  console.error("Failed to fetch initial customer data", error);
@@ -123,7 +140,7 @@ function ReportsPage() {
         let headers: string[] = [];
         let rows: string[][] = [];
         let filename = 'report.csv';
-        const dataToExport = Array.isArray(reportData) ? reportData : reportData.items || reportData.data || [];
+        const dataToExport = Array.isArray(reportData) ? reportData : reportData.items || reportData.data || reportData.invoices || [];
 
         if(selectedReport === 'Customer Master Report' && dataToExport.length > 0 && 'customer_first_name' in dataToExport[0]) {
             headers = ["Customer Name", "Phone Number", "Email", "Address"];
@@ -148,10 +165,10 @@ function ReportsPage() {
             rows = (dataToExport as ProductWithVariants[]).flatMap(p => 
                 p.variants.map(v => ([
                     p.product.name,
-                    v.sku,
+                    v.variant.sku,
                     p.product.category,
                     'N/A', // Placeholder for brand
-                    String(v.stock || 0)
+                    String(v.variant.stock || 0)
                 ]))
             );
             filename = 'item_master_report.csv';
@@ -199,7 +216,7 @@ function ReportsPage() {
         let head: string[][] = [];
         let body: (string | number)[][] = [];
         let filename = 'report.pdf';
-        const dataToExport = Array.isArray(reportData) ? reportData : reportData.items || reportData.data || [];
+        const dataToExport = Array.isArray(reportData) ? reportData : reportData.items || reportData.data || reportData.invoices || [];
 
         if(selectedReport === 'Customer Master Report' && dataToExport.length > 0 && 'customer_first_name' in dataToExport[0]) {
             head = [['Customer Name', 'Phone Number', 'Email', 'Address']];
@@ -224,10 +241,10 @@ function ReportsPage() {
             body = (dataToExport as ProductWithVariants[]).flatMap(p => 
                 p.variants.map(v => ([
                     p.product.name,
-                    v.sku,
+                    v.variant.sku,
                     p.product.category,
                     'N/A',
-                    v.stock || 0
+                    v.variant.stock || 0
                 ]))
             );
             filename = 'item_master_report.pdf';
@@ -249,7 +266,14 @@ function ReportsPage() {
       }
     }, [searchParams, handleSelectReport]);
 
-    const hasData = Array.isArray(reportData) ? reportData.length > 0 : (reportData?.items?.length > 0 || reportData?.invoices?.length > 0 || reportData?.data?.length > 0 || reportData?.transactions?.length > 0 || reportData?.transfers?.length > 0 || Object.keys(reportData).length > 2);
+    const report = allReports.find(r => r.name === selectedReport);
+    const hasData = reportData && 
+        ( (reportData.data?.invoices && Array.isArray(reportData.data.invoices) && reportData.data.invoices.length > 0) ||
+          (reportData.invoices && Array.isArray(reportData.invoices) && reportData.invoices.length > 0) ||
+          (Array.isArray(reportData) && reportData.length > 0) ||
+          (reportData.transactions && Array.isArray(reportData.transactions) && reportData.transactions.length > 0) ||
+          (reportData.items && Array.isArray(reportData.items) && reportData.items.length > 0));
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -274,7 +298,7 @@ function ReportsPage() {
                 {selectedReport ? (
                      <div className="w-full space-y-8">
                         <ReportFilters 
-                            key={selectedReport} // Add key to force re-mount on report change
+                            key={selectedReport}
                             reportName={selectedReport} 
                             onBack={() => setSelectedReport(null)} 
                             onShowReport={handleShowReport}
@@ -288,6 +312,16 @@ function ReportsPage() {
                             setSingleDate={setSingleDate}
                             filterValues={filterValues}
                             setFilterValues={setFilterValues}
+                            customers={customers}
+                            suppliers={suppliers}
+                            products={products}
+                            categories={categories}
+                            brands={brands}
+                            collections={collections}
+                            colors={colors}
+                            sizes={sizes}
+                            customFields={customFields}
+                            isFetching={isFetching}
                         />
                          {hasData && selectedReport === 'Customer Master Report' && (
                             <CustomerReportView customers={reportData as User[]} />
@@ -327,6 +361,9 @@ function ReportsPage() {
                          )}
                          {hasData && selectedReport === 'Day End Sale Report' && (
                             <DayEndSalesReportView reportData={reportData} />
+                         )}
+                          {hasData && selectedReport === 'Credit Sales Summary Report' && (
+                            <CreditSalesSummaryReportView reportData={reportData.data} customers={customers} />
                          )}
                     </div>
                 ) : (
