@@ -52,10 +52,10 @@ export const InvoiceWiseSalesReportView = ({ reportData }: { reportData: ReportD
     const itemsPerPage = 10;
 
     const filteredInvoices = useMemo(() => 
-        (reportData.invoices || []).filter(invoice =>
+        (reportData?.invoices || []).filter(invoice =>
             invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
             `${invoice.customer_first_name} ${invoice.customer_last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
-    ), [reportData.invoices, searchTerm]);
+    ), [reportData, searchTerm]);
 
     const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
     const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
