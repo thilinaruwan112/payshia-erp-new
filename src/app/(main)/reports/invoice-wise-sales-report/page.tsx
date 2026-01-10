@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { InvoiceWiseSalesReportView } from '@/components/reports/invoice-wise-sales-report-view';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, Loader2, Eye, Printer, FileDown, ArrowLeft } from 'lucide-react';
+import { CalendarIcon, Loader2, Eye, Printer, ArrowLeft } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Combobox } from '@/components/ui/combobox';
@@ -96,6 +96,21 @@ export default function InvoiceWiseSalesReportPage() {
         }
     }, [company_id, dateRange, filterValues, toast]);
     
+    const handlePrint = () => {
+        if (!reportData) {
+            toast({ variant: 'destructive', title: 'No data to print', description: 'Please view the report first.' });
+            return;
+        }
+        const params = new URLSearchParams({
+            company_id: String(company_id),
+            ...(dateRange?.from && { start_date: format(dateRange.from, 'yyyy-MM-dd') }),
+            ...(dateRange?.to && { end_date: format(dateRange.to, 'yyyy-MM-dd') }),
+            ...(filterValues['location'] && filterValues['location'] !== 'all' && { location_id: filterValues['location'] }),
+        });
+        const url = `/reports-print/invoice-wise-sales-report/print?${params.toString()}`;
+        window.open(url, '_blank');
+    };
+
     const locationOptions = [{ value: 'all', label: 'All Locations' }, ...availableLocations.map(l => ({ value: l.location_id, label: l.location_name }))];
 
     return (
@@ -146,6 +161,10 @@ export default function InvoiceWiseSalesReportPage() {
                          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                          View
                      </Button>
+                      <Button variant="outline" onClick={handlePrint} disabled={!reportData}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print
+                    </Button>
                 </div>
             </div>
             
@@ -155,3 +174,5 @@ export default function InvoiceWiseSalesReportPage() {
         </div>
     );
 }
+
+    
