@@ -6,7 +6,7 @@ import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { CreditSalesSummaryReportView } from '@/components/reports/credit-sales-summary-report-view';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, Loader2, Eye, ArrowLeft } from 'lucide-react';
+import { CalendarIcon, Loader2, Eye, ArrowLeft, Printer } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Combobox } from '@/components/ui/combobox';
@@ -84,6 +84,21 @@ export default function CreditSalesSummaryPage() {
             setIsFetching(false);
         }
     }, [company_id, dateRange, filterValues, toast]);
+
+    const handlePrint = () => {
+        if (!reportData) {
+            toast({ variant: 'destructive', title: 'No data to print', description: 'Please view the report first.' });
+            return;
+        }
+        const params = new URLSearchParams({
+            company_id: String(company_id),
+            ...(dateRange?.from && { start_date: format(dateRange.from, 'yyyy-MM-dd') }),
+            ...(dateRange?.to && { end_date: format(dateRange.to, 'yyyy-MM-dd') }),
+            ...(filterValues['customer'] && filterValues['customer'] !== 'all' && { customer_id: filterValues['customer'] }),
+        });
+        const url = `/reports-print/credit-sales-summary/print?${params.toString()}`;
+        window.open(url, '_blank');
+    };
     
     const customerOptions = [{ value: 'all', label: 'All Customers' }, ...customers.map(c => ({
         value: c.customer_id,
@@ -138,6 +153,10 @@ export default function CreditSalesSummaryPage() {
                          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                          View
                      </Button>
+                      <Button variant="outline" onClick={handlePrint} disabled={!reportData}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print
+                    </Button>
                 </div>
             </div>
             

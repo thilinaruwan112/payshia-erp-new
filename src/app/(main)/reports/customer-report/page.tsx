@@ -6,7 +6,7 @@ import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { CustomerReportView } from '@/components/reports/customer-report-view';
 import { Button } from '@/components/ui/button';
-import { Loader2, Eye, ArrowLeft } from 'lucide-react';
+import { Loader2, Eye, Printer, ArrowLeft } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import { useLocation } from '@/components/location-provider';
 import { useRouter } from 'next/navigation';
@@ -34,6 +34,11 @@ export default function CustomerReportPage() {
         }
     }, [company_id, toast]);
 
+    const handlePrint = () => {
+        const url = `/reports-print/customer-report/print?company_id=${company_id}`;
+        window.open(url, '_blank');
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -50,6 +55,10 @@ export default function CustomerReportPage() {
                 <Button onClick={handleViewReport} disabled={isFetching}>
                     {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                     View Report
+                </Button>
+                 <Button variant="outline" onClick={handlePrint} disabled={customers.length === 0}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print
                 </Button>
             </div>
             {customers.length > 0 && <CustomerReportView customers={customers} />}
