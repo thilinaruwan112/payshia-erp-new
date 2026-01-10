@@ -17,9 +17,39 @@ import { fetcher } from '@/lib/api';
 import { useLocation } from '@/components/location-provider';
 import { useRouter } from 'next/navigation';
 
+interface InvoiceReportItem {
+    invoice_id: string;
+    invoice_number: string;
+    invoice_date: string;
+    customer_code: string;
+    customer_first_name: string;
+    customer_last_name: string;
+    location_name: string;
+    total_sales: string;
+    discount_amount: string;
+    service_charge: string;
+    cost_value: string;
+    net_amount: string;
+    payment_status: string;
+    amount_received: string;
+    created_by: string;
+    gross_profit: string;
+}
+
 interface ReportData {
-    invoices: any[];
-    summary: any;
+    invoices: InvoiceReportItem[];
+    summary: {
+        total_invoices: number;
+        total_sales: number;
+        total_discount: number;
+        total_service_charge: number;
+        total_cost: number;
+        total_net_amount: number;
+        total_received: number;
+        total_gross_profit: number;
+        paid_invoices: number;
+        pending_invoices: number;
+    };
 }
 
 export default function InvoiceWiseSalesReportPage() {
@@ -57,7 +87,7 @@ export default function InvoiceWiseSalesReportPage() {
             if (!response.ok) throw new Error('Failed to fetch report data');
             
             const data = await response.json();
-            setReportData(data.data);
+            setReportData(data.data.report_data);
 
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: `Could not fetch report data.` });

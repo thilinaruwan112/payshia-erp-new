@@ -60,7 +60,7 @@ export const InvoiceWiseSalesReportView = ({ reportData }: { reportData: ReportD
     const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
     const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-    const { summary } = reportData;
+    const { summary } = reportData || {};
 
     return (
         <Card className="w-full">
