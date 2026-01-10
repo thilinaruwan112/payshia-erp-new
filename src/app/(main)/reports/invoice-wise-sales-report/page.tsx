@@ -2,11 +2,10 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react';
-import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { CreditSalesSummaryReportView } from '@/components/reports/credit-sales-summary-report-view';
+import { InvoiceWiseSalesReportView } from '@/components/reports/invoice-wise-sales-report-view';
 import { Button } from '@/components/ui/button';
-import { CalendarIcon, Loader2, Eye, ArrowLeft } from 'lucide-react';
+import { CalendarIcon, Loader2, Eye, Printer, FileDown, ArrowLeft } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Combobox } from '@/components/ui/combobox';
@@ -23,12 +22,11 @@ interface ReportData {
     summary: any;
 }
 
-export default function CreditSalesSummaryPage() {
+export default function InvoiceWiseSalesReportPage() {
     const [reportData, setReportData] = useState<ReportData | null>(null);
-    const [customers, setCustomers] = useState<User[]>([]);
-    const { company_id } = useLocation();
+    const { availableLocations, company_id } = useLocation();
     const { toast } = useToast();
-    const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
         to: new Date(),
     });
@@ -40,36 +38,20 @@ export default function CreditSalesSummaryPage() {
         setFilterValues(prev => ({ ...prev, [filterName]: value }));
     };
 
-    useEffect(() => {
-        async function fetchDropdownData() {
-            if (!company_id) return;
-            try {
-                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/company/filter/?company_id=${company_id}`);
-                if (!response.ok) throw new Error(`Failed to fetch customers`);
-                const data = await response.json();
-                setCustomers(data || []);
-            } catch (error) {
-                toast({ variant: 'destructive', title: 'Error', description: `Could not fetch customer list.` });
-            }
-        }
-        fetchDropdownData();
-    }, [company_id, toast]);
-
     const handleViewReport = useCallback(async () => {
         setIsFetching(true);
         setReportData(null);
         try {
             if (!company_id) throw new Error("Company ID is missing.");
-
             const params = new URLSearchParams({ company_id: String(company_id) });
 
             if (dateRange?.from) params.append('start_date', format(dateRange.from, 'yyyy-MM-dd'));
             if (dateRange?.to) params.append('end_date', format(dateRange.to, 'yyyy-MM-dd'));
-            if (filterValues['customer'] && filterValues['customer'] !== 'all') {
-                params.append('customer_id', filterValues['customer']);
+            if (filterValues['location'] && filterValues['location'] !== 'all') {
+                params.append('location_id', filterValues['location']);
             }
             
-            const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/credit-sales-summary?${params.toString()}`;
+            const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/sales-invoice-wise?${params.toString()}`;
             
             const response = await fetcher(url);
             if (!response.ok) throw new Error('Failed to fetch report data');
@@ -78,24 +60,20 @@ export default function CreditSalesSummaryPage() {
             setReportData(data.data);
 
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-            toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+            toast({ variant: 'destructive', title: 'Error', description: `Could not fetch report data.` });
         } finally {
             setIsFetching(false);
         }
     }, [company_id, dateRange, filterValues, toast]);
     
-    const customerOptions = [{ value: 'all', label: 'All Customers' }, ...customers.map(c => ({
-        value: c.customer_id,
-        label: `${c.customer_first_name} ${c.customer_last_name}`,
-    }))];
+    const locationOptions = [{ value: 'all', label: 'All Locations' }, ...availableLocations.map(l => ({ value: l.location_id, label: l.location_name }))];
 
     return (
         <div className="space-y-6">
              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                  <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Credit Sales Summary Report</h1>
-                    <p className="text-muted-foreground">Analyze your credit sales performance.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Invoice Wise Sales Report</h1>
+                    <p className="text-muted-foreground">Analyze sales performance by individual invoice.</p>
                  </div>
                  <Button variant="outline" onClick={() => router.push('/reports')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -130,8 +108,8 @@ export default function CreditSalesSummaryPage() {
                     </Popover>
                 </div>
                  <div className="space-y-1.5">
-                    <Label>Customer</Label>
-                    <Combobox options={customerOptions} value={filterValues['customer'] || ''} onChange={(value) => handleFilterChange('customer', value)} placeholder="Select a customer..." notFoundText="No customers found." />
+                    <Label>Location</Label>
+                    <Combobox options={locationOptions} value={filterValues['location'] || ''} onChange={(value) => handleFilterChange('location', value)} placeholder="Select location..." notFoundText="No locations found." />
                 </div>
                 <div className="flex items-center gap-2">
                      <Button onClick={handleViewReport} disabled={isFetching} className="w-full md:w-auto">
@@ -142,7 +120,7 @@ export default function CreditSalesSummaryPage() {
             </div>
             
             {reportData && (
-                <CreditSalesSummaryReportView reportData={reportData} customers={customers} />
+                <InvoiceWiseSalesReportView reportData={reportData} />
             )}
         </div>
     );

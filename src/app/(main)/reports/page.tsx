@@ -4,6 +4,7 @@
 import { ReportList } from '@/components/reports/report-list';
 import { reportCategories } from '@/lib/report-list';
 import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function ReportsCenterPage() {
     const router = useRouter();
@@ -22,9 +23,13 @@ export default function ReportsCenterPage() {
                     Select a report from the list below to view its details.
                 </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 items-start">
-                <div className="md:col-span-1">
-                     <ReportList
+             <Card>
+                <CardHeader>
+                    <CardTitle>All Reports</CardTitle>
+                    <CardDescription>Select a report category and then choose a report to view.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ReportList
                         reportCategories={reportCategories}
                         selectedReport={null}
                         onSelectReport={(reportName) => {
@@ -34,13 +39,8 @@ export default function ReportsCenterPage() {
                             }
                         }}
                     />
-                </div>
-                <div className="md:col-span-3">
-                     <div className="flex w-full items-center justify-center h-full border-2 border-dashed rounded-lg min-h-[400px]">
-                        <p className="text-muted-foreground">Select a report to continue</p>
-                    </div>
-                </div>
-            </div>
+                </CardContent>
+             </Card>
         </div>
     );
 }
