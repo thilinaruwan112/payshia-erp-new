@@ -167,29 +167,20 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
 
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-   const renderBillTo = () => {
-    // @ts-ignore
-    const addresses = invoice.addresses;
+  const addresses = (invoice as any).addresses;
+  let billTo = customer; // fallback
+  let shipTo = null;
 
-    if (invoice.created_by === 'Online' && addresses) {
-        const addressSource = addresses.billing || addresses.shipping;
-        if (addressSource) {
-            return <AddressDisplay addressSource={addressSource} />;
-        }
-        return <p className="font-bold text-gray-800">{invoice.customer_code}</p>;
-    }
-    
-    // Existing logic for non-online orders
-    // @ts-ignore
-    const addressSource = invoice.billing_address?.address_line1 ? invoice.billing_address : (invoice.shipping_address?.address_line1 ? invoice.shipping_address : customer);
-
-    if (addressSource) {
-        return <AddressDisplay addressSource={addressSource} />
-    }
-    
-    // Final fallback
-    return <p className="font-bold text-gray-800">{invoice.customer_code}</p>;
-  };
+  if (addresses) {
+      billTo = addresses.billing || addresses.shipping;
+      shipTo = addresses.shipping;
+      // If billing exists and is the same as shipping, we don't need a separate shipping section.
+      if (addresses.billing && JSON.stringify(addresses.billing) === JSON.stringify(addresses.shipping)) {
+          shipTo = null;
+      }
+  } else if ((invoice as any).billing_address) {
+      billTo = (invoice as any).billing_address;
+  }
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
@@ -211,7 +202,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
       <section className="grid grid-cols-2 gap-4 mt-6">
         <div>
           <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Bill To</h3>
-          {renderBillTo()}
+          <AddressDisplay addressSource={billTo} />
         </div>
         <div className="text-right">
           <div className="grid grid-cols-2 gap-1">
@@ -272,6 +263,13 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         </div>
       </section>
       
+      {shipTo && (
+        <section className="mt-8 pt-6 border-t-2 border-gray-200">
+            <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Shipping Address</h3>
+            <AddressDisplay addressSource={shipTo} />
+        </section>
+      )}
+
       {showBankDetails && (
         <section className="mt-8 pt-6 border-t-2 border-gray-200">
             <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Payment Details</h3>
