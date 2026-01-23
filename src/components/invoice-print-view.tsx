@@ -80,11 +80,21 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         const data: Invoice = await response.json();
         setInvoice(data);
         
-        // The customer object can be nested inside `billing_address` or a separate `customer` object
         // @ts-ignore
-        if (data.billing_address) setCustomer(data.billing_address);
+        if (data.addresses) {
+            // @ts-ignore
+            const addressSource = data.addresses.billing || data.addresses.shipping;
+            if (addressSource) {
+                 setCustomer(addressSource);
+            }
         // @ts-ignore
-        else if (data.customer) setCustomer(data.customer);
+        } else if (data.billing_address) {
+            // @ts-ignore
+            setCustomer(data.billing_address);
+        } else if (data.customer) {
+            // @ts-ignore
+            setCustomer(data.customer);
+        }
 
         if (data.items) {
           const itemsWithDetails = await Promise.all(
@@ -138,6 +148,12 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
     }
   }, [isLoading, invoice]);
   
+  const getProductName = (productId: number, variantId?: string) => {
+    // This logic is simplified as invoiceItemsWithDetails should contain the product name
+    const item = invoiceItemsWithDetails.find(i => i.product_id === productId && i.product_variant_id === variantId);
+    return item?.product?.name || `Product ID: ${productId}`;
+  };
+
   if (isLoading) {
     return <InvoiceViewSkeleton />;
   }
@@ -155,16 +171,15 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
    const renderBillTo = () => {
-    // For online orders, check for the new addresses structure
     // @ts-ignore
-    if (invoice.created_by === 'Online' && invoice.addresses) {
-      // @ts-ignore
-      const addressSource = invoice.addresses?.billing || invoice.addresses?.shipping;
-      if (addressSource) {
-        return <AddressDisplay addressSource={addressSource} />;
-      }
-      // Fallback for online orders without an address object
-      return <p className="font-bold text-gray-800">{invoice.customer_code}</p>;
+    const addresses = invoice.addresses;
+
+    if (invoice.created_by === 'Online' && addresses) {
+        const addressSource = addresses.billing || addresses.shipping;
+        if (addressSource) {
+            return <AddressDisplay addressSource={addressSource} />;
+        }
+        return <p className="font-bold text-gray-800">{invoice.customer_code}</p>;
     }
     
     // Existing logic for non-online orders
@@ -227,8 +242,8 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
             {invoiceItems?.map((item, index) => (
               <tr key={index} className="border-b border-gray-100">
                 <td className="p-3">
-                  <p className="font-semibold">{item.productName}</p>
-                  {item.product?.description && <p className="text-xs text-gray-500">{item.product.description}</p>}
+                  <p className="font-semibold">{item.product_name}</p>
+                  {item.product?.description && <p className="text-xs text-gray-500 line-clamp-2">{item.product.description}</p>}
                 </td>
                 <td className="p-3 text-right">{parseFloat(String(item.quantity)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
                 <td className="p-3 text-right">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
