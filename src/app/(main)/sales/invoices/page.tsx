@@ -39,15 +39,15 @@ import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
 
 const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'Draft':
+  switch (status.toLowerCase()) {
+    case 'draft':
       return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    case 'Sent':
+    case 'sent':
       return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-    case 'Paid':
-    case 'Active':
+    case 'paid':
+    case 'active':
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-    case 'Overdue':
+    case 'overdue':
       return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
@@ -55,8 +55,13 @@ const getStatusColor = (status: string) => {
 };
 
 const getStatusText = (status: string): string => {
-    if (status === '1') return 'Active';
-    return status;
+    switch (status) {
+        case '1': return 'Active';
+        case '2': return 'Pending';
+        case '3': return 'Cancelled';
+        case '4': return 'Draft';
+        default: return status;
+    }
 }
 
 
