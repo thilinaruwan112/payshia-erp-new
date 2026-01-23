@@ -28,6 +28,31 @@ type InvoiceItemWithProduct = InvoiceItem & {
     product?: Product;
 };
 
+// A helper component to render address details
+const AddressDisplay = ({ addressSource }: { addressSource: any }) => {
+    if (!addressSource) return null;
+
+    const firstName = addressSource.first_name || addressSource.customer_first_name;
+    const lastName = addressSource.last_name || addressSource.customer_last_name;
+    const addressLine1 = addressSource.address_line1;
+    const addressLine2 = addressSource.address_line2;
+    const city = addressSource.city || addressSource.city_id; // Prefer 'city' if available
+    const phone = addressSource.phone || addressSource.phone_number;
+    const email = addressSource.email || addressSource.email_address;
+    
+    const addressParts = [addressLine1, addressLine2, city].filter(Boolean).join(', ');
+
+    return (
+        <>
+          <p className="font-bold text-gray-800">{firstName} {lastName}</p>
+          {addressParts && <p>{addressParts}</p>}
+          {email && <p>{email}</p>}
+          {phone && <p>{phone}</p>}
+        </>
+    );
+};
+
+
 export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
@@ -55,14 +80,14 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         const data: Invoice = await response.json();
         setInvoice(data);
         
-        let fetchedCustomer: User | null = null;
+        // The customer object is now nested within the invoice response
         if (data.customer) {
-            fetchedCustomer = data.customer;
+            setCustomer(data.customer);
         } else if (data.created_by !== 'Online' && data.customer_code) {
+             // Fallback for older data structures
              const customerRes = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`);
-             if(customerRes.ok) fetchedCustomer = await customerRes.json();
+             if(customerRes.ok) setCustomer(await customerRes.json());
         }
-        setCustomer(fetchedCustomer);
 
         if (data.items) {
           const itemsWithDetails = await Promise.all(
@@ -126,10 +151,26 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
 
   const invoiceItems = (invoiceItemsWithDetails.length > 0 ? invoiceItemsWithDetails : invoice.items)?.map(item => ({
     ...item,
+    product_name: item.product?.name || `Product ID: ${item.product_id}`,
     total_cost: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)) - parseFloat(String(item.item_discount)),
   }));
 
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
+  
+  const renderBillTo = () => {
+    if (invoice.created_by === 'Online') {
+      return <p className="font-bold text-gray-800">{invoice.customer_code}</p>;
+    }
+    
+    // @ts-ignore - Assuming billing_address and shipping_address might exist on the invoice object
+    const addressSource = invoice.billing_address?.address_line1 ? invoice.billing_address : (invoice.shipping_address?.address_line1 ? invoice.shipping_address : customer);
+
+    if (addressSource) {
+        return <AddressDisplay addressSource={addressSource} />
+    }
+    
+    return <p className="font-bold text-gray-800">{invoice.customer_code}</p>;
+  };
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
@@ -151,18 +192,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
       <section className="grid grid-cols-2 gap-4 mt-6">
         <div>
           <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Bill To</h3>
-          {invoice.created_by === 'Online' ? (
-            <p className="font-bold text-gray-800">{invoice.customer_code}</p>
-          ) : customer ? (
-            <>
-              <p className="font-bold text-gray-800">{customer.customer_first_name} {customer.customer_last_name}</p>
-              <p>{customer.address_line1}</p>
-              <p>{customer.city_id}</p>
-              <p>{customer.email_address}</p>
-            </>
-          ) : (
-            <p className="font-bold text-gray-800">{invoice.customer_code}</p>
-          )}
+          {renderBillTo()}
         </div>
         <div className="text-right">
           <div className="grid grid-cols-2 gap-1">
