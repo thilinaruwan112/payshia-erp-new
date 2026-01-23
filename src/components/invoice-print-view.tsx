@@ -38,7 +38,7 @@ const AddressDisplay = ({ addressSource }: { addressSource: any }) => {
     const addressLine2 = addressSource.address_line2;
     const city = addressSource.city || addressSource.city_id; // Prefer 'city' if available
     const phone = addressSource.phone || addressSource.phone_number;
-    const email = addressSource.email || addressSource.email_address;
+    const email = (addressSource.user_id && addressSource.user_id.includes('@')) ? addressSource.user_id : (addressSource.email || addressSource.email_address);
     
     const addressParts = [addressLine1, addressLine2, city].filter(Boolean).join(', ');
 
@@ -80,14 +80,11 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         const data: Invoice = await response.json();
         setInvoice(data);
         
-        // The customer object is now nested within the invoice response
-        if (data.customer) {
-            setCustomer(data.customer);
-        } else if (data.created_by !== 'Online' && data.customer_code) {
-             // Fallback for older data structures
-             const customerRes = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`);
-             if(customerRes.ok) setCustomer(await customerRes.json());
-        }
+        // The customer object can be nested inside `billing_address` or a separate `customer` object
+        // @ts-ignore
+        if (data.billing_address) setCustomer(data.billing_address);
+        // @ts-ignore
+        else if (data.customer) setCustomer(data.customer);
 
         if (data.items) {
           const itemsWithDetails = await Promise.all(
@@ -157,18 +154,28 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
 
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
-  const renderBillTo = () => {
-    if (invoice.created_by === 'Online') {
+   const renderBillTo = () => {
+    // For online orders, check for the new addresses structure
+    // @ts-ignore
+    if (invoice.created_by === 'Online' && invoice.addresses) {
+      // @ts-ignore
+      const addressSource = invoice.addresses?.billing || invoice.addresses?.shipping;
+      if (addressSource) {
+        return <AddressDisplay addressSource={addressSource} />;
+      }
+      // Fallback for online orders without an address object
       return <p className="font-bold text-gray-800">{invoice.customer_code}</p>;
     }
     
-    // @ts-ignore - Assuming billing_address and shipping_address might exist on the invoice object
+    // Existing logic for non-online orders
+    // @ts-ignore
     const addressSource = invoice.billing_address?.address_line1 ? invoice.billing_address : (invoice.shipping_address?.address_line1 ? invoice.shipping_address : customer);
 
     if (addressSource) {
         return <AddressDisplay addressSource={addressSource} />
     }
     
+    // Final fallback
     return <p className="font-bold text-gray-800">{invoice.customer_code}</p>;
   };
 
