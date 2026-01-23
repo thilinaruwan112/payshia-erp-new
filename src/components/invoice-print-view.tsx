@@ -54,9 +54,15 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         }
         const data: Invoice = await response.json();
         setInvoice(data);
+        
+        let fetchedCustomer: User | null = null;
         if (data.customer) {
-            setCustomer(data.customer);
+            fetchedCustomer = data.customer;
+        } else if (data.created_by !== 'Online' && data.customer_code) {
+             const customerRes = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`);
+             if(customerRes.ok) fetchedCustomer = await customerRes.json();
         }
+        setCustomer(fetchedCustomer);
 
         if (data.items) {
           const itemsWithDetails = await Promise.all(
@@ -77,14 +83,12 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         }
 
         if (data.company_id && data.location_id) {
-            const [companyRes, locationRes, customerRes] = await Promise.all([
+            const [companyRes, locationRes] = await Promise.all([
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${data.company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${data.location_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`),
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());
-            if(customerRes.ok) setCustomer(await customerRes.json());
         }
 
       } catch (error) {
@@ -147,10 +151,18 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
       <section className="grid grid-cols-2 gap-4 mt-6">
         <div>
           <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Bill To</h3>
-          <p className="font-bold text-gray-800">{customer?.customer_first_name} {customer?.customer_last_name}</p>
-          <p>{customer?.address_line1}</p>
-          <p>{customer?.city_id}</p>
-          <p>{customer?.email_address}</p>
+          {invoice.created_by === 'Online' ? (
+            <p className="font-bold text-gray-800">{invoice.customer_code}</p>
+          ) : customer ? (
+            <>
+              <p className="font-bold text-gray-800">{customer.customer_first_name} {customer.customer_last_name}</p>
+              <p>{customer.address_line1}</p>
+              <p>{customer.city_id}</p>
+              <p>{customer.email_address}</p>
+            </>
+          ) : (
+            <p className="font-bold text-gray-800">{invoice.customer_code}</p>
+          )}
         </div>
         <div className="text-right">
           <div className="grid grid-cols-2 gap-1">
