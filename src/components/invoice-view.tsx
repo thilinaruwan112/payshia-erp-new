@@ -45,6 +45,8 @@ export function InvoiceView({ id }: InvoiceViewProps) {
   const router = useRouter();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { company_id } = useLocation();
@@ -58,15 +60,27 @@ export function InvoiceView({ id }: InvoiceViewProps) {
       if (!id || !company_id) return;
       setIsLoading(true);
       try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/full/?invoicenumber=${id}&company_id=${company_id}`);
-        if (!response.ok) {
-           if (response.status === 404) notFound();
+        const [invoiceResponse, productsResponse, variantsResponse] = await Promise.all([
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/full/?invoicenumber=${id}&company_id=${company_id}`),
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products`),
+          fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-variants`),
+        ]);
+
+        if (!invoiceResponse.ok) {
+           if (invoiceResponse.status === 404) notFound();
            throw new Error('Failed to fetch invoice data');
         }
-        const data: Invoice = await response.json();
+        const data: Invoice = await invoiceResponse.json();
         setInvoice(data);
         if (data.customer) {
           setCustomer(data.customer);
+        }
+
+        if (productsResponse.ok) {
+          setProducts(await productsResponse.json());
+        }
+        if (variantsResponse.ok) {
+          setVariants(await variantsResponse.json());
         }
 
       } catch (error) {
@@ -81,7 +95,27 @@ export function InvoiceView({ id }: InvoiceViewProps) {
     }
     fetchData();
   }, [id, company_id, toast]);
+
+  const getProductName = (productId: number, variantId?: string) => {
+    const product = products.find(p => p.id === String(productId));
+    if (!product) return 'Unknown Product';
+    
+    if (variantId) {
+      const variant = variants.find(v => v.id === variantId);
+      if (variant) {
+        const variantAttributes = [variant.color, variant.size].filter(Boolean).join(' - ');
+        return variantAttributes ? `${product.name} - ${variantAttributes}` : `${product.name} (${variant.sku})`;
+      }
+    }
+    return product.name;
+  };
   
+  const invoiceItems = invoice?.items?.map(item => ({
+    ...item,
+    productName: getProductName(item.product_id, item.product_variant_id),
+    total_cost: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)),
+  }));
+
   if (isLoading) {
     return <InvoiceViewSkeleton />;
   }
@@ -89,11 +123,6 @@ export function InvoiceView({ id }: InvoiceViewProps) {
   if (!invoice) {
     return <div>Invoice not found or failed to load.</div>;
   }
-
-  const invoiceItems = invoice.items?.map(item => ({
-    ...item,
-    total_cost: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)),
-  }));
   
   const handlePrint = (showBankDetails: boolean) => {
     const url = `/sales-print/invoices/${invoice.invoice_number}/print?company_id=${invoice.company_id}&showBankDetails=${showBankDetails}`;
