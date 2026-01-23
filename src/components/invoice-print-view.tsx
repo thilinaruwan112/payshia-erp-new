@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { fetcher } from '@/lib/api';
+import { useCurrency } from './currency-provider';
 
 interface Company {
     id: string;
@@ -56,6 +57,7 @@ const AddressDisplay = ({ addressSource }: { addressSource: any }) => {
 export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +65,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const showBankDetails = searchParams.get('showBankDetails') === 'true';
+  const { currencySymbol } = useCurrency();
 
   useEffect(() => {
     async function fetchData() {
@@ -148,12 +151,6 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
     }
   }, [isLoading, invoice]);
   
-  const getProductName = (productId: number, variantId?: string) => {
-    // This logic is simplified as invoiceItemsWithDetails should contain the product name
-    const item = invoiceItemsWithDetails.find(i => i.product_id === productId && i.product_variant_id === variantId);
-    return item?.product?.name || `Product ID: ${productId}`;
-  };
-
   if (isLoading) {
     return <InvoiceViewSkeleton />;
   }
@@ -246,8 +243,8 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
                   {item.product?.description && <p className="text-xs text-gray-500 line-clamp-2">{item.product.description}</p>}
                 </td>
                 <td className="p-3 text-right">{parseFloat(String(item.quantity)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                <td className="p-3 text-right">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="p-3 text-right">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right font-mono">{currencySymbol}{parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right font-mono">{currencySymbol}{item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             ))}
           </tbody>
@@ -258,19 +255,19 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         <div className="w-full max-w-xs space-y-2 text-gray-700">
           <div className="flex justify-between">
             <span>Subtotal</span>
-            <span>${parseFloat(invoice.inv_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-mono">{currencySymbol}{parseFloat(invoice.inv_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between">
             <span>Discount</span>
-            <span>-${parseFloat(invoice.discount_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-mono">-{currencySymbol}{parseFloat(invoice.discount_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
            <div className="flex justify-between">
             <span>Service Charge</span>
-            <span>${parseFloat(invoice.service_charge).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-mono">{currencySymbol}{parseFloat(invoice.service_charge).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
             <span>Total</span>
-            <span>${parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-mono">{currencySymbol}{parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
       </section>
