@@ -18,6 +18,7 @@ interface Company {
     company_city: string;
     company_email: string;
     company_telephone: string;
+    org_logo: string | null;
 }
 
 interface InvoicePrintViewProps {
@@ -83,19 +84,14 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         const data: Invoice = await response.json();
         setInvoice(data);
         
-        // @ts-ignore
-        if (data.addresses) {
-            // @ts-ignore
-            const addressSource = data.addresses.billing || data.addresses.shipping;
-            if (addressSource) {
-                 setCustomer(addressSource);
-            }
-        // @ts-ignore
-        } else if (data.billing_address) {
-            // @ts-ignore
-            setCustomer(data.billing_address);
+        if (data.created_by === 'Online') {
+          // For online orders, use the address object directly if it exists
+          if ((data as any).addresses?.shipping) {
+            setCustomer((data as any).addresses.shipping);
+          } else if ((data as any).addresses?.billing) {
+            setCustomer((data as any).addresses.billing);
+          }
         } else if (data.customer) {
-            // @ts-ignore
             setCustomer(data.customer);
         }
 
@@ -165,16 +161,15 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
     total_cost: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)) - parseFloat(String(item.item_discount)),
   }));
 
-  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
+  const logoUrl = company?.org_logo ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${company.org_logo}` : null;
   
   const addresses = (invoice as any).addresses;
-  let billTo = customer; // fallback
-  let shipTo = null;
+  let billTo: any = customer; // fallback
+  let shipTo: any = null;
 
-  if (addresses) {
+  if (invoice.created_by === 'Online' && addresses) {
       billTo = addresses.billing || addresses.shipping;
       shipTo = addresses.shipping;
-      // If billing exists and is the same as shipping, we don't need a separate shipping section.
       if (addresses.billing && JSON.stringify(addresses.billing) === JSON.stringify(addresses.shipping)) {
           shipTo = null;
       }
@@ -202,7 +197,11 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
       <section className="grid grid-cols-2 gap-4 mt-6">
         <div>
           <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Bill To</h3>
-          <AddressDisplay addressSource={billTo} />
+          {invoice.created_by === 'Online' && !billTo ? (
+            <p className="font-bold text-gray-800">{invoice.customer_code}</p>
+          ) : (
+            <AddressDisplay addressSource={billTo} />
+          )}
         </div>
         <div className="text-right">
           <div className="grid grid-cols-2 gap-1">
