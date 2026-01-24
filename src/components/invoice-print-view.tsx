@@ -178,8 +178,8 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
-      <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
-         <div className="flex items-center gap-4">
+       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
+        <div className="flex items-center gap-4">
             {logoUrl && <Image src={logoUrl} alt="Company Logo" width={80} height={80} className="rounded-md" />}
             <div>
               <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
@@ -212,7 +212,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
           </div>
         </div>
       </section>
-
+      
       <section className="mt-8">
         <table className="w-full text-left">
           <thead>
