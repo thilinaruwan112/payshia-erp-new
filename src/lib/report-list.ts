@@ -3,39 +3,36 @@ export const reportCategories = [
     { 
         name: 'Master', 
         reports: [
-            { name: 'Customer Master Report', href: '/reports/customer-report', filters: ['customer'] },
-            { name: 'Supplier Master Report', href: '/reports/supplier-report', filters: ['supplier'] },
-            { name: 'Item Master Report', href: '/reports/stock-balance', filters: ['item', 'category', 'brand', 'collection', 'color', 'size', 'customField'] },
+            { name: 'Customer Master Report', href: '/reports/customer-report', filters: [] },
+            { name: 'Supplier Master Report', href: '/reports/supplier-report', filters: [] },
+            { name: 'Item Master Report', href: '/reports/item-master-report', filters: [] },
         ]
     },
     {
         name: 'Purchasing',
         reports: [
-            { name: 'Purchase Order Report', href: '/purchasing/purchase-orders', filters: ['dateRange', 'supplier', 'status'] },
-            { name: 'GRN Report', href: '/purchasing/grn', filters: ['dateRange', 'supplier'] },
+            { name: 'Purchase Order Report', href: '/reports/purchase-order-report', filters: [] },
+            { name: 'GRN Report', href: '/reports/grn-report', filters: [] },
         ]
     },
     { 
         name: 'Stock', 
         reports: [
-            { name: 'Stock Balance Report', href: '/reports/stock-balance', filters: ['date', 'location', 'category', 'brand', 'item'] },
-            { name: 'Stock Transfer Report', href: '/transfers', filters: ['dateRange', 'fromLocation', 'toLocation'] },
+            { name: 'Stock Balance Report', href: '/reports/stock-balance', filters: ['location', 'category', 'brand', 'item'] },
+            { name: 'Stock Transfer Report', href: '/reports/stock-transfer-report', filters: ['dateRange', 'fromLocation', 'toLocation'] },
             { name: 'Bin Card Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
-            { name: 'Stock Movement Report', href: '/reports/bin-card', filters: ['dateRange', 'location', 'item'] },
         ]
     },
     { 
         name: 'Sale', 
         reports: [
-            { name: 'Credit Sales Summary Report', href: '/reports/credit-sales-summary', filters: ['dateRange', 'customer', 'location'] },
-            { name: 'Customer Order Report', href: '/reports/customer-report', filters: ['dateRange', 'customer'] },
-            { name: 'Day End Sale Report', href: '/reports/sales-summary', filters: ['date', 'location'] },
-            { name: 'Hourly Sales Report', href: '/reports/sales-summary', filters: ['dateRange', 'location'] },
-            { name: 'Invoice Report', href: '/reports/invoice-report', filters: ['dateRange', 'customer', 'status'] },
-            { name: 'Invoice Wise Sales Report', href: '#', filters: ['dateRange', 'location', 'user'] },
-            { name: 'Item Wise Sales', href: '#', filters: ['dateRange', 'item', 'category', 'brand', 'location'] },
-            { name: 'Receipt Report', href: '/sales/receipts', filters: ['dateRange', 'customer'] },
-            { name: 'Sales Summary Report', href: '/reports/sales-summary', filters: ['dateRange', 'location', 'user'] },
+            { name: 'Credit Sales Summary Report', href: '/reports/credit-sales-summary', filters: ['dateRange', 'customer'] },
+            { name: 'Day End Sale Report', href: '/reports/day-end-sales-report', filters: ['date', 'location'] },
+            { name: 'Invoice Wise Sales Report', href: '/reports/invoice-wise-sales-report', filters: ['dateRange', 'location'] },
+            { name: 'Item Wise Sales', href: '/reports/item-wise-sales-report', filters: ['dateRange', 'location', 'category', 'brand'] },
+            { name: 'Invoice Report', href: '/reports/invoice-report', filters: ['dateRange'] },
+            { name: 'Hourly Invoice Report', href: '/reports/hourly-invoice-report', filters: ['dateRange', 'location', 'customer'] },
+            { name: 'POS Receipt Report', href: '/reports/receipt-report', filters: ['dateRange', 'customer'] },
         ]
     },
     { 

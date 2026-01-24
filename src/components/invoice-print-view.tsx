@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { fetcher } from '@/lib/api';
+import { useCurrency } from './currency-provider';
 
 interface Company {
     id: string;
@@ -28,9 +29,35 @@ type InvoiceItemWithProduct = InvoiceItem & {
     product?: Product;
 };
 
+// A helper component to render address details
+const AddressDisplay = ({ addressSource }: { addressSource: any }) => {
+    if (!addressSource) return null;
+
+    const firstName = addressSource.first_name || addressSource.customer_first_name;
+    const lastName = addressSource.last_name || addressSource.customer_last_name;
+    const addressLine1 = addressSource.address_line1;
+    const addressLine2 = addressSource.address_line2;
+    const city = addressSource.city || addressSource.city_id; // Prefer 'city' if available
+    const phone = addressSource.phone || addressSource.phone_number;
+    const email = (addressSource.user_id && addressSource.user_id.includes('@')) ? addressSource.user_id : (addressSource.email || addressSource.email_address);
+    
+    const addressParts = [addressLine1, addressLine2, city].filter(Boolean).join(', ');
+
+    return (
+        <>
+          <p className="font-bold text-gray-800">{firstName} {lastName}</p>
+          {addressParts && <p>{addressParts}</p>}
+          {email && <p>{email}</p>}
+          {phone && <p>{phone}</p>}
+        </>
+    );
+};
+
+
 export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +65,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const showBankDetails = searchParams.get('showBankDetails') === 'true';
+  const { currencySymbol } = useCurrency();
 
   useEffect(() => {
     async function fetchData() {
@@ -54,7 +82,20 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         }
         const data: Invoice = await response.json();
         setInvoice(data);
-        if (data.customer) {
+        
+        // @ts-ignore
+        if (data.addresses) {
+            // @ts-ignore
+            const addressSource = data.addresses.billing || data.addresses.shipping;
+            if (addressSource) {
+                 setCustomer(addressSource);
+            }
+        // @ts-ignore
+        } else if (data.billing_address) {
+            // @ts-ignore
+            setCustomer(data.billing_address);
+        } else if (data.customer) {
+            // @ts-ignore
             setCustomer(data.customer);
         }
 
@@ -77,14 +118,12 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         }
 
         if (data.company_id && data.location_id) {
-            const [companyRes, locationRes, customerRes] = await Promise.all([
+            const [companyRes, locationRes] = await Promise.all([
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${data.company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${data.location_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${data.customer_code}`),
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());
-            if(customerRes.ok) setCustomer(await customerRes.json());
         }
 
       } catch (error) {
@@ -122,10 +161,26 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
 
   const invoiceItems = (invoiceItemsWithDetails.length > 0 ? invoiceItemsWithDetails : invoice.items)?.map(item => ({
     ...item,
+    product_name: item.product?.name || `Product ID: ${item.product_id}`,
     total_cost: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)) - parseFloat(String(item.item_discount)),
   }));
 
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
+  
+  const addresses = (invoice as any).addresses;
+  let billTo = customer; // fallback
+  let shipTo = null;
+
+  if (addresses) {
+      billTo = addresses.billing || addresses.shipping;
+      shipTo = addresses.shipping;
+      // If billing exists and is the same as shipping, we don't need a separate shipping section.
+      if (addresses.billing && JSON.stringify(addresses.billing) === JSON.stringify(addresses.shipping)) {
+          shipTo = null;
+      }
+  } else if ((invoice as any).billing_address) {
+      billTo = (invoice as any).billing_address;
+  }
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
@@ -147,10 +202,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
       <section className="grid grid-cols-2 gap-4 mt-6">
         <div>
           <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Bill To</h3>
-          <p className="font-bold text-gray-800">{customer?.customer_first_name} {customer?.customer_last_name}</p>
-          <p>{customer?.address_line1}</p>
-          <p>{customer?.city_id}</p>
-          <p>{customer?.email_address}</p>
+          <AddressDisplay addressSource={billTo} />
         </div>
         <div className="text-right">
           <div className="grid grid-cols-2 gap-1">
@@ -178,12 +230,12 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
             {invoiceItems?.map((item, index) => (
               <tr key={index} className="border-b border-gray-100">
                 <td className="p-3">
-                  <p className="font-semibold">{item.productName}</p>
-                  {item.product?.description && <p className="text-xs text-gray-500">{item.product.description}</p>}
+                  <p className="font-semibold">{item.product_name}</p>
+                  {item.product?.description && <p className="text-xs text-gray-500 line-clamp-2">{item.product.description}</p>}
                 </td>
                 <td className="p-3 text-right">{parseFloat(String(item.quantity)).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                <td className="p-3 text-right">${parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="p-3 text-right">${item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right font-mono">{currencySymbol}{parseFloat(String(item.item_price)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right font-mono">{currencySymbol}{item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             ))}
           </tbody>
@@ -194,23 +246,30 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         <div className="w-full max-w-xs space-y-2 text-gray-700">
           <div className="flex justify-between">
             <span>Subtotal</span>
-            <span>${parseFloat(invoice.inv_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-mono">{currencySymbol}{parseFloat(invoice.inv_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between">
             <span>Discount</span>
-            <span>-${parseFloat(invoice.discount_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-mono">-{currencySymbol}{parseFloat(invoice.discount_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
            <div className="flex justify-between">
             <span>Service Charge</span>
-            <span>${parseFloat(invoice.service_charge).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-mono">{currencySymbol}{parseFloat(invoice.service_charge).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
             <span>Total</span>
-            <span>${parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-mono">{currencySymbol}{parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
       </section>
       
+      {shipTo && (
+        <section className="mt-8 pt-6 border-t-2 border-gray-200">
+            <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Shipping Address</h3>
+            <AddressDisplay addressSource={shipTo} />
+        </section>
+      )}
+
       {showBankDetails && (
         <section className="mt-8 pt-6 border-t-2 border-gray-200">
             <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Payment Details</h3>

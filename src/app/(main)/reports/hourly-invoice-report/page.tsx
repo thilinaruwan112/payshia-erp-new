@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import type { User } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { CreditSalesSummaryReportView } from '@/components/reports/credit-sales-summary-report-view';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, Loader2, Eye, ArrowLeft, Printer } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -17,18 +16,28 @@ import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
 import { useLocation } from '@/components/location-provider';
 import { useRouter } from 'next/navigation';
+import { HourlyInvoiceReportView } from '@/components/reports/hourly-invoice-report-view';
 
-interface ReportData {
+interface HourlyData {
+    hour: string;
+    num_invoices: number;
+    total_sales: number;
+    total_cost: number;
+    gross_profit: number;
     invoices: any[];
-    summary: any;
 }
 
-export default function CreditSalesSummaryPage() {
-    const [reportData, setReportData] = useState<ReportData | null>(null);
+interface ReportData {
+    date: string;
+    hourly_data: HourlyData[];
+}
+
+export default function HourlyInvoiceReportPage() {
+    const [reportData, setReportData] = useState<ReportData[] | null>(null);
     const [customers, setCustomers] = useState<User[]>([]);
-    const { company_id } = useLocation();
+    const { availableLocations, company_id } = useLocation();
     const { toast } = useToast();
-    const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
         to: new Date(),
     });
@@ -65,11 +74,14 @@ export default function CreditSalesSummaryPage() {
 
             if (dateRange?.from) params.append('start_date', format(dateRange.from, 'yyyy-MM-dd'));
             if (dateRange?.to) params.append('end_date', format(dateRange.to, 'yyyy-MM-dd'));
-            if (filterValues['customer'] && filterValues['customer'] !== 'all') {
-                params.append('customer_id', filterValues['customer']);
+            if (filterValues['location'] && filterValues['location'] !== 'all') {
+                params.append('location_id', filterValues['location']);
+            }
+             if (filterValues['customer'] && filterValues['customer'] !== 'all') {
+                params.append('customer_code', filterValues['customer']);
             }
             
-            const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/credit-sales-summary?${params.toString()}`;
+            const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/hourly-invoice-data?${params.toString()}`;
             
             const response = await fetcher(url);
             if (!response.ok) throw new Error('Failed to fetch report data');
@@ -90,13 +102,16 @@ export default function CreditSalesSummaryPage() {
             toast({ variant: 'destructive', title: 'No data to print', description: 'Please view the report first.' });
             return;
         }
+
         const params = new URLSearchParams({
             company_id: String(company_id),
             ...(dateRange?.from && { start_date: format(dateRange.from, 'yyyy-MM-dd') }),
             ...(dateRange?.to && { end_date: format(dateRange.to, 'yyyy-MM-dd') }),
-            ...(filterValues['customer'] && filterValues['customer'] !== 'all' && { customer_id: filterValues['customer'] }),
+            ...(filterValues['location'] && filterValues['location'] !== 'all' && { location_id: filterValues['location'] }),
+            ...(filterValues['customer'] && filterValues['customer'] !== 'all' && { customer_code: filterValues['customer'] }),
         });
-        const url = `/reports-print/credit-sales-summary/print?${params.toString()}`;
+        
+        const url = `/reports-print/hourly-invoice-report/print?${params.toString()}`;
         window.open(url, '_blank');
     };
     
@@ -104,13 +119,15 @@ export default function CreditSalesSummaryPage() {
         value: c.customer_id,
         label: `${c.customer_first_name} ${c.customer_last_name}`,
     }))];
+    const locationOptions = [{ value: 'all', label: 'All Locations' }, ...availableLocations.map(l => ({ value: l.location_id, label: l.location_name }))];
+
 
     return (
         <div className="space-y-6">
              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                  <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Credit Sales Summary Report</h1>
-                    <p className="text-muted-foreground">Analyze your credit sales performance.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Hourly Sales Report</h1>
+                    <p className="text-muted-foreground">Analyze sales trends by the hour.</p>
                  </div>
                  <Button variant="outline" onClick={() => router.push('/reports')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -118,7 +135,7 @@ export default function CreditSalesSummaryPage() {
                 </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div className="space-y-1.5">
                     <Label>Date Range</Label>
                     <Popover>
@@ -145,11 +162,15 @@ export default function CreditSalesSummaryPage() {
                     </Popover>
                 </div>
                  <div className="space-y-1.5">
+                    <Label>Location</Label>
+                    <Combobox options={locationOptions} value={filterValues['location'] || ''} onChange={(value) => handleFilterChange('location', value)} placeholder="Select location..." notFoundText="No locations found." />
+                </div>
+                 <div className="space-y-1.5">
                     <Label>Customer</Label>
                     <Combobox options={customerOptions} value={filterValues['customer'] || ''} onChange={(value) => handleFilterChange('customer', value)} placeholder="Select a customer..." notFoundText="No customers found." />
                 </div>
                 <div className="flex items-center gap-2">
-                     <Button onClick={handleViewReport} disabled={isFetching} className="w-full md:w-auto">
+                     <Button onClick={handleViewReport} disabled={isFetching} className="w-full">
                          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                          View
                      </Button>
@@ -161,7 +182,7 @@ export default function CreditSalesSummaryPage() {
             </div>
             
             {reportData && (
-                <CreditSalesSummaryReportView reportData={reportData} customers={customers} />
+                <HourlyInvoiceReportView reportData={reportData} />
             )}
         </div>
     );
