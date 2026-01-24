@@ -84,13 +84,10 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         const data: Invoice = await response.json();
         setInvoice(data);
         
-        if (data.created_by === 'Online') {
+        if (data.created_by === 'Online' && (data as any).addresses) {
+          const addresses = (data as any).addresses;
           // For online orders, use the address object directly if it exists
-          if ((data as any).addresses?.shipping) {
-            setCustomer((data as any).addresses.shipping);
-          } else if ((data as any).addresses?.billing) {
-            setCustomer((data as any).addresses.billing);
-          }
+          setCustomer(addresses.billing || addresses.shipping);
         } else if (data.customer) {
             setCustomer(data.customer);
         }
@@ -146,6 +143,8 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         setTimeout(() => window.print(), 500);
     }
   }, [isLoading, invoice]);
+
+  const getProductName = (productId: number) => products.find(p => p.id === String(productId))?.name || 'Unknown Product';
   
   if (isLoading) {
     return <InvoiceViewSkeleton />;
@@ -161,7 +160,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
     total_cost: parseFloat(String(item.item_price)) * parseFloat(String(item.quantity)) - parseFloat(String(item.item_discount)),
   }));
 
-  const logoUrl = company?.org_logo ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${company.org_logo}` : null;
+  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
   const addresses = (invoice as any).addresses;
   let billTo: any = customer; // fallback
@@ -184,9 +183,8 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
             {logoUrl && <Image src={logoUrl} alt="Company Logo" width={80} height={80} className="rounded-md" />}
             <div>
               <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
-              <p className="font-semibold">{location?.location_name}</p>
-              <p>{location?.address_line1}, {location?.city}</p>
-              <p>{company?.company_email}</p>
+              <p className="font-semibold">{location?.location_name} | {location?.city}</p>
+              <p>{location?.phone_1}</p>
             </div>
          </div>
         <div className="text-right">
@@ -255,7 +253,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
             <span>Service Charge</span>
             <span className="font-mono">{currencySymbol}{parseFloat(invoice.service_charge).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
-          <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
+          <div className="flex justify-between font-bold text-lg pt-2 border-t-2 border-gray-200">
             <span>Total</span>
             <span className="font-mono">{currencySymbol}{parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
