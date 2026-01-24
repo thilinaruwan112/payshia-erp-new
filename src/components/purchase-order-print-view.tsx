@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { type PurchaseOrder, type Supplier, type Product, type ProductVariant, type Location } from '@/lib/types';
@@ -23,6 +22,7 @@ interface Company {
     company_city: string;
     company_email: string;
     company_telephone: string;
+    org_logo: string | null;
 }
 
 export function PurchaseOrderPrintView({ id }: PrintViewProps) {
@@ -118,7 +118,7 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
     total_cost: parseFloat(String(item.order_rate)) * item.quantity,
   }));
   
-  const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
+  const logoUrl = company?.org_logo ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${company.org_logo}` : null;
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
@@ -127,6 +127,7 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
             {logoUrl && <Image src={logoUrl} alt="Company Logo" width={80} height={80} className="rounded-md" />}
             <div>
                 <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
+                 <p className="font-semibold">{location?.location_name}</p>
                 <p>{location?.address_line1}, {location?.city}</p>
                 <p>{company?.company_email}</p>
             </div>
@@ -140,8 +141,8 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
         <div>
           <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Vendor</h3>
           <p className="font-bold text-gray-800">{supplier?.supplier_name}</p>
-          <p>{supplier?.street_name}</p>
-          <p>{supplier?.city}, {supplier?.zip_code}</p>
+          <p>{supplier?.address_line1 || supplier?.street_name}</p>
+          <p>{supplier?.city}, {supplier?.postal_code || supplier?.zip_code}</p>
           <p>{supplier?.email}</p>
         </div>
         <div className="text-right">

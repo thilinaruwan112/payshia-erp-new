@@ -177,8 +177,10 @@ export type Supplier = {
   email: string;
   telephone: string;
   street_name: string;
+  address_line1?: string;
   city: string;
   zip_code: string;
+  postal_code?: string;
   fax: string;
   opening_balance: string;
 };
