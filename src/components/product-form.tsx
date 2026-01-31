@@ -729,9 +729,12 @@ export function ProductForm({ product }: ProductFormProps) {
                                     render={({ field }) => (
                                         <FormItem className="col-span-full sm:col-span-1">
                                         <FormLabel>SKU</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="TS-BLK-S" {...field} />
-                                        </FormControl>
+                                        <div className="flex items-center gap-2">
+                                            <FormControl>
+                                                <Input placeholder="TS-BLK-S" {...field} />
+                                            </FormControl>
+                                            <Button type="button" variant="outline">Generate</Button>
+                                        </div>
                                         <FormMessage />
                                         </FormItem>
                                     )}
@@ -742,9 +745,12 @@ export function ProductForm({ product }: ProductFormProps) {
                                     render={({ field }) => (
                                         <FormItem className="col-span-full sm:col-span-1">
                                         <FormLabel>Barcode</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="123456789012" {...field} />
-                                        </FormControl>
+                                        <div className="flex items-center gap-2">
+                                            <FormControl>
+                                                <Input placeholder="123456789012" {...field} />
+                                            </FormControl>
+                                            <Button type="button" variant="outline">Generate</Button>
+                                        </div>
                                         <FormMessage />
                                         </FormItem>
                                     )}
