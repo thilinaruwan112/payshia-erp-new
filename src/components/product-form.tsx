@@ -124,6 +124,7 @@ export function ProductForm({ product }: ProductFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [generating, setGenerating] = React.useState<{ type: string; index: number } | null>(null);
   const [isUploadDialogOpen, setUploadDialogOpen] = React.useState(false);
   const [savedProductId, setSavedProductId] = React.useState<string | null>(product?.id || null);
   const [savedVariants, setSavedVariants] = React.useState<ProductVariant[]>(product?.variants || []);
@@ -272,6 +273,17 @@ export function ProductForm({ product }: ProductFormProps) {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+  
+  const handleGenerate = async (type: 'sku' | 'barcode', index: number) => {
+    setGenerating({ type, index });
+    // Simulate API call or generation logic
+    await new Promise(resolve => setTimeout(resolve, 500));
+    const randomString = type === 'sku'
+        ? Math.random().toString(36).substring(2, 10).toUpperCase()
+        : Math.floor(100000000000 + Math.random() * 900000000000).toString();
+    form.setValue(`variants.${index}.${type}`, randomString);
+    setGenerating(null);
+  };
 
   const handleRemoveVariant = async (index: number) => {
     const variantId = form.getValues(`variants.${index}.id`);
@@ -722,18 +734,30 @@ export function ProductForm({ product }: ProductFormProps) {
                     </CardHeader>
                     <CardContent>
                         {fields.map((field, index) => (
-                           <div key={field.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-6 items-end border p-4 rounded-md mb-4 relative">
+                           <div key={field.id} className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6 items-end border p-4 rounded-md mb-4 relative">
                                 <FormField
                                     control={form.control}
                                     name={`variants.${index}.sku`}
                                     render={({ field }) => (
-                                        <FormItem className="col-span-full sm:col-span-1">
+                                        <FormItem className="col-span-full">
                                         <FormLabel>SKU</FormLabel>
                                         <div className="flex items-center gap-2">
                                             <FormControl>
                                                 <Input placeholder="TS-BLK-S" {...field} />
                                             </FormControl>
-                                            <Button type="button" variant="outline">Generate</Button>
+                                             <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="w-40"
+                                                onClick={() => handleGenerate('sku', index)}
+                                                disabled={generating?.type === 'sku' && generating?.index === index}
+                                            >
+                                                {generating?.type === 'sku' && generating?.index === index ? (
+                                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
+                                                ) : (
+                                                    'Generate'
+                                                )}
+                                            </Button>
                                         </div>
                                         <FormMessage />
                                         </FormItem>
@@ -743,19 +767,30 @@ export function ProductForm({ product }: ProductFormProps) {
                                     control={form.control}
                                     name={`variants.${index}.barcode`}
                                     render={({ field }) => (
-                                        <FormItem className="col-span-full sm:col-span-1">
+                                        <FormItem className="col-span-full">
                                         <FormLabel>Barcode</FormLabel>
                                         <div className="flex items-center gap-2">
                                             <FormControl>
                                                 <Input placeholder="123456789012" {...field} />
                                             </FormControl>
-                                            <Button type="button" variant="outline">Generate</Button>
+                                             <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="w-40"
+                                                onClick={() => handleGenerate('barcode', index)}
+                                                disabled={generating?.type === 'barcode' && generating?.index === index}
+                                            >
+                                                {generating?.type === 'barcode' && generating?.index === index ? (
+                                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
+                                                ) : (
+                                                    'Generate'
+                                                )}
+                                            </Button>
                                         </div>
                                         <FormMessage />
                                         </FormItem>
                                     )}
                                 />
-                                <div></div>
                                 <FormField
                                     control={form.control}
                                     name={`variants.${index}.colorId`}
@@ -790,8 +825,6 @@ export function ProductForm({ product }: ProductFormProps) {
                                         </FormItem>
                                     )}
                                 />
-                                 <div></div>
-                                 {/* Pricing fields */}
                                   <FormField
                                     control={form.control}
                                     name={`variants.${index}.price`}
