@@ -43,6 +43,8 @@ import { Skeleton } from "./ui/skeleton";
 import { useLocation } from "./location-provider";
 import { fetcher } from "@/lib/api";
 import { useCurrency } from "./currency-provider";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 
 
 const grnBatchSchema = z.object({
@@ -70,7 +72,7 @@ const grnFormSchema = z.object({
   locationId: z.string().min(1, "Location is required"),
   supplierId: z.string(),
   currency: z.string().default('LKR'),
-  taxType: z.string().default('VAT'),
+  taxType: z.string(),
   paymentStatus: z.string().default('Unpaid'),
   poId: z.string(),
   items: z.array(grnItemSchema),
@@ -101,6 +103,7 @@ export function GrnForm() {
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTaxEnabled, setIsTaxEnabled] = useState(false);
   
   const form = useForm<GrnFormValues>({
     resolver: zodResolver(grnFormSchema),
@@ -224,6 +227,7 @@ export function GrnForm() {
         ...data,
         supplierName: supplier?.supplier_name,
         poNumber: purchaseOrder?.po_number,
+        isTaxEnabled: isTaxEnabled,
       }
       localStorage.setItem('grnConfirmationData', JSON.stringify(fullGrnData));
       router.push('/purchasing/grn/confirm');
@@ -277,7 +281,7 @@ export function GrnForm() {
                     </div>
                 </div>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+            <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
                 <FormField
                     control={form.control}
                     name="date"
@@ -397,6 +401,12 @@ export function GrnForm() {
                         </FormItem>
                     )}
                 />
+                 <div className="flex items-end pb-2">
+                    <div className="flex items-center space-x-2">
+                        <Switch id="tax-enabled" checked={isTaxEnabled} onCheckedChange={setIsTaxEnabled} />
+                        <Label htmlFor="tax-enabled">Apply Tax</Label>
+                    </div>
+                </div>
             </CardContent>
         </Card>
 
@@ -562,6 +572,8 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
         </Card>
     );
 }
+
+    
 
     
 
