@@ -106,11 +106,13 @@ export default function GrnConfirmationPage() {
     }, [router, toast, form]);
     
     const watchedItems = form.watch("items") || [];
+    const taxType = form.watch("taxType");
     const subTotal = watchedItems.reduce((acc, item) => {
         const itemTotal = item.batches.reduce((batchAcc, batch) => batchAcc + (batch.receivedQty * item.unitRate), 0);
         return acc + itemTotal;
     }, 0);
-    const taxValue = subTotal * 0.18; // Assuming 18% tax based on sample
+    
+    const taxValue = (taxType === 'VAT' || taxType === 'GST') ? subTotal * 0.18 : 0;
     const grandTotal = subTotal + taxValue;
 
     const onSubmit = async (data: GrnFormValues) => {
