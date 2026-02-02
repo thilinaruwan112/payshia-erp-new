@@ -200,7 +200,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     try {
         const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders`, {
             method: 'POST',
-            body: JSON.stringify(payload),
+            body: JSON.stringify(poPayload),
         });
 
         const result = await response.json();
