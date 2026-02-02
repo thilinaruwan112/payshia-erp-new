@@ -18,6 +18,7 @@ interface Company {
     company_city: string;
     company_email: string;
     company_telephone: string;
+    org_logo: string | null;
 }
 
 interface InvoicePrintViewProps {
@@ -83,19 +84,11 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         const data: Invoice = await response.json();
         setInvoice(data);
         
-        // @ts-ignore
-        if (data.addresses) {
-            // @ts-ignore
-            const addressSource = data.addresses.billing || data.addresses.shipping;
-            if (addressSource) {
-                 setCustomer(addressSource);
-            }
-        // @ts-ignore
-        } else if (data.billing_address) {
-            // @ts-ignore
-            setCustomer(data.billing_address);
+        if (data.created_by === 'Online' && (data as any).addresses) {
+          const addresses = (data as any).addresses;
+          // For online orders, use the address object directly if it exists
+          setCustomer(addresses.billing || addresses.shipping);
         } else if (data.customer) {
-            // @ts-ignore
             setCustomer(data.customer);
         }
 
@@ -150,6 +143,8 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
         setTimeout(() => window.print(), 500);
     }
   }, [isLoading, invoice]);
+
+  const getProductName = (productId: number) => products.find(p => p.id === String(productId))?.name || 'Unknown Product';
   
   if (isLoading) {
     return <InvoiceViewSkeleton />;
@@ -168,13 +163,12 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
   const logoUrl = location?.logo_path ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${location.logo_path}` : null;
   
   const addresses = (invoice as any).addresses;
-  let billTo = customer; // fallback
-  let shipTo = null;
+  let billTo: any = customer; // fallback
+  let shipTo: any = null;
 
-  if (addresses) {
+  if (invoice.created_by === 'Online' && addresses) {
       billTo = addresses.billing || addresses.shipping;
       shipTo = addresses.shipping;
-      // If billing exists and is the same as shipping, we don't need a separate shipping section.
       if (addresses.billing && JSON.stringify(addresses.billing) === JSON.stringify(addresses.shipping)) {
           shipTo = null;
       }
@@ -184,14 +178,13 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
-      <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
-         <div className="flex items-center gap-4">
+       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
+        <div className="flex items-center gap-4">
             {logoUrl && <Image src={logoUrl} alt="Company Logo" width={80} height={80} className="rounded-md" />}
             <div>
               <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
-              <p className="font-semibold">{location?.location_name}</p>
-              <p>{location?.address_line1}, {location?.city}</p>
-              <p>{company?.company_email}</p>
+              <p className="font-semibold">{location?.location_name} | {location?.city}</p>
+              <p>{location?.phone_1}</p>
             </div>
          </div>
         <div className="text-right">
@@ -202,7 +195,11 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
       <section className="grid grid-cols-2 gap-4 mt-6">
         <div>
           <h3 className="text-xs font-semibold uppercase text-gray-500 mb-1">Bill To</h3>
-          <AddressDisplay addressSource={billTo} />
+          {invoice.created_by === 'Online' && !billTo ? (
+            <p className="font-bold text-gray-800">{invoice.customer_code}</p>
+          ) : (
+            <AddressDisplay addressSource={billTo} />
+          )}
         </div>
         <div className="text-right">
           <div className="grid grid-cols-2 gap-1">
@@ -215,7 +212,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
           </div>
         </div>
       </section>
-
+      
       <section className="mt-8">
         <table className="w-full text-left">
           <thead>
@@ -256,7 +253,7 @@ export function InvoicePrintView({ id, companyId }: InvoicePrintViewProps) {
             <span>Service Charge</span>
             <span className="font-mono">{currencySymbol}{parseFloat(invoice.service_charge).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
-          <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
+          <div className="flex justify-between font-bold text-lg pt-2 border-t-2 border-gray-200">
             <span>Total</span>
             <span className="font-mono">{currencySymbol}{parseFloat(invoice.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>

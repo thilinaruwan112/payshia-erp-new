@@ -162,6 +162,7 @@ export function ProductionRunPrintView({ id }: PrintViewProps) {
              {logoUrl && <Image src={logoUrl} alt="Company Logo" width={80} height={80} className="rounded-md" />}
             <div>
                 <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
+                <p className="font-semibold">{location?.location_name}</p>
                 <p>{location?.address_line1}, {location?.city}</p>
                 <p>{company?.company_email}</p>
             </div>
