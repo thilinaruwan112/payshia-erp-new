@@ -54,7 +54,7 @@ interface ProductWithApiResponse {
 
 const purchaseOrderItemSchema = z.object({
   product_id: z.string().min(1, "Product is required."),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1."),
+  quantity: z.coerce.number().gt(0, "Quantity must be greater than 0."),
   order_rate: z.coerce.number().min(0, "Cost must be a positive number."),
   order_unit: z.string().optional(),
   product_variant_id: z.string().min(1, "Variant is required."),
@@ -535,3 +535,4 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     </Form>
   );
 }
+    
