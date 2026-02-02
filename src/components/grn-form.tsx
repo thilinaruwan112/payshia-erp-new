@@ -70,7 +70,7 @@ const grnFormSchema = z.object({
   locationId: z.string().min(1, "Location is required"),
   supplierId: z.string(),
   currency: z.string().default('LKR'),
-  taxType: z.string().default('VAT'),
+  taxType: z.string().min(1, "Tax type is required."),
   paymentStatus: z.string().default('Unpaid'),
   poId: z.string(),
   items: z.array(grnItemSchema),
@@ -562,6 +562,8 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
         </Card>
     );
 }
+
+    
 
     
 

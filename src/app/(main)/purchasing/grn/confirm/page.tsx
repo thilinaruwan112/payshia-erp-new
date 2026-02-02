@@ -52,7 +52,7 @@ const grnFormSchema = z.object({
   supplierName: z.string().optional(),
   poNumber: z.string().optional(),
   currency: z.string().default('LKR'),
-  taxType: z.string().default('VAT'),
+  taxType: z.string().min(1, "Tax type is required."),
   paymentStatus: z.string().default('Unpaid'),
   poId: z.string(),
   items: z.array(grnItemSchema),
@@ -112,8 +112,12 @@ export default function GrnConfirmationPage() {
         return acc + itemTotal;
     }, 0);
     
-    const taxValue = (taxType === 'VAT' || taxType === 'GST') ? subTotal * 0.18 : 0;
+    let taxValue = 0;
+    if (taxType === 'VAT' || taxType === 'GST' || taxType === 'exclusive') {
+        taxValue = subTotal * 0.18;
+    }
     const grandTotal = subTotal + taxValue;
+
 
     const onSubmit = async (data: GrnFormValues) => {
         if (!company_id) {
@@ -262,3 +266,5 @@ export default function GrnConfirmationPage() {
         </Form>
     );
 }
+
+    
