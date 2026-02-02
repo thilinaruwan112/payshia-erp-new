@@ -25,6 +25,7 @@ import type { GrnFormValues } from "@/components/grn-form";
 import { useLocation } from "@/components/location-provider";
 import { useCurrency } from "@/components/currency-provider";
 import { fetcher } from "@/lib/api";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const grnBatchSchema = z.object({
     batchNumber: z.string().min(1, "Batch number is required."),
@@ -52,7 +53,7 @@ const grnFormSchema = z.object({
   supplierName: z.string().optional(),
   poNumber: z.string().optional(),
   currency: z.string().default('LKR'),
-  taxType: z.string().default('VAT'),
+  taxType: z.string(),
   paymentStatus: z.string().default('Unpaid'),
   poId: z.string(),
   items: z.array(grnItemSchema),
@@ -75,6 +76,8 @@ export default function GrnConfirmationPage() {
     const { currencySymbol } = useCurrency();
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isTaxEnabled, setIsTaxEnabled] = useState(false);
+    const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
 
     const form = useForm<GrnFormValues>({
         resolver: zodResolver(grnFormSchema),
@@ -97,6 +100,7 @@ export default function GrnConfirmationPage() {
                 return value;
             });
             form.reset(parsedData);
+            setIsTaxEnabled(parsedData.isTaxEnabled || false);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to load GRN data.' });
             router.replace('/purchasing/grn');
@@ -106,12 +110,18 @@ export default function GrnConfirmationPage() {
     }, [router, toast, form]);
     
     const watchedItems = form.watch("items") || [];
+    const taxType = form.watch("taxType");
     const subTotal = watchedItems.reduce((acc, item) => {
         const itemTotal = item.batches.reduce((batchAcc, batch) => batchAcc + (batch.receivedQty * item.unitRate), 0);
         return acc + itemTotal;
     }, 0);
-    const taxValue = subTotal * 0.18; // Assuming 18% tax based on sample
+    
+    let taxValue = 0;
+    if (isTaxEnabled && (taxType === 'VAT' || taxType === 'GST' || taxType === 'exclusive')) {
+        taxValue = subTotal * 0.18;
+    }
     const grandTotal = subTotal + taxValue;
+
 
     const onSubmit = async (data: GrnFormValues) => {
         if (!company_id) {
@@ -140,7 +150,7 @@ export default function GrnConfirmationPage() {
             company_id: company_id,
             supplier_id: parseInt(data.supplierId, 10),
             currency: data.currency,
-            tax_type: data.taxType,
+            tax_type: isTaxEnabled ? data.taxType : 'No Tax',
             sub_total: subTotal,
             tax_value: taxValue,
             grand_total: grandTotal,
@@ -186,6 +196,7 @@ export default function GrnConfirmationPage() {
             });
         } finally {
             setIsSubmitting(false);
+            setIsConfirmDialogOpen(false);
         }
     }
 
@@ -194,69 +205,104 @@ export default function GrnConfirmationPage() {
     }
 
     return (
-        <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-nowrap">Confirm GRN</h1>
-                        <p className="text-muted-foreground">Review the details below before saving the GRN.</p>
+        <>
+            <Form {...form}>
+                <form onSubmit={(e) => { e.preventDefault(); setIsConfirmDialogOpen(true); }} className="space-y-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight text-nowrap">Confirm GRN</h1>
+                            <p className="text-muted-foreground">Review the details below before saving the GRN.</p>
+                        </div>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isSubmitting}>
+                                <Pencil className="mr-2 h-4 w-4" /> Go Back
+                            </Button>
+                            <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Confirm & Save GRN
+                            </Button>
+                        </div>
                     </div>
-                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <Button variant="outline" type="button" onClick={() => router.back()} className="w-full" disabled={isSubmitting}>
-                            <Pencil className="mr-2 h-4 w-4" /> Go Back
-                        </Button>
-                        <Button type="submit" className="w-full" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Confirm & Save GRN
-                        </Button>
-                    </div>
-                </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>GRN for PO #{form.getValues().poNumber}</CardTitle>
-                        <CardDescription>
-                            From Supplier: {form.getValues().supplierName} | Date: {form.getValues().date ? format(form.getValues().date, 'PPP') : '...'}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Product</TableHead>
-                                    <TableHead>Batch No.</TableHead>
-                                    <TableHead>MFD</TableHead>
-                                    <TableHead>EXP</TableHead>
-                                    <TableHead className="text-right">Qty</TableHead>
-                                    <TableHead className="text-right">Rate</TableHead>
-                                    <TableHead className="text-right">Amount</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {watchedItems.flatMap((item, itemIndex) => 
-                                    item.batches.map((batch, batchIndex) => (
-                                        <TableRow key={`${item.productVariantId}-${batchIndex}`}>
-                                            <TableCell className="font-medium">{item.productName}</TableCell>
-                                            <TableCell>{batch.batchNumber}</TableCell>
-                                            <TableCell>{batch.mfgDate ? format(batch.mfgDate, "dd/MM/yy") : 'N/A'}</TableCell>
-                                            <TableCell>{batch.expDate ? format(batch.expDate, "dd/MM/yy") : 'N/A'}</TableCell>
-                                            <TableCell className="text-right">{batch.receivedQty}</TableCell>
-                                            <TableCell className="text-right font-mono">{currencySymbol}{item.unitRate.toFixed(2)}</TableCell>
-                                            <TableCell className="text-right font-mono">{currencySymbol}{(batch.receivedQty * item.unitRate).toFixed(2)}</TableCell>
-                                        </TableRow>
-                                    ))
-                                )}
-                            </TableBody>
-                             <TableFooter>
-                                <TableRow>
-                                    <TableCell colSpan={6} className="text-right font-bold">Grand Total</TableCell>
-                                    <TableCell className="text-right font-bold font-mono">{currencySymbol}{grandTotal.toFixed(2)}</TableCell>
-                                </TableRow>
-                            </TableFooter>
-                        </Table>
-                    </CardContent>
-                </Card>
-            </form>
-        </Form>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>GRN for PO #{form.getValues().poNumber}</CardTitle>
+                            <CardDescription>
+                                From Supplier: {form.getValues().supplierName} | Date: {form.getValues().date ? format(form.getValues().date, 'PPP') : '...'}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                        <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Product</TableHead>
+                                        <TableHead>Batch No.</TableHead>
+                                        <TableHead>MFD</TableHead>
+                                        <TableHead>EXP</TableHead>
+                                        <TableHead className="text-right">Qty</TableHead>
+                                        <TableHead className="text-right">Rate</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {watchedItems.flatMap((item, itemIndex) => 
+                                        item.batches.map((batch, batchIndex) => (
+                                            <TableRow key={`${item.productVariantId}-${batchIndex}`}>
+                                                <TableCell className="font-medium">{item.productName}</TableCell>
+                                                <TableCell>{batch.batchNumber}</TableCell>
+                                                <TableCell>{batch.mfgDate ? format(batch.mfgDate, "dd/MM/yy") : 'N/A'}</TableCell>
+                                                <TableCell>{batch.expDate ? format(batch.expDate, "dd/MM/yy") : 'N/A'}</TableCell>
+                                                <TableCell className="text-right">{batch.receivedQty}</TableCell>
+                                                <TableCell className="text-right font-mono">{currencySymbol}{item.unitRate.toFixed(2)}</TableCell>
+                                                <TableCell className="text-right font-mono">{currencySymbol}{(batch.receivedQty * item.unitRate).toFixed(2)}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                                <TableFooter>
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-right">Subtotal</TableCell>
+                                        <TableCell className="text-right font-mono">{currencySymbol}{subTotal.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-right">Tax</TableCell>
+                                        <TableCell className="text-right font-mono">{currencySymbol}{taxValue.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="text-right font-bold">Grand Total</TableCell>
+                                        <TableCell className="text-right font-bold font-mono">{currencySymbol}{grandTotal.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                </TableFooter>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </form>
+            </Form>
+             <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm GRN Submission</AlertDialogTitle>
+                    <AlertDialogDescription asChild>
+                        <div>
+                            You are about to submit this GRN. This will update inventory and financial records.
+                            <div className="mt-4 border-t pt-4 space-y-2 text-foreground">
+                                <div className="flex justify-between"><span>Subtotal:</span> <span className="font-mono">{currencySymbol}{subTotal.toFixed(2)}</span></div>
+                                <div className="flex justify-between"><span>Tax:</span> <span className="font-mono">{currencySymbol}{taxValue.toFixed(2)}</span></div>
+                                <div className="flex justify-between font-bold text-lg"><span>Grand Total:</span> <span className="font-mono">{currencySymbol}{grandTotal.toFixed(2)}</span></div>
+                            </div>
+                        </div>
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={form.handleSubmit(onSubmit)} disabled={isSubmitting}>
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Confirm & Save
+                    </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }
+    
