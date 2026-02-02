@@ -52,7 +52,7 @@ const grnFormSchema = z.object({
   supplierName: z.string().optional(),
   poNumber: z.string().optional(),
   currency: z.string().default('LKR'),
-  taxType: z.string().min(1, "Tax type is required."),
+  taxType: z.string(),
   paymentStatus: z.string().default('Unpaid'),
   poId: z.string(),
   items: z.array(grnItemSchema),
@@ -255,6 +255,14 @@ export default function GrnConfirmationPage() {
                             </TableBody>
                              <TableFooter>
                                 <TableRow>
+                                    <TableCell colSpan={6} className="text-right">Subtotal</TableCell>
+                                    <TableCell className="text-right font-mono">{currencySymbol}{subTotal.toFixed(2)}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-right">Tax</TableCell>
+                                    <TableCell className="text-right font-mono">{currencySymbol}{taxValue.toFixed(2)}</TableCell>
+                                </TableRow>
+                                <TableRow>
                                     <TableCell colSpan={6} className="text-right font-bold">Grand Total</TableCell>
                                     <TableCell className="text-right font-bold font-mono">{currencySymbol}{grandTotal.toFixed(2)}</TableCell>
                                 </TableRow>
@@ -266,5 +274,4 @@ export default function GrnConfirmationPage() {
         </Form>
     );
 }
-
     
