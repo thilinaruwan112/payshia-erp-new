@@ -40,6 +40,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLocation } from '@/components/location-provider';
 import { Separator } from '@/components/ui/separator';
 import { fetcher } from '@/lib/api';
+import { useCurrency } from '@/components/currency-provider';
 
 const getStatusText = (status: string) => {
   switch (status) {
@@ -77,6 +78,7 @@ export default function GrnReceivablePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
   const { company_id } = useLocation();
+  const { currencySymbol } = useCurrency();
 
   useEffect(() => {
     async function fetchData() {
@@ -220,7 +222,7 @@ export default function GrnReceivablePage() {
                               </Badge>
                               </TableCell>
                               <TableCell className="hidden md:table-cell">{new Date(po.created_at).toLocaleDateString()}</TableCell>
-                              <TableCell className="text-right">${parseFloat(po.sub_total).toFixed(2)}</TableCell>
+                              <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(po.sub_total).toFixed(2)}</TableCell>
                               <TableCell className="text-right">
                               <Button asChild variant="outline" size="sm">
                                   <Link href={`/purchasing/grn/new?poId=${po.id}`}>Create GRN</Link>
@@ -267,7 +269,7 @@ export default function GrnReceivablePage() {
                                 </div>
                                  <div className="flex justify-between text-sm">
                                   <span className="text-muted-foreground">Total</span>
-                                  <span className="font-mono">${parseFloat(po.sub_total).toFixed(2)}</span>
+                                  <span className="font-mono">{currencySymbol}{parseFloat(po.sub_total).toFixed(2)}</span>
                                 </div>
                             </CardContent>
                         </Card>
@@ -323,7 +325,7 @@ export default function GrnReceivablePage() {
                                 </Badge>
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell">{format(new Date(grn.created_at), 'dd MMM, yyyy')}</TableCell>
-                                <TableCell className="text-right">${parseFloat(grn.grand_total).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(grn.grand_total).toFixed(2)}</TableCell>
                                 <TableCell className="text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -395,7 +397,7 @@ export default function GrnReceivablePage() {
                             <CardFooter className="bg-muted/50 p-4">
                                <div className="flex justify-between w-full font-semibold">
                                   <span>Total</span>
-                                  <span className="font-mono">${parseFloat(grn.grand_total).toFixed(2)}</span>
+                                  <span className="font-mono">{currencySymbol}{parseFloat(grn.grand_total).toFixed(2)}</span>
                               </div>
                             </CardFooter>
                         </Card>
