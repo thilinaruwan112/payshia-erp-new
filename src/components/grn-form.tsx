@@ -37,7 +37,7 @@ import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, Table
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { addDays, addMonths, addYears, format } from "date-fns";
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "./ui/skeleton";
 import { useLocation } from "./location-provider";
@@ -165,7 +165,7 @@ export function GrnForm() {
             form.setValue('taxType', poData.tax_type);
 
             if (poData.items) {
-                 const newItemsPromises = poData.items.map(async (item) => {
+                 const newItemsPromises = poData.items.map(async (item, index) => {
                     const product = productsData.find(p => p.id === item.product_id);
                     const variant = variantsData.find(v => v.id === item.product_variant_id);
 
@@ -179,6 +179,18 @@ export function GrnForm() {
                     const orderQty = parseFloat(String(item.quantity));
                     const receivable = orderQty - alreadyReceived;
 
+                     let defaultBatchNumber = '';
+                     try {
+                        const batchCountResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/batch/count?company_id=${company_id}&location_id=${poData.location_id}`);
+                        if (batchCountResponse.ok) {
+                            const batchCountData = await batchCountResponse.json();
+                            const datePrefix = format(new Date(), 'yyyyMMdd');
+                            defaultBatchNumber = `${datePrefix}-${batchCountData.next_batch_sequence + index}`;
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch batch count for initial item", e);
+                    }
+
                     return {
                         sku: variant?.sku || `SKU-${item.product_variant_id}`,
                         productId: item.product_id,
@@ -189,10 +201,10 @@ export function GrnForm() {
                         unitRate: parseFloat(String(item.order_rate)),
                         productVariantId: item.product_variant_id,
                         batches: [{
-                            batchNumber: '',
+                            batchNumber: defaultBatchNumber,
                             receivedQty: receivable > 0 ? receivable : 0,
-                            mfgDate: undefined,
-                            expDate: undefined
+                            mfgDate: new Date(),
+                            expDate: new Date()
                         }]
                     }
                  });
@@ -445,10 +457,58 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
         control: form.control,
         name: `items.${itemIndex}.batches`,
     });
+    const { company_id } = useLocation();
+    const [isAddingBatch, setIsAddingBatch] = useState(false);
 
     const item = form.watch(`items.${itemIndex}`);
     const totalReceivedInForm = item.batches.reduce((sum: number, batch: any) => sum + Number(batch.receivedQty || 0), 0);
     const hasError = totalReceivedInForm > item.receivable;
+
+    const handleAddBatch = async () => {
+        setIsAddingBatch(true);
+        const locationId = form.getValues('locationId');
+        let defaultBatchNumber = '';
+        try {
+            if (company_id && locationId) {
+                const batchCountResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/stock-entries/batch/count?company_id=${company_id}&location_id=${locationId}`);
+                if (batchCountResponse.ok) {
+                    const batchCountData = await batchCountResponse.json();
+                    const datePrefix = format(new Date(), 'yyyyMMdd');
+                    defaultBatchNumber = `${datePrefix}-${batchCountData.next_batch_sequence + fields.length}`;
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch next batch sequence", e);
+        } finally {
+             append({
+                batchNumber: defaultBatchNumber,
+                receivedQty: 0,
+                mfgDate: new Date(),
+                expDate: new Date(),
+            });
+            setIsAddingBatch(false);
+        }
+    };
+    
+    const durations = [
+        { label: '1d', amount: 1, unit: 'day' },
+        { label: '3d', amount: 3, unit: 'day' },
+        { label: '7d', amount: 7, unit: 'day' },
+        { label: '30d', amount: 30, unit: 'day' },
+        { label: '90d', amount: 90, unit: 'day' },
+        { label: '1y', amount: 1, unit: 'year' },
+        { label: '2y', amount: 2, unit: 'year' },
+        { label: '3y', amount: 3, unit: 'year' },
+    ];
+
+    const setExpiry = (batchIndex: number, amount: number, unit: 'day' | 'month' | 'year') => {
+        let newDate;
+        const baseDate = form.getValues(`items.${itemIndex}.batches.${batchIndex}.mfgDate`) || new Date();
+        if (unit === 'day') newDate = addDays(baseDate, amount);
+        else if (unit === 'month') newDate = addMonths(baseDate, amount);
+        else newDate = addYears(baseDate, amount);
+        form.setValue(`items.${itemIndex}.batches.${batchIndex}.expDate`, newDate, { shouldValidate: true });
+    };
 
     return (
         <Card>
@@ -473,7 +533,7 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
                         <TableRow>
                             <TableHead>Batch No.</TableHead>
                             <TableHead>MFD</TableHead>
-                            <TableHead>EXP</TableHead>
+                            <TableHead className="w-[350px]">EXP</TableHead>
                             <TableHead className="w-[150px]">Received Qty</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
@@ -533,6 +593,13 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
                                                     <Calendar mode="single" selected={field.value} onSelect={field.onChange} />
                                                 </PopoverContent>
                                             </Popover>
+                                            <div className="flex flex-wrap gap-1 mt-2">
+                                                {durations.map(d => (
+                                                    <Button key={d.label} type="button" size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => setExpiry(batchIndex, d.amount, d.unit as any)}>
+                                                        {d.label}
+                                                    </Button>
+                                                ))}
+                                            </div>
                                             <FormMessage />
                                             </FormItem>
                                         )}
@@ -564,9 +631,11 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => append({ batchNumber: '', receivedQty: 0 })}
+                    onClick={handleAddBatch}
+                    disabled={isAddingBatch}
                 >
-                    <Plus className="mr-2 h-4 w-4" /> Add Batch
+                    {isAddingBatch ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                    Add Batch
                 </Button>
             </CardFooter>
         </Card>
@@ -576,5 +645,8 @@ function BatchDetailsFieldArray({ form, itemIndex }: { form: any, itemIndex: num
     
 
     
+
+    
+
 
     
