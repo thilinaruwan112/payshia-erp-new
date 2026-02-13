@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useMemo } from 'react';
@@ -87,6 +86,9 @@ export const InvoiceWiseSalesReportView = ({ reportData }: { reportData: ReportD
                             <TableHead>Date</TableHead>
                             <TableHead>Customer</TableHead>
                             <TableHead className="text-right">Total Sales</TableHead>
+                            <TableHead className="text-right">Discount</TableHead>
+                            <TableHead className="text-right">Svc. Charge</TableHead>
+                            <TableHead className="text-right">Net Amount</TableHead>
                             <TableHead className="text-right">Cost</TableHead>
                             <TableHead className="text-right">Gross Profit</TableHead>
                         </TableRow>
@@ -98,6 +100,9 @@ export const InvoiceWiseSalesReportView = ({ reportData }: { reportData: ReportD
                                 <TableCell>{format(new Date(invoice.invoice_date), 'yyyy-MM-dd')}</TableCell>
                                 <TableCell>{invoice.customer_first_name} {invoice.customer_last_name}</TableCell>
                                 <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(invoice.total_sales).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(invoice.discount_amount).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(invoice.service_charge).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(invoice.net_amount).toFixed(2)}</TableCell>
                                 <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(invoice.cost_value).toFixed(2)}</TableCell>
                                 <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(invoice.gross_profit).toFixed(2)}</TableCell>
                             </TableRow>
@@ -107,6 +112,9 @@ export const InvoiceWiseSalesReportView = ({ reportData }: { reportData: ReportD
                         <TableRow className="font-bold bg-muted/50">
                             <TableCell colSpan={3} className="text-right">Totals</TableCell>
                             <TableCell className="text-right font-mono">{currencySymbol}{summary.total_sales.toFixed(2)}</TableCell>
+                            <TableCell className="text-right font-mono">{currencySymbol}{summary.total_discount.toFixed(2)}</TableCell>
+                            <TableCell className="text-right font-mono">{currencySymbol}{summary.total_service_charge.toFixed(2)}</TableCell>
+                            <TableCell className="text-right font-mono">{currencySymbol}{summary.total_net_amount.toFixed(2)}</TableCell>
                             <TableCell className="text-right font-mono">{currencySymbol}{summary.total_cost.toFixed(2)}</TableCell>
                             <TableCell className="text-right font-mono">{currencySymbol}{summary.total_gross_profit.toFixed(2)}</TableCell>
                         </TableRow>
