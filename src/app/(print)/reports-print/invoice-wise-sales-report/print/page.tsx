@@ -27,6 +27,9 @@ interface InvoiceReportItem {
     total_sales: string;
     cost_value: string;
     gross_profit: string;
+    discount_amount: string;
+    service_charge: string;
+    net_amount: string;
 }
 
 interface ReportData {
@@ -35,6 +38,9 @@ interface ReportData {
         total_sales: number;
         total_cost: number;
         total_gross_profit: number;
+        total_discount: number;
+        total_service_charge: number;
+        total_net_amount: number;
     };
 }
 
@@ -126,9 +132,12 @@ function PrintViewContent() {
                         <th className="p-2 border border-gray-300">Invoice #</th>
                         <th className="p-2 border border-gray-300">Date</th>
                         <th className="p-2 border border-gray-300">Customer</th>
-                        <th className="p-2 border border-gray-300 text-right">Total Sales</th>
+                        <th className="p-2 border border-gray-300 text-right">Sales</th>
+                        <th className="p-2 border border-gray-300 text-right">Discount</th>
+                        <th className="p-2 border border-gray-300 text-right">Svc. Charge</th>
+                        <th className="p-2 border border-gray-300 text-right">Net Amount</th>
                         <th className="p-2 border border-gray-300 text-right">Cost</th>
-                        <th className="p-2 border border-gray-300 text-right">Gross Profit</th>
+                        <th className="p-2 border border-gray-300 text-right">Profit</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -138,6 +147,9 @@ function PrintViewContent() {
                             <td className="p-2 border border-gray-300">{format(new Date(invoice.invoice_date), 'yyyy-MM-dd')}</td>
                             <td className="p-2 border border-gray-300">{invoice.customer_first_name} {invoice.customer_last_name}</td>
                             <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{parseFloat(invoice.total_sales).toFixed(2)}</td>
+                            <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{parseFloat(invoice.discount_amount).toFixed(2)}</td>
+                            <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{parseFloat(invoice.service_charge).toFixed(2)}</td>
+                            <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{parseFloat(invoice.net_amount).toFixed(2)}</td>
                             <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{parseFloat(invoice.cost_value).toFixed(2)}</td>
                             <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{parseFloat(invoice.gross_profit).toFixed(2)}</td>
                         </tr>
@@ -147,6 +159,9 @@ function PrintViewContent() {
                     <tr className="font-bold bg-gray-100">
                         <td colSpan={3} className="p-2 border border-gray-300 text-right">Totals</td>
                         <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_sales.toFixed(2)}</td>
+                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_discount.toFixed(2)}</td>
+                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_service_charge.toFixed(2)}</td>
+                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_net_amount.toFixed(2)}</td>
                         <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_cost.toFixed(2)}</td>
                         <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_gross_profit.toFixed(2)}</td>
                     </tr>

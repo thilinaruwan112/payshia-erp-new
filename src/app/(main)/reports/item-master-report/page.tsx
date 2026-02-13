@@ -9,9 +9,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/components/location-provider';
 import { useRouter } from 'next/navigation';
 import { fetcher } from '@/lib/api';
+import type { Brand } from '@/lib/types';
 
 export default function ItemMasterReportPage() {
     const [products, setProducts] = useState([]);
+    const [brands, setBrands] = useState<Brand[]>([]);
     const { company_id } = useLocation();
     const { toast } = useToast();
     const [isFetching, setIsFetching] = useState(false);
@@ -21,11 +23,20 @@ export default function ItemMasterReportPage() {
         setIsFetching(true);
         try {
             if (!company_id) throw new Error("Company ID is missing.");
-            const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`;
-            const response = await fetcher(url);
-            if (!response.ok) throw new Error('Failed to fetch report data');
-            const data = await response.json();
-            setProducts(data.products || []);
+            
+            const [productsRes, brandsRes] = await Promise.all([
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${company_id}`)
+            ]);
+
+            if (!productsRes.ok) throw new Error('Failed to fetch report data');
+            const productData = await productsRes.json();
+            setProducts(productData.products || []);
+            
+            if (!brandsRes.ok) throw new Error('Failed to fetch brands');
+            const brandsData = await brandsRes.json();
+            setBrands(brandsData || []);
+
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
             toast({ variant: 'destructive', title: 'Error', description: errorMessage });
@@ -61,7 +72,7 @@ export default function ItemMasterReportPage() {
                     Print
                 </Button>
             </div>
-            {products.length > 0 && <ItemMasterReportView products={products} />}
+            {products.length > 0 && <ItemMasterReportView products={products} brands={brands} />}
         </div>
     );
 }
