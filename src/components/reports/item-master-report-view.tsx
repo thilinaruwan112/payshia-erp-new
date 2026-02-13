@@ -1,29 +1,38 @@
 
 'use client'
 
-import { type Product, type ProductVariant } from '@/lib/types';
-import { useState } from 'react';
+import { type Product, type ProductVariant, type Brand } from '@/lib/types';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-interface ProductWithVariants {
+interface ProductWithApiResponse {
     product: Product;
-    variants: ProductVariant[];
+    variants: { variant: ProductVariant }[];
 }
 
-export const ItemMasterReportView = ({ products }: { products: ProductWithVariants[] }) => {
+export const ItemMasterReportView = ({ products, brands }: { products: ProductWithApiResponse[], brands: Brand[] }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
-    const allVariants = products.flatMap(p => p.variants.map(v => ({ ...v, productName: p.product.name, category: p.product.category, brand: 'N/A' })));
+    const brandMap = useMemo(() => new Map(brands.map(b => [b.id, b.name])), [brands]);
+
+    const allVariants = products.flatMap(p => 
+        (p.variants || []).map(v => ({ 
+            ...v.variant, 
+            productName: p.product.name, 
+            category: p.product.category, 
+            brand: brandMap.get(String(p.product.brand_id)) || 'N/A' 
+        }))
+    );
 
     const filteredItems = allVariants.filter(item =>
         item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.sku.toLowerCase().includes(searchTerm.toLowerCase())
+        (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
@@ -40,7 +49,7 @@ export const ItemMasterReportView = ({ products }: { products: ProductWithVarian
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
-                            setCurrentPage(1);
+                            setCurrentPage(1); // Reset to first page on search
                         }}
                         className="max-w-sm"
                     />

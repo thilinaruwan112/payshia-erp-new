@@ -1,10 +1,9 @@
 
-
 'use client'
 
 import { useSearchParams } from 'next/navigation';
-import React, { useEffect, useState, Suspense } from 'react';
-import type { Product, ProductVariant } from '@/lib/types';
+import React, { useEffect, useState, Suspense, useMemo } from 'react';
+import type { Product, ProductVariant, Brand } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +26,7 @@ interface ProductWithApiResponse {
 function PrintViewContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -42,15 +42,17 @@ function PrintViewContent() {
         };
 
         try {
-             const [productsRes, companyRes] = await Promise.all([
+             const [productsRes, companyRes, brandsRes] = await Promise.all([
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${companyId}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${companyId}`),
             ]);
 
             if (!productsRes.ok) throw new Error('Failed to fetch products');
             const productData: { products: ProductWithApiResponse[] } = await productsRes.json();
             setProducts(productData.products || []);
             if (companyRes.ok) setCompany(await companyRes.json());
+            if (brandsRes.ok) setBrands(await brandsRes.json() || []);
 
         } catch(error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch report data.' });
@@ -68,11 +70,18 @@ function PrintViewContent() {
     }
   }, [isLoading, products]);
 
+  const brandMap = useMemo(() => new Map(brands.map(b => [b.id, b.name])), [brands]);
+
   if (isLoading) {
     return <div className="p-8"><Skeleton className="h-[800px] w-full" /></div>;
   }
   
-  const allVariants = products.flatMap(p => (p.variants || []).map(v => ({ ...v.variant, productName: p.product.name, category: p.product.category, brand: 'N/A' })));
+  const allVariants = products.flatMap(p => (p.variants || []).map(v => ({ 
+      ...v.variant, 
+      productName: p.product.name, 
+      category: p.product.category, 
+      brand: brandMap.get(String(p.product.brand_id)) || 'N/A' 
+  })));
 
   return (
     <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
