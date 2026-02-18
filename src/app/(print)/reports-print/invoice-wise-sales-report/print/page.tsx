@@ -103,7 +103,7 @@ function PrintViewContent() {
     return <div className="p-8"><Skeleton className="h-[800px] w-full" /></div>;
   }
   
-  if (!reportData) {
+  if (!reportData || !reportData.invoices) {
     return <div className="p-8">No data found for the selected criteria.</div>;
   }
 
@@ -155,17 +155,19 @@ function PrintViewContent() {
                         </tr>
                     ))}
                 </tbody>
-                 <tfoot>
-                    <tr className="font-bold bg-gray-100 border-t-2 border-gray-300">
-                        <td colSpan={3} className="p-2 border border-gray-300 text-right">Totals</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_sales || 0).toFixed(2)}</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_discount || 0).toFixed(2)}</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_service_charge || 0).toFixed(2)}</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_net_amount || 0).toFixed(2)}</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_cost || 0).toFixed(2)}</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_gross_profit || 0).toFixed(2)}</td>
-                    </tr>
-                </tfoot>
+                 {summary && (
+                    <tfoot>
+                        <tr className="font-bold bg-gray-100 border-t-2 border-gray-300">
+                            <td colSpan={3} className="p-2 border border-gray-300 text-right">Totals</td>
+                            <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary.total_sales || 0).toFixed(2)}</td>
+                            <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary.total_discount || 0).toFixed(2)}</td>
+                            <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary.total_service_charge || 0).toFixed(2)}</td>
+                            <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary.total_net_amount || 0).toFixed(2)}</td>
+                            <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary.total_cost || 0).toFixed(2)}</td>
+                            <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary.total_gross_profit || 0).toFixed(2)}</td>
+                        </tr>
+                    </tfoot>
+                 )}
             </table>
         </main>
     </div>
