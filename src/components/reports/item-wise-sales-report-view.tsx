@@ -41,8 +41,8 @@ export const ItemWiseSalesReportView = ({ reportData }: { reportData: ReportData
 
     const filteredItems = useMemo(() => 
         (reportData.items || []).filter(item =>
-            item.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.variant_sku.toLowerCase().includes(searchTerm.toLowerCase())
+            (item.product_name && item.product_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.variant_sku && item.variant_sku.toLowerCase().includes(searchTerm.toLowerCase()))
     ), [reportData.items, searchTerm]);
 
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
