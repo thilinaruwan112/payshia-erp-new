@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useState, useMemo } from 'react';
@@ -52,9 +53,10 @@ export const InvoiceWiseSalesReportView = ({ reportData }: { reportData: ReportD
 
     const filteredInvoices = useMemo(() => 
         (reportData?.invoices || []).filter(invoice =>
-            invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            `${invoice.customer_first_name} ${invoice.customer_last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+            (invoice.invoice_number && invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (`${invoice.customer_first_name || ''} ${invoice.customer_last_name || ''}`.trim().toLowerCase().includes(searchTerm.toLowerCase()))
     ), [reportData, searchTerm]);
+
 
     const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
     const paginatedInvoices = filteredInvoices.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -66,6 +68,28 @@ export const InvoiceWiseSalesReportView = ({ reportData }: { reportData: ReportD
             <CardHeader>
                 <CardTitle>Invoice Wise Sales Report</CardTitle>
                 <CardDescription>A detailed breakdown of sales performance by individual invoice.</CardDescription>
+                
+                {summary && (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+                        <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Invoices</CardTitle></CardHeader>
+                            <CardContent><p className="text-2xl font-bold">{summary.total_invoices || 0}</p></CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Sales</CardTitle></CardHeader>
+                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.total_sales?.toFixed(2) || '0.00'}</p></CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Cost</CardTitle></CardHeader>
+                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.total_cost?.toFixed(2) || '0.00'}</p></CardContent>
+                        </Card>
+                         <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Gross Profit</CardTitle></CardHeader>
+                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.total_gross_profit?.toFixed(2) || '0.00'}</p></CardContent>
+                        </Card>
+                    </div>
+                )}
+                
                 <div className="pt-4">
                     <Input
                         placeholder="Search by invoice # or customer name..."
