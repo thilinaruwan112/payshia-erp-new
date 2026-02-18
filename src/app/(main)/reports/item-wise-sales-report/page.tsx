@@ -57,7 +57,7 @@ export default function ItemWiseSalesReportPage() {
             if (!response.ok) throw new Error('Failed to fetch report data');
             
             const data = await response.json();
-            setReportData(data.data);
+            setReportData(data.data.report_data);
 
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: `Could not fetch report data.` });
