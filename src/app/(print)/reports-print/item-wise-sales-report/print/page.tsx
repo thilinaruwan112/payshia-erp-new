@@ -128,6 +128,25 @@ function PrintViewContent() {
         </header>
         
         <main className="mt-6">
+            <div className="grid grid-cols-4 gap-4 mb-6 text-center">
+                <div className="p-2 rounded-md border bg-gray-50">
+                    <p className="text-xs text-gray-500">Total Qty Sold</p>
+                    <p className="text-lg font-bold">{summary.total_quantity?.toFixed(2) || '0.00'}</p>
+                </div>
+                <div className="p-2 rounded-md border bg-gray-50">
+                    <p className="text-xs text-gray-500">Total Sales Value</p>
+                    <p className="text-lg font-bold">{currencySymbol}{summary.total_sales?.toFixed(2) || '0.00'}</p>
+                </div>
+                <div className="p-2 rounded-md border bg-gray-50">
+                    <p className="text-xs text-gray-500">Total Cost</p>
+                    <p className="text-lg font-bold">{currencySymbol}{summary.total_cost?.toFixed(2) || '0.00'}</p>
+                </div>
+                 <div className="p-2 rounded-md border bg-gray-50">
+                    <p className="text-xs text-gray-500">Total Gross Profit</p>
+                    <p className="text-lg font-bold">{currencySymbol}{summary.total_gross_profit?.toFixed(2) || '0.00'}</p>
+                </div>
+            </div>
+
             <table className="w-full text-left border-collapse">
                 <thead>
                     <tr className="bg-[#3B5998] text-white">
