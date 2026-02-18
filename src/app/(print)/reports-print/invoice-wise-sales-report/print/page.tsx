@@ -156,14 +156,14 @@ function PrintViewContent() {
                     ))}
                 </tbody>
                  <tfoot>
-                    <tr className="font-bold bg-gray-100">
+                    <tr className="font-bold bg-gray-100 border-t-2 border-gray-300">
                         <td colSpan={3} className="p-2 border border-gray-300 text-right">Totals</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_sales.toFixed(2)}</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_discount.toFixed(2)}</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_service_charge.toFixed(2)}</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_net_amount.toFixed(2)}</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_cost.toFixed(2)}</td>
-                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{summary.total_gross_profit.toFixed(2)}</td>
+                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_sales || 0).toFixed(2)}</td>
+                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_discount || 0).toFixed(2)}</td>
+                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_service_charge || 0).toFixed(2)}</td>
+                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_net_amount || 0).toFixed(2)}</td>
+                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_cost || 0).toFixed(2)}</td>
+                        <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{(summary?.total_gross_profit || 0).toFixed(2)}</td>
                     </tr>
                 </tfoot>
             </table>
@@ -179,5 +179,3 @@ export default function PrintInvoiceWiseSalesReportPage() {
         </Suspense>
     )
 }
-
-    
