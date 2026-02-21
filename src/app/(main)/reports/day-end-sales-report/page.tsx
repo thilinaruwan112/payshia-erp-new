@@ -2,19 +2,20 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react';
+import type { PaymentMethod } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { DayEndSalesReportView } from '@/components/reports/day-end-sales-report-view';
 import { Button } from '@/components/ui/button';
 import { CalendarIcon, Loader2, Eye, Printer, ArrowLeft } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
 import { useLocation } from '@/components/location-provider';
 import { useRouter } from 'next/navigation';
-import { Combobox } from '@/components/ui/combobox';
 
 interface ReportData {
     invoice_total: string;
@@ -38,10 +39,26 @@ export default function DayEndSalesReportPage() {
     const [filterValues, setFilterValues] = useState<Record<string, string>>({});
     const [isFetching, setIsFetching] = useState(false);
     const router = useRouter();
+    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
     const handleFilterChange = (filterName: string, value: string) => {
         setFilterValues(prev => ({ ...prev, [filterName]: value }));
     };
+
+    useEffect(() => {
+        async function fetchPaymentMethods() {
+            if (!company_id) return;
+            try {
+                const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment-method/filter/by-company?company_id=${company_id}`);
+                if (!response.ok) throw new Error(`Failed to fetch payment methods`);
+                const data = await response.json();
+                setPaymentMethods(data || []);
+            } catch (error) {
+                toast({ variant: 'destructive', title: 'Error', description: `Could not fetch payment methods.` });
+            }
+        }
+        fetchPaymentMethods();
+    }, [company_id, toast]);
 
     const handleViewReport = useCallback(async () => {
         setIsFetching(true);
@@ -63,6 +80,9 @@ export default function DayEndSalesReportPage() {
                 date: format(singleDate, 'yyyy-MM-dd'),
                 location_id: filterValues['location'],
             });
+            if (filterValues['payment_type'] && filterValues['payment_type'] !== 'all') {
+                params.append('payment_type', filterValues['payment_type']);
+            }
             const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/get/day-and-report?${params.toString()}`;
             
             const response = await fetcher(url);
@@ -85,11 +105,25 @@ export default function DayEndSalesReportPage() {
         return;
       }
       const location = availableLocations.find(l => l.location_id === filterValues['location']);
-      const url = `/reports-print/day-end-sale/print?date=${format(singleDate, 'yyyy-MM-dd')}&location=${encodeURIComponent(location?.location_name || '')}&company_id=${company_id}&location_id=${filterValues['location']}`;
+      
+      const params = new URLSearchParams({
+        date: format(singleDate, 'yyyy-MM-dd'),
+        location: location?.location_name || '',
+        company_id: String(company_id),
+        location_id: filterValues['location'],
+      });
+
+      if (filterValues['payment_type'] && filterValues['payment_type'] !== 'all') {
+        params.append('payment_type', filterValues['payment_type']);
+      }
+
+      const url = `/reports-print/day-end-sale/print?${params.toString()}`;
       window.open(url, '_blank');
     };
     
     const locationOptions = [{ value: 'all', label: 'All Locations' }, ...availableLocations.map(l => ({ value: l.location_id, label: l.location_name }))];
+    const paymentMethodOptions = [{ value: 'all', label: 'All Payment Types' }, ...paymentMethods.map(pm => ({ value: pm.method.toLowerCase(), label: pm.method }))];
+
 
     return (
         <div className="space-y-6">
@@ -125,6 +159,10 @@ export default function DayEndSalesReportPage() {
                  <div className="space-y-1.5">
                     <Label>Location</Label>
                     <Combobox options={locationOptions} value={filterValues['location'] || ''} onChange={(value) => handleFilterChange('location', value)} placeholder="Select location..." notFoundText="No locations found." />
+                </div>
+                <div className="space-y-1.5">
+                    <Label>Payment Type</Label>
+                    <Combobox options={paymentMethodOptions} value={filterValues['payment_type'] || ''} onChange={(value) => handleFilterChange('payment_type', value)} placeholder="All payment types" notFoundText="No types found." />
                 </div>
                 <div className="flex items-center gap-2">
                      <Button onClick={handleViewReport} disabled={isFetching} className="w-full md:w-auto">
