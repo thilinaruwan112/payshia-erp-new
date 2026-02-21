@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -16,6 +15,7 @@ import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
 import { useLocation } from '@/components/location-provider';
 import { useRouter } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ReportData {
     invoice_total: string;
@@ -40,10 +40,17 @@ export default function DayEndSalesReportPage() {
     const [isFetching, setIsFetching] = useState(false);
     const router = useRouter();
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+    const [isLoadingLocations, setIsLoadingLocations] = useState(true);
 
     const handleFilterChange = (filterName: string, value: string) => {
         setFilterValues(prev => ({ ...prev, [filterName]: value }));
     };
+
+    useEffect(() => {
+      if (availableLocations.length > 0) {
+        setIsLoadingLocations(false);
+      }
+    }, [availableLocations]);
 
     useEffect(() => {
         async function fetchPaymentMethods() {
@@ -158,7 +165,9 @@ export default function DayEndSalesReportPage() {
                 </div>
                  <div className="space-y-1.5">
                     <Label>Location</Label>
-                    <Combobox options={locationOptions} value={filterValues['location'] || ''} onChange={(value) => handleFilterChange('location', value)} placeholder="Select location..." notFoundText="No locations found." />
+                    {isLoadingLocations ? <Skeleton className="h-10 w-full" /> : (
+                        <Combobox options={locationOptions} value={filterValues['location'] || ''} onChange={(value) => handleFilterChange('location', value)} placeholder="Select location..." notFoundText="No locations found." />
+                    )}
                 </div>
                 <div className="space-y-1.5">
                     <Label>Payment Type</Label>
