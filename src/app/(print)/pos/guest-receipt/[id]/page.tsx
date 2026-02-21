@@ -138,7 +138,7 @@ function GuestReceiptContent() {
     const orderType = getOrderTypeOrTable(invoice.table_id);
 
     let serviceCharge = 0;
-    if (orderType?.startsWith('Dine-In') && location.service_charge_status === 'Enabled') {
+    if (parseFloat(invoice.service_charge) > 0 && orderType?.startsWith('Dine-In')) {
         serviceCharge = basePrice * 0.10;
     }
     
