@@ -55,6 +55,7 @@ function PrintViewContent() {
   const locationName = searchParams.get('location');
   const date = searchParams.get('date');
   const locationId = searchParams.get('location_id');
+  const paymentType = searchParams.get('payment_type');
 
   useEffect(() => {
     async function fetchData() {
@@ -71,6 +72,9 @@ function PrintViewContent() {
                 company_id: companyId,
                 location_id: locationId,
             });
+            if (paymentType && paymentType !== 'all') {
+                params.append('payment_type', paymentType);
+            }
             const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/get/day-and-report?${params.toString()}`;
 
             const [reportRes, companyRes] = await Promise.all([
@@ -92,7 +96,7 @@ function PrintViewContent() {
         }
     }
     fetchData();
-  }, [companyId, locationName, date, locationId, toast]);
+  }, [companyId, locationName, date, locationId, paymentType, toast]);
 
   useEffect(() => {
     if (!isLoading && reportData) {

@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useMemo } from 'react';
@@ -40,21 +39,43 @@ export const ItemWiseSalesReportView = ({ reportData }: { reportData: ReportData
     const itemsPerPage = 10;
 
     const filteredItems = useMemo(() => 
-        (reportData.items || []).filter(item =>
-            item.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.variant_sku.toLowerCase().includes(searchTerm.toLowerCase())
+        (reportData?.items || []).filter(item =>
+            (item.product_name && item.product_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.variant_sku && item.variant_sku.toLowerCase().includes(searchTerm.toLowerCase()))
     ), [reportData.items, searchTerm]);
 
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
     const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-    const { summary } = reportData;
+    const { summary } = reportData || { summary: { total_items: 0, total_quantity: 0, total_sales: 0, total_cost: 0, total_discount: 0, total_gross_profit: 0 }};
 
     return (
         <Card className="w-full">
             <CardHeader>
                 <CardTitle>Item Wise Sales Report</CardTitle>
                 <CardDescription>A summary of sales performance for each item within the selected period.</CardDescription>
+                
+                {summary && (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+                        <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Quantity Sold</CardTitle></CardHeader>
+                            <CardContent><p className="text-2xl font-bold">{summary.total_quantity?.toFixed(2) || '0.00'}</p></CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Sales Value</CardTitle></CardHeader>
+                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.total_sales?.toFixed(2) || '0.00'}</p></CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Cost</CardTitle></CardHeader>
+                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.total_cost?.toFixed(2) || '0.00'}</p></CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Gross Profit</CardTitle></CardHeader>
+                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.total_gross_profit?.toFixed(2) || '0.00'}</p></CardContent>
+                        </Card>
+                    </div>
+                )}
+                
                 <div className="pt-4">
                     <Input
                         placeholder="Search by product name or SKU..."
@@ -80,8 +101,8 @@ export const ItemWiseSalesReportView = ({ reportData }: { reportData: ReportData
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {paginatedItems.map((item) => (
-                            <TableRow key={item.product_variant_id}>
+                        {paginatedItems.map((item, index) => (
+                            <TableRow key={item.product_variant_id || index}>
                                 <TableCell>{item.product_name}</TableCell>
                                 <TableCell>{item.variant_sku}</TableCell>
                                 <TableCell className="text-right">{parseFloat(item.total_quantity).toFixed(2)}</TableCell>
