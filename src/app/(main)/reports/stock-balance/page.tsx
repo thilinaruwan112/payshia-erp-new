@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -19,7 +20,7 @@ interface ProductWithApiResponse {
 }
 
 export default function StockBalanceReportPage() {
-    const [reportData, setReportData] = useState<any[]>([]);
+    const [reportData, setReportData] = useState<any | null>(null);
     const { company_id, availableLocations } = useLocation();
     const { toast } = useToast();
     const [isFetching, setIsFetching] = useState(false);
@@ -59,7 +60,7 @@ export default function StockBalanceReportPage() {
 
     const handleViewReport = useCallback(async () => {
         setIsFetching(true);
-        setReportData([]);
+        setReportData(null);
         try {
             if (!company_id) throw new Error("Company ID is missing.");
             const params = new URLSearchParams({ company_id: String(company_id) });
@@ -86,7 +87,7 @@ export default function StockBalanceReportPage() {
             const response = await fetcher(url);
             if (!response.ok) throw new Error('Failed to fetch report data');
             const data = await response.json();
-            setReportData(data.data || []);
+            setReportData(data || { data: [], summary: {} });
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: `Could not fetch report data.` });
         } finally {
@@ -95,7 +96,7 @@ export default function StockBalanceReportPage() {
     }, [company_id, filterValues, products, toast]);
     
     const handlePrint = () => {
-        if (!reportData || reportData.length === 0) {
+        if (!reportData || !reportData.data || reportData.data.length === 0) {
             toast({ variant: 'destructive', title: 'No data to print', description: 'Please view the report first.' });
             return;
         }
@@ -150,7 +151,7 @@ export default function StockBalanceReportPage() {
                         {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                         View
                     </Button>
-                    <Button variant="outline" onClick={handlePrint} disabled={!reportData || reportData.length === 0}>
+                    <Button variant="outline" onClick={handlePrint} disabled={!reportData || !reportData.data || reportData.data.length === 0}>
                         <Printer className="h-4 w-4" />
                     </Button>
                 </div>

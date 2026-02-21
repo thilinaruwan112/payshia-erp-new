@@ -1,3 +1,4 @@
+
 'use client'
 
 import { useSearchParams } from 'next/navigation';
@@ -27,11 +28,24 @@ interface StockBalanceItem {
     total_in: string;
     total_out: string;
     stock_balance: string;
+    total_cost_value: string;
+    total_sale_value: string;
 }
+
+interface ReportData {
+    data: StockBalanceItem[];
+    summary: {
+        grand_total_cost_value: number;
+        grand_total_sale_value: number;
+        potential_profit: number;
+        item_count: number;
+    };
+}
+
 
 function PrintViewContent() {
   const searchParams = useSearchParams();
-  const [reportData, setReportData] = useState<StockBalanceItem[]>([]);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
@@ -68,7 +82,7 @@ function PrintViewContent() {
 
             if (!reportRes.ok) throw new Error('Failed to fetch report data');
             const resultData = await reportRes.json();
-            setReportData(resultData.data || []);
+            setReportData(resultData);
             
             if (companyRes.ok) setCompany(await companyRes.json());
 
@@ -92,9 +106,11 @@ function PrintViewContent() {
     return <div className="p-8"><Skeleton className="h-[800px] w-full" /></div>;
   }
   
-  if (!reportData) {
+  if (!reportData || !reportData.data) {
     return <div className="p-8">No data found for the selected criteria.</div>;
   }
+
+  const { summary, data: items } = reportData;
 
   return (
     <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
@@ -110,7 +126,28 @@ function PrintViewContent() {
         </header>
         <p className="text-xs text-gray-600 mt-2">Report is generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
 
-        <main className="mt-6">
+        {summary && (
+            <div className="grid grid-cols-4 gap-4 my-6 text-center">
+                <div className="p-2 rounded-md border bg-gray-50">
+                    <p className="text-xs text-gray-500">Total Items</p>
+                    <p className="text-lg font-bold">{summary.item_count}</p>
+                </div>
+                <div className="p-2 rounded-md border bg-gray-50">
+                    <p className="text-xs text-gray-500">Total Cost Value</p>
+                    <p className="text-lg font-bold">{currencySymbol}{summary.grand_total_cost_value.toFixed(2)}</p>
+                </div>
+                <div className="p-2 rounded-md border bg-gray-50">
+                    <p className="text-xs text-gray-500">Total Sale Value</p>
+                    <p className="text-lg font-bold">{currencySymbol}{summary.grand_total_sale_value.toFixed(2)}</p>
+                </div>
+                <div className="p-2 rounded-md border bg-gray-50">
+                    <p className="text-xs text-gray-500">Potential Profit</p>
+                    <p className="text-lg font-bold">{currencySymbol}{summary.potential_profit.toFixed(2)}</p>
+                </div>
+            </div>
+        )}
+
+        <main>
             <table className="w-full text-left border-collapse">
                 <thead>
                     <tr className="bg-[#3B5998] text-white">
@@ -122,7 +159,7 @@ function PrintViewContent() {
                     </tr>
                 </thead>
                 <tbody>
-                    {reportData.map((item) => (
+                    {items.map((item) => (
                         <tr key={item.product_variant_id} className="border-b">
                             <td className="p-2 border border-gray-300">{item.product_name}</td>
                             <td className="p-2 border border-gray-300">{item.variant_name}</td>
