@@ -1,5 +1,4 @@
 
-
 'use client';
 
 // Import the external CSS file
@@ -135,10 +134,9 @@ function GuestReceiptContent() {
   const calculateInclusivePrice = (basePrice: number) => {
     if (!location || !invoice) return basePrice;
 
-    const orderType = getOrderTypeOrTable(invoice.table_id);
-
     let serviceCharge = 0;
-    if (orderType?.startsWith('Dine-In') && location.service_charge_status === 'Enabled') {
+    // Check if the final invoice had a service charge applied
+    if (parseFloat(invoice.service_charge) > 0) {
         serviceCharge = basePrice * 0.10;
     }
     

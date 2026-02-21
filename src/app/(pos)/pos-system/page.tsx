@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
@@ -121,6 +120,17 @@ export default function POSPage() {
 
   // Barcode scanning state
   const [barcode, setBarcode] = useState('');
+
+  useEffect(() => {
+    const savedSetting = localStorage.getItem('isServiceChargeActive');
+    if (savedSetting !== null) {
+      setIsServiceChargeActive(JSON.parse(savedSetting));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('isServiceChargeActive', JSON.stringify(isServiceChargeActive));
+  }, [isServiceChargeActive]);
 
   const handleBarcodeScan = useCallback((scannedCode: string) => {
     // First, try to find a match in the dedicated 'barcode' field.
@@ -828,7 +838,7 @@ useEffect(() => {
 
   return (
     <>
-      <AddToCartDialog product={selectedProduct} onClose={() => setSelectedProduct(null)} onAddToCart={addToCart} />
+      <AddToCartDialog product={selectedProduct} onClose={() => setSelectedProduct(null)} onAddToCart={addToCart} showImages={showProductImages} />
       <NewOrderDialog isOpen={isNewOrderDialogOpen} onOpenChange={setNewOrderDialogOpen} createNewOrder={createNewOrder} activeOrders={activeOrders} />
       <HeldOrderDetailsDialog 
         isOpen={isHeldOrderDetailsDialogOpen} 

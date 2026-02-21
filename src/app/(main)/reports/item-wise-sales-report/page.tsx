@@ -57,7 +57,7 @@ export default function ItemWiseSalesReportPage() {
             if (!response.ok) throw new Error('Failed to fetch report data');
             
             const data = await response.json();
-            setReportData(data.data);
+            setReportData(data.data.report_data);
 
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: `Could not fetch report data.` });
@@ -66,6 +66,23 @@ export default function ItemWiseSalesReportPage() {
         }
     }, [company_id, dateRange, filterValues, toast]);
     
+    const handlePrint = () => {
+        if (!reportData) {
+            toast({ variant: 'destructive', title: 'No data to print', description: 'Please view the report first.' });
+            return;
+        }
+        const params = new URLSearchParams({
+            company_id: String(company_id),
+            ...(dateRange?.from && { start_date: format(dateRange.from, 'yyyy-MM-dd') }),
+            ...(dateRange?.to && { end_date: format(dateRange.to, 'yyyy-MM-dd') }),
+            ...(filterValues['location'] && filterValues['location'] !== 'all' && { location_id: filterValues['location'] }),
+            ...(filterValues['category'] && filterValues['category'] !== 'all' && { category_id: filterValues['category'] }),
+            ...(filterValues['brand'] && filterValues['brand'] !== 'all' && { brand_id: filterValues['brand'] }),
+        });
+        const url = `/reports-print/item-wise-sales-report/print?${params.toString()}`;
+        window.open(url, '_blank');
+    };
+
     const locationOptions = [{ value: 'all', label: 'All Locations' }, ...availableLocations.map(l => ({ value: l.location_id, label: l.location_name }))];
 
     return (
@@ -116,6 +133,10 @@ export default function ItemWiseSalesReportPage() {
                          {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
                          View
                      </Button>
+                      <Button variant="outline" onClick={handlePrint} disabled={!reportData}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        Print
+                    </Button>
                 </div>
             </div>
             
