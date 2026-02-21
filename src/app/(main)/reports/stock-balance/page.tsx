@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -94,6 +93,34 @@ export default function StockBalanceReportPage() {
             setIsFetching(false);
         }
     }, [company_id, filterValues, products, toast]);
+    
+    const handlePrint = () => {
+        if (!reportData || reportData.length === 0) {
+            toast({ variant: 'destructive', title: 'No data to print', description: 'Please view the report first.' });
+            return;
+        }
+        const params = new URLSearchParams({ company_id: String(company_id) });
+    
+        if (filterValues['location'] && filterValues['location'] !== 'all') {
+            params.append('location_id', filterValues['location']);
+        }
+        if (filterValues['item'] && filterValues['item'] !== 'all') {
+            const selectedProduct = products.find(p => p.variants.some(v => v.variant.id === filterValues['item']));
+            const selectedVariant = selectedProduct?.variants.find(v => v.variant.id === filterValues['item'])?.variant;
+            if (selectedProduct && selectedVariant) {
+               params.append('product_id', selectedProduct.product.id);
+               params.append('product_variant_id', selectedVariant.id);
+            }
+        }
+        if (filterValues['category'] && filterValues['category'] !== 'all') {
+            params.append('category_id', filterValues['category']);
+        }
+        if (filterValues['brand'] && filterValues['brand'] !== 'all') {
+            params.append('brand_id', filterValues['brand']);
+        }
+        const url = `/reports-print/stock-balance/print?${params.toString()}`;
+        window.open(url, '_blank');
+    };
 
     const itemOptions = [{ value: 'all', label: 'All Items' }, ...products.flatMap(p => (p.variants || []).map(v => ({ value: v.variant.id, label: `${p.product.name} (${v.variant.sku})` })))];
     const locationOptions = [{ value: 'all', label: 'All Locations' }, ...availableLocations.map(l => ({ value: l.location_id, label: l.location_name }))];
@@ -113,15 +140,20 @@ export default function StockBalanceReportPage() {
                 </Button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 items-end">
                 <div className="space-y-1.5"><Label>Location</Label><Combobox options={locationOptions} value={filterValues['location'] || ''} onChange={(v) => handleFilterChange('location', v)} placeholder="Select location" /></div>
                 <div className="space-y-1.5"><Label>Category</Label><Combobox options={categoryOptions} value={filterValues['category'] || ''} onChange={(v) => handleFilterChange('category', v)} placeholder="Select category" /></div>
                 <div className="space-y-1.5"><Label>Brand</Label><Combobox options={brandOptions} value={filterValues['brand'] || ''} onChange={(v) => handleFilterChange('brand', v)} placeholder="Select brand" /></div>
                 <div className="space-y-1.5"><Label>Item</Label><Combobox options={itemOptions} value={filterValues['item'] || ''} onChange={(v) => handleFilterChange('item', v)} placeholder="Select item" /></div>
-                <Button onClick={handleViewReport} disabled={isFetching} className="w-full">
-                    {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
-                    View Report
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button onClick={handleViewReport} disabled={isFetching} className="w-full">
+                        {isFetching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="mr-2 h-4 w-4" />}
+                        View
+                    </Button>
+                    <Button variant="outline" onClick={handlePrint} disabled={!reportData || reportData.length === 0}>
+                        <Printer className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
 
             {reportData && <StockBalanceReportView reportData={reportData} />}
