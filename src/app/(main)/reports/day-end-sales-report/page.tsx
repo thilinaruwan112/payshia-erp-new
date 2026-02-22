@@ -1,3 +1,4 @@
+
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -129,7 +130,7 @@ export default function DayEndSalesReportPage() {
     };
     
     const locationOptions = [{ value: 'all', label: 'All Locations' }, ...availableLocations.map(l => ({ value: l.location_id, label: l.location_name }))];
-    const paymentMethodOptions = [{ value: 'all', label: 'All Payment Types' }, ...paymentMethods.map(pm => ({ value: pm.method.toLowerCase(), label: pm.method }))];
+    const paymentMethodOptions = [{ value: 'all', label: 'All Payment Types' }, ...paymentMethods.map(pm => ({ value: pm.id, label: pm.method }))];
 
 
     return (
