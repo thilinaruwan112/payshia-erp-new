@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { fetcher } from '@/lib/api';
 import type { Product, ProductVariant } from '@/lib/types';
 import Image from 'next/image';
+import { useCurrency } from '@/components/currency-provider';
 
 interface Company {
     id: string;
@@ -27,6 +28,7 @@ interface RecipeItem {
     recipe_product: string;
     qty: string;
     created_at: string;
+    cost_price: string;
 }
 
 interface ProductWithApiResponse {
@@ -41,6 +43,7 @@ function PrintViewContent() {
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   
   const companyId = searchParams.get('company_id');
 
@@ -136,6 +139,11 @@ function PrintViewContent() {
         <main className="mt-6 space-y-6">
             {Object.entries(groupedRecipes).map(([finishedGoodVariantId, ingredients]) => {
                 const finishedGoodInfo = getProductInfo(finishedGoodVariantId);
+                const totalCost = ingredients.reduce((acc, ingredient) => {
+                    const cost = parseFloat(ingredient.cost_price || '0');
+                    const qty = parseFloat(ingredient.qty);
+                    return acc + (cost * qty);
+                }, 0);
                 return (
                     <div key={finishedGoodVariantId} className="page-break-before:always">
                         <div className="p-2 bg-gray-100 rounded-md mb-2">
@@ -147,20 +155,33 @@ function PrintViewContent() {
                                     <th className="p-2 border border-gray-300">Ingredient</th>
                                     <th className="p-2 border border-gray-300">SKU</th>
                                     <th className="p-2 border border-gray-300 text-right">Quantity</th>
+                                    <th className="p-2 border border-gray-300 text-right">Cost Price</th>
+                                    <th className="p-2 border border-gray-300 text-right">Cost Value</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {ingredients.map(ingredient => {
                                     const ingredientInfo = getProductInfo(ingredient.recipe_product);
+                                    const costPrice = parseFloat(ingredient.cost_price || '0');
+                                    const quantity = parseFloat(ingredient.qty);
+                                    const costValue = costPrice * quantity;
                                     return (
                                         <tr key={ingredient.id} className="border-b">
                                             <td className="p-2 border border-gray-300">{ingredientInfo.name}</td>
                                             <td className="p-2 border border-gray-300">{ingredientInfo.sku}</td>
-                                            <td className="p-2 border border-gray-300 text-right font-mono">{parseFloat(ingredient.qty).toFixed(3)} {ingredientInfo.unit}</td>
+                                            <td className="p-2 border border-gray-300 text-right font-mono">{quantity.toFixed(3)} {ingredientInfo.unit}</td>
+                                            <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{costPrice.toFixed(2)}</td>
+                                            <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{costValue.toFixed(2)}</td>
                                         </tr>
                                     )
                                 })}
                             </tbody>
+                             <tfoot>
+                                <tr className="bg-gray-100 font-bold">
+                                    <td colSpan={4} className="p-2 border border-gray-300 text-right">Total Recipe Cost</td>
+                                    <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{totalCost.toFixed(2)}</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 )

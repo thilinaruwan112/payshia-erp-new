@@ -1,11 +1,9 @@
-
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -16,6 +14,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from '@/components/ui/table';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useLocation } from '@/components/location-provider';
@@ -25,6 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { Product, ProductVariant } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
+import { useCurrency } from '@/components/currency-provider';
 
 interface RecipeItem {
     id: string;
@@ -33,6 +33,7 @@ interface RecipeItem {
     recipe_product: string; // Ingredient variant
     qty: string;
     created_at: string;
+    cost_price: string;
 }
 
 interface ProductWithApiResponse {
@@ -46,6 +47,7 @@ export default function SavedBOMsPage() {
     const [recipes, setRecipes] = useState<RecipeItem[]>([]);
     const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { currencySymbol } = useCurrency();
 
     useEffect(() => {
         if (!company_id) {
@@ -152,6 +154,11 @@ export default function SavedBOMsPage() {
                     <Accordion type="multiple" className="w-full">
                         {Object.entries(groupedRecipes).map(([finishedGoodVariantId, ingredients]) => {
                             const finishedGoodInfo = getProductInfo(finishedGoodVariantId);
+                             const totalCost = ingredients.reduce((acc, ingredient) => {
+                                const cost = parseFloat(ingredient.cost_price || '0');
+                                const qty = parseFloat(ingredient.qty);
+                                return acc + (cost * qty);
+                            }, 0);
                             return (
                                 <AccordionItem value={finishedGoodVariantId} key={finishedGoodVariantId}>
                                     <AccordionTrigger>
@@ -167,20 +174,33 @@ export default function SavedBOMsPage() {
                                                     <TableHead>Ingredient</TableHead>
                                                     <TableHead>SKU</TableHead>
                                                     <TableHead className="text-right">Quantity</TableHead>
+                                                    <TableHead className="text-right">Cost Price</TableHead>
+                                                    <TableHead className="text-right">Cost Value</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {ingredients.map(ingredient => {
                                                     const ingredientInfo = getProductInfo(ingredient.recipe_product);
+                                                    const costPrice = parseFloat(ingredient.cost_price || '0');
+                                                    const quantity = parseFloat(ingredient.qty);
+                                                    const costValue = costPrice * quantity;
                                                     return (
                                                         <TableRow key={ingredient.id}>
                                                             <TableCell>{ingredientInfo.name}</TableCell>
                                                             <TableCell>{ingredientInfo.sku}</TableCell>
-                                                            <TableCell className="text-right font-mono">{parseFloat(ingredient.qty).toFixed(3)} {ingredientInfo.unit}</TableCell>
+                                                            <TableCell className="text-right font-mono">{quantity.toFixed(3)} {ingredientInfo.unit}</TableCell>
+                                                            <TableCell className="text-right font-mono">{currencySymbol}{costPrice.toFixed(2)}</TableCell>
+                                                            <TableCell className="text-right font-mono">{currencySymbol}{costValue.toFixed(2)}</TableCell>
                                                         </TableRow>
                                                     )
                                                 })}
                                             </TableBody>
+                                            <TableFooter>
+                                                <TableRow>
+                                                    <TableCell colSpan={4} className="text-right font-bold">Total Recipe Cost</TableCell>
+                                                    <TableCell className="text-right font-bold font-mono">{currencySymbol}{totalCost.toFixed(2)}</TableCell>
+                                                </TableRow>
+                                            </TableFooter>
                                         </Table>
                                     </AccordionContent>
                                 </AccordionItem>
