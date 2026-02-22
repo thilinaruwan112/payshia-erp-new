@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { fetcher } from '@/lib/api';
+import Image from 'next/image';
 
 interface Company {
     id: string;
@@ -16,6 +17,7 @@ interface Company {
     company_city: string;
     company_email: string;
     company_telephone: string;
+    org_logo?: string | null;
 }
 
 interface ProductWithApiResponse {
@@ -83,11 +85,14 @@ function PrintViewContent() {
       brand: brandMap.get(String(p.product.brand_id)) || 'N/A' 
   })));
 
+  const logoUrl = company?.org_logo ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${company.org_logo}` : null;
+
   return (
     <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
         <header className="flex justify-between items-start pb-4 border-b">
             <div>
-                <h1 className="text-lg font-bold">{company?.company_name || "Your Company"}</h1>
+                {logoUrl && <Image src={logoUrl} alt="Company Logo" width={60} height={60} />}
+                <h1 className="text-lg font-bold mt-2">{company?.company_name || "Your Company"}</h1>
                 <p>{company?.company_address}</p>
                 <p>{company?.company_telephone}</p>
             </div>
@@ -96,6 +101,11 @@ function PrintViewContent() {
             </div>
         </header>
         <p className="text-xs text-gray-600 mt-2">Report is generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
+        
+        <section className="mt-4 mb-6 text-xs text-gray-600">
+            <h3 className="font-bold mb-1">Filters Applied:</h3>
+            <p>None</p>
+        </section>
 
         <main className="mt-6">
             <table className="w-full text-left border-collapse">
