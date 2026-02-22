@@ -38,6 +38,7 @@ import { Separator } from '@/components/ui/separator';
 import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
+import { format } from 'date-fns';
 
 type Receipt = {
     id: string;
@@ -170,7 +171,7 @@ export default function ReceiptsPage() {
                           <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
                           <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                           <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
-                          <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-8 w-8" /></TableCell>
                       </TableRow>
                   ))
                 ) : (
@@ -306,3 +307,5 @@ export default function ReceiptsPage() {
     </div>
   );
 }
+
+    
