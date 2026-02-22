@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -66,7 +65,7 @@ export const DayEndSalesReportView = ({ reportData }: { reportData: ReportData }
                     </Card>
                      <Card className="bg-primary/10 border-primary col-span-2 lg:col-span-1">
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Cash In Hand</CardTitle></CardHeader>
-                        <CardContent><p className="text-2xl font-bold">{currencySymbol}{cashInHand.toFixed(2)}</p></CardContent>
+                        <CardContent><p className="text-3xl font-bold">{currencySymbol}{cashInHand.toFixed(2)}</p></CardContent>
                     </Card>
                 </div>
                  <h3 className="text-lg font-semibold mb-4">Receipts by Payment Type</h3>
@@ -78,7 +77,7 @@ export const DayEndSalesReportView = ({ reportData }: { reportData: ReportData }
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {reportData.receipts_by_payment_type.map(pm => (
+                        {(reportData.receipts_by_payment_type || []).map(pm => (
                              <TableRow key={pm.type_id}>
                                 <TableCell className="flex items-center gap-3 font-medium">
                                     {getPaymentIcon(pm.type_name)}

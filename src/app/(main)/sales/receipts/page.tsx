@@ -28,13 +28,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import type { User } from '@/lib/types';
+import { cn } from '@/lib/utils';
+import type { Invoice, User } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
 import { useLocation } from '@/components/location-provider';
 import { Separator } from '@/components/ui/separator';
+import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
 
@@ -60,6 +61,7 @@ export default function ReceiptsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
     const { company_id } = useLocation();
+    const { currencySymbol } = useCurrency();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 15;
 
@@ -181,7 +183,7 @@ export default function ReceiptsPage() {
                       <TableCell className="hidden md:table-cell">
                         <Badge variant="secondary">{getPaymentMethodText(receipt.type)}</Badge>
                       </TableCell>
-                      <TableCell className="text-right font-mono">${' '}{parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -266,7 +268,7 @@ export default function ReceiptsPage() {
                 <CardFooter className="bg-muted/50 p-4">
                   <div className="flex justify-between w-full font-semibold">
                       <span>Amount Paid</span>
-                      <span className="font-mono">${' '}{parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="font-mono">{currencySymbol}{parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </CardFooter>
               </Card>

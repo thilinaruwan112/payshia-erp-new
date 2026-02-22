@@ -9,12 +9,14 @@ import { useLocation } from './location-provider';
 import type { Order } from '@/lib/types';
 import { Skeleton } from './ui/skeleton';
 import { fetcher } from '@/lib/api';
+import { useCurrency } from '@/components/currency-provider';
 
 export function SalesChart() {
   const [data, setData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { company_id } = useLocation();
+  const { currencySymbol } = useCurrency();
 
   useEffect(() => {
     if (!company_id) {
@@ -88,7 +90,7 @@ export function SalesChart() {
           fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `$${value}`}
+          tickFormatter={(value) => `${currencySymbol}${value}`}
         />
         <Tooltip
           cursor={{ fill: 'hsl(var(--muted))' }}
