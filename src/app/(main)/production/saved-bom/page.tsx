@@ -23,7 +23,8 @@ import { useToast } from '@/hooks/use-toast';
 import { fetcher } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product, ProductVariant } from '@/lib/types';
-import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Printer } from 'lucide-react';
 
 interface RecipeItem {
     id: string;
@@ -106,6 +107,19 @@ export default function SavedBOMsPage() {
         return { name: `Variant ID: ${variantId}`, sku: 'N/A', unit: 'Nos' };
     };
 
+    const handlePrint = () => {
+        if (!company_id) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Company ID is not available for printing.',
+            });
+            return;
+        }
+        const url = `/production-print/saved-bom/print?company_id=${company_id}`;
+        window.open(url, '_blank');
+    };
+
     if (isLoading) {
         return (
             <div className="space-y-4">
@@ -118,11 +132,17 @@ export default function SavedBOMsPage() {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Saved Bills of Materials</h1>
-                <p className="text-muted-foreground">
-                    A list of all recipes configured in the system.
-                </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Saved Bills of Materials</h1>
+                    <p className="text-muted-foreground">
+                        A list of all recipes configured in the system.
+                    </p>
+                </div>
+                <Button onClick={handlePrint}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print
+                </Button>
             </div>
             <Card>
                 <CardHeader>
