@@ -39,6 +39,7 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { fetcher } from "@/lib/api";
 import { format } from "date-fns";
 import { Combobox } from "./ui/combobox";
+import { useCurrency } from "./currency-provider";
 
 interface ProductWithApiResponse {
     product: Product;
@@ -55,6 +56,7 @@ interface RecipeItem {
     recipe_type: string;
     created_by: string;
     created_at: string;
+    cost_price?: string;
 }
 
 const recipeItemSchema = z.object({
@@ -75,6 +77,7 @@ type BomFormValues = z.infer<typeof bomFormSchema>;
 export function BomForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
@@ -148,9 +151,28 @@ export function BomForm() {
   const quantityProduced = 1;
 
   useEffect(() => {
-    const items = recipes.filter(r => r.product_variant_id === finishedGoodId) || [];
-    setSelectedRecipeItems(items);
-  }, [finishedGoodId, recipes]);
+    async function fetchRecipe() {
+        if (!finishedGoodId || !company_id) {
+            setSelectedRecipeItems([]);
+            return;
+        }
+
+        const selectedProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v, productId: p.product.id}))).find(v => v.variant.id === finishedGoodId);
+        
+        if (!selectedProductInfo) return;
+
+        try {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes/get/filter?company_id=${company_id}&main_product=${selectedProductInfo.productId}&product_variant_id=${finishedGoodId}`);
+            if (!response.ok) throw new Error('Failed to fetch recipe for the selected product.');
+            const data = await response.json();
+            setSelectedRecipeItems(data.data || []);
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch recipe ingredients.' });
+            setSelectedRecipeItems([]);
+        }
+    }
+    fetchRecipe();
+  }, [finishedGoodId, company_id, products, toast]);
 
   const finishedGoodsOptions = React.useMemo(() => {
     return products
@@ -181,11 +203,16 @@ export function BomForm() {
 
       return selectedRecipeItems.map(item => {
           const ingredientInfo = allIngredientsInfo.find(ing => ing && ing.id === item.recipe_product);
+          const requiredQty = parseFloat(item.qty) * (quantityProduced || 1);
+          const costPrice = parseFloat(item.cost_price || '0');
+          const lineValue = requiredQty * costPrice;
           return {
               name: ingredientInfo?.name || `Product ID: ${item.recipe_product}`,
               sku: ingredientInfo?.sku || 'N/A',
-              requiredQty: parseFloat(item.qty) * (quantityProduced || 1),
+              requiredQty: requiredQty,
               unit: ingredientInfo?.unit || 'Nos',
+              costPrice: costPrice,
+              lineValue: lineValue,
           }
       });
   }, [selectedRecipeItems, quantityProduced, ingredients]);
@@ -320,17 +347,30 @@ export function BomForm() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Ingredient</TableHead>
-                                    <TableHead className="text-right">Required Qty</TableHead>
+                                    <TableHead className="text-right">Qty</TableHead>
+                                    <TableHead className="text-right">Cost</TableHead>
+                                    <TableHead className="text-right">Value</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {requiredIngredients.map(ing => (
                                     <TableRow key={ing.sku}>
                                         <TableCell>{ing.name} <span className="text-xs text-muted-foreground">({ing.sku})</span></TableCell>
-                                        <TableCell className="text-right font-mono">{ing.requiredQty} {ing.unit}</TableCell>
+                                        <TableCell className="text-right font-mono">{ing.requiredQty.toFixed(3)} {ing.unit}</TableCell>
+                                        <TableCell className="text-right font-mono">{currencySymbol}{ing.costPrice.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right font-mono">{currencySymbol}{ing.lineValue.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
+                             <TableFooter>
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-right font-bold">Total Recipe Cost</TableCell>
+                                    <TableCell className="text-right font-bold font-mono">
+                                        {currencySymbol}
+                                        {requiredIngredients.reduce((acc, item) => acc + item.lineValue, 0).toFixed(2)}
+                                    </TableCell>
+                                </TableRow>
+                            </TableFooter>
                         </Table>
                     ) : (
                         <p className="text-sm text-muted-foreground text-center py-4">No existing recipe found. Add ingredients below.</p>
