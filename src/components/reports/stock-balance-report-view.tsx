@@ -75,19 +75,19 @@ export const StockBalanceReportView = ({ reportData, products, brands }: { repor
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
                         <Card>
                             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Items</CardTitle></CardHeader>
-                            <CardContent><p className="text-2xl font-bold">{summary.item_count}</p></CardContent>
+                            <CardContent><p className="text-2xl font-bold">{summary.item_count.toLocaleString()}</p></CardContent>
                         </Card>
                         <Card>
                             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Cost Value</CardTitle></CardHeader>
-                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.grand_total_cost_value.toFixed(2)}</p></CardContent>
+                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.grand_total_cost_value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></CardContent>
                         </Card>
                         <Card>
                             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Sale Value</CardTitle></CardHeader>
-                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.grand_total_sale_value.toFixed(2)}</p></CardContent>
+                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.grand_total_sale_value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></CardContent>
                         </Card>
                         <Card>
                             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Potential Profit</CardTitle></CardHeader>
-                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.potential_profit.toFixed(2)}</p></CardContent>
+                            <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.potential_profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></CardContent>
                         </Card>
                     </div>
                 )}
@@ -120,8 +120,8 @@ export const StockBalanceReportView = ({ reportData, products, brands }: { repor
                                 <TableCell>{item.product_name}</TableCell>
                                 <TableCell>{item.variant_name}</TableCell>
                                 <TableCell>{item.brandName}</TableCell>
-                                <TableCell className="text-right font-mono font-bold">{parseFloat(item.stock_balance).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(item.total_cost_value).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono font-bold">{parseFloat(item.stock_balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                                <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(item.total_cost_value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                             </TableRow>
                         ))}
                         {paginatedData.length === 0 && (

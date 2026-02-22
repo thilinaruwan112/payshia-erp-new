@@ -17,6 +17,7 @@ interface Company {
     company_city: string;
     company_email: string;
     company_telephone: string;
+    org_logo?: string | null;
 }
 
 interface StockBalanceItem {
@@ -130,37 +131,40 @@ function PrintViewContent() {
 
   const { summary, data: items } = reportData;
 
+  const logoUrl = company?.org_logo ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${company.org_logo}` : null;
+
   return (
     <div className="bg-white text-black font-sans text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8">
         <header className="flex justify-between items-start pb-4 border-b">
             <div>
-                <h1 className="text-lg font-bold">{company?.company_name || "Your Company"}</h1>
+                 {logoUrl && <Image src={logoUrl} alt="Company Logo" width={60} height={60} />}
+                <h1 className="text-lg font-bold mt-2">{company?.company_name || "Your Company"}</h1>
                 <p>{company?.company_address}</p>
                 <p>{company?.company_telephone}</p>
             </div>
             <div className="text-right">
                 <h2 className="text-2xl font-bold uppercase">Stock Balance Report</h2>
+                <p className="text-xs text-gray-500">Report generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
             </div>
         </header>
-        <p className="text-xs text-gray-600 mt-2">Report is generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
 
         {summary && (
             <div className="grid grid-cols-4 gap-4 my-6 text-center">
                 <div className="p-2 rounded-md border bg-gray-50">
                     <p className="text-xs text-gray-500">Total Items</p>
-                    <p className="text-lg font-bold">{summary.item_count}</p>
+                    <p className="text-lg font-bold">{summary.item_count.toLocaleString()}</p>
                 </div>
                 <div className="p-2 rounded-md border bg-gray-50">
                     <p className="text-xs text-gray-500">Total Cost Value</p>
-                    <p className="text-lg font-bold">{currencySymbol}{summary.grand_total_cost_value.toFixed(2)}</p>
+                    <p className="text-lg font-bold">{currencySymbol}{summary.grand_total_cost_value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
                 <div className="p-2 rounded-md border bg-gray-50">
                     <p className="text-xs text-gray-500">Total Sale Value</p>
-                    <p className="text-lg font-bold">{currencySymbol}{summary.grand_total_sale_value.toFixed(2)}</p>
+                    <p className="text-lg font-bold">{currencySymbol}{summary.grand_total_sale_value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
                 <div className="p-2 rounded-md border bg-gray-50">
                     <p className="text-xs text-gray-500">Potential Profit</p>
-                    <p className="text-lg font-bold">{currencySymbol}{summary.potential_profit.toFixed(2)}</p>
+                    <p className="text-lg font-bold">{currencySymbol}{summary.potential_profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
             </div>
         )}
@@ -185,8 +189,8 @@ function PrintViewContent() {
                                 <td className="p-2 border border-gray-300">{item.product_name}</td>
                                 <td className="p-2 border border-gray-300">{item.variant_name}</td>
                                 <td className="p-2 border border-gray-300">{brandName}</td>
-                                <td className="p-2 border border-gray-300 text-right font-mono font-bold">{parseFloat(item.stock_balance).toFixed(2)}</td>
-                                <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{parseFloat(item.total_cost_value).toFixed(2)}</td>
+                                <td className="p-2 border border-gray-300 text-right font-mono font-bold">{parseFloat(item.stock_balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="p-2 border border-gray-300 text-right font-mono">{currencySymbol}{parseFloat(item.total_cost_value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                             </tr>
                         )
                     })}

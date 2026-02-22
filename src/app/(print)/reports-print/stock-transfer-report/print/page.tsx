@@ -17,6 +17,14 @@ interface Company {
     company_city: string;
     company_email: string;
     company_telephone: string;
+    org_logo?: string | null;
+}
+
+interface TransferItem {
+    id: string;
+    product_name: string;
+    sku: string;
+    quantity: string;
 }
 
 interface Transfer {
@@ -27,6 +35,7 @@ interface Transfer {
     transfer_date: string;
     status: 'pending' | 'in-transit' | 'completed';
     total_quantity: string;
+    items: TransferItem[];
 }
 
 interface ReportData {
@@ -135,15 +144,15 @@ function PrintViewContent() {
             <div className="grid grid-cols-4 gap-4 mb-6 text-center">
                 <div className="p-2 rounded-md border bg-gray-50">
                     <p className="text-xs text-gray-500">Total Transfers</p>
-                    <p className="text-lg font-bold">{summary?.total_transfers || 0}</p>
+                    <p className="text-lg font-bold">{(summary?.total_transfers || 0).toLocaleString()}</p>
                 </div>
                  <div className="p-2 rounded-md border bg-gray-50">
                     <p className="text-xs text-gray-500">Pending</p>
-                    <p className="text-lg font-bold">{summary?.pending_transfers || 0}</p>
+                    <p className="text-lg font-bold">{(summary?.pending_transfers || 0).toLocaleString()}</p>
                 </div>
                  <div className="p-2 rounded-md border bg-gray-50">
                     <p className="text-xs text-gray-500">Completed</p>
-                    <p className="text-lg font-bold">{summary?.completed_transfers || 0}</p>
+                    <p className="text-lg font-bold">{(summary?.completed_transfers || 0).toLocaleString()}</p>
                 </div>
                 <div className="p-2 rounded-md border bg-gray-50">
                     <p className="text-xs text-gray-500">Total Qty Moved</p>
@@ -174,7 +183,7 @@ function PrintViewContent() {
                                     {transfer.status}
                                 </span>
                             </td>
-                            <td className="p-2 border border-gray-300 text-right font-mono">{parseFloat(transfer.total_quantity).toFixed(2)}</td>
+                            <td className="p-2 border border-gray-300 text-right font-mono">{parseFloat(transfer.total_quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
                     ))}
                 </tbody>

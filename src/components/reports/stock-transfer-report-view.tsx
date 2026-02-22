@@ -106,7 +106,7 @@ export const StockTransferReportView = ({ reportData }: { reportData: ReportData
                                 <TableCell>{transfer.to_location_name}</TableCell>
                                 <TableCell>{format(new Date(transfer.transfer_date), 'yyyy-MM-dd')}</TableCell>
                                 <TableCell><Badge variant="secondary" className={cn(getStatusColor(transfer.status))}>{transfer.status}</Badge></TableCell>
-                                <TableCell className="text-right font-mono">{parseFloat(transfer.total_quantity).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono">{parseFloat(transfer.total_quantity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                                 <TableCell>
                                     <Button asChild variant="outline" size="sm">
                                         <Link href={`/transfers/${transfer.id}`}>
