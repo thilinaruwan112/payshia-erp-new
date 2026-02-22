@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { fetcher } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import type { Location } from '@/lib/types';
 
 interface Company {
     id: string;
@@ -62,6 +63,7 @@ function PrintViewContent() {
   const searchParams = useSearchParams();
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   
@@ -87,9 +89,10 @@ function PrintViewContent() {
             if (fromLocation) params.append('from_location', fromLocation);
             if (toLocation) params.append('to_location', toLocation);
 
-            const [reportRes, companyRes] = await Promise.all([
+            const [reportRes, companyRes, locationsRes] = await Promise.all([
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/stock-transfer?${params.toString()}`),
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/company?company_id=${companyId}`),
             ]);
 
             if (!reportRes.ok) throw new Error('Failed to fetch report data');
@@ -97,6 +100,7 @@ function PrintViewContent() {
             setReportData(resultData.data);
             
             if (companyRes.ok) setCompany(await companyRes.json());
+            if (locationsRes.ok) setLocations(await locationsRes.json());
 
         } catch(error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch report data.' });
@@ -113,6 +117,9 @@ function PrintViewContent() {
       setTimeout(() => window.print(), 1000);
     }
   }, [isLoading, reportData]);
+
+  const fromLocationName = fromLocation ? locations.find(l => l.location_id === fromLocation)?.location_name : null;
+  const toLocationName = toLocation ? locations.find(l => l.location_id === toLocation)?.location_name : null;
 
   if (isLoading) {
     return <div className="p-8"><Skeleton className="h-[800px] w-full" /></div>;
@@ -134,11 +141,18 @@ function PrintViewContent() {
             </div>
             <div className="text-right">
                 <h2 className="text-2xl font-bold uppercase">Stock Transfer Report</h2>
-                <p className="text-xs">
-                    {startDate && endDate ? `${format(new Date(startDate), 'dd/MM/yy')} to ${format(new Date(endDate), 'dd/MM/yy')}` : 'All Time'}
-                </p>
             </div>
         </header>
+
+         <section className="mt-4 mb-6 text-xs text-gray-600">
+            <h3 className="font-bold mb-1">Filters Applied:</h3>
+            <div className="grid grid-cols-4 gap-2">
+                <div><strong>From:</strong> {startDate ? format(new Date(startDate), 'dd/MM/yy') : 'All Time'}</div>
+                <div><strong>To:</strong> {endDate ? format(new Date(endDate), 'dd/MM/yy') : 'All Time'}</div>
+                {fromLocationName && <div><strong>From Location:</strong> {fromLocationName}</div>}
+                {toLocationName && <div><strong>To Location:</strong> {toLocationName}</div>}
+            </div>
+        </section>
         
         <main className="mt-6">
             <div className="grid grid-cols-4 gap-4 mb-6 text-center">

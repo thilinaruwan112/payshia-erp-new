@@ -8,7 +8,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
-import type { Product, ProductVariant, Brand } from '@/lib/types';
+import type { Product, ProductVariant, Brand, Location, Category } from '@/lib/types';
+import Image from 'next/image';
 
 interface Company {
     id: string;
@@ -55,6 +56,8 @@ function PrintViewContent() {
   const [company, setCompany] = useState<Company | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
@@ -83,24 +86,32 @@ function PrintViewContent() {
             if (categoryId) params.append('category_id', categoryId);
             if (brandId) params.append('brand_id', brandId);
             
-            const [reportRes, companyRes, brandsRes, productsRes] = await Promise.all([
+            const fetchPromises = [
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/stock-balance?${params.toString()}`),
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/brands/company?company_id=${companyId}`),
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${companyId}`),
-            ]);
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/master-categories/company?company_id=${companyId}`),
+            ];
+
+            if (locationId) {
+                fetchPromises.push(fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${locationId}`));
+            }
+
+            const [reportRes, companyRes, brandsRes, productsRes, categoriesRes, locationRes] = await Promise.all(fetchPromises);
 
             if (!reportRes.ok) throw new Error('Failed to fetch report data');
             const resultData = await reportRes.json();
             setReportData(resultData);
             
             if (companyRes.ok) setCompany(await companyRes.json());
-            
             if (brandsRes.ok) setBrands(await brandsRes.json() || []);
             if (productsRes.ok) {
                 const productData = await productsRes.json();
                 setProducts(productData.products || []);
             }
+            if (categoriesRes.ok) setCategories(await categoriesRes.json() || []);
+            if (locationRes?.ok) setLocation(await locationRes.json());
 
         } catch(error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch report data.' });
@@ -120,6 +131,19 @@ function PrintViewContent() {
 
   const brandMap = useMemo(() => new Map(brands.map(b => [b.id, b.name])), [brands]);
   const productMap = useMemo(() => new Map(products.map(p => [p.product.id, p.product])), [products]);
+  const allSkus = useMemo(() => {
+    return products.flatMap(p => 
+      (p.variants || []).map(v => ({
+        label: `${p.product.name} (${v.variant.sku})`,
+        value: v.variant.id,
+      }))
+    );
+  }, [products]);
+
+  const brandName = brandId ? brandMap.get(brandId) : null;
+  const categoryName = categoryId ? categories.find(c => c.id === categoryId)?.name : null;
+  const productName = productVariantId ? allSkus.find(s => s.value === productVariantId)?.label : null;
+
 
   if (isLoading) {
     return <div className="p-8"><Skeleton className="h-[800px] w-full" /></div>;
@@ -147,6 +171,17 @@ function PrintViewContent() {
                 <p className="text-xs text-gray-500">Report generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
             </div>
         </header>
+        
+        <section className="mt-4 mb-6 text-xs text-gray-600">
+            <h3 className="font-bold mb-1">Filters Applied:</h3>
+            <div className="grid grid-cols-4 gap-2">
+                <div><strong>Location:</strong> {location?.location_name || 'All'}</div>
+                {brandName && <div><strong>Brand:</strong> {brandName}</div>}
+                {categoryName && <div><strong>Category:</strong> {categoryName}</div>}
+                {productName && <div><strong>Item:</strong> {productName}</div>}
+            </div>
+        </section>
+
 
         {summary && (
             <div className="grid grid-cols-4 gap-4 my-6 text-center">
