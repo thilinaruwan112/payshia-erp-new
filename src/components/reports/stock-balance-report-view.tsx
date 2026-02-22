@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCurrency } from '../currency-provider';
+import type { Product, ProductVariant, Brand } from '@/lib/types';
 
 interface StockBalanceItem {
     product_id: string;
@@ -33,7 +34,13 @@ interface ReportData {
     };
 }
 
-export const StockBalanceReportView = ({ reportData }: { reportData: ReportData }) => {
+interface ProductWithApiResponse {
+    product: Product;
+    variants: { variant: ProductVariant }[];
+}
+
+
+export const StockBalanceReportView = ({ reportData, products, brands }: { reportData: ReportData, products: ProductWithApiResponse[], brands: Brand[] }) => {
     const { currencySymbol } = useCurrency();
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -41,12 +48,20 @@ export const StockBalanceReportView = ({ reportData }: { reportData: ReportData 
     
     const items = reportData?.data || [];
     const summary = reportData?.summary;
+    
+    const brandMap = useMemo(() => new Map(brands.map(b => [b.id, b.name])), [brands]);
+    const productMap = useMemo(() => new Map(products.map(p => [p.product.id, p.product])), [products]);
 
     const filteredData = useMemo(() => 
-        items.filter(item =>
+        items.map(item => {
+            const productDetails = productMap.get(item.product_id);
+            const brandName = productDetails ? brandMap.get(String(productDetails.brand_id)) || 'N/A' : 'N/A';
+            return { ...item, brandName };
+        }).filter(item =>
             item.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.variant_name.toLowerCase().includes(searchTerm.toLowerCase())
-    ), [items, searchTerm]);
+            item.variant_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.brandName.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [items, searchTerm, productMap, brandMap]);
 
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
     const paginatedData = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -63,11 +78,11 @@ export const StockBalanceReportView = ({ reportData }: { reportData: ReportData 
                             <CardContent><p className="text-2xl font-bold">{summary.item_count}</p></CardContent>
                         </Card>
                         <Card>
-                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Stock Value (Cost)</CardTitle></CardHeader>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Cost Value</CardTitle></CardHeader>
                             <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.grand_total_cost_value.toFixed(2)}</p></CardContent>
                         </Card>
                         <Card>
-                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Stock Value (Sale)</CardTitle></CardHeader>
+                            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Sale Value</CardTitle></CardHeader>
                             <CardContent><p className="text-2xl font-bold">{currencySymbol}{summary.grand_total_sale_value.toFixed(2)}</p></CardContent>
                         </Card>
                         <Card>
@@ -78,7 +93,7 @@ export const StockBalanceReportView = ({ reportData }: { reportData: ReportData 
                 )}
                  <div className="pt-4">
                     <Input
-                        placeholder="Search by product or variant name..."
+                        placeholder="Search by product, variant, or brand..."
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
@@ -94,11 +109,9 @@ export const StockBalanceReportView = ({ reportData }: { reportData: ReportData 
                         <TableRow>
                             <TableHead>Product Name</TableHead>
                             <TableHead>Variant Name</TableHead>
-                            <TableHead className="text-right">Sale Price</TableHead>
-                            <TableHead className="text-right">Cost Price</TableHead>
-                            <TableHead className="text-right font-bold">Balance</TableHead>
-                            <TableHead className="text-right">Total Cost Value</TableHead>
-                            <TableHead className="text-right">Total Sale Value</TableHead>
+                            <TableHead>Brand</TableHead>
+                            <TableHead className="text-right">Stock Balance</TableHead>
+                            <TableHead className="text-right">Line Value</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -106,16 +119,14 @@ export const StockBalanceReportView = ({ reportData }: { reportData: ReportData 
                             <TableRow key={item.product_variant_id}>
                                 <TableCell>{item.product_name}</TableCell>
                                 <TableCell>{item.variant_name}</TableCell>
-                                <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(item.sale_price).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(item.cost_price).toFixed(2)}</TableCell>
+                                <TableCell>{item.brandName}</TableCell>
                                 <TableCell className="text-right font-mono font-bold">{parseFloat(item.stock_balance).toFixed(2)}</TableCell>
                                 <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(item.total_cost_value).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(item.total_sale_value).toFixed(2)}</TableCell>
                             </TableRow>
                         ))}
                         {paginatedData.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">
+                                <TableCell colSpan={5} className="h-24 text-center">
                                     No stock data available for the selected criteria.
                                 </TableCell>
                             </TableRow>

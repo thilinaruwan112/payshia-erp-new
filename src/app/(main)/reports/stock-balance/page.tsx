@@ -1,4 +1,3 @@
-
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -87,7 +86,7 @@ export default function StockBalanceReportPage() {
             const response = await fetcher(url);
             if (!response.ok) throw new Error('Failed to fetch report data');
             const data = await response.json();
-            setReportData(data || { data: [], summary: {} });
+            setReportData(data);
         } catch (error) {
             toast({ variant: 'destructive', title: 'Error', description: `Could not fetch report data.` });
         } finally {
@@ -157,7 +156,7 @@ export default function StockBalanceReportPage() {
                 </div>
             </div>
 
-            {reportData && <StockBalanceReportView reportData={reportData} />}
+            {reportData && <StockBalanceReportView reportData={reportData} products={products} brands={brands} />}
         </div>
     );
 }
