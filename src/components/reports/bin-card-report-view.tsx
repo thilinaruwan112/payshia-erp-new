@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
@@ -40,6 +40,34 @@ export const BinCardReportView = ({ reportData }: { reportData: ReportData }) =>
             <CardHeader>
                 <CardTitle>Bin Card Report</CardTitle>
                 <CardDescription>Detailed stock movement for the selected item and period.</CardDescription>
+                {summary && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Total In</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-2xl font-bold text-green-600">{summary.total_in.toFixed(2)}</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Total Out</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-2xl font-bold text-destructive">{summary.total_out.toFixed(2)}</p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">Final Balance</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-2xl font-bold">{summary.final_balance.toFixed(2)}</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
             </CardHeader>
             <CardContent>
                 <Table>
@@ -67,13 +95,15 @@ export const BinCardReportView = ({ reportData }: { reportData: ReportData }) =>
                             </TableRow>
                         )}
                     </TableBody>
-                    {summary && paginatedTransactions.length > 0 && (
-                        <TableRow className="font-bold bg-muted/50">
-                            <TableCell colSpan={2} className="text-right">Totals</TableCell>
-                            <TableCell className="text-right font-mono text-green-600">{summary.total_in.toFixed(2)}</TableCell>
-                            <TableCell className="text-right font-mono text-destructive">{summary.total_out.toFixed(2)}</TableCell>
-                            <TableCell className="text-right font-mono">{summary.final_balance.toFixed(2)}</TableCell>
-                        </TableRow>
+                     {summary && paginatedTransactions.length > 0 && (
+                        <TableFooter>
+                            <TableRow className="font-bold bg-muted/50">
+                                <TableCell colSpan={2} className="text-right">Totals</TableCell>
+                                <TableCell className="text-right font-mono text-green-600">{summary.total_in.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono text-destructive">{summary.total_out.toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-mono">{summary.final_balance.toFixed(2)}</TableCell>
+                            </TableRow>
+                        </TableFooter>
                     )}
                 </Table>
             </CardContent>
