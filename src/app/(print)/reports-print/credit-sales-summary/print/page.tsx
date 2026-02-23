@@ -54,7 +54,7 @@ function PrintViewContent() {
   const companyId = searchParams.get('company_id');
   const startDate = searchParams.get('start_date');
   const endDate = searchParams.get('end_date');
-  const customerId = searchParams.get('customer_id');
+  const customerCode = searchParams.get('customer_code');
 
   useEffect(() => {
     async function fetchData() {
@@ -69,7 +69,7 @@ function PrintViewContent() {
             const params = new URLSearchParams({ company_id: companyId });
             if (startDate) params.append('start_date', startDate);
             if (endDate) params.append('end_date', endDate);
-            if (customerId) params.append('customer_id', customerId);
+            if (customerCode) params.append('customer_code', customerCode);
 
             const [reportRes, companyRes, customerRes] = await Promise.all([
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/credit-sales-summary?${params.toString()}`),
@@ -85,8 +85,8 @@ function PrintViewContent() {
             if (customerRes.ok) {
                 const customersData = await customerRes.json() || [];
                 setCustomers(customersData);
-                if (customerId) {
-                    setCustomer(customersData.find((c: User) => c.customer_id === customerId) || null);
+                if (customerCode) {
+                    setCustomer(customersData.find((c: User) => c.customer_id === customerCode) || null);
                 }
             }
 
@@ -97,7 +97,7 @@ function PrintViewContent() {
         }
     }
     fetchData();
-  }, [companyId, startDate, endDate, customerId, toast]);
+  }, [companyId, startDate, endDate, customerCode, toast]);
 
   useEffect(() => {
     if (!isLoading && reportData) {
