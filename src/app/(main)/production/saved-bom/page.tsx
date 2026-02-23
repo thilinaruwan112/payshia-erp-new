@@ -23,8 +23,9 @@ import { fetcher } from '@/lib/api';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Product, ProductVariant } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Printer } from 'lucide-react';
+import { Printer, Pencil } from 'lucide-react';
 import { useCurrency } from '@/components/currency-provider';
+import Link from 'next/link';
 
 interface RecipeItem {
     id: string;
@@ -162,9 +163,16 @@ export default function SavedBOMsPage() {
                             return (
                                 <AccordionItem value={finishedGoodVariantId} key={finishedGoodVariantId}>
                                     <AccordionTrigger>
-                                        <div className="flex flex-col items-start">
-                                            <span className="font-semibold text-base">{finishedGoodInfo.name}</span>
-                                            <span className="text-sm text-muted-foreground font-normal">{finishedGoodInfo.sku}</span>
+                                        <div className="flex justify-between items-center w-full pr-2">
+                                            <div className="flex flex-col items-start text-left">
+                                                <span className="font-semibold text-base">{finishedGoodInfo.name}</span>
+                                                <span className="text-sm text-muted-foreground font-normal">{finishedGoodInfo.sku}</span>
+                                            </div>
+                                            <Button variant="ghost" size="icon" asChild onClick={(e) => e.stopPropagation()}>
+                                                <Link href={`/production/saved-bom/${finishedGoodVariantId}`}>
+                                                    <Pencil className="h-4 w-4" />
+                                                </Link>
+                                            </Button>
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent>

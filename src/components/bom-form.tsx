@@ -74,7 +74,22 @@ const bomFormSchema = z.object({
 
 type BomFormValues = z.infer<typeof bomFormSchema>;
 
-export function BomForm() {
+interface BomData {
+    finishedGoodId: string;
+    items: {
+        recipe_product: string;
+        quantity: number;
+        unit: string;
+        cost_price: number;
+    }[];
+}
+
+interface BomFormProps {
+    bomToEdit?: BomData;
+}
+
+
+export function BomForm({ bomToEdit }: BomFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
@@ -86,15 +101,19 @@ export function BomForm() {
   const [selectedRecipeItems, setSelectedRecipeItems] = useState<RecipeItem[]>([]);
   const [ingredients, setIngredients] = useState<ProductWithApiResponse[]>([]);
 
+  const defaultValues = {
+      productId: bomToEdit?.finishedGoodId || "",
+      items: bomToEdit?.items || [{ recipe_product: "", quantity: 1, unit: "Nos", cost_price: 0 }],
+      notes: ""
+  }
+
   const form = useForm<BomFormValues>({
     resolver: zodResolver(bomFormSchema),
-    defaultValues: {
-      items: [{ recipe_product: "", quantity: 1, unit: "Nos", cost_price: 0 }],
-    },
+    defaultValues,
     mode: "onChange",
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "items",
   });
@@ -171,8 +190,10 @@ export function BomForm() {
             setSelectedRecipeItems([]);
         }
     }
-    fetchRecipe();
-  }, [finishedGoodId, company_id, products, toast]);
+    if (!bomToEdit) {
+      fetchRecipe();
+    }
+  }, [finishedGoodId, company_id, products, toast, bomToEdit]);
 
   const finishedGoodsOptions = React.useMemo(() => {
     return products
@@ -187,7 +208,9 @@ export function BomForm() {
   }, [products]);
   
   const requiredIngredients = React.useMemo(() => {
-      if (selectedRecipeItems.length === 0) return [];
+      const itemsToDisplay = bomToEdit ? bomToEdit.items.map(i => ({...i, recipe_product: i.recipe_product, qty: String(i.quantity), cost_price: String(i.cost_price) })) : selectedRecipeItems;
+      
+      if (itemsToDisplay.length === 0) return [];
       
       const allIngredientsInfo = ingredients.flatMap(p => 
         (p.variants || []).map(v => {
@@ -201,7 +224,7 @@ export function BomForm() {
         }).filter(Boolean) as { id: string; name: string; sku: string; unit: string; }[]
       );
 
-      return selectedRecipeItems.map(item => {
+      return itemsToDisplay.map(item => {
           const ingredientInfo = allIngredientsInfo.find(ing => ing && ing.id === item.recipe_product);
           const requiredQty = parseFloat(item.qty) * (quantityProduced || 1);
           const costPrice = parseFloat(item.cost_price || '0');
@@ -215,10 +238,10 @@ export function BomForm() {
               lineValue: lineValue,
           }
       });
-  }, [selectedRecipeItems, quantityProduced, ingredients]);
+  }, [selectedRecipeItems, quantityProduced, ingredients, bomToEdit]);
 
   async function onSubmit(data: BomFormValues) {
-    setIsLoading(true);
+    setIsSubmitting(true);
 
     const finishedGoodVariantId = data.productId;
     const finishedGoodProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === finishedGoodVariantId);
@@ -226,9 +249,28 @@ export function BomForm() {
 
     if (!finishedGoodProductInfo || !company_id) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not find finished good product details.' });
-        setIsLoading(false);
+        setIsSubmitting(false);
         return;
     }
+    
+     if (bomToEdit) { // This is an edit
+      try {
+        const recipesResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes/get/filter?company_id=${company_id}&product_variant_id=${finishedGoodVariantId}`);
+        if(recipesResponse.ok) {
+            const recipesData = await recipesResponse.json();
+            const originalRecipeItems: RecipeItem[] = recipesData.data || [];
+            for (const item of originalRecipeItems) {
+                await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes/${item.id}`, { method: 'DELETE' });
+            }
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        toast({ variant: 'destructive', title: 'Update Failed', description: `Could not clear old recipe: ${errorMessage}` });
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
 
     try {
         for (const item of data.items) {
@@ -255,18 +297,18 @@ export function BomForm() {
         }
         
         toast({
-          title: "Bill of Materials Saved!",
-          description: "The recipe has been successfully created.",
+          title: bomToEdit ? "Bill of Materials Updated!" : "Bill of Materials Saved!",
+          description: "The recipe has been successfully saved.",
         });
         
-        router.push('/production/bom');
+        router.push('/production/saved-bom');
         router.refresh();
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         toast({ variant: 'destructive', title: 'Submission Failed', description: errorMessage });
     } finally {
-        setIsLoading(false);
+        setIsSubmitting(false);
     }
   }
 
@@ -276,6 +318,9 @@ export function BomForm() {
     const costPrice = item?.cost_price || 0;
     return acc + (quantity * costPrice);
   }, 0);
+  
+  const pageTitle = bomToEdit ? 'Edit Bill of Materials' : 'Create Bill of Materials';
+  const pageDescription = bomToEdit ? 'Modify the ingredients for this finished good.' : 'Define the recipe or components for a finished product.';
 
   return (
     <Form {...form}>
@@ -283,10 +328,10 @@ export function BomForm() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-nowrap">
-              Create Bill of Materials
+              {pageTitle}
             </h1>
             <p className="text-muted-foreground">
-              Define the recipe or components for a finished product.
+              {pageDescription}
             </p>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -295,12 +340,12 @@ export function BomForm() {
               type="button"
               onClick={() => router.back()}
               className="w-full"
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save BOM
             </Button>
           </div>
@@ -310,7 +355,7 @@ export function BomForm() {
             <Card>
                 <CardHeader>
                     <CardTitle>Finished Good</CardTitle>
-                    <CardDescription>Select the item you are creating a recipe for.</CardDescription>
+                    <CardDescription>Select the item you are creating or editing a recipe for.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <FormField
@@ -318,7 +363,7 @@ export function BomForm() {
                         name="productId"
                         render={({ field }) => (
                             <FormItem>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value} disabled={!!bomToEdit}>
                                     <FormControl>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select an item with a recipe" />
@@ -383,7 +428,7 @@ export function BomForm() {
          <Card>
             <CardHeader>
                 <CardTitle>Add/Update Ingredients</CardTitle>
-                <CardDescription>Add all the components required to make this item. This will update the existing recipe.</CardDescription>
+                <CardDescription>Add all the components required to make this item. This will {bomToEdit ? 'overwrite' : 'define'} the existing recipe.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>
