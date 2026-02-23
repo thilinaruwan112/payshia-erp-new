@@ -4,9 +4,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCurrency } from '../currency-provider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { Badge } from '../ui/badge';
 import { Banknote, CreditCard, Landmark, CircleDollarSign } from 'lucide-react';
 import React from 'react';
+import type { PaymentMethod } from '@/lib/types';
 
 interface ReportData {
     invoice_total: string;
@@ -15,9 +15,8 @@ interface ReportData {
     refund_total: string;
     cash_inhand: number;
     creditsale: number;
-    receipts_by_payment_type: {
-        type_id: string;
-        type_name: string;
+    receipts_breakdown: {
+        type_name: string; // This is actually the ID
         amount: string;
     }[];
 }
@@ -32,12 +31,17 @@ const getPaymentIcon = (type: string) => {
 }
 
 
-export const DayEndSalesReportView = ({ reportData }: { reportData: ReportData }) => {
+export const DayEndSalesReportView = ({ reportData, paymentMethods }: { reportData: ReportData, paymentMethods: PaymentMethod[] }) => {
     const { currencySymbol } = useCurrency();
     const receiptTotal = parseFloat(reportData.receipt_total || '0');
     const returnTotal = parseFloat(reportData.return_total || '0');
     const cashInHand = reportData.cash_inhand || 0;
     const creditSale = reportData.creditsale || 0;
+
+    const getPaymentMethodNameById = (id: string) => {
+        if (id === "0") return "All Methods";
+        return paymentMethods.find(pm => pm.id === id)?.method || `ID: ${id}`;
+    };
 
     return (
         <Card className="w-full">
@@ -77,15 +81,18 @@ export const DayEndSalesReportView = ({ reportData }: { reportData: ReportData }
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {(reportData.receipts_by_payment_type || []).map(pm => (
-                             <TableRow key={pm.type_id}>
-                                <TableCell className="flex items-center gap-3 font-medium">
-                                    {getPaymentIcon(pm.type_name)}
-                                    {pm.type_name}
-                                </TableCell>
-                                <TableCell className="text-right font-mono text-lg">{currencySymbol}{parseFloat(pm.amount).toFixed(2)}</TableCell>
-                            </TableRow>
-                        ))}
+                        {(reportData.receipts_breakdown || []).map(pm => {
+                            const methodName = getPaymentMethodNameById(pm.type_name);
+                            return (
+                                <TableRow key={pm.type_name}>
+                                    <TableCell className="flex items-center gap-3 font-medium">
+                                        {getPaymentIcon(methodName)}
+                                        {methodName}
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono text-lg">{currencySymbol}{parseFloat(pm.amount).toFixed(2)}</TableCell>
+                                </TableRow>
+                            )
+                        })}
                     </TableBody>
                 </Table>
             </CardContent>

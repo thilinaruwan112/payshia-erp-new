@@ -25,8 +25,7 @@ interface ReportData {
     refund_total: string;
     cash_inhand: number;
     creditsale: number;
-    receipts_by_payment_type: {
-        type_id: string;
+    receipts_breakdown: {
         type_name: string;
         amount: string;
     }[];
@@ -88,8 +87,8 @@ export default function DayEndSalesReportPage() {
                 date: format(singleDate, 'yyyy-MM-dd'),
                 location_id: filterValues['location'],
             });
-            if (filterValues['payment_type'] && filterValues['payment_type'] !== 'all') {
-                params.append('payment_type', filterValues['payment_type']);
+            if (filterValues['payment_method_id'] && filterValues['payment_method_id'] !== 'all') {
+                params.append('payment_method_id', filterValues['payment_method_id']);
             }
             const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/get/day-and-report?${params.toString()}`;
             
@@ -97,7 +96,12 @@ export default function DayEndSalesReportPage() {
             if (!response.ok) throw new Error('Failed to fetch report data');
             
             const data = await response.json();
-            setReportData(data);
+            if (data.status === 'success') {
+                setReportData(data.data);
+            } else {
+                setReportData(null);
+                toast({ variant: 'destructive', title: 'No Data', description: data.message || 'No data found for the selected criteria.' });
+            }
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
@@ -121,8 +125,8 @@ export default function DayEndSalesReportPage() {
         location_id: filterValues['location'],
       });
 
-      if (filterValues['payment_type'] && filterValues['payment_type'] !== 'all') {
-        params.append('payment_type', filterValues['payment_type']);
+      if (filterValues['payment_method_id'] && filterValues['payment_method_id'] !== 'all') {
+        params.append('payment_method_id', filterValues['payment_method_id']);
       }
 
       const url = `/reports-print/day-end-sale/print?${params.toString()}`;
@@ -172,7 +176,7 @@ export default function DayEndSalesReportPage() {
                 </div>
                 <div className="space-y-1.5">
                     <Label>Payment Type</Label>
-                    <Combobox options={paymentMethodOptions} value={filterValues['payment_type'] || ''} onChange={(value) => handleFilterChange('payment_type', value)} placeholder="All payment types" notFoundText="No types found." />
+                    <Combobox options={paymentMethodOptions} value={filterValues['payment_method_id'] || ''} onChange={(value) => handleFilterChange('payment_method_id', value)} placeholder="All payment types" notFoundText="No types found." />
                 </div>
                 <div className="flex items-center gap-2">
                      <Button onClick={handleViewReport} disabled={isFetching} className="w-full md:w-auto">
@@ -187,7 +191,7 @@ export default function DayEndSalesReportPage() {
             </div>
             
             {reportData && (
-                <DayEndSalesReportView reportData={reportData} />
+                <DayEndSalesReportView reportData={reportData} paymentMethods={paymentMethods} />
             )}
         </div>
     );

@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
 import { Banknote, CreditCard, Landmark, CircleDollarSign } from 'lucide-react';
+import type { PaymentMethod } from '@/lib/types';
 
 
 interface Company {
@@ -27,9 +28,8 @@ interface ReportData {
     refund_total: string;
     cash_inhand: number;
     creditsale: number;
-    receipts_by_payment_type: {
-        type_id: string;
-        type_name: string;
+    receipts_breakdown: {
+        type_name: string; // This is actually the ID
         amount: string;
     }[];
 }
@@ -48,6 +48,7 @@ function PrintViewContent() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
   
@@ -55,7 +56,7 @@ function PrintViewContent() {
   const locationName = searchParams.get('location');
   const date = searchParams.get('date');
   const locationId = searchParams.get('location_id');
-  const paymentType = searchParams.get('payment_type');
+  const paymentMethodId = searchParams.get('payment_method_id');
 
   useEffect(() => {
     async function fetchData() {
@@ -72,22 +73,29 @@ function PrintViewContent() {
                 company_id: companyId,
                 location_id: locationId,
             });
-            if (paymentType && paymentType !== 'all') {
-                params.append('payment_type', paymentType);
+            if (paymentMethodId && paymentMethodId !== 'all') {
+                params.append('payment_method_id', paymentMethodId);
             }
             const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/get/day-and-report?${params.toString()}`;
 
-            const [reportRes, companyRes] = await Promise.all([
+            const [reportRes, companyRes, paymentMethodsRes] = await Promise.all([
                  fetcher(url),
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
+                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment-method/filter/by-company?company_id=${companyId}`),
             ]);
 
             if (!reportRes.ok) throw new Error('Failed to fetch report data');
             const resultData = await reportRes.json();
             
-            setReportData(resultData);
+            if (resultData.status === 'success') {
+                setReportData(resultData.data);
+            } else {
+                setReportData(null);
+                 toast({ variant: 'destructive', title: 'No Data', description: resultData.message || 'No data found for the selected criteria.' });
+            }
             
             if (companyRes.ok) setCompany(await companyRes.json());
+            if (paymentMethodsRes.ok) setPaymentMethods(await paymentMethodsRes.json() || []);
 
         } catch(error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch report data.' });
@@ -96,7 +104,12 @@ function PrintViewContent() {
         }
     }
     fetchData();
-  }, [companyId, locationName, date, locationId, paymentType, toast]);
+  }, [companyId, locationName, date, locationId, paymentMethodId, toast]);
+
+  const getPaymentMethodNameById = (id: string) => {
+    if (id === "0") return "All Methods";
+    return paymentMethods.find(pm => pm.id === id)?.method || `ID: ${id}`;
+  };
 
   useEffect(() => {
     if (!isLoading && reportData) {
@@ -166,15 +179,18 @@ function PrintViewContent() {
                     </tr>
                 </thead>
                 <tbody>
-                    {reportData.receipts_by_payment_type.map(pm => (
-                        <tr key={pm.type_id} className="border-b">
-                            <td className="p-2 border border-gray-300 font-medium flex items-center gap-3">
-                                {getPaymentIcon(pm.type_name)}
-                                {pm.type_name}
-                            </td>
-                            <td className="p-2 border border-gray-300 text-right font-mono text-base">{currencySymbol}{parseFloat(pm.amount).toFixed(2)}</td>
-                        </tr>
-                    ))}
+                    {(reportData.receipts_breakdown || []).map(pm => {
+                        const methodName = getPaymentMethodNameById(pm.type_name);
+                        return (
+                            <tr key={pm.type_name} className="border-b">
+                                <td className="p-2 border border-gray-300 font-medium flex items-center gap-3">
+                                    {getPaymentIcon(methodName)}
+                                    {methodName}
+                                </td>
+                                <td className="p-2 border border-gray-300 text-right font-mono text-base">{currencySymbol}{parseFloat(pm.amount).toFixed(2)}</td>
+                            </tr>
+                        )
+                    })}
                 </tbody>
             </table>
         </main>
