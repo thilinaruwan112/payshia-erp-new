@@ -38,7 +38,7 @@ const getPaymentIcon = (type: string) => {
     switch (type.toLowerCase()) {
         case 'cash': return <Banknote className="h-5 w-5 text-green-500" />;
         case 'card': return <CreditCard className="h-5 w-5 text-blue-500" />;
-        case 'bank': return <Landmark className="h-5 w-5 text-purple-500" />;
+        case 'bank transfer': return <Landmark className="h-5 w-5 text-purple-500" />;
         default: return <CircleDollarSign className="h-5 w-5 text-muted-foreground" />;
     }
 }
@@ -87,11 +87,11 @@ function PrintViewContent() {
             if (!reportRes.ok) throw new Error('Failed to fetch report data');
             const resultData = await reportRes.json();
             
-            if (resultData.status === 'success') {
+            if (resultData.status === 'success' && resultData.data?.status === 'success') {
                 setReportData(resultData.data);
             } else {
                 setReportData(null);
-                 toast({ variant: 'destructive', title: 'No Data', description: resultData.message || 'No data found for the selected criteria.' });
+                 toast({ variant: 'destructive', title: 'No Data', description: resultData.data?.message || resultData.message || 'No data found for the selected criteria.' });
             }
             
             if (companyRes.ok) setCompany(await companyRes.json());
@@ -107,9 +107,14 @@ function PrintViewContent() {
   }, [companyId, locationName, date, locationId, paymentMethodId, toast]);
 
   const getPaymentMethodNameById = (id: string) => {
-    if (id === "0") return "All Methods";
-    return paymentMethods.find(pm => pm.id === id)?.method || `ID: ${id}`;
+    if (id === "0") return "Cash";
+    const foundMethod = paymentMethods.find(pm => pm.id === id);
+    if (foundMethod) return foundMethod.method;
+    if (id === "1") return "Card";
+    if (id === "2") return "Bank Transfer";
+    return `ID: ${id}`;
   };
+
 
   useEffect(() => {
     if (!isLoading && reportData) {
@@ -160,11 +165,15 @@ function PrintViewContent() {
                     <h3 className="text-xs text-gray-500 uppercase font-semibold">Total Returns</h3>
                     <p className="text-2xl font-bold text-red-600">-{currencySymbol}{parseFloat(reportData.return_total).toFixed(2)}</p>
                 </div>
+                 <div className="p-4 rounded-lg border bg-gray-50">
+                    <h3 className="text-xs text-gray-500 uppercase font-semibold">Total Refunds</h3>
+                    <p className="text-2xl font-bold text-red-600">-{currencySymbol}{parseFloat(reportData.refund_total).toFixed(2)}</p>
+                </div>
                 <div className="p-4 rounded-lg border bg-gray-50">
                     <h3 className="text-xs text-gray-500 uppercase font-semibold">Credit Sales</h3>
                     <p className="text-2xl font-bold">{currencySymbol}{parseFloat(String(reportData.creditsale)).toFixed(2)}</p>
                 </div>
-                 <div className="p-4 rounded-lg border-2 border-blue-600 bg-blue-50 col-span-2">
+                 <div className="p-4 rounded-lg border-2 border-blue-600 bg-blue-50">
                     <h3 className="text-xs text-blue-800 uppercase font-semibold">Cash In Hand</h3>
                     <p className="text-3xl font-bold text-blue-700">{currencySymbol}{parseFloat(String(reportData.cash_inhand)).toFixed(2)}</p>
                 </div>
