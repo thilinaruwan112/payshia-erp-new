@@ -31,7 +31,7 @@ const getPaymentIcon = (type: string) => {
     switch (type.toLowerCase()) {
         case 'cash': return <Banknote className="h-5 w-5 text-green-500" />;
         case 'card': return <CreditCard className="h-5 w-5 text-blue-500" />;
-        case 'bank': return <Landmark className="h-5 w-5 text-purple-500" />;
+        case 'bank transfer': return <Landmark className="h-5 w-5 text-purple-500" />;
         default: return <CircleDollarSign className="h-5 w-5 text-muted-foreground" />;
     }
 }
@@ -41,12 +41,24 @@ export const DayEndSalesReportView = ({ reportData, paymentMethods }: { reportDa
     const { currencySymbol } = useCurrency();
     const receiptTotal = parseFloat(reportData.receipt_total || '0');
     const returnTotal = parseFloat(reportData.return_total || '0');
+    const refundTotal = parseFloat(reportData.refund_total || '0');
     const cashInHand = reportData.cash_inhand || 0;
     const creditSale = reportData.creditsale || 0;
 
     const getPaymentMethodNameById = (id: string) => {
-        if (id === "0") return "All Methods";
-        return paymentMethods.find(pm => pm.id === id)?.method || `ID: ${id}`;
+        // Handle special/hardcoded cases first
+        if (id === "0") return "Cash";
+        
+        // Then try to find from the dynamic list
+        const foundMethod = paymentMethods.find(pm => pm.id === id);
+        if (foundMethod) return foundMethod.method;
+        
+        // Fallback for other potential hardcoded values if needed
+        if (id === "1") return "Card";
+        if (id === "2") return "Bank Transfer";
+        
+        // Final fallback
+        return `ID: ${id}`;
     };
 
     return (
@@ -70,10 +82,14 @@ export const DayEndSalesReportView = ({ reportData, paymentMethods }: { reportDa
                         <CardContent><p className="text-2xl font-bold text-destructive">-{currencySymbol}{returnTotal.toFixed(2)}</p></CardContent>
                     </Card>
                     <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Total Refunds</CardTitle></CardHeader>
+                        <CardContent><p className="text-2xl font-bold text-destructive">-{currencySymbol}{refundTotal.toFixed(2)}</p></CardContent>
+                    </Card>
+                    <Card>
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Credit Sales</CardTitle></CardHeader>
                         <CardContent><p className="text-2xl font-bold">{currencySymbol}{creditSale.toFixed(2)}</p></CardContent>
                     </Card>
-                     <Card className="bg-primary/10 border-primary col-span-2 lg:col-span-1">
+                     <Card className="bg-primary/10 border-primary">
                         <CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Cash In Hand</CardTitle></CardHeader>
                         <CardContent><p className="text-3xl font-bold">{currencySymbol}{cashInHand.toFixed(2)}</p></CardContent>
                     </Card>
