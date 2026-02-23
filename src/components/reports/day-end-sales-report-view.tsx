@@ -9,6 +9,12 @@ import React from 'react';
 import type { PaymentMethod } from '@/lib/types';
 
 interface ReportData {
+    status: string;
+    date: string;
+    company_id: string;
+    location_id: string;
+    payment_method_id: string;
+    payment_method_name: string;
     invoice_total: string;
     receipt_total: string;
     return_total: string;

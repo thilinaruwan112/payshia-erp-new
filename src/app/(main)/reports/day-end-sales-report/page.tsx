@@ -19,6 +19,12 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ReportData {
+    status: string;
+    date: string;
+    company_id: string;
+    location_id: string;
+    payment_method_id: string;
+    payment_method_name: string;
     invoice_total: string;
     receipt_total: string;
     return_total: string;
@@ -26,7 +32,7 @@ interface ReportData {
     cash_inhand: number;
     creditsale: number;
     receipts_breakdown: {
-        type_name: string;
+        type_name: string; // This is actually the ID
         amount: string;
     }[];
 }
@@ -96,11 +102,11 @@ export default function DayEndSalesReportPage() {
             if (!response.ok) throw new Error('Failed to fetch report data');
             
             const data = await response.json();
-            if (data.status === 'success') {
+            if (data.status === 'success' && data.data?.status === 'success') {
                 setReportData(data.data);
             } else {
                 setReportData(null);
-                toast({ variant: 'destructive', title: 'No Data', description: data.message || 'No data found for the selected criteria.' });
+                toast({ variant: 'destructive', title: 'No Data', description: data.data?.message || data.message || 'No data found for the selected criteria.' });
             }
 
         } catch (error) {
