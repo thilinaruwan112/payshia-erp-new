@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { BinCardReportView } from '@/components/reports/bin-card-report-view';
 import { Button } from '@/components/ui/button';
@@ -210,4 +210,3 @@ export default function BinCardReportPage() {
         </div>
     );
 }
-
