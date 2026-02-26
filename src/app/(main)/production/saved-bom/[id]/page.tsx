@@ -39,6 +39,7 @@ export default function EditBomPage() {
     const { toast } = useToast();
     const { company_id } = useLocation();
     const [bomData, setBomData] = useState<BomData | null>(null);
+    const [allProducts, setAllProducts] = useState<ProductWithApiResponse[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -59,7 +60,8 @@ export default function EditBomPage() {
                 }
 
                 const productsData = await productsResponse.json();
-                const allProducts: ProductWithApiResponse[] = productsData.products || [];
+                const fetchedAllProducts: ProductWithApiResponse[] = productsData.products || [];
+                setAllProducts(fetchedAllProducts);
 
                 const recipesData = await recipesResponse.json();
                 const recipeItems: RecipeItem[] = recipesData.data || [];
@@ -69,8 +71,7 @@ export default function EditBomPage() {
                     return;
                 }
 
-                const allIngredientsOptions = allProducts
-                    .filter(p => ['raw', 'both'].includes(p.product.item_type || ''))
+                const allIngredientsOptions = fetchedAllProducts
                     .flatMap(p => 
                         (p.variants || []).map(v => ({
                             id: v.variant.id,
@@ -119,5 +120,5 @@ export default function EditBomPage() {
         return <div>Could not load Bill of Materials data.</div>
     }
 
-    return <BomForm bomToEdit={bomData} />;
+    return <BomForm bomToEdit={bomData} allProducts={allProducts} />;
 }

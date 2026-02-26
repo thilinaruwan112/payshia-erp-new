@@ -86,14 +86,15 @@ interface BomData {
 
 interface BomFormProps {
     bomToEdit?: BomData;
+    allProducts?: ProductWithApiResponse[];
 }
 
 
-export function BomForm({ bomToEdit }: BomFormProps) {
+export function BomForm({ bomToEdit, allProducts: allProductsProp }: BomFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<ProductWithApiResponse[]>([]);
   const { company_id } = useLocation();
@@ -119,36 +120,41 @@ export function BomForm({ bomToEdit }: BomFormProps) {
   });
 
   useEffect(() => {
-    async function fetchData() {
-        if (!company_id) return;
-        setIsLoading(true);
-        try {
-            const [productsResponse, recipesResponse] = await Promise.all([
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes`),
-            ]);
+    const processAllProducts = (allProducts: ProductWithApiResponse[]) => {
+      setProducts(allProducts.filter(p => p.product.item_type !== 'raw'));
+      setIngredients(allProducts.filter(p => ['raw', 'both'].includes(p.product.item_type || '')));
+    };
 
-            if (!productsResponse.ok) throw new Error("Failed to fetch products");
-            const productsData = await productsResponse.json();
-            const allProducts = productsData.products || [];
-            
-            // Separate finished goods and ingredients
-            setProducts(allProducts.filter((p: ProductWithApiResponse) => p.product.item_type !== 'raw'));
-            setIngredients(allProducts.filter((p: ProductWithApiResponse) => ['raw', 'both'].includes(p.product.item_type || '')));
+    async function fetchAndProcessData() {
+      if (!company_id) {
+          setIsLoading(false);
+          return;
+      };
+      setIsLoading(true);
+      try {
+        if (allProductsProp && allProductsProp.length > 0) {
+          processAllProducts(allProductsProp);
+        } else {
+          const productsResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/with-variants/by-company?company_id=${company_id}`);
+          if (!productsResponse.ok) throw new Error("Failed to fetch products");
+          const productsData = await productsResponse.json();
+          processAllProducts(productsData.products || []);
+        }
 
-
-            if(!recipesResponse.ok) throw new Error("Failed to fetch recipes");
+        const recipesResponse = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/product-recipes`);
+        if (recipesResponse.ok) {
             const recipesData = await recipesResponse.json();
             setRecipes(Array.isArray(recipesData.data) ? recipesData.data : []);
-
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
-        } finally {
-            setIsLoading(false);
         }
+
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch required data.' });
+      } finally {
+        setIsLoading(false);
+      }
     }
-    fetchData();
-  }, [company_id, toast]);
+    fetchAndProcessData();
+  }, [company_id, toast, allProductsProp]);
 
  const allSkus = React.useMemo(() => {
     if (!ingredients) return [];
