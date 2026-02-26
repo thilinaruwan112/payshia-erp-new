@@ -81,6 +81,8 @@ interface BomData {
         quantity: number;
         unit: string;
         cost_price: number;
+        name: string;
+        sku: string;
     }[];
 }
 
@@ -104,7 +106,12 @@ export function BomForm({ bomToEdit, allProducts: allProductsProp }: BomFormProp
 
   const defaultValues = {
       productId: bomToEdit?.finishedGoodId || "",
-      items: bomToEdit?.items || [{ recipe_product: "", quantity: 1, unit: "Nos", cost_price: 0 }],
+      items: bomToEdit?.items.map(item => ({
+          recipe_product: item.recipe_product,
+          quantity: item.quantity,
+          unit: item.unit,
+          cost_price: item.cost_price,
+      })) || [{ recipe_product: "", quantity: 1, unit: "Nos", cost_price: 0 }],
       notes: ""
   }
 
@@ -214,38 +221,52 @@ export function BomForm({ bomToEdit, allProducts: allProductsProp }: BomFormProp
   }, [products]);
   
   const requiredIngredients = React.useMemo(() => {
-      const itemsToDisplay = bomToEdit ? bomToEdit.items.map(i => ({...i, recipe_product: i.recipe_product, qty: String(i.quantity), cost_price: String(i.cost_price) })) : selectedRecipeItems;
-      
-      if (itemsToDisplay.length === 0) return [];
-      
-      const allAvailableProducts = [...products, ...ingredients];
-      const allIngredientsInfo = allAvailableProducts.flatMap(p => 
-        (p.variants || []).map(v => {
-          if (!v.variant) return null;
-          return {
-            id: v.variant.id,
-            name: p.product.name,
-            sku: v.variant.sku,
-            unit: p.product.stock_unit || 'Nos'
-          }
-        }).filter(Boolean) as { id: string; name: string; sku: string; unit: string; }[]
-      );
+    if (bomToEdit) {
+        return bomToEdit.items.map(item => {
+            const requiredQty = item.quantity * (quantityProduced || 1);
+            const lineValue = requiredQty * item.cost_price;
+            return {
+                name: item.name,
+                sku: item.sku,
+                requiredQty: requiredQty,
+                unit: item.unit,
+                costPrice: item.cost_price,
+                lineValue: lineValue,
+            }
+        });
+    }
 
-      return itemsToDisplay.map(item => {
-          const ingredientInfo = allIngredientsInfo.find(ing => ing && ing.id === item.recipe_product);
-          const requiredQty = parseFloat(item.qty) * (quantityProduced || 1);
-          const costPrice = parseFloat(item.cost_price || '0');
-          const lineValue = requiredQty * costPrice;
-          return {
-              name: ingredientInfo?.name || `Product ID: ${item.recipe_product}`,
-              sku: ingredientInfo?.sku || 'N/A',
-              requiredQty: requiredQty,
-              unit: ingredientInfo?.unit || 'Nos',
-              costPrice: costPrice,
-              lineValue: lineValue,
-          }
-      });
-  }, [selectedRecipeItems, quantityProduced, ingredients, products, bomToEdit]);
+    if (selectedRecipeItems.length === 0) return [];
+    
+    const allAvailableProducts = [...products, ...ingredients];
+    const allIngredientsInfo = allAvailableProducts.flatMap(p => 
+      (p.variants || []).map(v => {
+        if (!v.variant) return null;
+        return {
+          id: v.variant.id,
+          name: p.product.name,
+          sku: v.variant.sku,
+          unit: p.product.stock_unit || 'Nos'
+        }
+      }).filter(Boolean) as { id: string; name: string; sku: string; unit: string; }[]
+    );
+
+    return selectedRecipeItems.map(item => {
+        const ingredientInfo = allIngredientsInfo.find(ing => ing && ing.id === item.recipe_product);
+        const requiredQty = parseFloat(item.qty) * (quantityProduced || 1);
+        const costPrice = parseFloat(item.cost_price || '0');
+        const lineValue = requiredQty * costPrice;
+        return {
+            name: ingredientInfo?.name || `Product ID: ${item.recipe_product}`,
+            sku: ingredientInfo?.sku || 'N/A',
+            requiredQty: requiredQty,
+            unit: ingredientInfo?.unit || 'Nos',
+            costPrice: costPrice,
+            lineValue: lineValue,
+        }
+    });
+}, [selectedRecipeItems, quantityProduced, ingredients, products, bomToEdit]);
+
 
   async function onSubmit(data: BomFormValues) {
     setIsSubmitting(true);

@@ -19,13 +19,16 @@ interface RecipeItem {
     cost_price: string;
 }
 
+// Updated BomData interface
 interface BomData {
     finishedGoodId: string;
     items: {
-        recipe_product: string;
+        recipe_product: string; // ingredient variant ID
         quantity: number;
         unit: string;
         cost_price: number;
+        name: string;
+        sku: string;
     }[];
 }
 
@@ -71,22 +74,24 @@ export default function EditBomPage() {
                     return;
                 }
 
-                const allIngredientsOptions = fetchedAllProducts
-                    .flatMap(p => 
-                        (p.variants || []).map(v => ({
-                            id: v.variant.id,
-                            unit: p.product.stock_unit || 'Nos',
-                            costPrice: v.variant.cost_price ? parseFloat(String(v.variant.cost_price)) : 0,
-                        }))
+                const allProductsForLookup = fetchedAllProducts.flatMap(p => 
+                    (p.variants || []).map(v => ({
+                        id: v.variant.id,
+                        name: p.product.name,
+                        sku: v.variant.sku,
+                        unit: p.product.stock_unit || 'Nos',
+                    }))
                 );
 
                 const items = recipeItems.map(item => {
-                    const ingredientInfo = allIngredientsOptions.find(ing => ing.id === item.recipe_product);
+                    const ingredientInfo = allProductsForLookup.find(ing => ing.id === item.recipe_product);
                     return {
                         recipe_product: item.recipe_product,
                         quantity: parseFloat(item.qty),
                         unit: ingredientInfo?.unit || 'Nos',
                         cost_price: parseFloat(item.cost_price || '0'),
+                        name: ingredientInfo?.name || `Product ID: ${item.recipe_product}`,
+                        sku: ingredientInfo?.sku || 'N/A',
                     };
                 });
                 
