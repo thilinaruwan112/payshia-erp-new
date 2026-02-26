@@ -176,7 +176,7 @@ export function BomForm({ bomToEdit }: BomFormProps) {
             return;
         }
 
-        const selectedProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v, productId: p.product.id}))).find(v => v.variant.id === finishedGoodId);
+        const selectedProductInfo = products.flatMap(p => (p.variants || []).map(v => ({...v.variant, productId: p.product.id}))).find(v => v.id === finishedGoodId);
         
         if (!selectedProductInfo) return;
 
@@ -212,7 +212,8 @@ export function BomForm({ bomToEdit }: BomFormProps) {
       
       if (itemsToDisplay.length === 0) return [];
       
-      const allIngredientsInfo = ingredients.flatMap(p => 
+      const allAvailableProducts = [...products, ...ingredients];
+      const allIngredientsInfo = allAvailableProducts.flatMap(p => 
         (p.variants || []).map(v => {
           if (!v.variant) return null;
           return {
@@ -238,7 +239,7 @@ export function BomForm({ bomToEdit }: BomFormProps) {
               lineValue: lineValue,
           }
       });
-  }, [selectedRecipeItems, quantityProduced, ingredients, bomToEdit]);
+  }, [selectedRecipeItems, quantityProduced, ingredients, products, bomToEdit]);
 
   async function onSubmit(data: BomFormValues) {
     setIsSubmitting(true);
