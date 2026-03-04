@@ -3,7 +3,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import React, { useEffect, useState, Suspense } from 'react';
-import type { Location } from '@/lib/types';
+import type { Location, User } from '@/lib/types';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,7 @@ interface HourlyData {
     total_sales: number;
     total_cost: number;
     gross_profit: number;
+    invoices: any[];
 }
 
 interface ReportData {
@@ -37,6 +38,7 @@ function PrintViewContent() {
   const [reportData, setReportData] = useState<ReportData[] | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
+  const [customer, setCustomer] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
@@ -64,10 +66,11 @@ function PrintViewContent() {
             if (locationId) params.append('location_id', locationId);
             if (customerCode) params.append('customer_code', customerCode);
 
-            const [reportRes, companyRes, locationRes] = await Promise.all([
+            const [reportRes, companyRes, locationRes, customerRes] = await Promise.all([
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/hourly-invoice-data?${params.toString()}`),
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
                  locationId ? fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${locationId}`) : Promise.resolve(null),
+                 customerCode ? fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/customers/${customerCode}`) : Promise.resolve(null),
             ]);
 
             if (!reportRes.ok) throw new Error('Failed to fetch report data');
@@ -76,6 +79,7 @@ function PrintViewContent() {
             
             if (companyRes?.ok) setCompany(await companyRes.json());
             if (locationRes?.ok) setLocation(await locationRes.json());
+            if (customerRes?.ok) setCustomer(await customerRes.json());
 
         } catch(error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch report data.' });
@@ -111,11 +115,21 @@ function PrintViewContent() {
             </div>
             <div className="text-right">
                 <h2 className="text-2xl font-bold uppercase">Hourly Sales Report</h2>
-                 <p className="text-xs">
-                    {startDate && endDate ? `${format(new Date(startDate), 'dd/MM/yy')} to ${format(new Date(endDate), 'dd/MM/yy')}` : 'All Time'}
+                 <p className="text-xs text-gray-500">
+                    Report generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}
                 </p>
             </div>
         </header>
+
+        <section className="mt-4 mb-6 text-xs text-gray-600">
+            <h3 className="font-bold mb-1">Filters Applied:</h3>
+            <div className="grid grid-cols-4 gap-x-4">
+                {startDate && <div><strong>From:</strong> {format(new Date(startDate), 'dd MMM, yyyy')}</div>}
+                {endDate && <div><strong>To:</strong> {format(new Date(endDate), 'dd MMM, yyyy')}</div>}
+                {location && <div><strong>Location:</strong> {location.location_name}</div>}
+                {customer && <div><strong>Customer:</strong> {customer.customer_first_name} {customer.customer_last_name}</div>}
+            </div>
+        </section>
         
         <main className="mt-6 space-y-6">
             {reportData.map(dateData => (

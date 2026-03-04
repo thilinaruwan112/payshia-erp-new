@@ -147,7 +147,8 @@ const iconMap: { [key: string]: React.ElementType } = {
   'ai-forecast': TrendingUp,
   'barcode-print': Barcode,
   production: ClipboardList,
-  bom: FileText,
+  bom: FileSignature,
+  'saved-bom': ClipboardList,
   'production-note': History,
   'production-run': Percent,
   suppliers: Building,
@@ -619,6 +620,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             }
             
             const finalNavItems = [...topLevelItems, ...Object.values(categoryMap)];
+
+            // START INJECTION for Saved BOM
+            const productionCategory = finalNavItems.find(item => item.label === 'Production');
+            if (productionCategory && productionCategory.subItems) {
+                // Check if it already exists to avoid duplicates on re-render
+                if (!productionCategory.subItems.find(sub => sub.name === 'saved-bom')) {
+                    productionCategory.subItems.push({
+                        href: '/production/saved-bom',
+                        label: 'Saved BOM',
+                        icon: ClipboardList,
+                        name: 'saved-bom',
+                    });
+                }
+            }
+            // END INJECTION
+            
             setNavItems(finalNavItems);
             
         } catch (error) {

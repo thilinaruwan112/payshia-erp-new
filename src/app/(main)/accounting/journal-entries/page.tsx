@@ -6,6 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Table,
@@ -16,7 +17,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle, Calendar as CalendarIcon, X } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Calendar as CalendarIcon, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -48,6 +49,8 @@ export default function JournalEntriesPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [date, setDate] = React.useState<DateRange | undefined>(undefined);
     const [accountId, setAccountId] = React.useState<string | undefined>(undefined);
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const itemsPerPage = 10;
 
     React.useEffect(() => {
         if (!company_id) return;
@@ -119,6 +122,13 @@ export default function JournalEntriesPage() {
         setDate(undefined);
         setAccountId(undefined);
     }
+    
+    const paginatedEntries = React.useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return journalEntries.slice(startIndex, startIndex + itemsPerPage);
+    }, [journalEntries, currentPage]);
+
+    const totalPages = Math.ceil(journalEntries.length / itemsPerPage);
 
   return (
     <div className="flex flex-col gap-6">
@@ -189,8 +199,8 @@ export default function JournalEntriesPage() {
                         <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                     </TableRow>
                 ))
-              ) : journalEntries.length > 0 ? (
-                journalEntries.map((entry) => (
+              ) : paginatedEntries.length > 0 ? (
+                paginatedEntries.map((entry) => (
                     <TableRow key={entry.transaction_id}>
                     <TableCell>{new Date(entry.transaction_date).toLocaleDateString()}</TableCell>
                     <TableCell className="font-mono">{entry.ref_key}</TableCell>
@@ -225,6 +235,31 @@ export default function JournalEntriesPage() {
             </TableBody>
           </Table>
         </CardContent>
+        {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex items-center gap-2">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                >
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+                </div>
+            </CardFooter>
+        )}
       </Card>
     </div>
   );

@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { fetcher } from '@/lib/api';
+import { useCurrency } from './currency-provider';
 
 interface PrintViewProps {
     id: string;
@@ -33,6 +34,7 @@ export function GrnPrintView({ id }: PrintViewProps) {
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   
   useEffect(() => {
     async function fetchData() {
@@ -179,8 +181,8 @@ export function GrnPrintView({ id }: PrintViewProps) {
                 <td className="p-3">{item.patch_code}</td>
                 <td className="p-3">{item.expire_date && item.expire_date !== '0000-00-00' ? format(new Date(item.expire_date), 'dd/MM/yy') : 'N/A'}</td>
                 <td className="p-3 text-right">{parseFloat(item.received_qty)}</td>
-                <td className="p-3 text-right">Rs {parseFloat(String(item.order_rate)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="p-3 text-right">Rs {item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">{currencySymbol}{parseFloat(String(item.order_rate)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">{currencySymbol}{item.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             ))}
           </tbody>
@@ -191,7 +193,7 @@ export function GrnPrintView({ id }: PrintViewProps) {
         <div className="w-full max-w-xs space-y-2 text-gray-700">
            <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
             <span>Total</span>
-            <span>Rs {parseFloat(grn.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>{currencySymbol}{parseFloat(grn.grand_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
       </section>

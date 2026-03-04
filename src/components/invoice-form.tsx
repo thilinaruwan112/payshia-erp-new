@@ -44,6 +44,7 @@ import { useLocation } from "./location-provider";
 import { Combobox } from "./ui/combobox";
 import { fetcher } from "@/lib/api";
 import { Separator } from "./ui/separator";
+import { useCurrency } from "./currency-provider";
 
 type StockInfo = {
     product_id: string;
@@ -113,6 +114,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
   const [isLoading, setIsLoading] = React.useState(false);
   const [productsWithVariants, setProductsWithVariants] = React.useState<ProductWithApiResponse[]>([]);
   const [availableBatches, setAvailableBatches] = React.useState<Record<number, StockInfo[]>>({});
+  const { currencySymbol } = useCurrency();
 
   React.useEffect(() => {
     async function fetchProducts() {
@@ -713,7 +715,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} className="min-w-[150px] pl-10" startIcon={"LKR"} readOnly disabled />
+                                                        <Input type="number" {...field} className="min-w-[150px] pl-10" startIcon={currencySymbol} readOnly disabled />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -727,14 +729,14 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                                             render={({ field }) => (
                                                 <FormItem>
                                                     <FormControl>
-                                                        <Input type="number" {...field} className="min-w-[150px] pl-10" startIcon={"LKR"} />
+                                                        <Input type="number" {...field} className="min-w-[150px] pl-10" startIcon={currencySymbol} />
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
                                             )}
                                         />
                                     </TableCell>
-                                    <TableCell className="text-right font-mono">LKR {total.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-mono">{currencySymbol}{total.toFixed(2)}</TableCell>
                                     <TableCell>
                                         {fields.length > 1 && (
                                             <Button variant="ghost" size="icon" onClick={() => remove(index)}>
@@ -755,11 +757,11 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                 <div className="w-full max-w-sm space-y-2">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
-                        <span className="font-mono">LKR {totals.subtotal.toFixed(2)}</span>
+                        <span className="font-mono">{currencySymbol}{totals.subtotal.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between text-destructive">
                         <span>Item-wise Discount</span>
-                        <span className="font-mono">-LKR {totals.itemDiscounts.toFixed(2)}</span>
+                        <span className="font-mono">-{currencySymbol}{totals.itemDiscounts.toFixed(2)}</span>
                     </div>
                      <div className="flex justify-between text-destructive">
                         <span className="flex-1 mr-4">Overall Discount</span>
@@ -769,7 +771,7 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                             render={({ field }) => (
                                 <FormItem>
                                     <FormControl>
-                                        <Input type="number" {...field} className="h-8 max-w-[150px] pl-10" startIcon={"LKR"} />
+                                        <Input type="number" {...field} className="h-8 max-w-[150px] pl-10" startIcon={currencySymbol} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -779,30 +781,30 @@ export function InvoiceForm({ customers, orders }: InvoiceFormProps) {
                     {currentLocation?.service_charge_status === 'Enabled' && invoiceType !== 'Wholesale' && (
                       <div className="flex justify-between">
                           <span>Service Charge (10%)</span>
-                          <span className="font-mono">LKR {totals.serviceCharge.toFixed(2)}</span>
+                          <span className="font-mono">{currencySymbol}{totals.serviceCharge.toFixed(2)}</span>
                       </div>
                     )}
                     {currentLocation?.tdl_status === 'Enabled' && (
                          <div className="flex justify-between">
                             <span>TDL (1%)</span>
-                            <span className="font-mono">LKR {totals.tdl.toFixed(2)}</span>
+                            <span className="font-mono">{currencySymbol}{totals.tdl.toFixed(2)}</span>
                         </div>
                     )}
                     {currentLocation?.sscl_status === 'Enabled' && (
                          <div className="flex justify-between">
                             <span>SSCL (2.5%)</span>
-                            <span className="font-mono">LKR {totals.sscl.toFixed(2)}</span>
+                            <span className="font-mono">{currencySymbol}{totals.sscl.toFixed(2)}</span>
                         </div>
                     )}
                      {currentLocation?.vat_status === 'Enabled' && (
                          <div className="flex justify-between">
                             <span>VAT (18%)</span>
-                            <span className="font-mono">LKR {totals.vat.toFixed(2)}</span>
+                            <span className="font-mono">{currencySymbol}{totals.vat.toFixed(2)}</span>
                         </div>
                     )}
                      <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Grand Total</span>
-                        <span className="font-mono">LKR {Number(totals.grandTotal).toFixed(2)}</span>
+                        <span className="font-mono">{currencySymbol}{Number(totals.grandTotal).toFixed(2)}</span>
                     </div>
                 </div>
             </CardFooter>

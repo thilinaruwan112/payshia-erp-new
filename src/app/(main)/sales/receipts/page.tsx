@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -28,15 +28,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import type { User } from '@/lib/types';
+import { cn } from '@/lib/utils';
+import type { Invoice, User } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
 import { useLocation } from '@/components/location-provider';
 import { Separator } from '@/components/ui/separator';
+import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
 import { openCenteredPopup } from '@/lib/utils';
+import { format } from 'date-fns';
 
 type Receipt = {
     id: string;
@@ -60,6 +62,9 @@ export default function ReceiptsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
     const { company_id } = useLocation();
+    const { currencySymbol } = useCurrency();
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 15;
 
     useEffect(() => {
         async function fetchData() {
@@ -109,6 +114,11 @@ export default function ReceiptsPage() {
             default: return type;
         }
     }
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentReceipts = receipts.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(receipts.length / itemsPerPage);
 
   return (
     <div className="flex flex-col gap-6">
@@ -161,11 +171,11 @@ export default function ReceiptsPage() {
                           <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24" /></TableCell>
                           <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
                           <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
-                          <TableCell className="text-right"><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                          <TableCell className="text-right"><Skeleton className="h-8 w-8" /></TableCell>
                       </TableRow>
                   ))
                 ) : (
-                  receipts.map((receipt) => (
+                  currentReceipts.map((receipt) => (
                     <TableRow key={receipt.id}>
                       <TableCell className="font-medium">{receipt.rec_number}</TableCell>
                       <TableCell>{getCustomerName(receipt.customer_id)}</TableCell>
@@ -174,7 +184,7 @@ export default function ReceiptsPage() {
                       <TableCell className="hidden md:table-cell">
                         <Badge variant="secondary">{getPaymentMethodText(receipt.type)}</Badge>
                       </TableCell>
-                      <TableCell className="text-right font-mono">${' '}{parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                      <TableCell className="text-right font-mono">{currencySymbol}{parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -200,7 +210,7 @@ export default function ReceiptsPage() {
                     </TableRow>
                   ))
                 )}
-                {!isLoading && receipts.length === 0 && (
+                {!isLoading && currentReceipts.length === 0 && (
                   <TableRow>
                       <TableCell colSpan={7} className="h-24 text-center">
                           No receipts found.
@@ -214,7 +224,7 @@ export default function ReceiptsPage() {
           <div className="sm:hidden space-y-4">
              {isLoading ? (
                  Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)
-            ) : receipts.map((receipt) => (
+            ) : currentReceipts.map((receipt) => (
               <Card key={receipt.id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -259,14 +269,43 @@ export default function ReceiptsPage() {
                 <CardFooter className="bg-muted/50 p-4">
                   <div className="flex justify-between w-full font-semibold">
                       <span>Amount Paid</span>
-                      <span className="font-mono">${' '}{parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="font-mono">{currencySymbol}{parseFloat(receipt.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </CardFooter>
               </Card>
             ))}
           </div>
         </CardContent>
+        {totalPages > 1 && (
+            <CardFooter className="flex justify-end items-center gap-4">
+                <span className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                </span>
+                <div className="flex items-center gap-2">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="sr-only">Previous Page</span>
+                </Button>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                >
+                    <ChevronRight className="h-4 w-4" />
+                    <span className="sr-only">Next Page</span>
+                </Button>
+                </div>
+            </CardFooter>
+        )}
       </Card>
     </div>
   );
 }
+
+    
