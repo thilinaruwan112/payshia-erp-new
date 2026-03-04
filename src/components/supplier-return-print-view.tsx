@@ -2,13 +2,14 @@
 'use client'
 
 import { type SupplierReturn, type Supplier, type Location } from '@/lib/types';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { fetcher } from '@/lib/api';
+import { useCurrency } from './currency-provider';
 
 interface PrintViewProps {
     id: string;
@@ -30,6 +31,7 @@ export function SupplierReturnPrintView({ id }: PrintViewProps) {
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   
   useEffect(() => {
     async function fetchData() {
@@ -150,8 +152,8 @@ export function SupplierReturnPrintView({ id }: PrintViewProps) {
                 <td className="p-3">{item.sku}</td>
                 <td className="p-3">{item.reason}</td>
                 <td className="p-3 text-right">{item.returnedQty}</td>
-                <td className="p-3 text-right">${item.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                <td className="p-3 text-right">${(item.returnedQty * item.unitPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">{currencySymbol}{item.unitPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td className="p-3 text-right">{currencySymbol}{(item.returnedQty * item.unitPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
               </tr>
             ))}
           </tbody>
@@ -162,7 +164,7 @@ export function SupplierReturnPrintView({ id }: PrintViewProps) {
         <div className="w-full max-w-xs space-y-2 text-gray-700">
            <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
             <span>Total Value</span>
-            <span>${sReturn.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span>{currencySymbol}{sReturn.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
       </section>

@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { Check, Settings } from 'lucide-react';
 import Link from 'next/link';
 import type { Plan } from '@/lib/types';
+import { useCurrency } from '@/components/currency-provider';
 
 
 async function getPlans(): Promise<Plan[]> {
@@ -35,6 +36,7 @@ async function getPlans(): Promise<Plan[]> {
 export default async function BillingPage() {
   const plans = await getPlans();
   const currentPlanId = 'plan-pro'; // Mock current plan
+  const { currencySymbol } = useCurrency();
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,7 +68,7 @@ export default async function BillingPage() {
               <CardTitle>{plan.name}</CardTitle>
               <CardDescription>{plan.description}</CardDescription>
               <div className="flex items-baseline pt-4">
-                <span className="text-4xl font-bold">${plan.price}</span>
+                <span className="text-4xl font-bold">{currencySymbol}{plan.price}</span>
                 <span className="text-muted-foreground">/month</span>
               </div>
             </CardHeader>

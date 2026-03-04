@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -18,7 +19,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle, Star, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Star, Trash2, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -47,6 +48,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { fetcher } from '@/lib/api';
+import { Input } from '@/components/ui/input';
 
 
 const getLoyaltyTier = (points: number) => {
@@ -80,6 +82,9 @@ export default function CustomersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<User | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     if (!company_id) {
@@ -145,6 +150,21 @@ export default function CustomersPage() {
     });
   }, [customers]);
 
+  const filteredCustomers = useMemo(() => {
+    return customerData.filter(customer =>
+      `${customer.customer_first_name} ${customer.customer_last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (customer.phone && customer.phone.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [customerData, searchTerm]);
+
+  const paginatedCustomers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredCustomers.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredCustomers, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+
   return (
     <>
     <div className="flex flex-col gap-6">
@@ -165,10 +185,26 @@ export default function CustomersPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Customers</CardTitle>
-          <CardDescription>
-            A list of all customers in your system.
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle>All Customers</CardTitle>
+              <CardDescription>
+                A list of all customers in your system.
+              </CardDescription>
+            </div>
+             <div className="relative w-full sm:w-80">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                placeholder="Search by name, email, phone..."
+                className="pl-9"
+                value={searchTerm}
+                onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                }}
+                />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -192,7 +228,7 @@ export default function CustomersPage() {
                         <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                     </TableRow>
                 ))
-              ) : customerData.map((customer) => (
+              ) : paginatedCustomers.map((customer) => (
                 <TableRow key={customer.customer_id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -246,9 +282,41 @@ export default function CustomersPage() {
                   </TableCell>
                 </TableRow>
               ))}
+               {!isLoading && paginatedCustomers.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                      No customers found.
+                    </TableCell>
+                  </TableRow>
+                )}
             </TableBody>
           </Table>
         </CardContent>
+        {totalPages > 1 && (
+            <CardFooter className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                </div>
+                <div className="flex items-center gap-2">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                >
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+                </div>
+            </CardFooter>
+        )}
       </Card>
     </div>
     <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
@@ -271,3 +339,5 @@ export default function CustomersPage() {
     </>
   );
 }
+
+    

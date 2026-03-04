@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
+import { useCurrency } from '@/components/currency-provider';
 
 interface Company {
     id: string;
@@ -22,10 +23,12 @@ interface Company {
 export default function POSInvoicePage({ params }: { params: { id: string } }) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [customer, setCustomer] = useState<User | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
   
   useEffect(() => {
     const { id } = params;
@@ -150,23 +153,23 @@ export default function POSInvoicePage({ params }: { params: { id: string } }) {
       <div className="space-y-1">
         <div className="flex justify-between">
           <span>Subtotal:</span>
-          <span>${subtotal.toFixed(2)}</span>
+          <span>{currencySymbol}{subtotal.toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
           <span>Discount:</span>
-          <span>-${totalDiscount.toFixed(2)}</span>
+          <span>-{currencySymbol}{totalDiscount.toFixed(2)}</span>
         </div>
          <div className="flex justify-between">
           <span>Service Charge:</span>
-          <span>${parseFloat(invoice.service_charge).toFixed(2)}</span>
+          <span>{currencySymbol}{parseFloat(invoice.service_charge).toFixed(2)}</span>
         </div>
         <div className="flex justify-between">
           <span>Tax:</span>
-          <span>${tax > 0 ? tax.toFixed(2) : '0.00'}</span>
+          <span>{currencySymbol}{tax > 0 ? tax.toFixed(2) : '0.00'}</span>
         </div>
         <div className="flex justify-between font-bold text-xs mt-1 border-t border-black pt-1">
           <span>TOTAL:</span>
-          <span>${total.toFixed(2)}</span>
+          <span>{currencySymbol}{total.toFixed(2)}</span>
         </div>
       </div>
 

@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrency } from '@/components/currency-provider';
 import { fetcher } from '@/lib/api';
+import type { Location } from '@/lib/types';
 
 interface Company {
     id: string;
@@ -49,6 +50,7 @@ function PrintViewContent() {
   const searchParams = useSearchParams();
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
+  const [location, setLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
@@ -73,9 +75,10 @@ function PrintViewContent() {
             if (endDate) params.append('end_date', endDate);
             if (locationId) params.append('location_id', locationId);
 
-            const [reportRes, companyRes] = await Promise.all([
+            const [reportRes, companyRes, locationRes] = await Promise.all([
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/sales-invoice-wise?${params.toString()}`),
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
+                 locationId ? fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${locationId}`) : Promise.resolve(null)
             ]);
 
             if (!reportRes.ok) throw new Error('Failed to fetch report data');
@@ -83,6 +86,7 @@ function PrintViewContent() {
             setReportData(resultData.data.report_data);
             
             if (companyRes.ok) setCompany(await companyRes.json());
+            if (locationRes?.ok) setLocation(await locationRes.json());
         } catch(error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch report data.' });
         } finally {
@@ -119,11 +123,20 @@ function PrintViewContent() {
             </div>
             <div className="text-right">
                 <h2 className="text-2xl font-bold uppercase">Invoice Wise Sales</h2>
-                <p className="text-xs">
-                    {startDate && endDate ? `${format(new Date(startDate), 'dd/MM/yy')} to ${format(new Date(endDate), 'dd/MM/yy')}` : 'All Time'}
+                <p className="text-xs text-gray-500">
+                    Report generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}
                 </p>
             </div>
         </header>
+
+        <section className="mt-4 mb-6 text-xs text-gray-600">
+            <h3 className="font-bold mb-1">Filters Applied:</h3>
+            <div className="grid grid-cols-4 gap-x-4">
+                {startDate && <div><strong>From:</strong> {format(new Date(startDate), 'dd MMM, yyyy')}</div>}
+                {endDate && <div><strong>To:</strong> {format(new Date(endDate), 'dd MMM, yyyy')}</div>}
+                {location && <div><strong>Location:</strong> {location.location_name}</div>}
+            </div>
+        </section>
         
         <main className="mt-6">
             <table className="w-full text-left border-collapse">
