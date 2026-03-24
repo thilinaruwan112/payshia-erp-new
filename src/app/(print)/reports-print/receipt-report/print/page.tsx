@@ -53,6 +53,7 @@ function PrintViewContent() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [customers, setCustomers] = useState<User[]>([]);
+  const [customer, setCustomer] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
@@ -88,8 +89,13 @@ function PrintViewContent() {
             setReportData(resultData);
             
             if (companyRes.ok) setCompany(await companyRes.json());
-            if (customerRes.ok) setCustomers((await customerRes.json()) || []);
-
+            if (customerRes.ok) {
+                const customersData = await customerRes.json() || [];
+                setCustomers(customersData);
+                if (customerId) {
+                    setCustomer(customersData.find((c: User) => c.customer_id === customerId) || null);
+                }
+            }
         } catch(error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch report data.' });
         } finally {
@@ -131,11 +137,20 @@ function PrintViewContent() {
             </div>
             <div className="text-right">
                 <h2 className="text-2xl font-bold uppercase">POS Receipt Report</h2>
-                <p className="text-xs">
-                    {startDate && endDate ? `${format(new Date(startDate), 'dd/MM/yy')} to ${format(new Date(endDate), 'dd/MM/yy')}` : 'All Time'}
+                <p className="text-xs text-gray-500">
+                    Report generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}
                 </p>
             </div>
         </header>
+
+        <section className="mt-4 mb-6 text-xs text-gray-600">
+            <h3 className="font-bold mb-1">Filters Applied:</h3>
+            <div className="grid grid-cols-4 gap-x-4">
+                {startDate && <div><strong>From:</strong> {format(new Date(startDate), 'dd MMM, yyyy')}</div>}
+                {endDate && <div><strong>To:</strong> {format(new Date(endDate), 'dd MMM, yyyy')}</div>}
+                {customer && <div><strong>Customer:</strong> {customer.customer_first_name} {customer.customer_last_name}</div>}
+            </div>
+        </section>
         
         <main className="mt-6">
             <div className="grid grid-cols-2 gap-4 mb-6 text-center">
@@ -153,7 +168,7 @@ function PrintViewContent() {
                 <thead>
                     <tr className="bg-[#3B5998] text-white">
                         <th className="p-2 border border-gray-300">Receipt #</th>
-                        <th className="p-2 border border-gray-300">Date</th>
+                        <th className="p-2 border border-gray-300">Date & Time</th>
                         <th className="p-2 border border-gray-300">Customer</th>
                         <th className="p-2 border border-gray-300">Payment Method</th>
                         <th className="p-2 border border-gray-300 text-right">Amount</th>

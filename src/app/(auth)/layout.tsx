@@ -1,11 +1,6 @@
-export default function AuthLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
-        {children}
-    </div>
-  );
+import React from 'react';
+
+// This layout is intentionally simplified to resolve a build conflict.
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
 }

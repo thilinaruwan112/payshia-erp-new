@@ -66,7 +66,7 @@ export default function CreditSalesSummaryPage() {
             if (dateRange?.from) params.append('start_date', format(dateRange.from, 'yyyy-MM-dd'));
             if (dateRange?.to) params.append('end_date', format(dateRange.to, 'yyyy-MM-dd'));
             if (filterValues['customer'] && filterValues['customer'] !== 'all') {
-                params.append('customer_id', filterValues['customer']);
+                params.append('customer_code', filterValues['customer']);
             }
             
             const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/credit-sales-summary?${params.toString()}`;
@@ -94,7 +94,7 @@ export default function CreditSalesSummaryPage() {
             company_id: String(company_id),
             ...(dateRange?.from && { start_date: format(dateRange.from, 'yyyy-MM-dd') }),
             ...(dateRange?.to && { end_date: format(dateRange.to, 'yyyy-MM-dd') }),
-            ...(filterValues['customer'] && filterValues['customer'] !== 'all' && { customer_id: filterValues['customer'] }),
+            ...(filterValues['customer'] && filterValues['customer'] !== 'all' && { customer_code: filterValues['customer'] }),
         });
         const url = `/reports-print/credit-sales-summary/print?${params.toString()}`;
         window.open(url, '_blank');

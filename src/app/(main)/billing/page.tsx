@@ -1,4 +1,4 @@
-
+'use client';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -13,28 +13,13 @@ import { cn } from '@/lib/utils';
 import { Check, Settings } from 'lucide-react';
 import Link from 'next/link';
 import type { Plan } from '@/lib/types';
+import { useCurrency } from '@/components/currency-provider';
+import { plans } from '@/lib/mock-data/plans';
 
 
-async function getPlans(): Promise<Plan[]> {
-    try {
-        // In a real app, this would be a fetch call to your server
-        // const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/plans`);
-
-        // const data = await response.json();
-        // return data;
-        
-        // Simulating fetch for now
-        const { plans } = await import('@/lib/mock-data/plans');
-        return plans;
-    } catch (error) {
-        console.error("Failed to fetch plans", error);
-        return [];
-    }
-}
-
-export default async function BillingPage() {
-  const plans = await getPlans();
+export default function BillingPage() {
   const currentPlanId = 'plan-pro'; // Mock current plan
+  const { currencySymbol } = useCurrency();
 
   return (
     <div className="flex flex-col gap-6">
@@ -66,7 +51,7 @@ export default async function BillingPage() {
               <CardTitle>{plan.name}</CardTitle>
               <CardDescription>{plan.description}</CardDescription>
               <div className="flex items-baseline pt-4">
-                <span className="text-4xl font-bold">${plan.price}</span>
+                <span className="text-4xl font-bold">{currencySymbol}{plan.price}</span>
                 <span className="text-muted-foreground">/month</span>
               </div>
             </CardHeader>

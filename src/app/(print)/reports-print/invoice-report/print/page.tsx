@@ -47,6 +47,9 @@ function PrintViewContent() {
   const [isLoading, setIsLoading] = useState(true);
   
   const companyId = searchParams.get('company_id');
+  const fromDate = searchParams.get('from_date');
+  const toDate = searchParams.get('to_date');
+
 
   useEffect(() => {
     async function fetchData() {
@@ -58,8 +61,12 @@ function PrintViewContent() {
 
         setIsLoading(true);
         try {
-            const params = new URLSearchParams({ company_id: companyId, invoice_status: '1' });
-            
+            const params = new URLSearchParams({ 
+                company_id: companyId, 
+                invoice_status: '1',
+                ...(fromDate && { from_date: fromDate }),
+                ...(toDate && { to_date: toDate }),
+            });
             const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/invoices/filter/hold/by-company-status?${params.toString()}`;
             const [companyRes, customerRes, invoiceRes] = await Promise.all([
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${companyId}`),
@@ -82,7 +89,7 @@ function PrintViewContent() {
         }
     }
     fetchData();
-  }, [companyId, toast]);
+  }, [companyId, fromDate, toDate, toast]);
 
   useEffect(() => {
     if (reportData.length > 0 && !isLoading) {
@@ -110,9 +117,19 @@ function PrintViewContent() {
             </div>
             <div className="text-right">
                 <h2 className="text-2xl font-bold uppercase">Invoice Report</h2>
+                 <p className="text-xs text-gray-500">
+                    Report generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}
+                </p>
             </div>
         </header>
-        <p className="text-xs text-gray-600 mt-2">Report is generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
+
+        <section className="mt-4 mb-6 text-xs text-gray-600">
+            <h3 className="font-bold mb-1">Filters Applied:</h3>
+            <div className="grid grid-cols-4 gap-x-4">
+                {fromDate && <div><strong>From:</strong> {format(new Date(fromDate), 'dd MMM, yyyy')}</div>}
+                {toDate && <div><strong>To:</strong> {format(new Date(toDate), 'dd MMM, yyyy')}</div>}
+            </div>
+        </section>
 
         <main className="mt-6">
             <table className="w-full text-left border-collapse">

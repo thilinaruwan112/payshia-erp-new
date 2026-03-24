@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useSearchParams } from 'next/navigation';
@@ -9,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import Image from 'next/image';
 import { fetcher } from '@/lib/api';
-import { openCenteredPopup } from '@/lib/utils';
+import { useCurrency } from '@/components/currency-provider';
 
 type Receipt = {
     id: string;
@@ -47,6 +48,7 @@ function PrintPosReceiptPageContent() {
   const searchParams = useSearchParams();
   const { id } = useParams() as { id: string };
   const companyId = searchParams.get('company_id');
+  const { currencySymbol } = useCurrency();
 
   useEffect(() => {
     async function fetchData() {
@@ -161,7 +163,7 @@ function PrintPosReceiptPageContent() {
         </div>
         <div className="flex justify-between">
           <span>Amount Paid:</span>
-          <span>${parseFloat(receipt.amount).toFixed(2)}</span>
+          <span>{currencySymbol}{parseFloat(receipt.amount).toFixed(2)}</span>
         </div>
       </div>
       
@@ -171,11 +173,11 @@ function PrintPosReceiptPageContent() {
          <div className="space-y-1">
             <div className="flex justify-between">
                 <span>Invoice Total:</span>
-                <span>${parseFloat(invoice.grand_total).toFixed(2)}</span>
+                <span>{currencySymbol}{parseFloat(invoice.grand_total).toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-bold">
                 <span>Remaining Balance:</span>
-                <span>${(parseFloat(invoice.grand_total) - parseFloat(receipt.amount)).toFixed(2)}</span>
+                <span>{currencySymbol}{(parseFloat(invoice.grand_total) - parseFloat(receipt.amount)).toFixed(2)}</span>
             </div>
          </div>
         </>

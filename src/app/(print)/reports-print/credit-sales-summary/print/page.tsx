@@ -46,6 +46,7 @@ function PrintViewContent() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [company, setCompany] = useState<Company | null>(null);
   const [customers, setCustomers] = useState<User[]>([]);
+  const [customer, setCustomer] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
@@ -53,7 +54,7 @@ function PrintViewContent() {
   const companyId = searchParams.get('company_id');
   const startDate = searchParams.get('start_date');
   const endDate = searchParams.get('end_date');
-  const customerId = searchParams.get('customer_id');
+  const customerCode = searchParams.get('customer_code');
 
   useEffect(() => {
     async function fetchData() {
@@ -68,7 +69,7 @@ function PrintViewContent() {
             const params = new URLSearchParams({ company_id: companyId });
             if (startDate) params.append('start_date', startDate);
             if (endDate) params.append('end_date', endDate);
-            if (customerId) params.append('customer_id', customerId);
+            if (customerCode) params.append('customer_code', customerCode);
 
             const [reportRes, companyRes, customerRes] = await Promise.all([
                  fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/reports/credit-sales-summary?${params.toString()}`),
@@ -81,7 +82,13 @@ function PrintViewContent() {
             setReportData(resultData.data);
             
             if (companyRes.ok) setCompany(await companyRes.json());
-            if (customerRes.ok) setCustomers((await customerRes.json()) || []);
+            if (customerRes.ok) {
+                const customersData = await customerRes.json() || [];
+                setCustomers(customersData);
+                if (customerCode) {
+                    setCustomer(customersData.find((c: User) => c.customer_id === customerCode) || null);
+                }
+            }
 
         } catch(error) {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch report data.' });
@@ -90,7 +97,7 @@ function PrintViewContent() {
         }
     }
     fetchData();
-  }, [companyId, startDate, endDate, customerId, toast]);
+  }, [companyId, startDate, endDate, customerCode, toast]);
 
   useEffect(() => {
     if (!isLoading && reportData) {
@@ -124,11 +131,20 @@ function PrintViewContent() {
             </div>
             <div className="text-right">
                 <h2 className="text-2xl font-bold uppercase">Credit Sales Summary</h2>
-                <p className="text-xs">
-                    {startDate && endDate ? `${format(new Date(startDate), 'dd/MM/yy')} to ${format(new Date(endDate), 'dd/MM/yy')}` : 'All Time'}
+                <p className="text-xs text-gray-500">
+                    Report generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}
                 </p>
             </div>
         </header>
+
+        <section className="mt-4 mb-6 text-xs text-gray-600">
+            <h3 className="font-bold mb-1">Filters Applied:</h3>
+            <div className="grid grid-cols-4 gap-x-4">
+                {startDate && <div><strong>From:</strong> {format(new Date(startDate), 'dd MMM, yyyy')}</div>}
+                {endDate && <div><strong>To:</strong> {format(new Date(endDate), 'dd MMM, yyyy')}</div>}
+                {customer && <div><strong>Customer:</strong> {customer.customer_first_name} {customer.customer_last_name}</div>}
+            </div>
+        </section>
         
         <main className="mt-6">
             <div className="grid grid-cols-4 gap-4 mb-6 text-center">

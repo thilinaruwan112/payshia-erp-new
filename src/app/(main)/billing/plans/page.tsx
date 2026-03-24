@@ -1,4 +1,4 @@
-
+'use client';
 
 import {
   Card,
@@ -26,20 +26,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useCurrency } from '@/components/currency-provider';
+import { plans } from '@/lib/mock-data/plans';
 
 
-async function getPlans(): Promise<Plan[]> {
-    try {
-        const { plans } = await import('@/lib/mock-data/plans');
-        return plans;
-    } catch (error) {
-        console.error("Failed to fetch plans", error);
-        return [];
-    }
-}
-
-export default async function ManagePlansPage() {
-  const plans = await getPlans();
+export default function ManagePlansPage() {
+  const { currencySymbol } = useCurrency();
 
   return (
     <div className="flex flex-col gap-6">
@@ -78,7 +70,7 @@ export default async function ManagePlansPage() {
               {plans.map((plan) => (
                 <TableRow key={plan.id}>
                   <TableCell className="font-medium">{plan.name}</TableCell>
-                  <TableCell className="text-right">${plan.price}/month</TableCell>
+                  <TableCell className="text-right">{currencySymbol}{plan.price}/month</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

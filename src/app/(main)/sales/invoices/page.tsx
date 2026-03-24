@@ -18,7 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import {
   DropdownMenu,
@@ -72,6 +72,8 @@ export default function InvoicesPage() {
   const { toast } = useToast();
   const { company_id } = useLocation();
   const { currencySymbol } = useCurrency();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   useEffect(() => {
     async function fetchData() {
@@ -111,6 +113,11 @@ export default function InvoicesPage() {
     const customer = customers.find(c => c.customer_id === customerId);
     return customer ? `${customer.customer_first_name} ${customer.customer_last_name}` : `ID: ${customerId}`;
   }
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentInvoices = invoices.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(invoices.length / itemsPerPage);
 
   return (
     <div className="flex flex-col gap-6">
@@ -165,7 +172,7 @@ export default function InvoicesPage() {
                       </TableRow>
                   ))
                 ) : (
-                  invoices.map((invoice) => {
+                  currentInvoices.map((invoice) => {
                     const statusText = getStatusText(invoice.invoice_status);
                     return (
                       <TableRow key={invoice.id}>
@@ -199,7 +206,7 @@ export default function InvoicesPage() {
                     );
                   })
                 )}
-                 {!isLoading && invoices.length === 0 && (
+                 {!isLoading && currentInvoices.length === 0 && (
                   <TableRow>
                       <TableCell colSpan={6} className="h-24 text-center">
                           No invoices found.
@@ -213,7 +220,7 @@ export default function InvoicesPage() {
            <div className="sm:hidden space-y-4">
              {isLoading ? (
                  Array.from({length: 3}).map((_, i) => <Skeleton key={i} className="h-48 w-full" />)
-            ) : invoices.map((invoice) => {
+            ) : currentInvoices.map((invoice) => {
                 const statusText = getStatusText(invoice.invoice_status);
                 return (
                   <Card key={invoice.id}>
@@ -261,6 +268,31 @@ export default function InvoicesPage() {
             })}
           </div>
         </CardContent>
+        <CardFooter className="flex justify-end items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex items-center gap-2">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="sr-only">Previous Page</span>
+                </Button>
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                >
+                    <ChevronRight className="h-4 w-4" />
+                    <span className="sr-only">Next Page</span>
+                </Button>
+            </div>
+        </CardFooter>
       </Card>
     </div>
   );

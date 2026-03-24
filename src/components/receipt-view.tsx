@@ -12,6 +12,7 @@ import { Printer, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { fetcher } from '@/lib/api';
+import { useCurrency } from './currency-provider';
 
 type Receipt = {
     id: string;
@@ -41,6 +42,7 @@ export function ReceiptView({ id }: ReceiptViewProps) {
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { currencySymbol } = useCurrency();
 
   useEffect(() => {
     async function fetchData() {
@@ -158,7 +160,7 @@ export function ReceiptView({ id }: ReceiptViewProps) {
                 </div>
                 <div className="space-y-1">
                     <p className="text-sm font-medium text-muted-foreground">Amount Paid</p>
-                    <p className="font-semibold font-mono text-lg">${amountPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <p className="font-semibold font-mono text-lg">{currencySymbol}{amountPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
             </CardContent>
             {invoice && (
@@ -166,15 +168,15 @@ export function ReceiptView({ id }: ReceiptViewProps) {
                     <div className="w-full max-w-sm space-y-2">
                          <div className="flex justify-between">
                             <span className="text-muted-foreground">Invoice Total</span>
-                            <span className="font-mono">${invoiceTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="font-mono">{currencySymbol}{invoiceTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-muted-foreground">Payment Applied</span>
-                            <span className="font-mono text-green-600">-${amountPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="font-mono text-green-600">-{currencySymbol}{amountPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                         <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
                             <span>Balance Due</span>
-                            <span className="font-mono">${balanceDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="font-mono">{currencySymbol}{balanceDue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
                     </div>
                 </CardFooter>

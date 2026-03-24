@@ -544,7 +544,7 @@ export function OrderPanel({
         inv_amount: orderTotals.subtotal,
         grand_total: orderTotals.total,
         discount_amount: totalDiscount,
-        discount_percentage: orderTotals.subtotal > 0 ? (totalDiscount / orderTotals.subtotal) * 100 : 0,
+        discount_percentage: orderTotals.subtotal > 0 ? ((totalDiscount / orderTotals.subtotal) * 100) : 0,
         customer_code: customer.customer_id,
         service_charge: currentLocation.service_charge_status === 'Enabled' ? orderTotals.serviceCharge : 0,
         tendered_amount: tenderedAmount,
@@ -611,7 +611,7 @@ export function OrderPanel({
             invoiceAmount: orderTotals.total,
             tenderAmount: tenderedAmount,
             changeAmount: tenderedAmount - orderTotals.total,
-            customerName: `${customer.first_name} ${customer.last_name}`,
+            customerName: `${customer.customer_first_name} ${customer.customer_last_name}`,
             companyId: String(company_id),
         });
         

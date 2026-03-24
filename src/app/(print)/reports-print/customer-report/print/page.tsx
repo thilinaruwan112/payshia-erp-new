@@ -1,5 +1,4 @@
 
-
 'use client'
 
 import { useSearchParams } from 'next/navigation';
@@ -79,6 +78,11 @@ function PrintViewContent() {
             </div>
         </header>
         <p className="text-xs text-gray-600 mt-2">Report is generated on {format(new Date(), 'dd/MM/yyyy HH:mm:ss')}</p>
+
+        <section className="mt-4 mb-6 text-xs text-gray-600">
+            <h3 className="font-bold mb-1">Filters Applied:</h3>
+            <p>None</p>
+        </section>
 
         <main className="mt-6">
             <table className="w-full text-left border-collapse">
