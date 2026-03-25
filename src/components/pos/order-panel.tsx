@@ -23,6 +23,7 @@ import {
   ArrowRight,
   User as UserIcon,
   Send,
+  Loader2,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -495,6 +496,32 @@ export function OrderPanel({
   const [isDiscountOpen, setDiscountOpen] = React.useState(false);
   const [isEditOrderOpen, setEditOrderOpen] = React.useState(false);
   const [successData, setSuccessData] = useState<SuccessData | null>(null);
+  const [isHolding, setIsHolding] = useState(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  const handleHoldAndKitchenClick = async () => {
+    setIsHolding(true);
+    try {
+      await onHoldAndKitchen();
+      // On success, the component unmounts, so no need to set state
+    } catch (error) {
+      // If there's an error, the parent component will show a toast.
+      // We just need to re-enable the button.
+      console.error("Hold/Kitchen action failed:", error);
+    } finally {
+      if (isMounted.current) {
+        setIsHolding(false);
+      }
+    }
+  };
+
 
   const { cart, customer, name: orderName, discount, serviceCharge, id: orderId, steward, orderType, tableName } = order;
 
@@ -702,7 +729,7 @@ export function OrderPanel({
                     </Badge>
                     {item.itemDiscount && item.itemDiscount > 0 ? (
                         <span className="text-xs text-green-600">
-                          Discount: -{currencySymbol}{(item.discountPerItem * item.quantity).toFixed(2)}
+                          Discount: -{currencySymbol}{(item.itemDiscount).toFixed(2)}
                         </span>
                       ) : null}
                   </div>
@@ -804,8 +831,9 @@ export function OrderPanel({
                     </DialogTrigger>
                     <DiscountDialog setDiscount={setDiscount} orderSubtotal={orderTotals.subtotal} onClose={() => setDiscountOpen(false)} />
                     </Dialog>
-                    <Button variant="outline" onClick={onHoldAndKitchen} disabled={cart.length === 0} className="h-12">
-                        <Notebook className="mr-2 h-4 w-4" /> Hold
+                    <Button variant="outline" onClick={handleHoldAndKitchenClick} disabled={cart.length === 0 || isHolding} className="h-12">
+                        {isHolding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Notebook className="mr-2 h-4 w-4" />}
+                        Hold
                     </Button>
                     <Button variant="secondary" onClick={handleGuestReceipt} disabled={!order.originalInvoiceNumber} className="h-12">
                         <Receipt className="mr-2 h-4 w-4" /> Guest Receipt
