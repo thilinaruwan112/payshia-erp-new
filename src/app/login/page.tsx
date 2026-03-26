@@ -152,7 +152,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center justify-center min-h-screen py-12">
       <Link href="/" className="flex flex-col items-center gap-4 mb-4">
         <Image src="https://content-provider.payshia.com/payshia-erp/branding/payshia-erp-logo-01.webp" alt="Payshia ERP Logo" width={80} height={80} />
         <span className="font-bold text-2xl">Payshia ERP</span>

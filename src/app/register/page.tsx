@@ -111,7 +111,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-4 py-8">
+    <div className="flex flex-col items-center justify-center min-h-screen py-12">
       <Link href="/" className="flex items-center gap-2 font-bold text-2xl mb-4">
         <Truck className="h-8 w-8 text-primary" />
         <span>Payshia ERP</span>

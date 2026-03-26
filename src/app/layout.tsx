@@ -74,7 +74,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Poppins:400,500,600,700&family=Roboto:400,500,700&display=swap"
           rel="stylesheet"
         ></link>
-        <meta name="theme-color" content="#0a0a0a" />
+        <meta name="theme-color" content="#ffffff" />
       </head>
       <body className="font-body antialiased">
         <Suspense>
@@ -82,7 +82,7 @@ export default function RootLayout({
         </Suspense>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
