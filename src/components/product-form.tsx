@@ -338,7 +338,7 @@ export function ProductForm({ product }: ProductFormProps) {
       cost_price: data.variants[0]?.cost_price || 0,
       min_price: data.variants[0]?.min_price || 0,
       wholesale_price: data.variants[0]?.wholesale_price || 0,
-      stock_unit: data.stockUnit || "PCS",
+      stock_unit: data.stockUnit || "Nos",
       status: data.status,
       sinhala_name: data.sinhalaName || "",
       tamil_name: data.tamilName || "",
@@ -590,9 +590,9 @@ export function ProductForm({ product }: ProductFormProps) {
                                         </FormControl>
                                         <SelectContent>
                                             <SelectItem value="Nos">Nos</SelectItem>
-                                            <SelectItem value="kg">kg</SelectItem>
-                                            <SelectItem value="pieces">pieces</SelectItem>
-                                            <SelectItem value="liters">liters</SelectItem>
+                                            <SelectItem value="kg">Kilograms</SelectItem>
+                                            <SelectItem value="pieces">Pieces</SelectItem>
+                                            <SelectItem value="liters">Liters</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -1135,3 +1135,5 @@ export function ProductForm({ product }: ProductFormProps) {
     </>
   );
 }
+
+    
