@@ -407,7 +407,6 @@ export function ProductForm({ product }: ProductFormProps) {
             };
 
             await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-field-products`, {
-
               method: 'POST',
               body: JSON.stringify(customFieldPayload),
             });
@@ -590,11 +589,10 @@ export function ProductForm({ product }: ProductFormProps) {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="Nos">Nos (Numbers)</SelectItem>
-                                            <SelectItem value="KG">KG (Kilogram)</SelectItem>
-                                            <SelectItem value="Gram">Gram</SelectItem>
-                                            <SelectItem value="Litre">Litre</SelectItem>
-                                            <SelectItem value="ml">ml (Millilitre)</SelectItem>
+                                            <SelectItem value="Nos">Nos</SelectItem>
+                                            <SelectItem value="kg">kg</SelectItem>
+                                            <SelectItem value="pieces">pieces</SelectItem>
+                                            <SelectItem value="liters">liters</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
