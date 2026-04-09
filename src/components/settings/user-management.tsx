@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -58,16 +59,16 @@ interface CompanyUser {
 }
 
 // Dialog to assign a new user
-function AddNewUserDialog({ onAdd }: { onAdd: (email: string, role: string, status: string) => Promise<void> }) {
+function AddNewUserDialog({ onAdd, roles }: { onAdd: (email: string, roleId: string, status: string) => Promise<void>, roles: Role[] }) {
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('user');
+  const [roleId, setRoleId] = useState('');
   const [status, setStatus] = useState('2'); // Default to 'User'
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAdd = async () => {
     setIsSubmitting(true);
-    await onAdd(email, role, status);
+    await onAdd(email, roleId, status);
     setIsSubmitting(false);
     setIsOpen(false);
   };
@@ -94,14 +95,14 @@ function AddNewUserDialog({ onAdd }: { onAdd: (email: string, role: string, stat
             </div>
             <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
-                 <Select value={role} onValueChange={setRole}>
+                 <Select value={roleId} onValueChange={setRoleId}>
                     <SelectTrigger id="role">
                         <SelectValue placeholder="Select a role" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="agent">Sales Agent</SelectItem>
+                        {roles.map(r => (
+                            <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
             </div>
@@ -123,7 +124,7 @@ function AddNewUserDialog({ onAdd }: { onAdd: (email: string, role: string, stat
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-          <Button onClick={handleAdd} disabled={!email || isSubmitting}>
+          <Button onClick={handleAdd} disabled={!email || !roleId || isSubmitting}>
              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
              Assign User
           </Button>
@@ -283,7 +284,7 @@ export function UserManagement() {
     fetchCompanyUsers();
   }, [toast, company_id]);
   
-  const handleAddNewUser = async (email: string, role: string, status: string) => {
+  const handleAddNewUser = async (email: string, roleId: string, status: string) => {
     if (!company_id) {
       toast({ variant: 'destructive', title: 'Error', description: 'Company ID is not available.' });
       return;
@@ -313,7 +314,7 @@ export function UserManagement() {
       const assignPayload = {
         user_id: userId,
         company_id: company_id,
-        role: role,
+        role: parseInt(roleId, 10),
         status: status,
         created_by: loggedInUsername,
         updated_by: loggedInUsername,
@@ -396,7 +397,7 @@ export function UserManagement() {
                    <CardTitle>All Users</CardTitle>
                   <CardDescription>A list of all users in your company.</CardDescription>
               </div>
-               <AddNewUserDialog onAdd={handleAddNewUser} />
+               <AddNewUserDialog onAdd={handleAddNewUser} roles={roles} />
           </div>
         </CardHeader>
         <CardContent>

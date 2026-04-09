@@ -1,5 +1,3 @@
-
-
 'use client'
 
 import {
@@ -78,20 +76,27 @@ export default function ProductsPage() {
          checkPlanLimit('products'),
       ]);
       
-      if (!productsResponse.ok) throw new Error('Failed to fetch products');
+      if (!productsResponse.ok) {
+        if (productsResponse.status === 404) {
+            setProducts([]);
+        } else {
+            throw new Error('Failed to fetch products');
+        }
+      } else {
+        const productsData: { products: { product: Product, variants: ProductVariant[] }[] } = await productsResponse.json();
+        
+        const productsWithVariants = (productsData.products || []).map(item => {
+            return {
+                ...item.product,
+                variants: item.variants || [],
+                price: parseFloat(item.product.price as any) || 0,
+                frontImageUrl: item.product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${item.product.product_image_url}` : null,
+            };
+        });
+        
+        setProducts(productsWithVariants);
+      }
       
-      const productsData: { products: { product: Product, variants: ProductVariant[] }[] } = await productsResponse.json();
-      
-      const productsWithVariants = (productsData.products || []).map(item => {
-          return {
-              ...item.product,
-              variants: item.variants || [],
-              price: parseFloat(item.product.price as any) || 0,
-              frontImageUrl: item.product.product_image_url ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${item.product.product_image_url}` : null,
-          };
-      });
-      
-      setProducts(productsWithVariants);
       setPlanDetails(limitResponse);
 
     } catch (error) {
@@ -100,7 +105,6 @@ export default function ProductsPage() {
         title: "Failed to load products",
         description: "Could not fetch products from the server.",
       });
-      console.error(error);
     } finally {
       setIsLoading(false);
     }

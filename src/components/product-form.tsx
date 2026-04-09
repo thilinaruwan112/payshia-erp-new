@@ -338,7 +338,7 @@ export function ProductForm({ product }: ProductFormProps) {
       cost_price: data.variants[0]?.cost_price || 0,
       min_price: data.variants[0]?.min_price || 0,
       wholesale_price: data.variants[0]?.wholesale_price || 0,
-      stock_unit: data.stockUnit || "PCS",
+      stock_unit: data.stockUnit || "Nos",
       status: data.status,
       sinhala_name: data.sinhalaName || "",
       tamil_name: data.tamilName || "",
@@ -407,7 +407,6 @@ export function ProductForm({ product }: ProductFormProps) {
             };
 
             await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/custom-field-products`, {
-
               method: 'POST',
               body: JSON.stringify(customFieldPayload),
             });
@@ -590,11 +589,10 @@ export function ProductForm({ product }: ProductFormProps) {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="Nos">Nos (Numbers)</SelectItem>
-                                            <SelectItem value="KG">KG (Kilogram)</SelectItem>
-                                            <SelectItem value="Gram">Gram</SelectItem>
-                                            <SelectItem value="Litre">Litre</SelectItem>
-                                            <SelectItem value="ml">ml (Millilitre)</SelectItem>
+                                            <SelectItem value="Nos">Nos</SelectItem>
+                                            <SelectItem value="kg">Kilograms</SelectItem>
+                                            <SelectItem value="pieces">Pieces</SelectItem>
+                                            <SelectItem value="liters">Liters</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -1137,3 +1135,5 @@ export function ProductForm({ product }: ProductFormProps) {
     </>
   );
 }
+
+    
