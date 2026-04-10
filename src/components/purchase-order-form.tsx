@@ -38,7 +38,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Textarea } from "./ui/textarea";
 import { useLocation } from "./location-provider";
 import { Switch } from "./ui/switch";
@@ -46,7 +46,6 @@ import { Combobox } from "./ui/combobox";
 import { useCurrency } from "./currency-provider";
 import { fetcher } from "@/lib/api";
 import { Badge } from "./ui/badge";
-import { Label } from "./ui/label";
 
 
 interface ProductWithApiResponse {
@@ -89,6 +88,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
   const [allTaxes, setAllTaxes] = useState<Tax[]>([]);
+  const [selectedSupplierDetails, setSelectedSupplierDetails] = useState<Supplier | null>(null);
   
   const defaultValues: Partial<PurchaseOrderFormValues> = {
     delivery_date: addDays(new Date(), 14),
@@ -147,17 +147,35 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     fetchTaxes();
   }, [company_id, toast]);
 
+    useEffect(() => {
+    async function fetchSupplierDetails() {
+      if (!supplierId) {
+        setSelectedSupplierDetails(null);
+        return;
+      }
+      try {
+        const res = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/${supplierId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSelectedSupplierDetails(data);
+        } else {
+          setSelectedSupplierDetails(null);
+        }
+      } catch (e) {
+        console.error(e);
+        setSelectedSupplierDetails(null);
+      }
+    }
+    fetchSupplierDetails();
+  }, [supplierId]);
+
   const selectedSupplierTaxes = useMemo(() => {
-    if (!supplierId || !suppliers.length || !allTaxes.length) {
+    if (!selectedSupplierDetails || !selectedSupplierDetails.taxes || !allTaxes.length) {
         return [];
     }
-    const supplier = suppliers.find(s => s.supplier_id === supplierId);
-    if (!supplier || !supplier.taxes) {
-        return [];
-    }
-    const taxIds = supplier.taxes.split(',');
+    const taxIds = selectedSupplierDetails.taxes.split(',').map(id => id.trim());
     return allTaxes.filter(tax => taxIds.includes(tax.id));
-  }, [supplierId, suppliers, allTaxes]);
+  }, [selectedSupplierDetails, allTaxes]);
 
 
    useEffect(() => {
@@ -551,16 +569,9 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                         <span className="font-mono">{currencySymbol}{subTotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span>Tax</span>
+                        <span>Tax ({selectedSupplierTaxes.map(t => t.tax_code).join(', ')})</span>
                         <span className="font-mono">{currencySymbol}{taxAmount.toFixed(2)}</span>
                     </div>
-                     {selectedSupplierTaxes.length > 0 && (
-                        <div className="flex justify-end gap-1 flex-wrap">
-                            {selectedSupplierTaxes.map(tax => (
-                                <Badge key={tax.id} variant="outline" className="font-normal">{tax.tax_name}</Badge>
-                            ))}
-                        </div>
-                    )}
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total</span>
                         <span className="font-mono">{currencySymbol}{totalAmount.toFixed(2)}</span>
@@ -591,4 +602,6 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     </Form>
   );
 }
+    
+
     
