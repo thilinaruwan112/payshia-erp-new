@@ -26,7 +26,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useCurrency } from '@/components/currency-provider';
-import type { Supplier, PaymentMethod } from '@/lib/types';
+import type { Supplier } from '@/lib/types';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from '@/components/location-provider';
@@ -35,11 +35,14 @@ import { fetcher } from '@/lib/api';
 
 interface SupplierPayment {
     id: string;
-    payment_date: string;
-    supplier_id: string;
+    company_id: string;
     grn_number: string;
-    amount: string;
-    payment_method_id: string;
+    suppliar_id: string;
+    date_of_payment: string;
+    total_amount: string;
+    is_active: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export default function PaymentsPage() {
@@ -48,7 +51,6 @@ export default function PaymentsPage() {
     const { company_id } = useLocation();
     const [payments, setPayments] = useState<SupplierPayment[]>([]);
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -59,23 +61,19 @@ export default function PaymentsPage() {
         async function fetchPaymentsData() {
             setIsLoading(true);
             try {
-                const [paymentsRes, suppliersRes, paymentMethodsRes] = await Promise.all([
-                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliar_payment?company_id=${company_id}`),
+                const [paymentsRes, suppliersRes] = await Promise.all([
+                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliar-payment/company?company_id=${company_id}`),
                     fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/filter/by-company?company_id=${company_id}`),
-                    fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payment-method/filter/by-company?company_id=${company_id}`)
                 ]);
 
                 if (!paymentsRes.ok) throw new Error('Failed to fetch payments');
                 if (!suppliersRes.ok) throw new Error('Failed to fetch suppliers');
-                if (!paymentMethodsRes.ok) throw new Error('Failed to fetch payment methods');
                 
                 const paymentsData = await paymentsRes.json();
                 const suppliersData = await suppliersRes.json();
-                const paymentMethodsData = await paymentMethodsRes.json();
                 
-                setPayments(paymentsData.data || []);
+                setPayments(paymentsData || []);
                 setSuppliers(suppliersData || []);
-                setPaymentMethods(paymentMethodsData || []);
 
             } catch (error) {
                  toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch payments.' });
@@ -87,7 +85,6 @@ export default function PaymentsPage() {
     }, [company_id, toast]);
     
     const getSupplierName = (supplierId: string) => suppliers.find(s => s.supplier_id === supplierId)?.supplier_name || 'N/A';
-    const getPaymentMethodName = (methodId: string) => paymentMethods.find(pm => pm.id === methodId)?.method || 'N/A';
 
   return (
     <div className="flex flex-col gap-6">
@@ -120,7 +117,6 @@ export default function PaymentsPage() {
                 <TableHead>Date</TableHead>
                 <TableHead>Supplier</TableHead>
                 <TableHead className="hidden sm:table-cell">GRN Reference</TableHead>
-                 <TableHead className="hidden md:table-cell">Paid From</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -134,18 +130,16 @@ export default function PaymentsPage() {
                         <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                         <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-20" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
                         <TableCell className="text-right"><Skeleton className="h-4 w-16" /></TableCell>
                         <TableCell className="text-right"><Skeleton className="h-8 w-8" /></TableCell>
                     </TableRow>
                 ))
               ) : payments.map((payment) => (
                 <TableRow key={payment.id}>
-                  <TableCell>{new Date(payment.payment_date).toLocaleDateString()}</TableCell>
-                  <TableCell className="font-medium">{getSupplierName(payment.supplier_id)}</TableCell>
+                  <TableCell>{new Date(payment.date_of_payment).toLocaleDateString()}</TableCell>
+                  <TableCell className="font-medium">{getSupplierName(payment.suppliar_id)}</TableCell>
                   <TableCell className="hidden sm:table-cell">{payment.grn_number || 'N/A'}</TableCell>
-                   <TableCell className="hidden md:table-cell">{getPaymentMethodName(payment.payment_method_id)}</TableCell>
-                  <TableCell className="text-right font-mono">{currencySymbol}{(parseFloat(payment.amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right font-mono">{currencySymbol}{(parseFloat(payment.total_amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
