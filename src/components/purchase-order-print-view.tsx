@@ -32,7 +32,7 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
-  const [taxes, setTaxes] = useState<Tax[]>([]); // New state for taxes
+  const [taxes, setTaxes] = useState<Tax[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
@@ -68,14 +68,14 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
         setVariants(variantsData);
 
         if (poData.company_id && poData.location_id) {
-             const [companyRes, locationRes, taxesRes] = await Promise.all([ // Added taxesRes
+             const [companyRes, locationRes, taxesRes] = await Promise.all([
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${poData.company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${poData.location_id}`),
-                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes/filter/by-company?company_id=${poData.company_id}`), // Fetch taxes
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes/filter/by-company?company_id=${poData.company_id}`),
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());
-            if(taxesRes.ok) { // Process taxes
+            if(taxesRes.ok) {
                 const taxesData = await taxesRes.json();
                  const formattedTaxes: Tax[] = (taxesData || []).map((item: any) => ({
                     id: item.tax_id, tax_code: item.tax_code, tax_name: item.tax_name,
@@ -115,23 +115,10 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
   const getProductName = (productId: string) => products.find(p => p.id === productId)?.name || 'Unknown Product';
   const getVariantSku = (variantId: string) => variants.find(v => v.id === variantId)?.sku || 'N/A';
   
-  if (isLoading || !po) {
-    return <PrintViewSkeleton />;
-  }
-
-  const poItems = po.items?.map(item => ({
-    ...item,
-    product_name: getProductName(item.product_id),
-    variant_sku: getVariantSku(item.product_variant_id),
-    total_cost: parseFloat(String(item.order_rate)) * item.quantity,
-  }));
-  
-  const logoUrl = company?.org_logo ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${company.org_logo}` : null;
-  
-  const subTotal = parseFloat(po.sub_total);
+  const subTotal = po ? parseFloat(po.sub_total) : 0;
 
   const appliedTaxes = useMemo(() => {
-    if (!supplier || !supplier.taxes || !taxes.length) {
+    if (!po || !supplier || !supplier.taxes || !taxes.length) {
       return [];
     }
     if (po.tax_type !== 'exclusive' && po.tax_type !== 'VAT' && po.tax_type !== 'GST') {
@@ -144,17 +131,33 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
             const taxAmount = subTotal * (tax.rate / 100);
             return { name: tax.tax_name, amount: taxAmount };
         });
-  }, [supplier, taxes, subTotal, po.tax_type]);
+  }, [supplier, taxes, subTotal, po]);
 
   const totalTaxAmount = appliedTaxes.reduce((sum, tax) => sum + tax.amount, 0);
   const totalAmount = subTotal + totalTaxAmount;
+
+  const poItems = useMemo(() => {
+    if (!po?.items) return [];
+    return po.items.map(item => ({
+        ...item,
+        product_name: getProductName(item.product_id),
+        variant_sku: getVariantSku(item.product_variant_id),
+        total_cost: parseFloat(String(item.order_rate)) * item.quantity,
+    }));
+  }, [po, products, variants]);
+
+  const logoUrl = company?.org_logo ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${company.org_logo}` : null;
+  
+  if (isLoading || !po) {
+    return <PrintViewSkeleton />;
+  }
 
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
       <header className="flex justify-between items-start pb-6 border-b-2 border-gray-200">
         <div className="flex items-center gap-4">
-            {logoUrl && <Image src={logoUrl} alt="Company Logo" width={80} height={80} className="rounded-md" />}
+             {logoUrl && <Image src={logoUrl} alt="Company Logo" width={80} height={80} className="rounded-md" />}
             <div>
                 <h1 className="text-2xl font-bold text-gray-800">{company?.company_name || 'Payshia ERP'}</h1>
                  <p className="font-semibold">{location?.location_name}</p>
