@@ -140,7 +140,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
             toast({
                 variant: "destructive",
                 title: "Error fetching taxes",
-                description: "Could not load tax options.",
+                description: "Could not load tax options for the form.",
             });
         }
     }
@@ -262,7 +262,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     try {
         const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders`, {
             method: 'POST',
-            body: JSON.stringify(poPayload),
+            body: JSON.stringify(payload),
         });
 
         const result = await response.json();
@@ -554,6 +554,13 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                         <span>Tax</span>
                         <span className="font-mono">{currencySymbol}{taxAmount.toFixed(2)}</span>
                     </div>
+                     {selectedSupplierTaxes.length > 0 && (
+                        <div className="flex justify-end gap-1 flex-wrap">
+                            {selectedSupplierTaxes.map(tax => (
+                                <Badge key={tax.id} variant="outline" className="font-normal">{tax.tax_name}</Badge>
+                            ))}
+                        </div>
+                    )}
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total</span>
                         <span className="font-mono">{currencySymbol}{totalAmount.toFixed(2)}</span>
