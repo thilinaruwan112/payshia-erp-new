@@ -124,7 +124,16 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
             const data = await response.json();
             const formattedData: Tax[] = (data || []).map((item: any) => ({
                 id: item.tax_id,
+                tax_code: item.tax_code,
                 tax_name: item.tax_name,
+                rate: parseFloat(item.rate),
+                apply_on: item.apply_on,
+                sort_order: parseInt(item.sort_order, 10),
+                is_active: parseInt(item.is_active, 10),
+                company_id: parseInt(item.company_id, 10),
+                location_id: parseInt(item.location_id, 10),
+                created_by: item.created_by,
+                created_at: item.created_at,
             }));
             setAllTaxes(formattedData);
         } catch (error) {
@@ -137,6 +146,18 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     }
     fetchTaxes();
   }, [company_id, toast]);
+
+  const selectedSupplierTaxes = useMemo(() => {
+    if (!supplierId || !suppliers.length || !allTaxes.length) {
+        return [];
+    }
+    const supplier = suppliers.find(s => s.supplier_id === supplierId);
+    if (!supplier || !supplier.taxes) {
+        return [];
+    }
+    const taxIds = supplier.taxes.split(',');
+    return allTaxes.filter(tax => taxIds.includes(tax.id));
+  }, [supplierId, suppliers, allTaxes]);
 
 
    useEffect(() => {
@@ -174,14 +195,27 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   }, [supplierId, company_id, toast, replace, append]);
   
 
-  const subTotal = watchedItems.reduce((total, item) => {
-    const quantity = Number(item.quantity) || 0;
-    const cost = Number(item.order_rate) || 0;
-    return total + (quantity * cost);
-  }, 0);
-  
-  const totalAmount = subTotal;
+  const { subTotal, taxAmount, totalAmount } = useMemo(() => {
+    const sub = watchedItems.reduce((total, item) => {
+        const quantity = Number(item.quantity) || 0;
+        const cost = Number(item.order_rate) || 0;
+        return total + (quantity * cost);
+    }, 0);
 
+    let tax = 0;
+    const taxType = form.getValues('tax_type');
+    if (taxType === 'exclusive' || taxType === 'VAT' || taxType === 'GST') {
+        if (selectedSupplierTaxes.length > 0) {
+            const totalRate = selectedSupplierTaxes.reduce((rateSum, tax) => rateSum + tax.rate, 0);
+            tax = sub * (totalRate / 100);
+        }
+    }
+    
+    const total = sub + tax;
+
+    return { subTotal: sub, taxAmount: tax, totalAmount: total };
+  }, [watchedItems, form, selectedSupplierTaxes]);
+  
   async function onSubmit(data: PurchaseOrderFormValues) {
     if (!currentLocation || !company_id) {
         toast({
@@ -260,19 +294,6 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   
   const supplierOptions = suppliers.map(s => ({ value: s.supplier_id, label: s.supplier_name }));
   const productOptions = availableProducts.map(p => ({ value: p.product.id, label: p.product.name }));
-  
-   const selectedSupplierTaxes = useMemo(() => {
-    if (!supplierId || !suppliers.length || !allTaxes.length) {
-        return [];
-    }
-    const supplier = suppliers.find(s => s.supplier_id === supplierId);
-    if (!supplier || !supplier.taxes) {
-        return [];
-    }
-    const taxIds = supplier.taxes.split(',');
-    return allTaxes.filter(tax => taxIds.includes(tax.id));
-  }, [supplierId, suppliers, allTaxes]);
-
 
   return (
     <Form {...form}>
@@ -390,16 +411,6 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                         </FormItem>
                     )}
                 />
-                {selectedSupplierTaxes.length > 0 && (
-                    <div className="md:col-span-4 flex items-center gap-4 rounded-md border bg-muted p-3 -mt-2">
-                        <Label className="text-sm font-medium text-muted-foreground">Applicable Taxes:</Label>
-                        <div className="flex flex-wrap gap-2">
-                            {selectedSupplierTaxes.map(tax => (
-                                <Badge key={tax.id} variant="secondary">{tax.tax_name}</Badge>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </CardContent>
         </Card>
 
@@ -529,15 +540,19 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                          )}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', product_variant_id: '', quantity: 1, order_rate: 0 })} className="mt-4" disabled={!supplierId}>
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', product_variant_id: '', quantity: 1, order_rate: 0, is_active: 1 })} className="mt-4" disabled={!supplierId}>
                     Add another item
                 </Button>
             </CardContent>
             <CardFooter className="flex flex-col items-end gap-4">
-                 <div className="w-full max-w-sm space-y-2">
+                <div className="w-full max-w-sm space-y-2">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
                         <span className="font-mono">{currencySymbol}{subTotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span>Tax</span>
+                        <span className="font-mono">{currencySymbol}{taxAmount.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total</span>
