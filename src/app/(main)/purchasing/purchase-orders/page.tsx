@@ -40,28 +40,41 @@ import { Separator } from '@/components/ui/separator';
 import { fetcher } from '@/lib/api';
 
 const getStatusText = (status: string) => {
-  switch (status) {
+  if (!status) return 'Unknown';
+  const lowerStatus = status.toLowerCase();
+  switch (lowerStatus) {
+    case 'pending':
     case '0':
       return 'Pending';
+    case 'approved':
     case '1':
       return 'Approved';
+    case 'rejected':
     case '2':
       return 'Rejected';
+    case 'cancelled':
     case '3':
       return 'Cancelled';
     default:
-      return 'Unknown';
+      return status.charAt(0).toUpperCase() + status.slice(1);
   }
 };
 
 const getStatusColor = (status: string) => {
-  switch (status) {
-    case '0': // Pending
+  if (!status) return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+  const lowerStatus = status.toLowerCase();
+  switch (lowerStatus) {
+    case 'pending':
+    case '0':
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-    case '1': // Approved
+    case 'approved':
+    case '1':
       return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-    case '2': // Rejected
-    case '3': // Cancelled
+    case 'rejected':
+    case '2':
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+    case 'cancelled':
+    case '3':
       return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
     default:
       return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';

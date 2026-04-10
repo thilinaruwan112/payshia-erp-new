@@ -183,6 +183,7 @@ export type Supplier = {
   postal_code?: string;
   fax: string;
   opening_balance: string;
+  taxes?: string;
 };
 
 export type PurchaseOrder = {
@@ -667,4 +668,18 @@ export type PaymentMethod = {
   updated_by: string | null;
   updated_at: string | null;
   is_active: string;
+};
+
+export type Tax = {
+  id: string;
+  tax_code: string;
+  tax_name: string;
+  rate: number;
+  apply_on: string;
+  sort_order: number;
+  is_active: number;
+  company_id: number;
+  location_id: number;
+  created_by: string;
+  created_at: string;
 };

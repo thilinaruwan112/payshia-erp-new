@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormMessage, FormLabel } from '@/components/ui/form';
 import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useState } from "react";
 import { Loader2, ArrowLeft, Printer, FileText, PlusCircle, Trash2, MinusCircle, ShieldCheck } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
@@ -59,10 +58,11 @@ const getStatusColor = (status: JobStatus) => {
 };
 
 
-export default function JobDetailsPage({ params }: { params: { id: string } }) {
+export default function JobDetailsPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { id } = params;
+  const params = useParams();
+  const id = typeof params.id === 'string' ? params.id : '';
   const { currencySymbol } = useCurrency();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [jobItems, setJobItems] = useState<JobItem[]>([]);

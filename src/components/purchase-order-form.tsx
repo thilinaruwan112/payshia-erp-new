@@ -31,20 +31,22 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, PurchaseOrderItem, Supplier, ProductVariant, Location } from "@/lib/types";
+import type { PurchaseOrder, Supplier, Product, ProductVariant, Location, Tax } from "@/lib/types";
 import { CalendarIcon, Trash2, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Textarea } from "./ui/textarea";
 import { useLocation } from "./location-provider";
 import { Switch } from "./ui/switch";
 import { Combobox } from "./ui/combobox";
 import { useCurrency } from "./currency-provider";
 import { fetcher } from "@/lib/api";
+import { Badge } from "./ui/badge";
+
 
 interface ProductWithApiResponse {
   product: Product;
@@ -85,6 +87,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const [availableProducts, setAvailableProducts] = useState<ProductWithApiResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [allTaxes, setAllTaxes] = useState<Tax[]>([]);
+  const [selectedSupplierDetails, setSelectedSupplierDetails] = useState<Supplier | null>(null);
   
   const defaultValues: Partial<PurchaseOrderFormValues> = {
     delivery_date: addDays(new Date(), 14),
@@ -110,6 +114,71 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   
   const watchedItems = form.watch("items");
   const supplierId = form.watch("supplierId");
+  const taxType = form.watch("tax_type");
+
+  
+  useEffect(() => {
+    async function fetchTaxes() {
+        if (!company_id) return;
+        try {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes/filter/by-company?company_id=${company_id}`);
+            if (!response.ok) throw new Error('Failed to fetch taxes');
+            const data = await response.json();
+            const formattedData: Tax[] = (data || []).map((item: any) => ({
+                id: item.tax_id,
+                tax_code: item.tax_code,
+                tax_name: item.tax_name,
+                rate: parseFloat(item.rate),
+                apply_on: item.apply_on,
+                sort_order: parseInt(item.sort_order, 10),
+                is_active: parseInt(item.is_active, 10),
+                company_id: parseInt(item.company_id, 10),
+                location_id: parseInt(item.location_id, 10),
+                created_by: item.created_by,
+                created_at: item.created_at,
+            }));
+            setAllTaxes(formattedData);
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Error fetching taxes",
+                description: "Could not load tax options for the form.",
+            });
+        }
+    }
+    fetchTaxes();
+  }, [company_id, toast]);
+
+  useEffect(() => {
+    async function fetchSupplierDetails() {
+      if (!supplierId) {
+        setSelectedSupplierDetails(null);
+        return;
+      }
+      try {
+        const res = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/suppliers/${supplierId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSelectedSupplierDetails(data);
+        } else {
+          setSelectedSupplierDetails(null);
+        }
+      } catch (e) {
+        console.error(e);
+        setSelectedSupplierDetails(null);
+      }
+    }
+    fetchSupplierDetails();
+  }, [supplierId]);
+
+  const selectedSupplierTaxes = useMemo(() => {
+    if (!selectedSupplierDetails || !selectedSupplierDetails.taxes || !allTaxes.length) {
+        return [];
+    }
+    const taxIds = selectedSupplierDetails.taxes.split(',').map(id => id.trim());
+    return allTaxes.filter(tax => taxIds.includes(tax.id));
+  }, [selectedSupplierDetails, allTaxes]);
+
 
    useEffect(() => {
     async function fetchProductsBySupplier(supplierId: string) {
@@ -145,14 +214,26 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     }
   }, [supplierId, company_id, toast, replace, append]);
   
-
+  // Calculate totals on every render for accuracy
   const subTotal = watchedItems.reduce((total, item) => {
     const quantity = Number(item.quantity) || 0;
     const cost = Number(item.order_rate) || 0;
-    return total + (quantity * cost);
+    return total + quantity * cost;
   }, 0);
+
+  const taxes = useMemo(() => {
+    if ((taxType === "exclusive" || taxType === "VAT" || taxType === "GST") && selectedSupplierTaxes.length > 0) {
+      return selectedSupplierTaxes.map((tax) => {
+        const taxAmount = subTotal * (tax.rate / 100);
+        return { name: tax.tax_name, amount: taxAmount };
+      });
+    }
+    return [];
+  }, [taxType, selectedSupplierTaxes, subTotal]);
+
+  const totalTaxAmount = taxes.reduce((sum, tax) => sum + tax.amount, 0);
+  const totalAmount = subTotal + totalTaxAmount;
   
-  const totalAmount = subTotal;
 
   async function onSubmit(data: PurchaseOrderFormValues) {
     if (!currentLocation || !company_id) {
@@ -349,23 +430,6 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                         </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="is_active"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col justify-end">
-                            <FormLabel>Active</FormLabel>
-                             <div className="h-10 flex items-center">
-                                <FormControl>
-                                    <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    />
-                                </FormControl>
-                            </div>
-                        </FormItem>
-                    )}
-                    />
             </CardContent>
         </Card>
 
@@ -495,16 +559,22 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                          )}
                     </TableBody>
                 </Table>
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', product_variant_id: '', quantity: 1, order_rate: 0 })} className="mt-4" disabled={!supplierId}>
+                <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', product_variant_id: '', quantity: 1, order_rate: 0, is_active: 1 })} className="mt-4" disabled={!supplierId}>
                     Add another item
                 </Button>
             </CardContent>
             <CardFooter className="flex flex-col items-end gap-4">
-                 <div className="w-full max-w-sm space-y-2">
+                <div className="w-full max-w-sm space-y-2">
                     <div className="flex justify-between">
                         <span>Subtotal</span>
                         <span className="font-mono">{currencySymbol}{subTotal.toFixed(2)}</span>
                     </div>
+                    {taxes.map((tax, index) => (
+                        <div key={index} className="flex justify-between">
+                            <span>{tax.name}</span>
+                            <span className="font-mono">{currencySymbol}{tax.amount.toFixed(2)}</span>
+                        </div>
+                    ))}
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
                         <span>Total</span>
                         <span className="font-mono">{currencySymbol}{totalAmount.toFixed(2)}</span>
@@ -536,3 +606,6 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   );
 }
     
+
+    
+

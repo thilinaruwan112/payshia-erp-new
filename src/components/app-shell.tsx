@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { type ReactNode, useState, useEffect, useCallback } from 'react';
@@ -180,6 +179,7 @@ const iconMap: { [key: string]: React.ElementType } = {
   cancellation: Ban,
   'billing-plans': CreditCard,
   currency: DollarSign,
+  taxes: Percent,
   'pos-system': Terminal,
   'how-to-use': HelpCircle,
 };
@@ -624,7 +624,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             // START INJECTION for Saved BOM
             const productionCategory = finalNavItems.find(item => item.label === 'Production');
             if (productionCategory && productionCategory.subItems) {
-                // Check if it already exists to avoid duplicates on re-render
                 if (!productionCategory.subItems.find(sub => sub.name === 'saved-bom')) {
                     productionCategory.subItems.push({
                         href: '/production/saved-bom',
@@ -635,6 +634,35 @@ export function AppShell({ children }: { children: ReactNode }) {
                 }
             }
             // END INJECTION
+
+            // START INJECTION for Taxes - NEW LOGIC
+            let settingsCategory = finalNavItems.find(item => item.label === 'Settings');
+            if (!settingsCategory) {
+                // If the "Settings" category doesn't exist from permissions, create it.
+                settingsCategory = {
+                    label: 'Settings',
+                    icon: Settings,
+                    name: 'settings',
+                    subItems: [],
+                };
+                finalNavItems.push(settingsCategory);
+            }
+            
+            if (settingsCategory.subItems) {
+                // Check if 'Taxes' link is already there to prevent duplicates
+                if (!settingsCategory.subItems.find(sub => sub.name === 'taxes')) {
+                    settingsCategory.subItems.push({
+                        href: '/settings/taxes',
+                        label: 'Taxes',
+                        icon: Percent,
+                        name: 'taxes',
+                    });
+
+                    // Optional: sort sub-items alphabetically for consistent order
+                    settingsCategory.subItems.sort((a, b) => a.label.localeCompare(b.label));
+                }
+            }
+            // END INJECTION for Taxes
             
             setNavItems(finalNavItems);
             
