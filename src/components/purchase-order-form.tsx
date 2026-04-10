@@ -31,20 +31,23 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, PurchaseOrderItem, Supplier, ProductVariant, Location } from "@/lib/types";
+import type { Product, PurchaseOrderItem, Supplier, ProductVariant, Location, Tax } from "@/lib/types";
 import { CalendarIcon, Trash2, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Textarea } from "./ui/textarea";
 import { useLocation } from "./location-provider";
 import { Switch } from "./ui/switch";
 import { Combobox } from "./ui/combobox";
 import { useCurrency } from "./currency-provider";
 import { fetcher } from "@/lib/api";
+import { Badge } from "./ui/badge";
+import { Label } from "./ui/label";
+
 
 interface ProductWithApiResponse {
   product: Product;
@@ -85,6 +88,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   const [availableProducts, setAvailableProducts] = useState<ProductWithApiResponse[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [allTaxes, setAllTaxes] = useState<Tax[]>([]);
   
   const defaultValues: Partial<PurchaseOrderFormValues> = {
     delivery_date: addDays(new Date(), 14),
@@ -110,6 +114,30 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   
   const watchedItems = form.watch("items");
   const supplierId = form.watch("supplierId");
+  
+  useEffect(() => {
+    async function fetchTaxes() {
+        if (!company_id) return;
+        try {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes/filter/by-company?company_id=${company_id}`);
+            if (!response.ok) throw new Error('Failed to fetch taxes');
+            const data = await response.json();
+            const formattedData: Tax[] = (data || []).map((item: any) => ({
+                id: item.tax_id,
+                tax_name: item.tax_name,
+            }));
+            setAllTaxes(formattedData);
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Error fetching taxes",
+                description: "Could not load tax options.",
+            });
+        }
+    }
+    fetchTaxes();
+  }, [company_id, toast]);
+
 
    useEffect(() => {
     async function fetchProductsBySupplier(supplierId: string) {
@@ -232,6 +260,19 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   
   const supplierOptions = suppliers.map(s => ({ value: s.supplier_id, label: s.supplier_name }));
   const productOptions = availableProducts.map(p => ({ value: p.product.id, label: p.product.name }));
+  
+   const selectedSupplierTaxes = useMemo(() => {
+    if (!supplierId || !suppliers.length || !allTaxes.length) {
+        return [];
+    }
+    const supplier = suppliers.find(s => s.supplier_id === supplierId);
+    if (!supplier || !supplier.taxes) {
+        return [];
+    }
+    const taxIds = supplier.taxes.split(',');
+    return allTaxes.filter(tax => taxIds.includes(tax.id));
+  }, [supplierId, suppliers, allTaxes]);
+
 
   return (
     <Form {...form}>
@@ -349,23 +390,16 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
                         </FormItem>
                     )}
                 />
-                <FormField
-                    control={form.control}
-                    name="is_active"
-                    render={({ field }) => (
-                        <FormItem className="flex flex-col justify-end">
-                            <FormLabel>Active</FormLabel>
-                             <div className="h-10 flex items-center">
-                                <FormControl>
-                                    <Switch
-                                    checked={field.value}
-                                    onCheckedChange={field.onChange}
-                                    />
-                                </FormControl>
-                            </div>
-                        </FormItem>
-                    )}
-                    />
+                {selectedSupplierTaxes.length > 0 && (
+                    <div className="md:col-span-4 flex items-center gap-4 rounded-md border bg-muted p-3 -mt-2">
+                        <Label className="text-sm font-medium text-muted-foreground">Applicable Taxes:</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {selectedSupplierTaxes.map(tax => (
+                                <Badge key={tax.id} variant="secondary">{tax.tax_name}</Badge>
+                            ))}
+                        </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
 
