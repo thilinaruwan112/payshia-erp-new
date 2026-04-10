@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { type ReactNode, useState, useEffect, useCallback } from 'react';
@@ -180,6 +179,7 @@ const iconMap: { [key: string]: React.ElementType } = {
   cancellation: Ban,
   'billing-plans': CreditCard,
   currency: DollarSign,
+  taxes: Percent,
   'pos-system': Terminal,
   'how-to-use': HelpCircle,
 };

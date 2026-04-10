@@ -668,3 +668,17 @@ export type PaymentMethod = {
   updated_at: string | null;
   is_active: string;
 };
+
+export type Tax = {
+  id: string;
+  tax_code: string;
+  tax_name: string;
+  rate: number;
+  apply_on: string;
+  sort_order: number;
+  is_active: number;
+  company_id: number;
+  location_id: number;
+  created_by: string;
+  created_at: string;
+};
