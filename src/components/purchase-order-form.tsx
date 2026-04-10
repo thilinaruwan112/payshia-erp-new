@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Product, PurchaseOrderItem, Supplier, ProductVariant, Location, Tax } from "@/lib/types";
+import type { PurchaseOrder, Supplier, Product, ProductVariant, Location, Tax } from "@/lib/types";
 import { CalendarIcon, Trash2, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
@@ -114,6 +114,8 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
   
   const watchedItems = form.watch("items");
   const supplierId = form.watch("supplierId");
+  const taxType = form.watch("tax_type");
+
   
   useEffect(() => {
     async function fetchTaxes() {
@@ -212,35 +214,27 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     }
   }, [supplierId, company_id, toast, replace, append]);
   
+  // Calculate totals on every render for accuracy
+  const subTotal = watchedItems.reduce((total, item) => {
+    const quantity = Number(item.quantity) || 0;
+    const cost = Number(item.order_rate) || 0;
+    return total + quantity * cost;
+  }, 0);
 
-    const { subTotal, taxes, totalAmount } = useMemo(() => {
-        const sub = watchedItems.reduce((total, item) => {
-            const quantity = Number(item.quantity) || 0;
-            const cost = Number(item.order_rate) || 0;
-            return total + quantity * cost;
-        }, 0);
+  const taxes = useMemo(() => {
+    if ((taxType === "exclusive" || taxType === "VAT" || taxType === "GST") && selectedSupplierTaxes.length > 0) {
+      return selectedSupplierTaxes.map((tax) => {
+        const taxAmount = subTotal * (tax.rate / 100);
+        return { name: tax.tax_name, amount: taxAmount };
+      });
+    }
+    return [];
+  }, [taxType, selectedSupplierTaxes, subTotal]);
 
-        let calculatedTaxes: { name: string; amount: number }[] = [];
-        const taxType = form.getValues("tax_type");
-
-        if (taxType === "exclusive" || taxType === "VAT" || taxType === "GST") {
-            if (selectedSupplierTaxes.length > 0) {
-            calculatedTaxes = selectedSupplierTaxes.map((tax) => {
-                const taxAmount = sub * (tax.rate / 100);
-                return { name: tax.tax_name, amount: taxAmount };
-            });
-            }
-        }
-
-        const totalTaxAmount = calculatedTaxes.reduce(
-            (sum, tax) => sum + tax.amount,
-            0
-        );
-        const total = sub + totalTaxAmount;
-
-        return { subTotal: sub, taxes: calculatedTaxes, totalAmount: total };
-    }, [watchedItems, form, selectedSupplierTaxes]);
+  const totalTaxAmount = taxes.reduce((sum, tax) => sum + tax.amount, 0);
+  const totalAmount = subTotal + totalTaxAmount;
   
+
   async function onSubmit(data: PurchaseOrderFormValues) {
     if (!currentLocation || !company_id) {
         toast({
@@ -287,7 +281,7 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     try {
         const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/purchase-orders`, {
             method: 'POST',
-            body: JSON.stringify(payload),
+            body: JSON.stringify(poPayload),
         });
 
         const result = await response.json();
@@ -614,3 +608,4 @@ export function PurchaseOrderForm({ suppliers }: PurchaseOrderFormProps) {
     
 
     
+
