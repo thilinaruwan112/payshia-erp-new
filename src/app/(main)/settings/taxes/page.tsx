@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -48,23 +47,43 @@ export default function TaxesPage() {
         };
         setIsLoading(true);
         try {
-            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes?company_id=${company_id}`);
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes/filter/by-company?company_id=${company_id}`);
             if (!response.ok) throw new Error('Failed to fetch taxes.');
-            const data: Tax[] = await response.json();
-            setTaxes(data || []);
+            const data: any[] = await response.json();
+            
+            const formattedData: Tax[] = (data || []).map(item => ({
+                id: item.tax_id,
+                tax_code: item.tax_code,
+                tax_name: item.tax_name,
+                rate: parseFloat(item.rate),
+                apply_on: item.apply_on,
+                sort_order: parseInt(item.sort_order, 10),
+                is_active: parseInt(item.is_active, 10),
+                company_id: parseInt(item.company_id, 10),
+                location_id: parseInt(item.location_id, 10),
+                created_by: item.created_by,
+                created_at: item.created_at,
+            }));
+
+            setTaxes(formattedData);
         } catch (error) {
             toast({
                 variant: 'destructive',
                 title: 'Error',
                 description: 'Could not load taxes.'
             });
+            setTaxes([]);
         } finally {
             setIsLoading(false);
         }
     }
 
     useEffect(() => {
-        fetchTaxes();
+        if (company_id) {
+          fetchTaxes();
+        } else {
+          setIsLoading(false);
+        }
     }, [company_id]);
 
     return (
