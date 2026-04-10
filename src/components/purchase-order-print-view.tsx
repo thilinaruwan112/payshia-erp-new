@@ -1,9 +1,9 @@
 
 'use client'
 
-import { type PurchaseOrder, type Supplier, type Product, type ProductVariant, type Location } from '@/lib/types';
-import { notFound } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { type PurchaseOrder, type Supplier, type Product, type ProductVariant, type Location, type Tax } from '@/lib/types';
+import { notFound, useRouter } from 'next/navigation';
+import { useEffect, useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -32,6 +32,7 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
+  const [taxes, setTaxes] = useState<Tax[]>([]); // New state for taxes
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { currencySymbol } = useCurrency();
@@ -67,12 +68,23 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
         setVariants(variantsData);
 
         if (poData.company_id && poData.location_id) {
-             const [companyRes, locationRes] = await Promise.all([
+             const [companyRes, locationRes, taxesRes] = await Promise.all([ // Added taxesRes
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/companies/${poData.company_id}`),
                 fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/locations/${poData.location_id}`),
+                fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes/filter/by-company?company_id=${poData.company_id}`), // Fetch taxes
             ]);
             if(companyRes.ok) setCompany(await companyRes.json());
             if(locationRes.ok) setLocation(await locationRes.json());
+            if(taxesRes.ok) { // Process taxes
+                const taxesData = await taxesRes.json();
+                 const formattedTaxes: Tax[] = (taxesData || []).map((item: any) => ({
+                    id: item.tax_id, tax_code: item.tax_code, tax_name: item.tax_name,
+                    rate: parseFloat(item.rate), apply_on: item.apply_on, sort_order: parseInt(item.sort_order, 10),
+                    is_active: parseInt(item.is_active, 10), company_id: parseInt(item.company_id, 10),
+                    location_id: parseInt(item.location_id, 10), created_by: item.created_by, created_at: item.created_at,
+                }));
+                setTaxes(formattedTaxes);
+            }
         }
 
       } catch (error) {
@@ -103,12 +115,8 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
   const getProductName = (productId: string) => products.find(p => p.id === productId)?.name || 'Unknown Product';
   const getVariantSku = (variantId: string) => variants.find(v => v.id === variantId)?.sku || 'N/A';
   
-  if (isLoading) {
+  if (isLoading || !po) {
     return <PrintViewSkeleton />;
-  }
-
-  if (!po) {
-    return <div>Purchase Order not found or failed to load.</div>;
   }
 
   const poItems = po.items?.map(item => ({
@@ -119,6 +127,28 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
   }));
   
   const logoUrl = company?.org_logo ? `${process.env.NEXT_PUBLIC_IMAGE_PROVIDER_URL}${company.org_logo}` : null;
+  
+  const subTotal = parseFloat(po.sub_total);
+
+  const appliedTaxes = useMemo(() => {
+    if (!supplier || !supplier.taxes || !taxes.length) {
+      return [];
+    }
+    if (po.tax_type !== 'exclusive' && po.tax_type !== 'VAT' && po.tax_type !== 'GST') {
+        return [];
+    }
+    const supplierTaxIds = supplier.taxes.split(',').map(id => id.trim());
+    return taxes
+        .filter(tax => supplierTaxIds.includes(tax.id))
+        .map(tax => {
+            const taxAmount = subTotal * (tax.rate / 100);
+            return { name: tax.tax_name, amount: taxAmount };
+        });
+  }, [supplier, taxes, subTotal, po.tax_type]);
+
+  const totalTaxAmount = appliedTaxes.reduce((sum, tax) => sum + tax.amount, 0);
+  const totalAmount = subTotal + totalTaxAmount;
+
 
   return (
     <div className="bg-white text-black font-[Poppins] text-sm w-[210mm] min-h-[297mm] shadow-lg print:shadow-none p-8 flex flex-col">
@@ -187,9 +217,19 @@ export function PurchaseOrderPrintView({ id }: PrintViewProps) {
 
       <section className="flex justify-end mt-6">
         <div className="w-full max-w-xs space-y-2 text-gray-700">
-           <div className="flex justify-between text-xl font-bold text-gray-800 pt-2 border-t-2 border-gray-200">
+           <div className="flex justify-between">
+            <span>Subtotal</span>
+            <span className="font-mono">{currencySymbol}{subTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
+          {appliedTaxes.map((tax, index) => (
+            <div key={index} className="flex justify-between">
+              <span>{tax.name}</span>
+              <span className="font-mono">{currencySymbol}{tax.amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            </div>
+          ))}
+          <div className="flex justify-between font-bold text-lg pt-2 border-t-2 border-gray-200">
             <span>Total</span>
-            <span>{currencySymbol}{parseFloat(po.sub_total).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+            <span className="font-mono">{currencySymbol}{totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
         </div>
       </section>
