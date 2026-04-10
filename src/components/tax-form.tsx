@@ -35,6 +35,7 @@ const taxFormSchema = z.object({
   tax_code: z.string().min(2, "Tax code is required."),
   tax_name: z.string().min(3, "Tax name is required."),
   rate: z.coerce.number().min(0, "Rate must be a positive number."),
+  sort_order: z.coerce.number().min(0, "Sort order must be a positive number.").optional(),
   is_active: z.boolean().default(true),
 });
 
@@ -55,6 +56,7 @@ export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
     resolver: zodResolver(taxFormSchema),
     defaultValues: {
       is_active: true,
+      sort_order: 1,
     },
     mode: "onChange",
   });
@@ -72,7 +74,7 @@ export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
         location_id: parseInt(currentLocation.location_id, 10),
         is_active: data.is_active ? 1 : 0,
         apply_on: "all", // Hardcoded based on sample
-        sort_order: 1, // Hardcoded based on sample
+        sort_order: data.sort_order || 1,
         created_by: localStorage.getItem('userName') || 'admin',
         created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
     };
@@ -93,7 +95,7 @@ export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
             description: `The tax "${data.tax_name}" has been saved successfully.`,
         });
         setIsOpen(false);
-        form.reset({ is_active: true, tax_code: '', tax_name: '', rate: 0 });
+        form.reset({ is_active: true, tax_code: '', tax_name: '', rate: 0, sort_order: 1 });
         onSave();
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -132,7 +134,7 @@ export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
                             </FormItem>
                         )}
                     />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                          <FormField
                             control={form.control}
                             name="tax_code"
@@ -154,6 +156,19 @@ export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
                                 <FormLabel>Rate (%)</FormLabel>
                                 <FormControl>
                                     <Input type="number" placeholder="e.g. 15" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="sort_order"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Sort Order</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="e.g. 1" {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
