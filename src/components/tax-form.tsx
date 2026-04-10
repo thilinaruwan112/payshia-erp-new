@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,12 +23,13 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useLocation } from "./location-provider";
 import { fetcher } from "@/lib/api";
 import { Switch } from "./ui/switch";
 import { format } from "date-fns";
+import type { Tax } from "@/lib/types";
 
 const taxFormSchema = z.object({
   tax_code: z.string().min(2, "Tax code is required."),
@@ -43,10 +43,11 @@ type TaxFormValues = z.infer<typeof taxFormSchema>;
 
 interface TaxFormDialogProps {
     children: React.ReactNode;
+    tax?: Tax;
     onSave: () => void;
 }
 
-export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
+export function TaxFormDialog({ children, tax, onSave }: TaxFormDialogProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -55,11 +56,26 @@ export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
   const form = useForm<TaxFormValues>({
     resolver: zodResolver(taxFormSchema),
     defaultValues: {
-      is_active: true,
-      sort_order: 1,
+      tax_code: tax?.tax_code || '',
+      tax_name: tax?.tax_name || '',
+      rate: tax?.rate || 0,
+      is_active: tax ? tax.is_active === 1 : true,
+      sort_order: tax?.sort_order || 1,
     },
     mode: "onChange",
   });
+  
+  useEffect(() => {
+    if (isOpen) {
+      form.reset({
+        tax_code: tax?.tax_code || '',
+        tax_name: tax?.tax_name || '',
+        rate: tax?.rate || 0,
+        is_active: tax ? tax.is_active === 1 : true,
+        sort_order: tax?.sort_order || 1,
+      });
+    }
+  }, [isOpen, tax, form]);
 
   async function onSubmit(data: TaxFormValues) {
     if (!company_id || !currentLocation) {
@@ -68,6 +84,11 @@ export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
     }
     setIsLoading(true);
 
+    const url = tax
+      ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes/${tax.id}`
+      : `${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes`;
+    const method = tax ? 'PUT' : 'POST';
+    
     const payload = {
         ...data,
         company_id: company_id,
@@ -76,12 +97,12 @@ export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
         apply_on: "all", // Hardcoded based on sample
         sort_order: data.sort_order || 1,
         created_by: localStorage.getItem('userName') || 'admin',
-        created_at: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+        updated_by: localStorage.getItem('userName') || 'admin',
     };
     
     try {
-        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes`, {
-            method: 'POST',
+        const response = await fetcher(url, {
+            method: method,
             body: JSON.stringify(payload)
         });
 
@@ -91,11 +112,11 @@ export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
         }
 
         toast({
-            title: "Tax Created",
+            title: tax ? "Tax Updated" : "Tax Created",
             description: `The tax "${data.tax_name}" has been saved successfully.`,
         });
         setIsOpen(false);
-        form.reset({ is_active: true, tax_code: '', tax_name: '', rate: 0, sort_order: 1 });
+        form.reset();
         onSave();
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -114,9 +135,9 @@ export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
         <DialogTrigger asChild>{children}</DialogTrigger>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Add New Tax</DialogTitle>
+                <DialogTitle>{tax ? 'Edit Tax' : 'Add New Tax'}</DialogTitle>
                  <DialogDescription>
-                    Configure a new tax rate for your system.
+                    {tax ? 'Update the details for this tax rate.' : 'Configure a new tax rate for your system.'}
                 </DialogDescription>
             </DialogHeader>
              <Form {...form}>
@@ -191,7 +212,7 @@ export function TaxFormDialog({ children, onSave }: TaxFormDialogProps) {
                         <Button variant="outline" type="button" onClick={() => setIsOpen(false)}>Cancel</Button>
                         <Button type="submit" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Tax
+                            {tax ? 'Save Changes' : 'Save Tax'}
                         </Button>
                     </DialogFooter>
                 </form>

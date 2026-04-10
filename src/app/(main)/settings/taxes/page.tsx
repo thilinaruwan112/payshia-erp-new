@@ -16,7 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,10 +33,23 @@ import type { Tax } from '@/lib/types';
 import { fetcher } from '@/lib/api';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 
 export default function TaxesPage() {
     const [taxes, setTaxes] = useState<Tax[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [selectedTax, setSelectedTax] = useState<Tax | null>(null);
     const { company_id } = useLocation();
     const { toast } = useToast();
 
@@ -84,9 +97,31 @@ export default function TaxesPage() {
         } else {
           setIsLoading(false);
         }
-    }, [company_id]);
+    }, [company_id, toast]);
+
+    const handleDelete = async () => {
+        if (!selectedTax) return;
+        try {
+            const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes/${selectedTax.id}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to delete tax.');
+            }
+            toast({ title: 'Tax Deleted', description: `The tax "${selectedTax.tax_name}" has been deleted.` });
+            fetchTaxes();
+        } catch (error) {
+             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+             toast({ variant: 'destructive', title: 'Error', description: errorMessage });
+        } finally {
+            setIsConfirmOpen(false);
+            setSelectedTax(null);
+        }
+    }
 
     return (
+        <>
         <div className="flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -149,8 +184,19 @@ export default function TaxesPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent>
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem disabled>Edit</DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-destructive" disabled>Delete</DropdownMenuItem>
+                                                    <TaxFormDialog tax={tax} onSave={fetchTaxes}>
+                                                        <DropdownMenuItem onSelect={e => e.preventDefault()}>Edit</DropdownMenuItem>
+                                                    </TaxFormDialog>
+                                                    <DropdownMenuItem 
+                                                        className="text-destructive"
+                                                        onSelect={() => {
+                                                            setSelectedTax(tax);
+                                                            setIsConfirmOpen(true);
+                                                        }}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                        Delete
+                                                    </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
@@ -168,5 +214,23 @@ export default function TaxesPage() {
                 </CardContent>
             </Card>
         </div>
+        <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the tax {' '}
+                        <span className="font-bold text-foreground">{selectedTax?.tax_name}</span>.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setSelectedTax(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                        Delete
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 }
