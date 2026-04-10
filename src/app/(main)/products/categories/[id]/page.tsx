@@ -1,9 +1,8 @@
-
 'use client'
 
 import { CategoryForm } from '@/components/category-form';
 import { useToast } from '@/hooks/use-toast';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -15,11 +14,12 @@ type Category = {
   description: string;
 };
 
-export default function EditCategoryPage({ params }: { params: { id: string } }) {
+export default function EditCategoryPage() {
   const [category, setCategory] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { id } = params;
+  const params = useParams();
+  const id = typeof params.id === 'string' ? params.id : '';
 
   useEffect(() => {
     async function fetchCategory() {

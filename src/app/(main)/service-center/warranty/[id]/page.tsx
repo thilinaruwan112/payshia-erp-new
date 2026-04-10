@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -10,7 +9,7 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Edit, ShieldCheck } from 'lucide-react';
-import { useRouter, notFound } from 'next/navigation';
+import { useRouter, notFound, useParams } from 'next/navigation';
 import { type Warranty } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -41,9 +40,10 @@ const getStatusColor = (status: Warranty['status']) => {
 };
 
 
-export default function WarrantyDetailsPage({ params }: { params: { id: string } }) {
+export default function WarrantyDetailsPage() {
     const router = useRouter();
-    const { id } = params;
+    const params = useParams();
+    const id = typeof params.id === 'string' ? params.id : '';
     const [warranty, setWarranty] = useState<Warranty | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 

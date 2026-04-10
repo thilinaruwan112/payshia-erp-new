@@ -1,20 +1,20 @@
-
 'use client'
 
 import { BrandForm } from '@/components/brand-form';
 import { useToast } from '@/hooks/use-toast';
 import { type Brand } from '@/lib/types';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { fetcher } from '@/lib/api';
 
-export default function EditBrandPage({ params }: { params: { id: string } }) {
+export default function EditBrandPage() {
   const [brand, setBrand] = useState<Brand | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { id } = params;
+  const params = useParams();
+  const id = typeof params.id === 'string' ? params.id : '';
 
   useEffect(() => {
     async function fetchBrand() {

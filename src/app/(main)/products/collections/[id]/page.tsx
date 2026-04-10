@@ -1,9 +1,8 @@
-
 'use client'
 
 import { CollectionForm } from '@/components/collection-form';
 import { type Collection, type Product } from '@/lib/types';
-import { notFound } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { fetcher } from '@/lib/api';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -23,12 +22,13 @@ interface CollectionProductLink {
     product?: Product;
 }
 
-export default function EditCollectionPage({ params }: { params: { id: string } }) {
+export default function EditCollectionPage() {
     const { toast } = useToast();
     const [collection, setCollection] = useState<CollectionData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { company_id } = useLocation();
-    const { id } = params;
+    const params = useParams();
+    const id = typeof params.id === 'string' ? params.id : '';
     
     useEffect(() => {
         async function getCollection() {
