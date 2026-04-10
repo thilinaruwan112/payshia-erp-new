@@ -11,6 +11,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,11 +23,12 @@ import {
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import type { Supplier } from "@/lib/types";
+import type { Supplier, Tax } from "@/lib/types";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "./location-provider";
 import { fetcher } from "@/lib/api";
+import { Checkbox } from "./ui/checkbox";
 
 const supplierFormSchema = z.object({
   supplier_name: z.string().min(3, "Supplier name is required."),
@@ -38,6 +40,7 @@ const supplierFormSchema = z.object({
   zip_code: z.string().optional(),
   fax: z.string().optional(),
   opening_balance: z.coerce.number().optional(),
+  taxes: z.array(z.string()).optional(),
 });
 
 type SupplierFormValues = z.infer<typeof supplierFormSchema>;
@@ -51,6 +54,41 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const { company_id } = useLocation();
+  const [taxes, setTaxes] = useState<Tax[]>([]);
+
+  useEffect(() => {
+    async function fetchTaxes() {
+      if (!company_id) return;
+      try {
+        const response = await fetcher(`${process.env.NEXT_PUBLIC_API_BASE_URL}/taxes/filter/by-company?company_id=${company_id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch taxes');
+        }
+        const data = await response.json();
+        const formattedData: Tax[] = (data || []).map((item: any) => ({
+          id: item.tax_id,
+          tax_code: item.tax_code,
+          tax_name: item.tax_name,
+          rate: parseFloat(item.rate),
+          apply_on: item.apply_on,
+          sort_order: parseInt(item.sort_order, 10),
+          is_active: parseInt(item.is_active, 10),
+          company_id: parseInt(item.company_id, 10),
+          location_id: parseInt(item.location_id, 10),
+          created_by: item.created_by,
+          created_at: item.created_at,
+        }));
+        setTaxes(formattedData);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error fetching taxes",
+          description: "Could not load tax options for the form.",
+        });
+      }
+    }
+    fetchTaxes();
+  }, [company_id, toast]);
 
   
   const defaultValues: Partial<SupplierFormValues> = {
@@ -63,6 +101,7 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
     zip_code: supplier?.zip_code || "",
     fax: supplier?.fax || "",
     opening_balance: supplier?.opening_balance ? parseFloat(supplier.opening_balance) : 0,
+    taxes: supplier?.taxes?.split(',') || [],
   };
 
   const form = useForm<SupplierFormValues>({
@@ -81,7 +120,13 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
 
     const method = supplier ? 'PUT' : 'POST';
     
-    const payload = { ...data, is_active: 1, created_by: 'admin', company_id: company_id };
+    const payload = { 
+        ...data, 
+        taxes: data.taxes?.join(',') || "",
+        is_active: 1, 
+        created_by: 'admin', 
+        company_id: company_id 
+    };
 
     try {
       const response = await fetcher(url, {
@@ -253,6 +298,43 @@ export function SupplierForm({ supplier }: SupplierFormProps) {
                             </FormControl>
                             <FormMessage />
                             </FormItem>
+                        )}
+                    />
+                </div>
+                 <div className="md:col-span-2">
+                    <FormField
+                        control={form.control}
+                        name="taxes"
+                        render={() => (
+                        <FormItem>
+                            <FormLabel>Applicable Taxes</FormLabel>
+                            <FormDescription>Select all taxes that apply to this supplier.</FormDescription>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+                            {taxes.map((tax) => (
+                                <FormField
+                                key={tax.id}
+                                control={form.control}
+                                name="taxes"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                        <Checkbox
+                                        checked={field.value?.includes(tax.id)}
+                                        onCheckedChange={(checked) => {
+                                            return checked
+                                            ? field.onChange([...(field.value || []), tax.id])
+                                            : field.onChange(field.value?.filter((value) => value !== tax.id))
+                                        }}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">{tax.tax_name}</FormLabel>
+                                    </FormItem>
+                                )}
+                                />
+                            ))}
+                            </div>
+                            <FormMessage />
+                        </FormItem>
                         )}
                     />
                 </div>

@@ -183,6 +183,7 @@ export type Supplier = {
   postal_code?: string;
   fax: string;
   opening_balance: string;
+  taxes?: string;
 };
 
 export type PurchaseOrder = {
